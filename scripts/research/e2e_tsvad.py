@@ -294,14 +294,16 @@ def cmd_queue(a):
 
 def start_server(port: int, enroll: str, log: Path, print_s: float, single: bool = False):
     """single: audioforge-serve --mode single's flags (no --diar: the diarizer is never loaded; --lid head)."""
-    env = {**os.environ, "PYTHONPATH": str(ROOT), "OMP_NUM_THREADS": "2", "TMPDIR": str(WORK / "tmp")}
-    (WORK / "tmp").mkdir(parents=True, exist_ok=True)
+    # E2E.WORK = --work (cmd_queue sets it); this module's WORK is the laptop default and does not exist elsewhere
+    env = {**os.environ, "PYTHONPATH": str(ROOT), "OMP_NUM_THREADS": "2", "TMPDIR": str(E2E.WORK / "tmp")}
+    (E2E.WORK / "tmp").mkdir(parents=True, exist_ok=True)
     diar = (["--lid", "head", "--dyn-wait-ms", os.environ.get("E2E_DYN_WAIT_MS", "2000,960")] if single
             else ["--diar", str(ROOT / "runs/nemo_sortformer_v2.afm")])
     cmd = [sys.executable, str(ROOT / "scripts" / "research" / "e2e_final.py"), "serve", "--",
            "--asr", str(ROOT / "runs/stage1_served.afm"), *diar,
            "--port", str(port), "--threads", "2", "--debug-fields", "--enroll", enroll, "--turn-input", "tsvad",
-           "--tsvad-print-s", str(print_s), "--diar-off", "--silero", str(ROOT / "data/silero/silero_vad_v5.onnx")]
+           "--tsvad-print-s", str(print_s), "--diar-off", "--silero", str(ROOT / "data/silero/silero_vad_v5.onnx"),
+           *os.environ.get("E2E_SERVE_ARGS", "").split()]  # e.g. E2E_SERVE_ARGS="--device cuda" (GPU_RUN_2026-09-29)
     f = log.open("w")
     p = subprocess.Popen(cmd, cwd=str(ROOT), env=env, stdout=f, stderr=subprocess.STDOUT)
     for _ in range(240):

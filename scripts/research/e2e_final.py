@@ -803,7 +803,8 @@ def start_server(wt: Path, port: int, enroll: str, log: Path, diar_args: list[st
     (WORK / "tmp").mkdir(parents=True, exist_ok=True)
     cmd = [sys.executable, str(Path(__file__).resolve()), "serve", "--", "--asr", str(ROOT / "runs/stage1_served.afm"),
            *(diar_args or ["--diar", str(ROOT / "runs/nemo_sortformer_v2.afm")]), "--port", str(port), "--threads", "2",
-           "--debug-fields", "--enroll", enroll, "--silero", str(ROOT / "data/silero/silero_vad_v5.onnx")]
+           "--debug-fields", "--enroll", enroll, "--silero", str(ROOT / "data/silero/silero_vad_v5.onnx"),
+           *os.environ.get("E2E_SERVE_ARGS", "").split()]  # e.g. E2E_SERVE_ARGS="--device cuda" (GPU_RUN_2026-09-29)
     f = log.open("w")
     p = subprocess.Popen(cmd, cwd=str(wt), env=env, stdout=f, stderr=subprocess.STDOUT)
     for _ in range(240):
@@ -846,7 +847,9 @@ def plan(work: Path, only_sets=None) -> list[dict]:
 
 
 def cmd_queue(a):
+    global WORK
     work = Path(a.work)
+    WORK = work  # start_server's TMPDIR (the module default is the laptop's scratchpad)
     runs = work / "runs"
     runs.mkdir(parents=True, exist_ok=True)
     wt = Path(a.wt)

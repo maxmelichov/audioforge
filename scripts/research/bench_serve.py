@@ -88,7 +88,7 @@ def load_engine(a):
     d = NEMOTRON if a.diar == "nemotron" else SORTFORMER if a.diar == "sortformer" else dict(diar=a.diar)
     r0 = cur_rss_mb()
     t0 = time.perf_counter()
-    eng = S.Engine.load(str(ROOT / a.asr), str(ROOT / d["diar"]), "cpu", diar_pool=d.get("diar_pool"),
+    eng = S.Engine.load(str(ROOT / a.asr), str(ROOT / d["diar"]), getattr(a, "device", "cpu"), diar_pool=d.get("diar_pool"),
                         diar_spks=d.get("diar_spks"), threads=a.threads, diar_left=d.get("diar_left", S.DIAR_ENC_LEFT),
                         enroll=a.enroll, silero=str(ROOT / "data/silero/silero_vad_v5.onnx"),
                         preload_silero=a.policy in S.SILERO_POLICIES, perf="none")
@@ -602,6 +602,7 @@ def main(argv=None):
     r.add_argument("--enroll", default="dominant")
     r.add_argument("--arm-every", type=float, default=8.0, help="--enroll after_agent_arm: agent_end every N s")
     r.add_argument("--opt", action="append", default=[], help="Engine perf option name[=value] (repeatable)")
+    r.add_argument("--device", default="cpu", help="cpu | cuda[:N] (serve --device; research/GPU_RUN_2026-09-29.md)")
     r.add_argument("--streams", type=int, default=1)
     r.add_argument("--stream-seconds", type=float, default=60.0)
     r.add_argument("--batch", action="store_true", help="--streams: batch the pending blocks of all sessions")
