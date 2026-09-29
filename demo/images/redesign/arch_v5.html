@@ -1,0 +1,180 @@
+<!doctype html><html><head><meta charset="utf-8"><link rel="stylesheet" href="style.css">
+<style>
+.l1 { position: absolute; font-weight: 700; color: var(--ink); line-height: 1.1; white-space: nowrap; }
+.l2 { position: absolute; font-size: 22px; color: var(--ink2); line-height: 1.2; white-space: nowrap; }
+.blk { position: absolute; background: var(--slate); border-radius: 16px; }
+.blk .bt { position: absolute; color: #FFFFFF; font-weight: 700; white-space: nowrap; line-height: 1.1; }
+.blk .bs { position: absolute; color: var(--onslate); font-size: 22px; white-space: nowrap; line-height: 1.1; }
+.slab { position: absolute; background: var(--slab); border-radius: 4px; }
+.slab.tap { background: var(--ours); }
+.box { position: absolute; display: flex; flex-direction: column; align-items: center; justify-content: center; border-radius: 12px; line-height: 1.15; text-align: center; }
+.box.ours { background: #FFFFFF; border: 2.5px solid var(--ours); }
+.box.nv { background: var(--slate); color: #FFFFFF; }
+.box.grey { background: var(--panel); border: 1.5px solid #C3C9D1; }
+.box.grey .a { color: #3F4753; }
+.box .m { font-weight: 700; color: var(--ink); }
+.box.nv .m { color: #FFFFFF; }
+.box .a { font-size: 22px; color: var(--ink2); margin-top: 2px; }
+.box.nv .a { color: var(--onslate); }
+.zone { position: absolute; border: 2px dashed #AEB6C0; border-radius: 18px; background: #FAFBFC; }
+.circ { position: absolute; width: 34px; height: 34px; border-radius: 50%; background: #FFFFFF; font-size: 22px; font-weight: 700;
+  color: var(--ink); display: flex; align-items: center; justify-content: center; line-height: 1; }
+.badge { position: absolute; font-size: 22px; font-weight: 700; color: var(--ink); background: #FFFFFF; border-radius: 999px; padding: 4px 14px; white-space: nowrap; }
+.blk, .slab, .box, .ghost, .gs, .rl, .circ, .badge, .l1, .l2, .wave { z-index: 2; } svg.wires { z-index: 1; } .zone { z-index: 0; }
+.reg { position: absolute; background: #F6F7F9; border-radius: 22px; z-index: 0; }
+.rl { position: absolute; font-size: 22px; font-weight: 700; letter-spacing: 0.06em; color: var(--ink2); white-space: nowrap; z-index: 2; }
+.ghost { position: absolute; background: #FFFFFF; border: 2px solid #AEB6C0; border-radius: 14px; z-index: 2; }
+.gs { position: absolute; background: #E6E9ED; border-radius: 3px; z-index: 2; }
+.box.dash { background: #FFFFFF; border: 2px dashed #AEB6C0; }
+.wave i { position: absolute; background: #6B7280; border-radius: 3px; }
+</style></head><body><div id="stage"></div><script>
+// architecture_v5 (demo/images/EXPLAINER.md is the source of truth). PASS 1 (tinted region): audio -> the frozen
+// FastConformer, the only dark shape -> RNNT decoder -> streaming words; the all-17-layers bracket -> VAD head -> Speech?;
+// layer 4 -> TS-VAD "Is it you?" <- voice print <- speaker head (reads layer 4) <- 5 s voice sample; -> your voice track.
+// PASS 2: audio + your voice track (conditions blocks 1 & 3; speaker_kernel_layers [0, 2]) -> a light ghost of the same
+// FastConformer (same weights, run again; joined to the main block by a grey reuse link on the left, no arrowhead) ->
+// turn head -> end-of-turn probability over a dashed threshold -> turn end -> optional Parakeet (small dashed branch).
+const st = document.getElementById("stage"); const wires = [];
+const css = k => getComputedStyle(document.documentElement).getPropertyValue(k).trim();
+function el(cls, html, x, y, w, h) { const e = document.createElement("div"); e.className = cls; if (html != null) e.innerHTML = html;
+  Object.assign(e.style, { left: x + "px", top: y + "px" }); if (w) e.style.width = w + "px"; if (h) e.style.height = h + "px"; st.appendChild(e); return e; }
+function R(e) { const r = e.getBoundingClientRect(); return { l: r.left, t: r.top, r: r.right, b: r.bottom, cx: (r.left + r.right) / 2, cy: (r.top + r.bottom) / 2 }; }
+function wire(pts, { col = "#8A939E", w = 2.2, head = true, dash = false } = {}) {
+  wires.push(`<path d="${pts.map((p, i) => (i ? "L" : "M") + p[0] + " " + p[1]).join(" ")}" fill="none" stroke="${col}" stroke-width="${w}" stroke-linecap="round" stroke-linejoin="round"${dash ? ' stroke-dasharray="6 6"' : ""}/>`);
+  if (head) { const [x2, y2] = pts[pts.length - 1], [x1, y1] = pts[pts.length - 2], a = Math.atan2(y2 - y1, x2 - x1), s = 11;
+    wires.push(`<path d="M${x2 - s * Math.cos(a - 0.55)} ${y2 - s * Math.sin(a - 0.55)} L${x2} ${y2} L${x2 - s * Math.cos(a + 0.55)} ${y2 - s * Math.sin(a + 0.55)}" fill="none" stroke="${col}" stroke-width="${w}" stroke-linecap="round" stroke-linejoin="round"/>`); } }
+const OR = () => ({ col: css("--ours"), w: 2.6 });
+function l1(t, x, y, z) { const e = el("l1", t, x, y); e.style.fontSize = z + "px"; return e; }
+function l2(t, x, y) { return el("l2", t, x, y); }
+function box(cls, main, ann, x, y, w, h, z) { const e = el("box " + cls, `<div class="m" style="font-size:${z}px">${main}</div>` + (ann ? `<div class="a">${ann}</div>` : ""), x, y, w, h); return e; }
+function wave(x, y, w, h) { const v = [0.3, 0.55, 0.85, 0.5, 1, 0.7, 0.4, 0.8, 0.55, 0.35, 0.6, 0.25]; const b = el("wave", "", x, y, w, h); b.style.position = "absolute";
+  v.forEach((k, i) => { const s = document.createElement("i"); Object.assign(s.style, { left: (i * w / v.length + w / v.length * 0.2) + "px", width: (w / v.length * 0.55) + "px", top: (h * (1 - k) / 2) + "px", height: (h * k) + "px" }); b.appendChild(s); }); return b; }
+// one lane of the frozen model: 17 slabs; returns slab centres
+function lane(x, y, w, h, o, title, sub) {
+  const b = el("blk", "", x, y, w, h);
+  const t = document.createElement("div"); t.className = "bt"; t.innerHTML = title; Object.assign(t.style, { left: o.pad + "px", top: "12px", fontSize: o.tz + "px" }); b.appendChild(t);
+  if (sub) { const s = document.createElement("div"); s.className = "bs"; s.innerHTML = sub; Object.assign(s.style, { right: o.pad + "px", top: "14px" }); b.appendChild(s); }
+  const gap = (w - 2 * o.pad - 17 * o.sw) / 16, cx = [];
+  for (let k = 1; k <= 17; k++) { const sx = x + o.pad + (k - 1) * (o.sw + gap); el("slab" + (o.tap === k ? " tap" : ""), "", sx, y + o.top, o.sw, h - o.top - o.bot); cx.push(sx + o.sw / 2); }
+  return { b, cx, R: R(b), sy0: y + o.top, sy1: y + h - o.bot }; }
+function brace(x1, x2, y, up, col) {   // curly brace over [x1, x2]; tip away from the lane
+  const d = up ? -1 : 1, y1 = y + 14 * d, tip = y + 28 * d, mx = (x1 + x2) / 2, r = 14;
+  wires.push(`<path d="M${x1} ${y} Q${x1} ${y1} ${x1 + r} ${y1} L${mx - r} ${y1} Q${mx} ${y1} ${mx} ${tip} Q${mx} ${y1} ${mx + r} ${y1} L${x2 - r} ${y1} Q${x2} ${y1} ${x2} ${y}" fill="none" stroke="${col}" stroke-width="2.6" stroke-linejoin="round"/>`);
+  return { mx, tip }; }
+
+// the reuse marker: a dashed grey bracket on the far left spanning both lanes, a vertical "↻ one model, used twice";
+// it touches neither lane's output side, so nothing can read as pass-1 output flowing into pass 2
+function place(e, x, y, ax = 0, ay = 0) { e.style.left = (x - ax * e.offsetWidth) + "px"; e.style.top = (y - ay * e.offsetHeight) + "px"; return e; }
+function circ(n, x, y, col) { const e = el("circ", String(n), 0, 0); e.style.border = `3px solid ${col}`; return place(e, x, y, 0.5, 0.5); }
+function spark(gx, gyy, gw, gh, O) {
+  const ps = [0.05, 0.08, 0.06, 0.1, 0.07, 0.12, 0.09, 0.2, 0.35, 0.55, 0.8], thr = gyy + gh * 0.28;
+  const pts = ps.map((p, i) => [gx + i * gw / (ps.length - 1), gyy + gh * (1 - p)]);
+  wires.push(`<line x1="${gx}" y1="${thr}" x2="${gx + gw}" y2="${thr}" stroke="#8A939E" stroke-width="1.5"/>`);
+  wires.push(`<polyline points="${pts.map(p => p.join(",")).join(" ")}" fill="none" stroke="${O}" stroke-width="2.6"/>`);
+  wires.push(`<line x1="${gx}" y1="${gyy + gh}" x2="${gx + gw}" y2="${gyy + gh}" stroke="#C8CDD4" stroke-width="1.5"/>`);
+  const c = pts[pts.length - 1]; wires.push(`<circle cx="${c[0]}" cy="${c[1]}" r="6" fill="${O}"/>`); return c; }
+function spark2(gx, gyy, gw, gh, O) {
+  const ps = [0.05, 0.08, 0.06, 0.1, 0.07, 0.12, 0.09, 0.2, 0.35, 0.55, 0.8], thr = gyy + gh * 0.3;
+  const pts = ps.map((p, i) => [gx + i * gw / (ps.length - 1), gyy + gh * (1 - p)]);
+  wires.push(`<line x1="${gx}" y1="${thr}" x2="${gx + gw + 10}" y2="${thr}" stroke="#8A939E" stroke-width="1.8" stroke-dasharray="6 5"/>`);
+  wires.push(`<polyline points="${pts.map(p => p.join(",")).join(" ")}" fill="none" stroke="${O}" stroke-width="2.6"/>`);
+  wires.push(`<line x1="${gx}" y1="${gyy + gh}" x2="${gx + gw}" y2="${gyy + gh}" stroke="#C8CDD4" stroke-width="1.5"/>`);
+  // the crossing: where the curve meets the threshold (linear interpolation between the two samples around it)
+  let i = pts.findIndex(p => p[1] <= thr); const [a, b] = [pts[i - 1], pts[i]], f = (a[1] - thr) / (a[1] - b[1]);
+  const c = [a[0] + f * (b[0] - a[0]), thr]; wires.push(`<circle cx="${c[0]}" cy="${c[1]}" r="7" fill="${O}"/>`); return c; }
+function ghost(x, y, w, h, sw) {
+  const g = el("ghost", "", x, y, w, h), n = 17, pad = 16, gap = (w - 2 * pad - n * sw) / (n - 1), cx = [];
+  for (let k = 0; k < n; k++) { const sx = x + pad + k * (sw + gap); el("gs", "", sx, y + 44, sw, h - 44 - 12); cx.push(sx + sw / 2); }
+  return { g, R: R(g), cx }; }
+function region(x, y, w, h, label, lx, ly) { el("reg", "", x, y, w, h); return el("rl", label, lx, ly); }
+function build(W, H) {
+  Object.assign(st.style, { width: W + "px", height: H + "px" }); st.innerHTML = ""; wires.length = 0;
+  const M = 64, sq = H / W > 0.9, O = css("--ours"), S1 = css("--slate");
+  const R1 = { col: S1, w: 2.6 }, R2 = { col: O, w: 2.8 }, GR = { col: "#8A939E", w: 2.2 };
+  const P = sq ? { tz: 32, bx: 300, bw: 450, bt: 290, bh: 112, pad: 18, sw: 13, r1: [118, 470], r2: [600, 362], wav: [84, 80], brx: 104, ts: [568, 196], tsy: 490,
+                   sm: [120, 150], sk: [292, 160], gh: [300, 700, 380, 76, 9], turn: [724, 150], sp: [724, 150, 44], rnnt: [790, 100], words: 790, ly: 40,
+                   l1: [124, 132], l2: [300, 608] }
+               : { tz: 40, bx: 695, bw: 600, bt: 240, bh: 124, pad: 26, sw: 24, r1: [120, 490], r2: [626, 280], wav: [110, 120], brx: 150, ts: [1300, 210], tsy: 474,
+                   sm: [712, 160], sk: [920, 170], gh: [695, 700, 540, 86, 16], turn: [1300, 160], sp: [1500, 200, 54], rnnt: [1335, 170], words: 1545, ly: 40,
+                   l1: [180, 134], l2: [180, 640] };
+  l1("One frozen NVIDIA model, small audioforge heads", M, M + 2, P.tz);
+  region(M, P.r1[0], W - 2 * M, P.r1[1], "PASS 1 · understand speech & speaker", P.l1[0], P.l1[1]);
+  region(M, P.r2[0], W - 2 * M, P.r2[1], "PASS 2 · decide when the turn ends", P.l2[0], P.l2[1]);
+  // the one frozen model
+  const A = lane(P.bx, P.bt, P.bw, P.bh, { pad: P.pad, sw: P.sw, top: 50, bot: 36, tz: 22, tap: 4 }, "Frozen FastConformer", "17 layers");
+  [[1, "1"], [4, "4"], [17, "17"]].forEach(([k, t]) => { const e = el("l2", t, 0, 0); e.style.background = S1; e.style.color = k === 4 ? "#FFFFFF" : "var(--onslate)"; if (k === 4) e.style.fontWeight = 700; place(e, A.cx[k - 1], A.R.b - 6, 0.5, 1); });
+  const y1 = (A.sy0 + A.sy1) / 2;
+  // audio 1
+  const au = l1("Audio", P.wav[0], 0, sq ? 24 : 28); place(au, P.wav[0], y1 - 36, 0, 1); wave(P.wav[0], y1 - 30, P.wav[1], 60);
+  wire([[P.wav[0] + P.wav[1] + 10, y1], [A.R.l - 8, y1]], R1); circ(1, A.R.l - 44, y1, S1);
+  // VAD: all 17 layers -> VAD head (directly above) -> Speech? right next to it
+  const br = brace(A.cx[0], A.cx[16], A.R.t - 10, true, S1);
+  const vw = sq ? 170 : 190, vb = box("ours", "VAD head", sq ? "33K · 80 ms" : "33K · every 80 ms", br.mx - vw / 2, 0, vw, 64, 22); place(vb, br.mx - vw / 2, br.tip - 10, 0, 1);
+  wire([[br.mx, br.tip], [br.mx, R(vb).b + 6]], R1);
+  const vr = R(vb); wire([[vr.r + 6, vr.cy], [vr.r + 34, vr.cy]], R1); place(l1("Speech?", 0, 0, sq ? 24 : 28), vr.r + 42, vr.cy, 0, 0.5);
+  // words
+  const d = box("grey", "RNNT decoder", null, P.rnnt[0], y1 - 28, P.rnnt[1], 56, 22); d.querySelector(".m").style.whiteSpace = sq ? "normal" : "nowrap"; if (sq) { d.style.height = "64px"; d.style.top = (y1 - 32) + "px"; d.querySelector(".m").innerHTML = "RNNT<br>decoder"; }
+  wire([[A.R.r + 6, y1], [P.rnnt[0] - 8, y1]], R1);
+  const dr = R(d); wire([[dr.r + 6, y1], [P.words - 10, y1]], R1);
+  const wl = l1(sq ? "Streaming words" : "Streaming words", P.words, 0, sq ? 22 : 28); place(wl, P.words, y1 - 8, 0, 0.5);
+  if (sq) { wires.pop(); wires.pop(); place(wl, dr.l, dr.b + 30); wire([[dr.cx, dr.b + 4], [dr.cx, R(wl).t - 4]], R1); }
+  place(l2("every 160 ms", 0, 0), P.words, R(wl).b + 2);
+  // Is it you?: layer 4 from above; voice print from the left
+  const s4 = A.cx[3], ts = box("ours", "Is it you?", "TS-VAD · 0.26M", P.ts[0], P.tsy - 36, P.ts[1], 72, 22), t = R(ts);
+  const ly = A.R.b + P.ly;
+  wire([[s4, A.R.b + 4], [s4, ly], [t.cx, ly], [t.cx, t.t - 6]], R1);
+  place(l2("layer 4", 0, 0), s4 + 12, ly - 4, 0, 1);
+  const sm = box("grey", "Voice sample", "5 s", P.sm[0], t.cy - 32, P.sm[1], 64, 22);
+  let sk;
+  sk = box("ours", "Speaker head", "reads layer 4", P.sk[0], t.cy - 32, P.sk[1], 64, 22); wire([[R(sm).r + 4, t.cy], [P.sk[0] - 6, t.cy]], R1);
+  const k = R(sk);
+  wire([[k.r + 6, t.cy], [t.l - 6, t.cy]], R1); place(l2("voice print", 0, 0), (k.r + t.l) / 2, t.cy - 8, 0.5, 1);
+  // your voice track: down from Is it you? into the ghost (blocks 1 and 3)
+  const G = ghost(P.gh[0], P.gh[1], P.gh[2], P.gh[3], P.gh[4]);
+  const gt = document.createElement("div"); gt.className = "l1"; gt.innerHTML = sq ? "same FastConformer · same weights" : "same FastConformer · same weights, run again";
+  Object.assign(gt.style, { fontSize: "22px", left: (P.gh[0] + 16) + "px", top: (P.gh[1] + 10) + "px", zIndex: 3 }); st.appendChild(gt);
+  const hy = G.R.t - (sq ? 26 : 34), vx = t.cx, b1 = G.cx[0], b3 = G.cx[2];
+  wire([[vx, t.b + 6], [vx, hy], [b1, hy], [b1, G.R.t - 5]], R2); wire([[b3, hy], [b3, G.R.t - 5]], R2);
+  const vt = l1("Your voice track", 0, 0, 22); place(vt, vx + 16, sq ? t.b + 10 : t.b + 14);
+  const strip = [[0.20, O], [0.12, "#C8CDD4"], [0.18, "#FFFFFF"], [0.28, O], [0.10, "#C8CDD4"], [0.12, O]], swd = sq ? 140 : 180; let sx0 = vx + 16, sy0 = R(vt).b + 6;
+  strip.forEach(([f, col]) => { wires.push(`<rect x="${sx0}" y="${sy0}" width="${f * swd}" height="12" fill="${col}" stroke="#AEB6C0" stroke-width="1"/>`); sx0 += f * swd; });
+  if (!sq) place(l2("you · other · no one, every 80 ms", 0, 0), vx + 16, sy0 + 18);
+  place(l2("conditions blocks 1 & 3", 0, 0), b3 + 14, hy - 6, 0, 1);
+  // reuse link between the two blocks' LEFT edges: grey, no arrowhead, with the reuse glyph
+  const lx = Math.min(A.R.l, G.R.l) - 16, ya = A.R.b - 20, yb = G.R.t + 20;
+  wires.push(`<path d="M${A.R.l} ${ya} L${lx} ${ya} L${lx} ${yb} L${G.R.l} ${yb}" fill="none" stroke="#9AA3AE" stroke-width="2" stroke-dasharray="5 5"/>`);
+  const rg = el("l2", "↻ same model", 0, 0); rg.style.background = "#F6F7F9"; rg.style.zIndex = 3; place(rg, lx, (ya + yb) / 2 + (sq ? 0 : 30), 1, 0.5);
+  if (!sq) place(el("l2", "reused", 0, 0), lx - 10, (ya + yb) / 2 + 58, 1, 0.5).style.zIndex = 3;
+  // audio 2 into the ghost
+  const y2 = G.R.cy + 10;
+  wire([[P.brx, y1 + 32], [P.brx, y2], [G.R.l - 8, y2]], R2); circ(2, G.R.l - 44, y2, O);
+  // turn head, threshold graph, turn end
+  const th = box("ours", "Turn head", "GRU · 0.32M", P.turn[0], y2 - 36, P.turn[1], 72, 22), hr = R(th);
+  const hr2 = R(th);
+  wire([[G.R.r + 6, y2], [hr2.l - 8, y2]], R2);
+  let gx, gyy, tl;
+  if (!sq) { wire([[hr2.r + 6, y2], [P.sp[0] - 14, y2]], R2); tl = l1("Turn over?", P.sp[0], 0, 26); place(tl, P.sp[0], y2 - P.sp[2] / 2 - 10, 0, 1); gx = P.sp[0]; gyy = y2 - P.sp[2] / 2; }
+  else { tl = l1("Turn over?", 0, 0, 22); place(tl, hr2.l, hr2.b + 34, 0, 0); gx = hr2.l; gyy = R(tl).b + 8; wire([[hr2.cx, hr2.b + 4], [hr2.cx, R(tl).t - 4]], R2); }
+  const gw = P.sp[1], gh = P.sp[2], cr = spark2(gx, gyy, gw, gh, O);
+  place(l2("every 80 ms", 0, 0), gx, gyy + gh + 6);
+  const te = l1(sq ? "Turn<br>end" : "Turn end", 0, 0, sq ? 22 : 26); te.style.whiteSpace = "normal"; place(te, gx + gw + 44, cr[1], 0, 0.5);
+  wire([[cr[0] + 8, cr[1]], [gx + gw + 36, cr[1]]], R2);
+  // optional: a small dashed branch
+  const tr = R(te), px = sq ? 300 : 1380, py = sq ? 800 : P.r2[0] + P.r2[1] - 74;
+  const pk = box("dash", "Optional · Parakeet", null, px, py, sq ? 220 : 270, 52, 22), pr = R(pk);
+  if (!sq) { wires.push(`<path d="M${tr.cx} ${tr.b + 6} L${tr.cx} ${pr.t - 16} L${pr.cx} ${pr.t - 16} L${pr.cx} ${pr.t - 6}" fill="none" stroke="#9AA3AE" stroke-width="2" stroke-dasharray="6 5"/>`);
+    wire([[pr.cx - 5, pr.t - 12], [pr.cx, pr.t - 5]], { col: "#9AA3AE", w: 2, head: false }); wire([[pr.cx + 5, pr.t - 12], [pr.cx, pr.t - 5]], { col: "#9AA3AE", w: 2, head: false }); }
+  else { const by = P.r2[0] + P.r2[1] - 22;   // under everything, then up into the optional box
+    wires.push(`<path d="M${tr.cx} ${tr.b + 6} L${tr.cx} ${by} L${pr.cx} ${by} L${pr.cx} ${pr.b + 6}" fill="none" stroke="#9AA3AE" stroke-width="2" stroke-dasharray="6 5"/>`);
+    wire([[pr.cx - 5, pr.b + 12], [pr.cx, pr.b + 5]], { col: "#9AA3AE", w: 2, head: false }); wire([[pr.cx + 5, pr.b + 12], [pr.cx, pr.b + 5]], { col: "#9AA3AE", w: 2, head: false }); }
+  wire([[pr.r + 6, pr.cy], [pr.r + (sq ? 24 : 34), pr.cy]], GR); place(l1("Final transcript", 0, 0, 22), pr.r + (sq ? 30 : 42), pr.cy, 0, 0.5);
+  const f = el("foot abs", "109 M frozen NVIDIA encoder · 3 small heads · no diarizer", M, 0, W - 2 * M); f.style.top = (H - M - f.offsetHeight - 2) + "px";
+  const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg"); svg.setAttribute("class", "wires"); svg.setAttribute("width", W); svg.setAttribute("height", H);
+  svg.innerHTML = wires.join(""); st.prepend(svg);
+  if (new URLSearchParams(location.search).get("notext")) notext();
+}
+// removal test: hide every explanatory annotation (level 2) and the footer (level 3); level-1 labels stay
+function notext() { const s = document.createElement("style"); s.textContent = "#stage .l2, #stage .foot, #stage .box .a { color: transparent !important; } /* transparent !important */"; document.head.appendChild(s); }
+window.build = build; window.notext = notext;
+const q = new URLSearchParams(location.search); if (q.get("w")) build(+q.get("w"), +q.get("h"));
+</script></body></html>

@@ -1,0 +1,54 @@
+# Stage 1b: retrain ONLY the speaker-aware turn head on REAL diarizer tracks (research/STAGE1.md, last two
+# sections: at 160 ms the head trained on clean oracle activity loses to a silence timeout on NVIDIA's
+# Sortformer track; its failure - the next speaker landing in the user's slot after the turn end - was never
+# in its training data).
+#
+# Conditioning track per AMI turn item (SpeechModel.conditioning_act): with p_ext = 0.7 the cached NVIDIA
+# streaming Sortformer v2 track (data/ami/cache/sortformer/train/*.npy, scripts/research/make_sortformer_tracks.py;
+# offline pass over the window; column = "enrollment by who is talking", largest overlap with the oracle
+# primary on [onset, turn_end) only, as scripts/research/eval_stage1.py), else the oracle with 2 % frame flips and
+# +-1 frame boundary jitter. Labels always come from the clean oracle (spk_act_oracle). Synthetic
+# conversations (weight 0.3) have no ext track and always take the noisy-oracle branch.
+#
+# Everything loaded from the stage-1 model is frozen (pretrained_lr_mult 0 over pretrained_scope) except the
+# turn head (heads.turn.*, incl. its text projection), which trains at full lr. The speaker kernels
+# (encoder.speaker_kernels.*) stay frozen too; to let them adapt, list the encoder prefixes explicitly
+# (encoder.pre_encode, encoder.layers, ...) instead of `encoder`. diar weight 0: not trained (its loss is skipped).
+# The encoder is frozen, so the WER gate is a plumbing tripwire only.
+# Training runs at the evaluation context only (att_context_sizes [[70, 1]] = 160 ms chunks).
+#
+# Prerequisite (CPU, once): scripts/research/make_sortformer_tracks.py --split train --track-source offline
+# Run (GPU):
+#   .venv/bin/python -m audioforge.cli train research/recipes/stage1_turn_on_sortformer.yaml -o runs/stage1_turn_on_sortformer.afm \
+#     2>&1 | tee runs/stage1_turn_on_sortformer.log
+name: stage1_turn_on_sortformer
+init:
+  from: runs/stage1_heads_pretrained.afm  # the 160 ms model (saved config: att_context_size [70, 1])
+  pretrained_lr_mult: 0
+  pretrained_scope: [preprocessor., encoder., layer_mix., heads.rnnt., heads.ctc., heads.vad., heads.eou.,
+                     heads.spk., heads.diar.]
+encoder: {att_context_size: [70, 1], att_context_sizes: [[70, 1]], speaker_kernel_layers: [0, 2]}
+heads:
+  diar: {weight: 0}
+  turn: {type: turn, mode: kernel, use_text: true, condition_on_speaker: true, k_tokens: 4, text_dim: 64,
+         align: greedy, hidden: 96, history: 8, pos_weight: 2.0, weight: 1.0}
+data:
+  mix:
+    - {name: ami_turn, ami: {mode: turn, window_sec: 16, ext_tracks: {source: offline}}, weight: 1.0}
+    - {name: conv, synthetic: {kind: conversation, preset: default, n_train: 2500}, weight: 0.3,
+       drop_keys: [speaker]}
+  val: {ami: {mode: turn, val_split: dev, n_val: 64}}
+  derive: [vad, eou]
+  batching: source
+trainer:
+  device: auto
+  batch_size: 6
+  lr: 1.0e-3
+  warmup_steps: 100
+  max_steps: 1500
+  log_every: 50
+  checkpoint_every: 500
+  # model conditioning (trainer.conditioning: the location that survives init.from; see audioforge/model.py)
+  conditioning: {p_ext: 0.7, p_diar: 0, flip: 0.02, jitter: 1}
+  wer_gate: {manifest: data/librispeech/test-clean-first200.jsonl, n: 50, every: 500, max_delta: 0.002,
+             head: rnnt}

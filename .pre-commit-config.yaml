@@ -1,0 +1,23 @@
+# pre-commit install   (then every commit runs these; pre-commit run --all-files to check the tree)
+repos:
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.16.9  # keep in step with the ruff pinned in .github/workflows/ci.yml
+    hooks:
+      - id: ruff
+        files: ^(audioforge|tests|integrations|examples|scripts)/
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.6.0
+    hooks:
+      - id: check-added-large-files
+        args: ["--maxkb=20000"]  # assets/served_heads_v0.1.pt (19.2 MB) is the largest file allowed
+      - id: check-yaml
+        exclude: ^research/raw/
+      - id: check-merge-conflict
+  - repo: local
+    hooks:
+      - id: config-doc
+        name: docs/CONFIGURATION.md matches the server's flag table
+        entry: python scripts/dev/gen_config_doc.py --check
+        language: system
+        files: ^(audioforge/server/cli\.py|audioforge/server/constants\.py|docs/CONFIGURATION\.md)$
+        pass_filenames: false

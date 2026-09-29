@@ -1,0 +1,22 @@
+<!doctype html><html><head><meta charset="utf-8"><link rel="stylesheet" href="common.css">
+<style>
+.pill { position: absolute; font-size: 64px; font-weight: 700; color: var(--fg); white-space: nowrap; }
+.pill i { display: inline-block; width: 22px; height: 22px; border-radius: 50%; background: var(--ours); margin-right: 30px; vertical-align: middle; }
+</style></head><body><script src="common.js"></script><script>
+// Kinetic type (R9): the three promises appear one per beat, left-aligned, big, on black.
+let pills = [];
+function init(data, params, W, H) {
+  const ct = stage(W, H), M = S.M, fs = S.sq ? 64 : 84;
+  const pr = U.el("div", null, ct); pr.setAttribute("data-primary", ""); U.css(pr, { position: "absolute", left: M, top: M, width: W - 2 * M, height: S.bottom - M });
+  const L = ["Words while you speak", "Answers when you finish", "Knows who is talking"];
+  const y0 = (S.bottom - M) / 2 + M - 1.5 * fs * 1.9;
+  L.forEach((s, i) => { const e = U.el("div", "pill", ct, `<i></i>${s}`); U.css(e, { left: M, top: y0 + i * fs * 1.9, fontSize: fs }); pills.push(e); });
+  const wmax = Math.max(...pills.map(e => e.offsetWidth)), x0 = (W - wmax) / 2;   // centred block, left-aligned lines
+  pills.forEach(e => e.style.left = x0 + "px");
+}
+function render(t, ctx) {
+  chrome(t, Object.assign({}, ctx, { push: 0.015 }));
+  pills.forEach((e, i) => { const a = U.ease(U.seg(t, 0.3 + i * 0.7, 0.35)); e.style.opacity = a.toFixed(3); e.style.transform = `translateY(${((1 - a) * 24).toFixed(1)}px)`; });
+}
+window.init = init; window.render = render;
+</script></body></html>

@@ -1,0 +1,18 @@
+# research/LID.md - spoken language ID head on the frozen served encoder (runs/stage1_served.afm, [70, 1]).
+# heads.audio.LanguageHead (causal attentive-stats pooling, running posterior every frame) on a learned mix of encoder
+# blocks 8-12 (1-based; the per-block probe peaks at block 9 for 2 s and block 11 for 5 s), 17 FLEURS languages.
+# Head only: every other tensor of the served model is asserted bit-identical after training. Data: scripts/research/lid_data.py
+# (250 train utterances per language, random 1-8 s crops, a quarter from the speech onset; dev = 60 per language,
+# best step by dev accuracy at 2 s + full utterance). Not a train.run_recipe recipe: scripts/research/lid.py train reads it.
+#
+#   PYTORCH_MPS_HIGH_WATERMARK_RATIO=0.6 PYTORCH_MPS_LOW_WATERMARK_RATIO=0.5 .venv/bin/python scripts/research/lid.py train \
+#     --recipe research/recipes/lid_head.yaml          # re-run until "[train] finished" (8-min segments, resumable)
+name: lid_head
+init: runs/stage1_served.afm
+layers: [8, 9, 10, 11, 12]
+steps: 3500
+batch_size: 32
+lr: 2.0e-3
+dropout: 0.1
+aug: false
+out: runs/lid_head.pt

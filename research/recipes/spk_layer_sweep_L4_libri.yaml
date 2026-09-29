@@ -1,0 +1,37 @@
+# research/SPK_HEAD.md - layer sweep: is the speaker head's 32 % within-meeting EER the frozen encoder's
+# features or the supervision? This run keeps the stage-1 objective (AAM-softmax with 190 output classes; the 45 AMI train
+# speakers' single-speaker segments are the only labelled data) and lets the head read EXACTLY encoder block 4 of 17
+# (from_layers: [3], 0-based like speaker_kernel_layers). Head only: everything but heads.spk is frozen and
+# the RNNT / CTC / other heads are untouched (scripts/research/spk_head.py asserts their tensors are bit-identical).
+#
+# GPU (one job on the machine):
+#   PYTORCH_MPS_HIGH_WATERMARK_RATIO=0.6 PYTORCH_MPS_LOW_WATERMARK_RATIO=0.5 .venv/bin/python scripts/research/spk_head.py train \
+#     --recipe research/recipes/spk_layer_sweep_L4_libri.yaml --out runs/spk_sweep_L4_libri.afm
+name: spk_layer_sweep_L4_libri
+init: {from: runs/stage1_heads_pretrained.afm, pretrained_lr_mult: 0, train_only: [heads.spk, layer_mix.spk]}
+heads:
+  # frozen and skipped (weight 0): no RNNT joint, no second speaker-conditioned encoder pass
+  rnnt: {weight: 0}
+  ctc: {weight: 0}
+  vad: {weight: 0}
+  eou: {weight: 0}
+  diar: {weight: 0}
+  turn: {weight: 0}
+  # identity-diversity control: AAM-only on block 4 with LibriSpeech train-clean-100's 251 speakers added
+  # (ids 1000-1250 via speaker_offset) to AMI's 45 -> 296 speakers / 1251 output classes (heads.spk.W is
+  # re-initialised for the new size; pool + emb are warm from stage 1 as in every other run)
+  spk: {type: speaker, num_speakers: 1251, from_layers: [3], weight: 1.0}
+data:
+  mix:
+    - {name: ami_asr, ami: {mode: asr}, weight: 3.0}
+    - {name: librispeech, librispeech: {train_split: train-clean-100, n_train: 5000, max_sec: 12, bucket: false, seed: 0,
+                                         speaker_offset: 1000}, weight: 0.6}
+  val: {ami: {mode: asr, val_split: dev, n_val: 64}}
+  batching: source
+trainer:
+  device: mps
+  batch_size: 6
+  lr: 1.0e-3
+  warmup_steps: 100
+  max_steps: 1000
+  log_every: 50

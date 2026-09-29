@@ -1,0 +1,134 @@
+<!doctype html><html><head><meta charset="utf-8"><link rel="stylesheet" href="style.css">
+<style>
+.card { position: absolute; }
+.ct { position: absolute; left: 0; top: 0; font-size: 28px; font-weight: 700; letter-spacing: -0.01em; color: var(--ink); white-space: nowrap; line-height: 1.1; }
+.lab { position: absolute; font-size: 22px; color: var(--ink2); white-space: nowrap; line-height: 1.1; }
+.lab.us { color: var(--ink); font-weight: 700; }
+.val { position: absolute; font-size: 24px; color: #2B3138; white-space: nowrap; line-height: 1; }
+.val.us { color: var(--ink); font-weight: 700; }
+.big { position: absolute; font-size: 52px; font-weight: 700; color: var(--ink); letter-spacing: -0.02em; line-height: 1; white-space: nowrap; }
+.big .u { font-size: 30px; font-weight: 700; margin-left: 4px; }
+.metric { position: absolute; font-size: 22px; color: var(--ink2); white-space: nowrap; line-height: 1.2; }
+.delta { position: absolute; font-size: 22px; color: var(--ink2); white-space: nowrap; line-height: 1; }
+.tag { position: absolute; font-size: 22px; font-weight: 400; color: #2B3138; background: var(--panel); border: 1.5px solid #C3C9D1; border-radius: 999px; padding: 3px 12px; white-space: nowrap; }
+.legend { font-size: 24px; color: var(--ink2); display: flex; align-items: center; gap: 10px; white-space: nowrap; }
+.sw { display: inline-block; width: 22px; height: 22px; border-radius: 5px; }
+</style></head><body><div id="stage"></div><script src="numbers_single.js"></script><script>
+// results_v4 (layout as results_v3): six cards, each with its own encoding, scale and unit (V3_SKETCH.md). Values: numbers_single.json
+// (export_single.py <- runs/*.json); every number element carries data-key="ns:<key>" and render.py checks it.
+// Direction is drawn: dumbbells point to the better end, bars start at zero, compute has a real-time rule at 1.0.
+const st = document.getElementById("stage"); let svg = [];
+const css = k => getComputedStyle(document.documentElement).getPropertyValue(k).trim();
+const E = k => { const e = NS[k]; if (!e) throw new Error("numbers_single has no " + k); return e; };
+const s = k => E(k).shown ?? String(E(k).value), v = k => E(k).value;
+const N = k => `<span data-key="ns:${k}">${s(k)}</span>`;
+function el(cls, html, x, y, parent = st) { const e = document.createElement("div"); e.className = cls; e.innerHTML = html;
+  Object.assign(e.style, { left: x + "px", top: y + "px" }); parent.appendChild(e); return e; }
+function place(e, x, y, ax = 0, ay = 0) { e.style.left = (x - ax * e.offsetWidth) + "px"; e.style.top = (y - ay * e.offsetHeight) + "px"; return e; }
+const G = "#C8CDD4", GD = "#9AA3AE";
+function line(x1, y1, x2, y2, c = GD, w = 2) { svg.push(`<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="${c}" stroke-width="${w}" stroke-linecap="round"/>`); }
+function dot(x, y, c, r = 10) { svg.push(`<circle cx="${x}" cy="${y}" r="${r}" fill="${c}"/>`); }
+function bar(x, y, w, h, c) { svg.push(`<rect x="${x}" y="${y}" width="${Math.max(3, w)}" height="${h}" rx="5" fill="${c}"/>`); }
+function arrowTo(x1, y, x2, c, w = 3) { const d = Math.sign(x2 - x1), s_ = 11; line(x1, y, x2, y, c, w);
+  svg.push(`<path d="M${x2 - d * s_} ${y - 8} L${x2} ${y} L${x2 - d * s_} ${y + 8}" fill="none" stroke="${c}" stroke-width="${w}" stroke-linecap="round" stroke-linejoin="round"/>`); }
+// an axis with ticks (labels in the card's unit)
+function axis(c, x0, x1, y, lo, hi, ticks, fmt) { line(x0, y, x1, y, "#AEB6C0", 1.5); const X = t => x0 + (x1 - x0) * (t - lo) / (hi - lo);
+  ticks.forEach(t => { line(X(t), y, X(t), y + 7, "#AEB6C0", 1.5); place(el("lab", fmt(t), 0, 0, c), X(t), y + 12, 0.5, 0); }); return X; }
+
+// each card: (card element, x0, width, top of visual, bottom of visual) -> draws; returns {big, metric}
+// results_v4 cards (single-model mode). Values: numbers_single.json (export_single.py <- runs/improve_115m.json,
+// runs/single_model.json, runs/e2e_*.json, runs/baselines_sd.json); data-key="ns:<key>" on every number.
+function rowsDumbbell(c, x0, w, y0, y1, rows, X, lower) {   // rows: [label, greyKey, oursKey]
+  const gap = Math.max(34, (y1 - 40 - y0) / rows.length);
+  rows.forEach(([n, kg, ko], i) => { const y = y0 + 18 + i * gap;
+    place(el("lab", n, 0, 0, c), x0, y, 0, 0.5);
+    const xg = X(v(kg)), xo = X(v(ko)), d = Math.sign(xo - xg);
+    arrowTo(xg, y, xo - d * 12, css("--ours"), 3); dot(xg, y, G); dot(xo, y, css("--ours"));
+    place(el("val", N(kg), 0, 0, c), xg - d * 16, y, d > 0 ? 1 : 0, 0.5); place(el("val us", N(ko), 0, 0, c), xo + d * 16, y, d > 0 ? 0 : 1, 0.5); });
+}
+const CARDS = {
+  find: { title: "Finds your voice", draw(c, x0, w, y0, y1) {
+      const X = axis(c, x0 + 70, x0 + w - 20, y1 - 26, 0, 1, [0, 0.5, 1], t => t === 0 ? "0" : t === 1 ? "1" : "0.5");
+      rowsDumbbell(c, x0, w, y0, y1, [["ICSI", "find/icsi/sortformer", "find/icsi/ours"], ["AMI", "find/ami/sortformer", "find/ami/ours"]], X);
+      return { big: N("find/icsi/ours"), bigSub: "ICSI", metric: "speaker tracking F1 ↑ · vs NVIDIA Sortformer v2", metricSq: "tracking F1 ↑ · vs Sortformer v2" }; } },
+  done: { title: "Knows when you’re done", draw(c, x0, w, y0, y1) {
+      const X = axis(c, x0 + 70, x0 + w - 44, y1 - 26, 0, 100, [0, 50, 100], t => t + " %");
+      rowsDumbbell(c, x0, w, y0 + 12, y1, [["ICSI", "done2/icsi/default", "done2/icsi/single"], ["AMI", "done2/ami/default", "done2/ami/single"]], X);
+      const gap = Math.max(34, (y1 - 40 - y0 - 12) / 2);
+      [["icsi", 0], ["ami", 1]].forEach(([k, i]) => { const y = y0 + 12 + 18 + i * gap, xa = X(v(`done2/${k}/single`)), xb = X(v(`done2/${k}/default`));
+        place(el("delta", `−${N(`done2/${k}/delta`)} pts`, 0, 0, c), (xa + xb) / 2, y - 14, 0.5, 1); });
+      return { big: N("done2/icsi/single"), bigUnit: "%", bigSub: "ICSI", metric: "missed turn ends ↓ · vs our two-model stack", metricSq: "missed turn ends ↓ · vs two models" }; } },
+  vad: { title: "Hears speech better", draw(c, x0, w, y0, y1) {
+      const rows = [["audioforge", "vad/ours", 1], ["NVIDIA MarbleNet", "vad/marblenet"], ["Silero", "vad/silero"]];
+      const lx = x0 + 190, X = axis(c, lx, x0 + w - 76, y1 - 26, 0, 100, [0, 50, 100], t => String(t)), pt = Math.max(30, Math.min(38, (y1 - 40 - y0) / 3)), bh = Math.round(pt * 0.6);
+      rows.forEach(([n, k, us], i) => { const y = y0 + 8 + i * pt; place(el("lab" + (us ? " us" : ""), n, 0, 0, c), x0, y + bh / 2, 0, 0.5);
+        bar(lx, y, X(v(k)) - lx, bh, us ? css("--ours") : G); place(el("val" + (us ? " us" : ""), N(k), 0, 0, c), X(v(k)) + 10, y + bh / 2, 0, 0.5); });
+      return { big: N("vad/ours"), metric: "speech detection F1 (out of 100) ↑", metricSq: "speech detection F1 ↑" }; } },
+  answer: { title: "Answers fast on calls", draw(c, x0, w, y0, y1) {
+      const X = axis(c, x0 + 20, x0 + w - 44, y1 - 26, 0, 25, w < 500 ? [0, 20] : [0, 10, 20], t => t + " %");
+      const y = Math.max(y0 + 62, y0 + (y1 - 26 - y0) * 0.45 + 6), xs = X(v("a1/served/missed3s")), xt = X(v("a1/tuned/missed3s")), xd = X(v("a1/default/missed3s"));
+      line(xd, y - 26, xd, y1 - 26, "#6B7280", 2);   // the two-model default as a reference tick
+      place(el("lab", `${w < 500 ? "default" : "two-model default"} ${N("a1/default/missed3s")} %`, 0, 0, c), xd + (w < 500 ? 6 : 0), y - 30, w < 500 ? 0 : 0.2, 1);
+      arrowTo(xs, y, xt + 12, css("--ours"), 3); dot(xs, y, G); dot(xt, y, css("--ours"));
+      place(el("val", `served ${N("a1/served/missed3s")} %`, 0, 0, c), xs, y - 18, 0.5, 1);
+      place(el("val us", `tuned ${N("a1/tuned/missed3s")} %`, 0, 0, c), xt, y + 18, 0.5, 0);
+      return { big: N("a1/tuned/missed3s"), bigUnit: "%", bigSub: "offline replay", metric: "not answered within 3 s ↓ · tuned wait 2.0 s / 0.96 s", metricSq: "not answered within 3 s ↓" }; } },
+  cut: { title: "Talks over you less", draw(c, x0, w, y0, y1) {
+      const rows = [["one model", "live/T/cutins", 1], ["two models", "live/C/cutins"], ["Pipecat default", "live/A/cutins"]];
+      const lx = x0 + 190, X = axis(c, lx, x0 + w - 70, y1 - 26, 0, 2, [0, 1, 2], t => String(t)), pt = Math.max(30, Math.min(38, (y1 - 40 - y0) / 3)), bh = Math.round(pt * 0.6);
+      rows.forEach(([n, k, us], i) => { const y = y0 + 8 + i * pt; place(el("lab" + (us ? " us" : ""), n, 0, 0, c), x0, y + bh / 2, 0, 0.5);
+        bar(lx, y, X(v(k)) - lx, bh, us ? css("--ours") : G); place(el("val" + (us ? " us" : ""), N(k), 0, 0, c), X(v(k)) + 10, y + bh / 2, 0, 0.5); });
+      return { big: N("live/T/cutins"), bigSub: `${N("cut/rel")} % fewer than Pipecat default · live`, bigSubSq: `${N("cut/rel")} % fewer · live`, metric: "interruptions per call ↓ · served rule, 69 live calls", metricSq: "interruptions per call ↓" }; } },
+  len: { title: "Voice sample length", draw(c, x0, w, y0, y1) {
+      // x: stored sample length (evenly spaced categories), y: missed turn ends (0-70 %); 5 s highlighted; live 5 s grab hollow grey
+      const L = ["1.5", "3", "5", "10"], xa = x0 + 96, xb = x0 + w - (w < 500 ? 110 : 150), ya = y1 - 30, yb = y0 + 36, Y = p => ya - (ya - yb) * p / 70;
+      const Xc = i => xa + (xb - xa) * i / (L.length - 1), O = css("--ours");
+      line(xa - 20, ya, xb + 20, ya, "#AEB6C0", 1.5); line(xa - 20, ya, xa - 20, yb, "#AEB6C0", 1.5);
+      (w < 500 ? [0] : [0, 50]).forEach(p => place(el("lab", p + " %", 0, 0, c), xa - 28, Y(p), 1, 0.5));
+      L.forEach((l, i) => place(el("lab", l + " s", 0, 0, c), Xc(i), ya + 8, 0.5, 0));
+      [["ami", "AMI", -1, ""], ["icsi", "ICSI", 1, "6 5"]].forEach(([k, n, side, dash]) => {
+        const pts = L.map((l, i) => [Xc(i), Y(v(`a2/${k}/${l}`))]);
+        svg.push(`<polyline points="${pts.map(p => p.join(",")).join(" ")}" fill="none" stroke="${O}" stroke-width="2.6"${dash ? ` stroke-dasharray="${dash}"` : ""}/>`);
+        pts.forEach((p, i) => dot(p[0], p[1], O, i === 2 ? 9 : 5));
+        if (w < 500) { if (k === "ami") place(el("lab us", n, 0, 0, c), pts[0][0], pts[0][1] - 10, 0.5, 1); else place(el("lab us", n, 0, 0, c), pts[3][0] + 12, pts[3][1], 0, 0.5); }
+        else place(el("lab us", n, 0, 0, c), pts[3][0] + 12, pts[3][1] + side * 4, 0, side < 0 ? 1 : 0); });
+      const lx = Xc(2) + 44, la = Y(v("a2/ami/live5")), li = Y(v("a2/icsi/live5"));
+      [la, li].forEach(yy => svg.push(`<circle cx="${lx}" cy="${yy}" r="6" fill="#FFFFFF" stroke="${GD}" stroke-width="2.4"/>`));
+      place(el("val", `live ${N("a2/ami/live5")} · ${N("a2/icsi/live5")}`, 0, 0, c), lx, Math.min(la, li) - 10, 0.5, 1);
+      return { big: "≥ 5 s", bigSub: `stored sample · AMI ${N("a2/ami/5")} %, ICSI ${N("a2/icsi/5")} %`, bigSubSq: `AMI ${N("a2/ami/5")} · ICSI ${N("a2/icsi/5")} %`, metric: "missed turn ends ↓ · ○ live 5 s grab: not enough", metricSq: "missed ↓ · ○ live grab" }; } },
+};
+const ORDER = ["find", "done", "vad", "answer", "cut", "len"];
+const FOOT_SQ = () => `Meetings: AMI and ICSI, 5 s stored sample; false cut-offs about the same (AMI ${N("done2/ami/default_fc")} → ${N("done2/ami/single_fc")} %, ICSI ${N("done2/icsi/default_fc")} → ${N("done2/icsi/single_fc")} %) · calls: ${N("live/sessions")} live Pipecat sessions · A1: offline replay of ${N("a1/sessions")} two-party sessions · A2: ${N("ts/ami/n")} AMI / ${N("ts/icsi/n")} ICSI turns`;
+const FOOT = () => `Meetings (AMI, ICSI): offline, a 5-second stored voice sample from elsewhere in the meeting; with it, false cut-offs stay about the same (AMI ${N("done2/ami/default_fc")} → ${N("done2/ami/single_fc")} %, ICSI ${N("done2/icsi/default_fc")} → ${N("done2/icsi/single_fc")} %) · calls: ${N("live/sessions")} live Pipecat ${N("version/pipecat")} sessions over ${N("live/clips")} clips, same clips for all three · A1: offline replay of ${N("a1/sessions")} two-party sessions, same clips · A2: ${N("ts/ami/n")} AMI / ${N("ts/icsi/n")} ICSI turns · speech detection: AMI`;
+function build(W, H) {
+  Object.assign(st.style, { width: W + "px", height: H + "px" }); st.innerHTML = ""; svg = [];
+  const M = 64, sq = H / W > 0.9;
+  const h1 = el("h1 abs", "audioforge in single-model mode, measured", M, M + 4); h1.style.width = (W - 2 * M) + "px"; if (sq) h1.style.fontSize = "38px";
+  const lg = el("legend abs", `<span class="sw" style="background:var(--ours)"></span>audioforge, single model&nbsp;&nbsp;&nbsp;<span class="sw" style="background:${G}"></span>compared system`, M, M + 8 + h1.offsetHeight + 8);
+  const f = el("foot abs", (sq ? FOOT_SQ : FOOT)(), M, 0); f.style.width = (W - 2 * M) + "px"; f.style.top = (H - M - f.offsetHeight - 2) + "px";
+  const top = lg.offsetTop + lg.offsetHeight + (sq ? 30 : 44), bot = f.offsetTop - (sq ? 30 : 40);
+  const cols = sq ? 2 : 3, rows = sq ? 3 : 2, gx = sq ? 48 : 72, gy = sq ? 26 : 44;
+  const cw = (W - 2 * M - gx * (cols - 1)) / cols, ch = (bot - top - gy * (rows - 1)) / rows;
+  ORDER.forEach((k, i) => {
+    const C = CARDS[k], x = M + (i % cols) * (cw + gx), y = top + Math.floor(i / cols) * (ch + gy);
+    const c = el("card", "", x, y); Object.assign(c.style, { width: cw + "px", height: ch + "px" }); c.dataset.panel = k;
+    const t = el("ct", C.title, 0, 0, c); if (sq) t.style.fontSize = "24px";
+    if (C.tag) { const tg = el("tag", sq ? C.tagSq : C.tag, 0, 0, c); if (sq) place(tg, t.offsetWidth + 12, t.offsetHeight / 2, 0, 0.5); else place(tg, 0, t.offsetHeight + 8); }
+    const bigH = sq ? 64 : 52, metH = sq ? 0 : 28, vy0 = (C.tag && !sq ? t.offsetHeight + 50 : t.offsetHeight + 8), vy1 = ch - bigH - metH - (sq ? 14 : 34);
+    const r = C.draw(c, 0, cw, vy0, vy1);
+    const b = el("big", r.big + (r.bigUnit ? `<span class="u">${r.bigUnit}</span>` : ""), 0, ch - bigH - metH - 4, c);
+    if (sq) { b.style.fontSize = "42px"; b.style.top = (ch - b.offsetHeight) + "px";
+      const col = el("metric", (r.bigSub ? `<span style="color:var(--ink)">${r.bigSubSq || r.bigSub}</span><br>` : "") + (r.metricSq || r.metric), 0, 0, c);
+      place(col, b.offsetWidth + 16, ch, 0, 1); }
+    else { if (r.bigSub) { const bs = el("metric", r.bigSub, 0, 0, c); bs.style.color = "var(--ink)"; place(bs, b.offsetWidth + 14, b.offsetTop + b.offsetHeight - 4, 0, 1); }
+      el("metric", r.metric, 0, ch - metH + 2, c); }
+    const sv = document.createElementNS("http://www.w3.org/2000/svg", "svg"); sv.setAttribute("width", cw); sv.setAttribute("height", ch);
+    Object.assign(sv.style, { position: "absolute", left: 0, top: 0, overflow: "visible" }); sv.innerHTML = svg.join(""); svg = []; c.prepend(sv);
+  });
+  if (new URLSearchParams(location.search).get("notext")) notext();
+}
+// removal test: hide every explanatory line (metric lines, deltas, relative claims, legend, footer); titles, row labels and values stay
+function notext() { const s_ = document.createElement("style"); s_.textContent = "#stage .metric, #stage .delta, #stage .foot, #stage .legend { color: transparent !important; } #stage .legend .sw { opacity: 0; }"; document.head.appendChild(s_); }
+window.build = build; window.notext = notext;
+const q = new URLSearchParams(location.search); if (q.get("w")) build(+q.get("w"), +q.get("h"));
+</script></body></html>

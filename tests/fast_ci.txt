@@ -1,0 +1,57 @@
+# Test files CI runs on CPU without checkpoints or datasets (python -m pytest -q $(cat tests/fast_ci.txt)).
+# Left out: files that import research-only packages (sklearn, scipy, pyarrow, pyannote, silero_vad via the
+# TurnBench scorer / baselines), the recipe end-to-end trainer (minutes), and the RUN_REAL=1 integration tests.
+# Measured 2026-09-28 in a fresh venv on a shared laptop: the files below ran in about 80 s.
+tests/test_ami.py
+tests/test_api.py
+tests/test_baselines_sd.py
+tests/test_baselines_turn.py
+tests/test_batch_invariance.py
+tests/test_bench_turn_icsi.py
+tests/test_bench_turn_icsi_dyn.py
+tests/test_components.py
+tests/test_cond.py
+tests/test_config_doc.py
+tests/test_consistency.py
+tests/test_contamination.py
+tests/test_deferred_fixes.py
+tests/test_diag_turn.py
+tests/test_dyadic.py
+tests/test_e2e_metrics.py
+tests/test_edge_audio.py
+tests/test_edge_data.py
+tests/test_edge_speech_llm.py
+tests/test_edge_teachers.py
+tests/test_enrollment.py
+tests/test_eot_bench_v2.py
+tests/test_eval_frames.py
+tests/test_ext_tracks.py
+tests/test_hyb6.py
+tests/test_hybrid_policy.py
+tests/test_icsi.py
+tests/test_icsi_tracks.py
+tests/test_init_from.py
+tests/test_issues_fixed.py
+tests/test_lid.py
+tests/test_losses.py
+tests/test_make_served_model.py
+tests/test_mem.py
+tests/test_nemo_import.py
+tests/test_recipe_yaml.py
+tests/test_runtime.py
+tests/test_serve_shipped.py
+tests/test_sortformer_import.py
+tests/test_spk_head.py
+tests/test_streaming.py
+tests/test_streaming_diar.py
+tests/test_track_flush.py
+tests/test_trail6.py
+tests/test_train_fixes.py
+tests/test_tsvad.py
+tests/test_turn.py
+tests/test_turn_dyadic_feats.py
+tests/test_turn_v3.py
+tests/test_turn_v5.py
+tests/test_vad_layers.py
+tests/test_yield_tokens.py
+tests/test_single_mode.py

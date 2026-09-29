@@ -1,0 +1,21 @@
+cff-version: 1.2.0
+message: "If you use audioforge or its measurements, please cite it as below."
+title: "audioforge: one frozen streaming encoder as a voice agent's speech front end"
+abstract: >-
+  A from-scratch PyTorch rebuild of the design shared by NVIDIA's audio models, and a study of whether one frozen
+  115M cache-aware FastConformer with small heads (VAD, speaker, speaker-aware end of turn, target-speaker VAD) can
+  serve a voice agent's streaming speech front end, measured task by task against dedicated models and end to end
+  against the default local stacks of Pipecat and LiveKit.
+authors:
+  - family-names: Melichov
+    given-names: Max
+version: 0.1.0
+license: Apache-2.0
+repository-code: "https://github.com/maxmelichov/audioforge"
+keywords:
+  - speech recognition
+  - voice activity detection
+  - turn detection
+  - speaker diarization
+  - streaming
+  - voice agents

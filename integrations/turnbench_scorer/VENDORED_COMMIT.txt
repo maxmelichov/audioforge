@@ -1,0 +1,3 @@
+76ccd045f121ccfa921abac2ad3107027e736911
+Vendored from https://github.com/SesameAILabs/turnbench (MIT), package turnbench/ only (analysis/ omitted), unchanged.
+Used by scripts/bench_turnbench.py via sys.path; scores are comparable only across this scorer version.

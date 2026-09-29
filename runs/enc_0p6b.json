@@ -1,0 +1,2250 @@
+{
+ "import": {
+  "nemo": "data/nemo/nemotron-speech-streaming-en-0.6b.nemo",
+  "afm": "runs/nemo_nemotron_speech_streaming_en_0.6b.afm",
+  "params_m": 618.53,
+  "import_info": {
+   "load_sec": 8.71733808517456,
+   "n_tensors": 653,
+   "n_loaded": 651,
+   "zero_biases": 264,
+   "fb_max_abs_diff": 3.725290298461914e-09,
+   "window_max_abs_diff": 5.960464477539063e-08
+  },
+  "encoder": {
+   "d_model": 1024,
+   "n_layers": 24,
+   "n_heads": 8,
+   "feat_in": 128,
+   "causal": true,
+   "att_context_sizes": [
+    [
+     70,
+     13
+    ],
+    [
+     70,
+     6
+    ],
+    [
+     70,
+     1
+    ],
+    [
+     70,
+     0
+    ]
+   ],
+   "xscaling": false,
+   "conv_norm": "layer"
+  },
+  "heads": {
+   "rnnt": {
+    "type": "rnnt",
+    "pred_hidden": 640,
+    "pred_layers": 2,
+    "joint_hidden": 640,
+    "max_symbols": 10,
+    "weight": 1.0
+   }
+  },
+  "preprocessor": {
+   "sample_rate": 16000,
+   "n_fft": 512,
+   "win_length": 400,
+   "hop_length": 160,
+   "n_mels": 128,
+   "preemph": 0.97,
+   "dither": 1e-05,
+   "normalize": "NA"
+  },
+  "nemo_source": {
+   "checkpoint": "/Users/maxm/nvidia-audio-models/data/nemo/nemotron-speech-streaming-en-0.6b.nemo",
+   "target": "nemo.collections.asr.models.rnnt_bpe_models.EncDecRNNTBPEModel",
+   "nemo_version": "2.4.0rc0",
+   "license": "NVIDIA Open Model License"
+  },
+  "vocab": 1024,
+  "rss_after_load_gb": 4.65,
+  "offline_rtf_20s_b1_70_1": 0.0832,
+  "save_sec": 110.3,
+  "afm_bytes": 2297551108,
+  "peak_rss_gb": 4.65
+ },
+ "equality": {
+  "utterances": [
+   "1089-134686-0000",
+   "1089-134686-0001",
+   "1089-134686-0002"
+  ],
+  "contexts": {
+   "70-13": {
+    "max_abs_diff": [
+     1.1622905731201172e-06,
+     5.662441253662109e-07,
+     1.3075768947601318e-06
+    ],
+    "act_scale": [
+     0.034,
+     0.031,
+     0.032
+    ],
+    "frames_equal": [
+     true,
+     true,
+     true
+    ],
+    "session_equals_offline": [
+     true,
+     true,
+     true
+    ],
+    "text": [
+     {
+      "offline": "He hoped there would be stew for dinner, turnips and carrots and bruised potatoes and fat mutton pieces to be ladled out in thick peppered flour fattened sauce.",
+      "session": "He hoped there would be stew for dinner, turnips and carrots and bruised potatoes and fat mutton pieces to be ladled out in thick peppered flour fattened sauce.",
+      "ref": "he hoped there would be stew for dinner turnips and carrots and bruised potatoes and fat mutton pieces to be ladled out in thick peppered flour fattened sauce"
+     },
+     {
+      "offline": "Stuff it into you his belly counselled him",
+      "session": "Stuff it into you his belly counselled him",
+      "ref": "stuff it into you his belly counselled him"
+     },
+     {
+      "offline": "After early nightfall the yellow lamps would light up here and there the squalid quarter of the brothels",
+      "session": "After early nightfall the yellow lamps would light up here and there the squalid quarter of the brothels",
+      "ref": "after early nightfall the yellow lamps would light up here and there the squalid quarter of the brothels"
+     }
+    ]
+   },
+   "70-1": {
+    "max_abs_diff": [
+     3.0994415283203125e-06,
+     7.37607479095459e-07,
+     1.3299286365509033e-06
+    ],
+    "act_scale": [
+     0.032,
+     0.029,
+     0.03
+    ],
+    "frames_equal": [
+     true,
+     true,
+     true
+    ],
+    "session_equals_offline": [
+     true,
+     true,
+     true
+    ],
+    "text": [
+     {
+      "offline": "He hoped there would be stew for dinner, turnips and carrots and bruised potatoes and fat mutton pieces to be ladled out in thick peppered flour fattened sauce",
+      "session": "He hoped there would be stew for dinner, turnips and carrots and bruised potatoes and fat mutton pieces to be ladled out in thick peppered flour fattened sauce",
+      "ref": "he hoped there would be stew for dinner turnips and carrots and bruised potatoes and fat mutton pieces to be ladled out in thick peppered flour fattened sauce"
+     },
+     {
+      "offline": "Stuff it into you his belly counselled him",
+      "session": "Stuff it into you his belly counselled him",
+      "ref": "stuff it into you his belly counselled him"
+     },
+     {
+      "offline": "After early nightfall, all the yellow lamps would light up here and there the squalid quarter of the brothels",
+      "session": "After early nightfall, all the yellow lamps would light up here and there the squalid quarter of the brothels",
+      "ref": "after early nightfall the yellow lamps would light up here and there the squalid quarter of the brothels"
+     }
+    ]
+   }
+  }
+ },
+ "wer": {
+  "70-1": {
+   "att_context_size": [
+    70,
+    1
+   ],
+   "lookahead_sec": 0.08,
+   "n": 200,
+   "wer": 0.022,
+   "ref_words": 4634,
+   "hyps_with_digits": 0,
+   "n_utt_with_errors": 55,
+   "audio_sec": 1818.5,
+   "transcribe_sec": 131.6,
+   "normalization": "audioforge.teachers.normalize_text (lowercase, punctuation stripped; no number expansion)",
+   "examples": [
+    {
+     "id": "1089-134686-0002",
+     "ref": "after early nightfall the yellow lamps would light up here and there the squalid quarter of the brothels",
+     "hyp": "after early nightfall all the yellow lamps would light up here and there the squalid quarter of the brothels"
+    },
+    {
+     "id": "1089-134686-0016",
+     "ref": "then you can ask him questions on the catechism dedalus",
+     "hyp": "then you can ask him questions on the catechism daedalus"
+    },
+    {
+     "id": "1089-134686-0029",
+     "ref": "on friday confession will be heard all the afternoon after beads",
+     "hyp": "on friday confession will be heard all the afternoon after bede's"
+    },
+    {
+     "id": "1089-134686-0032",
+     "ref": "he is called as you know the apostle of the indies",
+     "hyp": "he has called as you know the apostle of the indies"
+    },
+    {
+     "id": "1089-134686-0034",
+     "ref": "the rector paused and then shaking his clasped hands before him went on",
+     "hyp": "the rector paused and then shaking his clasp'd hands before him went on"
+    },
+    {
+     "id": "1089-134691-0004",
+     "ref": "pride after satisfaction uplifted him like long slow waves",
+     "hyp": "bride after satisfaction uplifted him like long slow waves"
+    },
+    {
+     "id": "1089-134691-0005",
+     "ref": "whose feet are as the feet of harts and underneath the everlasting arms",
+     "hyp": "whose feet are as the feet of hearts and underneath the everlasting arms"
+    },
+    {
+     "id": "1089-134691-0009",
+     "ref": "angry with himself he tried to hide his face from their eyes by gazing down sideways into the shallow swirling water under the bridge but he still saw a reflection therein of their top heavy silk hats and humble tape like collars and loosely hanging clerical clothes brother hickey",
+     "hyp": "angry with himself he tried to hide his face from their eyes by gazing down sideways into the shallow swirling water under the bridge but he still saw a reflection therein of their top heavy silk hats and humble tape like collars and loosely hanging clerical clothes brother hickie"
+    }
+   ],
+   "offline_rtf_batched": 0.0724
+  },
+  "70-13": {
+   "att_context_size": [
+    70,
+    13
+   ],
+   "lookahead_sec": 1.04,
+   "n": 200,
+   "wer": 0.0203,
+   "ref_words": 4634,
+   "hyps_with_digits": 0,
+   "n_utt_with_errors": 52,
+   "audio_sec": 1818.5,
+   "transcribe_sec": 128.8,
+   "normalization": "audioforge.teachers.normalize_text (lowercase, punctuation stripped; no number expansion)",
+   "examples": [
+    {
+     "id": "1089-134686-0016",
+     "ref": "then you can ask him questions on the catechism dedalus",
+     "hyp": "then you can ask him questions on the catechism daedalus"
+    },
+    {
+     "id": "1089-134686-0019",
+     "ref": "the sentence of saint james which says that he who offends against one commandment becomes guilty of all had seemed to him first a swollen phrase until he had begun to grope in the darkness of his own state",
+     "hyp": "the sentence of saint james which says that he who offends against one commandment becomes guilty of all had seem to him first a swollen phrase until he had begun to grope in the darkness of his own state"
+    },
+    {
+     "id": "1089-134686-0028",
+     "ref": "the retreat will begin on wednesday afternoon in honour of saint francis xavier whose feast day is saturday",
+     "hyp": "the retreat will begin on wednesday afternoon in honour of st francis xavier whose feast day is saturday"
+    },
+    {
+     "id": "1089-134686-0029",
+     "ref": "on friday confession will be heard all the afternoon after beads",
+     "hyp": "on friday confession will be heard all the afternoon after bede's"
+    },
+    {
+     "id": "1089-134686-0032",
+     "ref": "he is called as you know the apostle of the indies",
+     "hyp": "he has called as you know the apostle of the indies"
+    },
+    {
+     "id": "1089-134686-0034",
+     "ref": "the rector paused and then shaking his clasped hands before him went on",
+     "hyp": "the rector paused and then shaking his clasp'd hands before him went on"
+    },
+    {
+     "id": "1089-134691-0004",
+     "ref": "pride after satisfaction uplifted him like long slow waves",
+     "hyp": "bride after satisfaction uplifted him like long slow waves"
+    },
+    {
+     "id": "1089-134691-0005",
+     "ref": "whose feet are as the feet of harts and underneath the everlasting arms",
+     "hyp": "whose feet are as the feet of hearts and underneath the everlasting arms"
+    }
+   ],
+   "offline_rtf_batched": 0.0708
+  }
+ },
+ "rtf": {
+  "att_context_size": [
+   70,
+   1
+  ],
+  "chunk_ms": 160,
+  "audio_sec": 60.0,
+  "n_chunks_timed": 370,
+  "chunk_ms_mean": 739.4,
+  "chunk_ms_p50": 749.3,
+  "chunk_ms_p95": 1050.3,
+  "chunk_ms_max": 2123.4,
+  "rtf": 4.622,
+  "threads": 2,
+  "load_sec": 3.9,
+  "rss_before_load_gb": 0.23,
+  "rss_after_load_gb": 4.85,
+  "peak_rss_gb": 4.85,
+  "text_head": "He hoped there would be stew for dinner, turnips and carrots and bruised potatoes and fat mutton pieces to be ladled out in thick peppered flour fattened sauce, stuff it into you his belly counselled ",
+  "note": "StreamingSession (Python path: mel + stream_step + greedy RNNT per chunk)"
+ },
+ "spk_probe": {
+  "method": "mean-pooled per-layer block output (fp16 cache, att [70,1]), cosine, scripts/spk_head.eer_block trials",
+  "ami_n64": {
+   "n_segments": 64,
+   "n_speakers": 15,
+   "per_layer": [
+    {
+     "layer": 1,
+     "eer": 0.1703,
+     "eer_within_meeting": 0.335
+    },
+    {
+     "layer": 2,
+     "eer": 0.1594,
+     "eer_within_meeting": 0.3017
+    },
+    {
+     "layer": 3,
+     "eer": 0.1578,
+     "eer_within_meeting": 0.3208
+    },
+    {
+     "layer": 4,
+     "eer": 0.1646,
+     "eer_within_meeting": 0.3017
+    },
+    {
+     "layer": 5,
+     "eer": 0.1646,
+     "eer_within_meeting": 0.3081
+    },
+    {
+     "layer": 6,
+     "eer": 0.1906,
+     "eer_within_meeting": 0.3081
+    },
+    {
+     "layer": 7,
+     "eer": 0.2044,
+     "eer_within_meeting": 0.3222
+    },
+    {
+     "layer": 8,
+     "eer": 0.1909,
+     "eer_within_meeting": 0.3286
+    },
+    {
+     "layer": 9,
+     "eer": 0.2221,
+     "eer_within_meeting": 0.3208
+    },
+    {
+     "layer": 10,
+     "eer": 0.2104,
+     "eer_within_meeting": 0.3271
+    },
+    {
+     "layer": 11,
+     "eer": 0.2039,
+     "eer_within_meeting": 0.3081
+    },
+    {
+     "layer": 12,
+     "eer": 0.1971,
+     "eer_within_meeting": 0.3286
+    },
+    {
+     "layer": 13,
+     "eer": 0.2172,
+     "eer_within_meeting": 0.3428
+    },
+    {
+     "layer": 14,
+     "eer": 0.2302,
+     "eer_within_meeting": 0.3491
+    },
+    {
+     "layer": 15,
+     "eer": 0.2617,
+     "eer_within_meeting": 0.3428
+    },
+    {
+     "layer": 16,
+     "eer": 0.3091,
+     "eer_within_meeting": 0.3902
+    },
+    {
+     "layer": 17,
+     "eer": 0.3091,
+     "eer_within_meeting": 0.3839
+    },
+    {
+     "layer": 18,
+     "eer": 0.3815,
+     "eer_within_meeting": 0.4093
+    },
+    {
+     "layer": 19,
+     "eer": 0.4143,
+     "eer_within_meeting": 0.4377
+    },
+    {
+     "layer": 20,
+     "eer": 0.4336,
+     "eer_within_meeting": 0.466
+    },
+    {
+     "layer": 21,
+     "eer": 0.4539,
+     "eer_within_meeting": 0.4724
+    },
+    {
+     "layer": 22,
+     "eer": 0.4672,
+     "eer_within_meeting": 0.4787
+    },
+    {
+     "layer": 23,
+     "eer": 0.4539,
+     "eer_within_meeting": 0.466
+    },
+    {
+     "layer": 24,
+     "eer": 0.4672,
+     "eer_within_meeting": 0.4866
+    }
+   ],
+   "best_layer": 2,
+   "best_within": 0.3017,
+   "top_within": 0.4866
+  },
+  "ami_n200": {
+   "n_segments": 200,
+   "n_speakers": 15,
+   "per_layer": [
+    {
+     "layer": 1,
+     "eer": 0.1912,
+     "eer_within_meeting": 0.3521
+    },
+    {
+     "layer": 2,
+     "eer": 0.1832,
+     "eer_within_meeting": 0.3401
+    },
+    {
+     "layer": 3,
+     "eer": 0.1832,
+     "eer_within_meeting": 0.3394
+    },
+    {
+     "layer": 4,
+     "eer": 0.1866,
+     "eer_within_meeting": 0.3298
+    },
+    {
+     "layer": 5,
+     "eer": 0.1986,
+     "eer_within_meeting": 0.3288
+    },
+    {
+     "layer": 6,
+     "eer": 0.2169,
+     "eer_within_meeting": 0.3354
+    },
+    {
+     "layer": 7,
+     "eer": 0.2265,
+     "eer_within_meeting": 0.3366
+    },
+    {
+     "layer": 8,
+     "eer": 0.2169,
+     "eer_within_meeting": 0.3307
+    },
+    {
+     "layer": 9,
+     "eer": 0.2443,
+     "eer_within_meeting": 0.3366
+    },
+    {
+     "layer": 10,
+     "eer": 0.2226,
+     "eer_within_meeting": 0.3197
+    },
+    {
+     "layer": 11,
+     "eer": 0.2196,
+     "eer_within_meeting": 0.3186
+    },
+    {
+     "layer": 12,
+     "eer": 0.2283,
+     "eer_within_meeting": 0.3282
+    },
+    {
+     "layer": 13,
+     "eer": 0.2511,
+     "eer_within_meeting": 0.339
+    },
+    {
+     "layer": 14,
+     "eer": 0.2717,
+     "eer_within_meeting": 0.3432
+    },
+    {
+     "layer": 15,
+     "eer": 0.3026,
+     "eer_within_meeting": 0.3611
+    },
+    {
+     "layer": 16,
+     "eer": 0.3487,
+     "eer_within_meeting": 0.3917
+    },
+    {
+     "layer": 17,
+     "eer": 0.3448,
+     "eer_within_meeting": 0.3913
+    },
+    {
+     "layer": 18,
+     "eer": 0.3858,
+     "eer_within_meeting": 0.4183
+    },
+    {
+     "layer": 19,
+     "eer": 0.4224,
+     "eer_within_meeting": 0.4442
+    },
+    {
+     "layer": 20,
+     "eer": 0.4521,
+     "eer_within_meeting": 0.4701
+    },
+    {
+     "layer": 21,
+     "eer": 0.4602,
+     "eer_within_meeting": 0.4736
+    },
+    {
+     "layer": 22,
+     "eer": 0.4685,
+     "eer_within_meeting": 0.4795
+    },
+    {
+     "layer": 23,
+     "eer": 0.4589,
+     "eer_within_meeting": 0.4783
+    },
+    {
+     "layer": 24,
+     "eer": 0.5024,
+     "eer_within_meeting": 0.5193
+    }
+   ],
+   "best_layer": 11,
+   "best_within": 0.3186,
+   "top_within": 0.5193
+  },
+  "icsi_n64": {
+   "n_segments": 64,
+   "n_speakers": 5,
+   "per_layer": [
+    {
+     "layer": 1,
+     "eer": 0.2648,
+     "eer_within_meeting": 0.3374
+    },
+    {
+     "layer": 2,
+     "eer": 0.2426,
+     "eer_within_meeting": 0.3008
+    },
+    {
+     "layer": 3,
+     "eer": 0.2341,
+     "eer_within_meeting": 0.2832
+    },
+    {
+     "layer": 4,
+     "eer": 0.2178,
+     "eer_within_meeting": 0.2642
+    },
+    {
+     "layer": 5,
+     "eer": 0.2237,
+     "eer_within_meeting": 0.273
+    },
+    {
+     "layer": 6,
+     "eer": 0.2396,
+     "eer_within_meeting": 0.2907
+    },
+    {
+     "layer": 7,
+     "eer": 0.2459,
+     "eer_within_meeting": 0.2947
+    },
+    {
+     "layer": 8,
+     "eer": 0.2134,
+     "eer_within_meeting": 0.2514
+    },
+    {
+     "layer": 9,
+     "eer": 0.2574,
+     "eer_within_meeting": 0.2981
+    },
+    {
+     "layer": 10,
+     "eer": 0.2152,
+     "eer_within_meeting": 0.231
+    },
+    {
+     "layer": 11,
+     "eer": 0.2123,
+     "eer_within_meeting": 0.2154
+    },
+    {
+     "layer": 12,
+     "eer": 0.2089,
+     "eer_within_meeting": 0.2033
+    },
+    {
+     "layer": 13,
+     "eer": 0.2256,
+     "eer_within_meeting": 0.225
+    },
+    {
+     "layer": 14,
+     "eer": 0.253,
+     "eer_within_meeting": 0.2514
+    },
+    {
+     "layer": 15,
+     "eer": 0.2907,
+     "eer_within_meeting": 0.2981
+    },
+    {
+     "layer": 16,
+     "eer": 0.3114,
+     "eer_within_meeting": 0.3184
+    },
+    {
+     "layer": 17,
+     "eer": 0.2703,
+     "eer_within_meeting": 0.2676
+    },
+    {
+     "layer": 18,
+     "eer": 0.3547,
+     "eer_within_meeting": 0.3808
+    },
+    {
+     "layer": 19,
+     "eer": 0.4083,
+     "eer_within_meeting": 0.4634
+    },
+    {
+     "layer": 20,
+     "eer": 0.4504,
+     "eer_within_meeting": 0.5074
+    },
+    {
+     "layer": 21,
+     "eer": 0.4519,
+     "eer_within_meeting": 0.5407
+    },
+    {
+     "layer": 22,
+     "eer": 0.4534,
+     "eer_within_meeting": 0.5434
+    },
+    {
+     "layer": 23,
+     "eer": 0.4275,
+     "eer_within_meeting": 0.5162
+    },
+    {
+     "layer": 24,
+     "eer": 0.4638,
+     "eer_within_meeting": 0.5407
+    }
+   ],
+   "best_layer": 12,
+   "best_within": 0.2033,
+   "top_within": 0.5407
+  },
+  "icsi_n200": {
+   "n_segments": 200,
+   "n_speakers": 9,
+   "per_layer": [
+    {
+     "layer": 1,
+     "eer": 0.2471,
+     "eer_within_meeting": 0.3026
+    },
+    {
+     "layer": 2,
+     "eer": 0.2326,
+     "eer_within_meeting": 0.2816
+    },
+    {
+     "layer": 3,
+     "eer": 0.2297,
+     "eer_within_meeting": 0.2771
+    },
+    {
+     "layer": 4,
+     "eer": 0.2258,
+     "eer_within_meeting": 0.2683
+    },
+    {
+     "layer": 5,
+     "eer": 0.2381,
+     "eer_within_meeting": 0.2811
+    },
+    {
+     "layer": 6,
+     "eer": 0.2517,
+     "eer_within_meeting": 0.296
+    },
+    {
+     "layer": 7,
+     "eer": 0.2538,
+     "eer_within_meeting": 0.2955
+    },
+    {
+     "layer": 8,
+     "eer": 0.227,
+     "eer_within_meeting": 0.2525
+    },
+    {
+     "layer": 9,
+     "eer": 0.2737,
+     "eer_within_meeting": 0.2956
+    },
+    {
+     "layer": 10,
+     "eer": 0.2419,
+     "eer_within_meeting": 0.2549
+    },
+    {
+     "layer": 11,
+     "eer": 0.239,
+     "eer_within_meeting": 0.2406
+    },
+    {
+     "layer": 12,
+     "eer": 0.2419,
+     "eer_within_meeting": 0.2398
+    },
+    {
+     "layer": 13,
+     "eer": 0.2563,
+     "eer_within_meeting": 0.2588
+    },
+    {
+     "layer": 14,
+     "eer": 0.2757,
+     "eer_within_meeting": 0.28
+    },
+    {
+     "layer": 15,
+     "eer": 0.299,
+     "eer_within_meeting": 0.3116
+    },
+    {
+     "layer": 16,
+     "eer": 0.328,
+     "eer_within_meeting": 0.3445
+    },
+    {
+     "layer": 17,
+     "eer": 0.3154,
+     "eer_within_meeting": 0.3279
+    },
+    {
+     "layer": 18,
+     "eer": 0.3761,
+     "eer_within_meeting": 0.4086
+    },
+    {
+     "layer": 19,
+     "eer": 0.409,
+     "eer_within_meeting": 0.4555
+    },
+    {
+     "layer": 20,
+     "eer": 0.4379,
+     "eer_within_meeting": 0.4866
+    },
+    {
+     "layer": 21,
+     "eer": 0.4523,
+     "eer_within_meeting": 0.501
+    },
+    {
+     "layer": 22,
+     "eer": 0.4484,
+     "eer_within_meeting": 0.5006
+    },
+    {
+     "layer": 23,
+     "eer": 0.4348,
+     "eer_within_meeting": 0.4871
+    },
+    {
+     "layer": 24,
+     "eer": 0.4658,
+     "eer_within_meeting": 0.5149
+    }
+   ],
+   "best_layer": 12,
+   "best_within": 0.2398,
+   "top_within": 0.5149
+  }
+ },
+ "vad_probe": {
+  "setup": {
+   "train": "vad_ami_train (AMI train diar windows, vad_layers.load_set('train'))",
+   "dev": [
+    "vad_ami_dev (BASELINES VAD set, 64 x 20 s)",
+    "vad_icsi_dev (64 x 20 s, held-out corpus)"
+   ],
+   "features": "fp16 per-layer block outputs at [70,1] (= streaming), standardized per block on train frames",
+   "logreg": "sklearn LogisticRegression C=1",
+   "mlp": "Linear(1024,64)-SiLU-Linear(64,1), vad_layers.fit_mlp",
+   "metrics": "sd.score_vad @0.5, AUC, miss @FPR 0.075"
+  },
+  "rows": {
+   "block01": {
+    "block": 1,
+    "train_frames": 75300,
+    "logreg": {
+     "fit_sec": 3.2,
+     "vad_ami_dev": {
+      "acc": 0.8536,
+      "recall": 0.8622,
+      "precision": 0.9425,
+      "f1": 0.9005,
+      "fpr": 0.175,
+      "miss": 0.1378,
+      "auc": 0.9326,
+      "miss_at_fpr0.075": 0.2276,
+      "thr_at_fpr0.075": 0.7973,
+      "n_frames": 16064
+     },
+     "vad_icsi_dev": {
+      "acc": 0.8195,
+      "recall": 0.9713,
+      "precision": 0.8294,
+      "f1": 0.8948,
+      "fpr": 0.7507,
+      "miss": 0.0287,
+      "auc": 0.8508,
+      "miss_at_fpr0.075": 0.436,
+      "thr_at_fpr0.075": 0.9908,
+      "n_frames": 16064
+     }
+    },
+    "mlp64": {
+     "fit_sec": 12.5,
+     "vad_ami_dev": {
+      "acc": 0.8866,
+      "recall": 0.8943,
+      "precision": 0.9554,
+      "f1": 0.9238,
+      "fpr": 0.1389,
+      "miss": 0.1057,
+      "auc": 0.9535,
+      "miss_at_fpr0.075": 0.1708,
+      "thr_at_fpr0.075": 0.7519,
+      "n_frames": 16064
+     },
+     "vad_icsi_dev": {
+      "acc": 0.8394,
+      "recall": 0.9699,
+      "precision": 0.8484,
+      "f1": 0.9051,
+      "fpr": 0.6509,
+      "miss": 0.0301,
+      "auc": 0.8995,
+      "miss_at_fpr0.075": 0.3005,
+      "thr_at_fpr0.075": 0.9899,
+      "n_frames": 16064
+     }
+    },
+    "sec": 19.4
+   },
+   "block02": {
+    "block": 2,
+    "train_frames": 75300,
+    "logreg": {
+     "fit_sec": 2.2,
+     "vad_ami_dev": {
+      "acc": 0.8611,
+      "recall": 0.8674,
+      "precision": 0.9475,
+      "f1": 0.9056,
+      "fpr": 0.1599,
+      "miss": 0.1326,
+      "auc": 0.942,
+      "miss_at_fpr0.075": 0.2185,
+      "thr_at_fpr0.075": 0.8145,
+      "n_frames": 16064
+     },
+     "vad_icsi_dev": {
+      "acc": 0.83,
+      "recall": 0.9637,
+      "precision": 0.8434,
+      "f1": 0.8995,
+      "fpr": 0.6725,
+      "miss": 0.0363,
+      "auc": 0.8827,
+      "miss_at_fpr0.075": 0.3291,
+      "thr_at_fpr0.075": 0.9873,
+      "n_frames": 16064
+     }
+    },
+    "mlp64": {
+     "fit_sec": 12.4,
+     "vad_ami_dev": {
+      "acc": 0.8626,
+      "recall": 0.8606,
+      "precision": 0.9563,
+      "f1": 0.9059,
+      "fpr": 0.1309,
+      "miss": 0.1394,
+      "auc": 0.9465,
+      "miss_at_fpr0.075": 0.1993,
+      "thr_at_fpr0.075": 0.753,
+      "n_frames": 16064
+     },
+     "vad_icsi_dev": {
+      "acc": 0.8383,
+      "recall": 0.9742,
+      "precision": 0.8448,
+      "f1": 0.9049,
+      "fpr": 0.6722,
+      "miss": 0.0258,
+      "auc": 0.9074,
+      "miss_at_fpr0.075": 0.2698,
+      "thr_at_fpr0.075": 0.9915,
+      "n_frames": 16064
+     }
+    },
+    "sec": 18.9
+   },
+   "block03": {
+    "block": 3,
+    "train_frames": 75300,
+    "logreg": {
+     "fit_sec": 1.6,
+     "vad_ami_dev": {
+      "acc": 0.8644,
+      "recall": 0.8684,
+      "precision": 0.9509,
+      "f1": 0.9078,
+      "fpr": 0.1492,
+      "miss": 0.1316,
+      "auc": 0.9432,
+      "miss_at_fpr0.075": 0.2108,
+      "thr_at_fpr0.075": 0.8023,
+      "n_frames": 16064
+     },
+     "vad_icsi_dev": {
+      "acc": 0.8334,
+      "recall": 0.9584,
+      "precision": 0.8499,
+      "f1": 0.9009,
+      "fpr": 0.6361,
+      "miss": 0.0416,
+      "auc": 0.8756,
+      "miss_at_fpr0.075": 0.3683,
+      "thr_at_fpr0.075": 0.9824,
+      "n_frames": 16064
+     }
+    },
+    "mlp64": {
+     "fit_sec": 11.8,
+     "vad_ami_dev": {
+      "acc": 0.8697,
+      "recall": 0.8721,
+      "precision": 0.9545,
+      "f1": 0.9114,
+      "fpr": 0.1381,
+      "miss": 0.1279,
+      "auc": 0.9482,
+      "miss_at_fpr0.075": 0.1998,
+      "thr_at_fpr0.075": 0.7838,
+      "n_frames": 16064
+     },
+     "vad_icsi_dev": {
+      "acc": 0.8413,
+      "recall": 0.9754,
+      "precision": 0.8469,
+      "f1": 0.9066,
+      "fpr": 0.6624,
+      "miss": 0.0246,
+      "auc": 0.9024,
+      "miss_at_fpr0.075": 0.2935,
+      "thr_at_fpr0.075": 0.9895,
+      "n_frames": 16064
+     }
+    },
+    "sec": 17.6
+   },
+   "block04": {
+    "block": 4,
+    "train_frames": 75300,
+    "logreg": {
+     "fit_sec": 1.5,
+     "vad_ami_dev": {
+      "acc": 0.8911,
+      "recall": 0.9058,
+      "precision": 0.9502,
+      "f1": 0.9275,
+      "fpr": 0.1578,
+      "miss": 0.0942,
+      "auc": 0.9536,
+      "miss_at_fpr0.075": 0.1714,
+      "thr_at_fpr0.075": 0.8197,
+      "n_frames": 16064
+     },
+     "vad_icsi_dev": {
+      "acc": 0.8365,
+      "recall": 0.9709,
+      "precision": 0.8451,
+      "f1": 0.9037,
+      "fpr": 0.6683,
+      "miss": 0.0291,
+      "auc": 0.8758,
+      "miss_at_fpr0.075": 0.3898,
+      "thr_at_fpr0.075": 0.9912,
+      "n_frames": 16064
+     }
+    },
+    "mlp64": {
+     "fit_sec": 11.9,
+     "vad_ami_dev": {
+      "acc": 0.8845,
+      "recall": 0.8944,
+      "precision": 0.9524,
+      "f1": 0.9225,
+      "fpr": 0.1486,
+      "miss": 0.1056,
+      "auc": 0.9503,
+      "miss_at_fpr0.075": 0.1946,
+      "thr_at_fpr0.075": 0.8299,
+      "n_frames": 16064
+     },
+     "vad_icsi_dev": {
+      "acc": 0.8417,
+      "recall": 0.9786,
+      "precision": 0.8453,
+      "f1": 0.9071,
+      "fpr": 0.6728,
+      "miss": 0.0214,
+      "auc": 0.9053,
+      "miss_at_fpr0.075": 0.295,
+      "thr_at_fpr0.075": 0.9924,
+      "n_frames": 16064
+     }
+    },
+    "sec": 18.0
+   },
+   "block05": {
+    "block": 5,
+    "train_frames": 75300,
+    "logreg": {
+     "fit_sec": 1.8,
+     "vad_ami_dev": {
+      "acc": 0.8969,
+      "recall": 0.9126,
+      "precision": 0.9513,
+      "f1": 0.9315,
+      "fpr": 0.1554,
+      "miss": 0.0874,
+      "auc": 0.9574,
+      "miss_at_fpr0.075": 0.1602,
+      "thr_at_fpr0.075": 0.8195,
+      "n_frames": 16064
+     },
+     "vad_icsi_dev": {
+      "acc": 0.8447,
+      "recall": 0.9724,
+      "precision": 0.8519,
+      "f1": 0.9082,
+      "fpr": 0.6349,
+      "miss": 0.0276,
+      "auc": 0.8877,
+      "miss_at_fpr0.075": 0.3653,
+      "thr_at_fpr0.075": 0.9881,
+      "n_frames": 16064
+     }
+    },
+    "mlp64": {
+     "fit_sec": 12.8,
+     "vad_ami_dev": {
+      "acc": 0.8901,
+      "recall": 0.8981,
+      "precision": 0.9563,
+      "f1": 0.9263,
+      "fpr": 0.1365,
+      "miss": 0.1019,
+      "auc": 0.9561,
+      "miss_at_fpr0.075": 0.1777,
+      "thr_at_fpr0.075": 0.8087,
+      "n_frames": 16064
+     },
+     "vad_icsi_dev": {
+      "acc": 0.8396,
+      "recall": 0.9809,
+      "precision": 0.8421,
+      "f1": 0.9062,
+      "fpr": 0.6911,
+      "miss": 0.0191,
+      "auc": 0.9001,
+      "miss_at_fpr0.075": 0.3274,
+      "thr_at_fpr0.075": 0.9937,
+      "n_frames": 16064
+     }
+    },
+    "sec": 19.3
+   },
+   "block06": {
+    "block": 6,
+    "train_frames": 75300,
+    "logreg": {
+     "fit_sec": 1.6,
+     "vad_ami_dev": {
+      "acc": 0.8957,
+      "recall": 0.9087,
+      "precision": 0.9534,
+      "f1": 0.9305,
+      "fpr": 0.1475,
+      "miss": 0.0913,
+      "auc": 0.9576,
+      "miss_at_fpr0.075": 0.1673,
+      "thr_at_fpr0.075": 0.8028,
+      "n_frames": 16064
+     },
+     "vad_icsi_dev": {
+      "acc": 0.8434,
+      "recall": 0.9786,
+      "precision": 0.847,
+      "f1": 0.908,
+      "fpr": 0.6642,
+      "miss": 0.0214,
+      "auc": 0.8935,
+      "miss_at_fpr0.075": 0.3452,
+      "thr_at_fpr0.075": 0.9899,
+      "n_frames": 16064
+     }
+    },
+    "mlp64": {
+     "fit_sec": 11.6,
+     "vad_ami_dev": {
+      "acc": 0.8922,
+      "recall": 0.9059,
+      "precision": 0.9516,
+      "f1": 0.9282,
+      "fpr": 0.1532,
+      "miss": 0.0941,
+      "auc": 0.9564,
+      "miss_at_fpr0.075": 0.1692,
+      "thr_at_fpr0.075": 0.8184,
+      "n_frames": 16064
+     },
+     "vad_icsi_dev": {
+      "acc": 0.8378,
+      "recall": 0.9823,
+      "precision": 0.8396,
+      "f1": 0.9054,
+      "fpr": 0.7051,
+      "miss": 0.0177,
+      "auc": 0.9023,
+      "miss_at_fpr0.075": 0.3162,
+      "thr_at_fpr0.075": 0.9944,
+      "n_frames": 16064
+     }
+    },
+    "sec": 17.9
+   },
+   "block07": {
+    "block": 7,
+    "train_frames": 75300,
+    "logreg": {
+     "fit_sec": 1.2,
+     "vad_ami_dev": {
+      "acc": 0.8926,
+      "recall": 0.9017,
+      "precision": 0.9561,
+      "f1": 0.9281,
+      "fpr": 0.1376,
+      "miss": 0.0983,
+      "auc": 0.957,
+      "miss_at_fpr0.075": 0.156,
+      "thr_at_fpr0.075": 0.7598,
+      "n_frames": 16064
+     },
+     "vad_icsi_dev": {
+      "acc": 0.8435,
+      "recall": 0.9745,
+      "precision": 0.8495,
+      "f1": 0.9077,
+      "fpr": 0.6488,
+      "miss": 0.0255,
+      "auc": 0.8921,
+      "miss_at_fpr0.075": 0.3573,
+      "thr_at_fpr0.075": 0.9924,
+      "n_frames": 16064
+     }
+    },
+    "mlp64": {
+     "fit_sec": 12.1,
+     "vad_ami_dev": {
+      "acc": 0.897,
+      "recall": 0.9133,
+      "precision": 0.9508,
+      "f1": 0.9316,
+      "fpr": 0.1572,
+      "miss": 0.0867,
+      "auc": 0.9577,
+      "miss_at_fpr0.075": 0.1522,
+      "thr_at_fpr0.075": 0.7958,
+      "n_frames": 16064
+     },
+     "vad_icsi_dev": {
+      "acc": 0.8375,
+      "recall": 0.9819,
+      "precision": 0.8395,
+      "f1": 0.9051,
+      "fpr": 0.7051,
+      "miss": 0.0181,
+      "auc": 0.902,
+      "miss_at_fpr0.075": 0.3215,
+      "thr_at_fpr0.075": 0.9965,
+      "n_frames": 16064
+     }
+    },
+    "sec": 17.9
+   },
+   "block08": {
+    "block": 8,
+    "train_frames": 75300,
+    "logreg": {
+     "fit_sec": 1.3,
+     "vad_ami_dev": {
+      "acc": 0.8922,
+      "recall": 0.9008,
+      "precision": 0.9565,
+      "f1": 0.9278,
+      "fpr": 0.1362,
+      "miss": 0.0992,
+      "auc": 0.9576,
+      "miss_at_fpr0.075": 0.1594,
+      "thr_at_fpr0.075": 0.763,
+      "n_frames": 16064
+     },
+     "vad_icsi_dev": {
+      "acc": 0.8421,
+      "recall": 0.9803,
+      "precision": 0.8447,
+      "f1": 0.9074,
+      "fpr": 0.6772,
+      "miss": 0.0197,
+      "auc": 0.8984,
+      "miss_at_fpr0.075": 0.3382,
+      "thr_at_fpr0.075": 0.9914,
+      "n_frames": 16064
+     }
+    },
+    "mlp64": {
+     "fit_sec": 12.1,
+     "vad_ami_dev": {
+      "acc": 0.9023,
+      "recall": 0.9198,
+      "precision": 0.9515,
+      "f1": 0.9354,
+      "fpr": 0.1559,
+      "miss": 0.0802,
+      "auc": 0.9602,
+      "miss_at_fpr0.075": 0.141,
+      "thr_at_fpr0.075": 0.8024,
+      "n_frames": 16064
+     },
+     "vad_icsi_dev": {
+      "acc": 0.8446,
+      "recall": 0.9805,
+      "precision": 0.8469,
+      "f1": 0.9088,
+      "fpr": 0.666,
+      "miss": 0.0195,
+      "auc": 0.9026,
+      "miss_at_fpr0.075": 0.352,
+      "thr_at_fpr0.075": 0.9952,
+      "n_frames": 16064
+     }
+    },
+    "sec": 17.4
+   },
+   "block09": {
+    "block": 9,
+    "train_frames": 75300,
+    "logreg": {
+     "fit_sec": 1.3,
+     "vad_ami_dev": {
+      "acc": 0.8937,
+      "recall": 0.9059,
+      "precision": 0.9535,
+      "f1": 0.9291,
+      "fpr": 0.147,
+      "miss": 0.0941,
+      "auc": 0.9579,
+      "miss_at_fpr0.075": 0.1562,
+      "thr_at_fpr0.075": 0.7899,
+      "n_frames": 16064
+     },
+     "vad_icsi_dev": {
+      "acc": 0.8392,
+      "recall": 0.9808,
+      "precision": 0.8417,
+      "f1": 0.906,
+      "fpr": 0.6929,
+      "miss": 0.0192,
+      "auc": 0.8941,
+      "miss_at_fpr0.075": 0.3508,
+      "thr_at_fpr0.075": 0.9939,
+      "n_frames": 16064
+     }
+    },
+    "mlp64": {
+     "fit_sec": 12.1,
+     "vad_ami_dev": {
+      "acc": 0.9086,
+      "recall": 0.9287,
+      "precision": 0.9512,
+      "f1": 0.9398,
+      "fpr": 0.1583,
+      "miss": 0.0713,
+      "auc": 0.9636,
+      "miss_at_fpr0.075": 0.1299,
+      "thr_at_fpr0.075": 0.8005,
+      "n_frames": 16064
+     },
+     "vad_icsi_dev": {
+      "acc": 0.8376,
+      "recall": 0.9808,
+      "precision": 0.8403,
+      "f1": 0.9051,
+      "fpr": 0.7,
+      "miss": 0.0192,
+      "auc": 0.8931,
+      "miss_at_fpr0.075": 0.3789,
+      "thr_at_fpr0.075": 0.995,
+      "n_frames": 16064
+     }
+    },
+    "sec": 17.9
+   },
+   "block10": {
+    "block": 10,
+    "train_frames": 75300,
+    "logreg": {
+     "fit_sec": 1.2,
+     "vad_ami_dev": {
+      "acc": 0.8896,
+      "recall": 0.8998,
+      "precision": 0.954,
+      "f1": 0.9261,
+      "fpr": 0.1443,
+      "miss": 0.1002,
+      "auc": 0.9544,
+      "miss_at_fpr0.075": 0.1625,
+      "thr_at_fpr0.075": 0.7951,
+      "n_frames": 16064
+     },
+     "vad_icsi_dev": {
+      "acc": 0.8339,
+      "recall": 0.9803,
+      "precision": 0.8372,
+      "f1": 0.9031,
+      "fpr": 0.716,
+      "miss": 0.0197,
+      "auc": 0.8844,
+      "miss_at_fpr0.075": 0.3647,
+      "thr_at_fpr0.075": 0.9958,
+      "n_frames": 16064
+     }
+    },
+    "mlp64": {
+     "fit_sec": 12.2,
+     "vad_ami_dev": {
+      "acc": 0.9025,
+      "recall": 0.92,
+      "precision": 0.9516,
+      "f1": 0.9355,
+      "fpr": 0.1556,
+      "miss": 0.08,
+      "auc": 0.9595,
+      "miss_at_fpr0.075": 0.1485,
+      "thr_at_fpr0.075": 0.8301,
+      "n_frames": 16064
+     },
+     "vad_icsi_dev": {
+      "acc": 0.8618,
+      "recall": 0.9641,
+      "precision": 0.8739,
+      "f1": 0.9168,
+      "fpr": 0.5227,
+      "miss": 0.0359,
+      "auc": 0.9007,
+      "miss_at_fpr0.075": 0.3279,
+      "thr_at_fpr0.075": 0.9854,
+      "n_frames": 16064
+     }
+    },
+    "sec": 17.5
+   },
+   "block11": {
+    "block": 11,
+    "train_frames": 75300,
+    "logreg": {
+     "fit_sec": 1.3,
+     "vad_ami_dev": {
+      "acc": 0.8885,
+      "recall": 0.907,
+      "precision": 0.9457,
+      "f1": 0.926,
+      "fpr": 0.1731,
+      "miss": 0.093,
+      "auc": 0.951,
+      "miss_at_fpr0.075": 0.176,
+      "thr_at_fpr0.075": 0.8594,
+      "n_frames": 16064
+     },
+     "vad_icsi_dev": {
+      "acc": 0.8334,
+      "recall": 0.9808,
+      "precision": 0.8365,
+      "f1": 0.9029,
+      "fpr": 0.7202,
+      "miss": 0.0192,
+      "auc": 0.869,
+      "miss_at_fpr0.075": 0.4356,
+      "thr_at_fpr0.075": 0.998,
+      "n_frames": 16064
+     }
+    },
+    "mlp64": {
+     "fit_sec": 12.4,
+     "vad_ami_dev": {
+      "acc": 0.9075,
+      "recall": 0.9326,
+      "precision": 0.9463,
+      "f1": 0.9394,
+      "fpr": 0.1761,
+      "miss": 0.0674,
+      "auc": 0.961,
+      "miss_at_fpr0.075": 0.1487,
+      "thr_at_fpr0.075": 0.8693,
+      "n_frames": 16064
+     },
+     "vad_icsi_dev": {
+      "acc": 0.8622,
+      "recall": 0.9718,
+      "precision": 0.8692,
+      "f1": 0.9176,
+      "fpr": 0.5493,
+      "miss": 0.0282,
+      "auc": 0.9068,
+      "miss_at_fpr0.075": 0.3134,
+      "thr_at_fpr0.075": 0.9869,
+      "n_frames": 16064
+     }
+    },
+    "sec": 17.7
+   },
+   "block12": {
+    "block": 12,
+    "train_frames": 75300,
+    "logreg": {
+     "fit_sec": 1.7,
+     "vad_ami_dev": {
+      "acc": 0.8858,
+      "recall": 0.8934,
+      "precision": 0.9552,
+      "f1": 0.9232,
+      "fpr": 0.1395,
+      "miss": 0.1066,
+      "auc": 0.9522,
+      "miss_at_fpr0.075": 0.1625,
+      "thr_at_fpr0.075": 0.8036,
+      "n_frames": 16064
+     },
+     "vad_icsi_dev": {
+      "acc": 0.8419,
+      "recall": 0.9604,
+      "precision": 0.8568,
+      "f1": 0.9056,
+      "fpr": 0.6032,
+      "miss": 0.0396,
+      "auc": 0.8588,
+      "miss_at_fpr0.075": 0.4797,
+      "thr_at_fpr0.075": 0.9974,
+      "n_frames": 16064
+     }
+    },
+    "mlp64": {
+     "fit_sec": 12.3,
+     "vad_ami_dev": {
+      "acc": 0.9066,
+      "recall": 0.9281,
+      "precision": 0.9493,
+      "f1": 0.9386,
+      "fpr": 0.1648,
+      "miss": 0.0719,
+      "auc": 0.9603,
+      "miss_at_fpr0.075": 0.1563,
+      "thr_at_fpr0.075": 0.8619,
+      "n_frames": 16064
+     },
+     "vad_icsi_dev": {
+      "acc": 0.8502,
+      "recall": 0.9796,
+      "precision": 0.8526,
+      "f1": 0.9117,
+      "fpr": 0.6361,
+      "miss": 0.0204,
+      "auc": 0.9036,
+      "miss_at_fpr0.075": 0.3412,
+      "thr_at_fpr0.075": 0.9905,
+      "n_frames": 16064
+     }
+    },
+    "sec": 18.1
+   },
+   "block13": {
+    "block": 13,
+    "train_frames": 75300,
+    "logreg": {
+     "fit_sec": 1.8,
+     "vad_ami_dev": {
+      "acc": 0.881,
+      "recall": 0.884,
+      "precision": 0.9581,
+      "f1": 0.9195,
+      "fpr": 0.1287,
+      "miss": 0.116,
+      "auc": 0.9517,
+      "miss_at_fpr0.075": 0.1723,
+      "thr_at_fpr0.075": 0.8025,
+      "n_frames": 16064
+     },
+     "vad_icsi_dev": {
+      "acc": 0.838,
+      "recall": 0.9788,
+      "precision": 0.8418,
+      "f1": 0.9052,
+      "fpr": 0.6908,
+      "miss": 0.0212,
+      "auc": 0.8672,
+      "miss_at_fpr0.075": 0.4498,
+      "thr_at_fpr0.075": 0.9986,
+      "n_frames": 16064
+     }
+    },
+    "mlp64": {
+     "fit_sec": 11.6,
+     "vad_ami_dev": {
+      "acc": 0.9053,
+      "recall": 0.9291,
+      "precision": 0.9466,
+      "f1": 0.9378,
+      "fpr": 0.1742,
+      "miss": 0.0709,
+      "auc": 0.9596,
+      "miss_at_fpr0.075": 0.1561,
+      "thr_at_fpr0.075": 0.8768,
+      "n_frames": 16064
+     },
+     "vad_icsi_dev": {
+      "acc": 0.8284,
+      "recall": 0.9898,
+      "precision": 0.827,
+      "f1": 0.9011,
+      "fpr": 0.7779,
+      "miss": 0.0102,
+      "auc": 0.9016,
+      "miss_at_fpr0.075": 0.3194,
+      "thr_at_fpr0.075": 0.9959,
+      "n_frames": 16064
+     }
+    },
+    "sec": 17.9
+   },
+   "block14": {
+    "block": 14,
+    "train_frames": 75300,
+    "logreg": {
+     "fit_sec": 2.3,
+     "vad_ami_dev": {
+      "acc": 0.8944,
+      "recall": 0.9049,
+      "precision": 0.9555,
+      "f1": 0.9295,
+      "fpr": 0.1403,
+      "miss": 0.0951,
+      "auc": 0.9548,
+      "miss_at_fpr0.075": 0.1645,
+      "thr_at_fpr0.075": 0.8398,
+      "n_frames": 16064
+     },
+     "vad_icsi_dev": {
+      "acc": 0.8458,
+      "recall": 0.9745,
+      "precision": 0.8517,
+      "f1": 0.9089,
+      "fpr": 0.6375,
+      "miss": 0.0255,
+      "auc": 0.8748,
+      "miss_at_fpr0.075": 0.4204,
+      "thr_at_fpr0.075": 0.9976,
+      "n_frames": 16064
+     }
+    },
+    "mlp64": {
+     "fit_sec": 11.6,
+     "vad_ami_dev": {
+      "acc": 0.9092,
+      "recall": 0.9375,
+      "precision": 0.944,
+      "f1": 0.9407,
+      "fpr": 0.185,
+      "miss": 0.0625,
+      "auc": 0.9617,
+      "miss_at_fpr0.075": 0.154,
+      "thr_at_fpr0.075": 0.8889,
+      "n_frames": 16064
+     },
+     "vad_icsi_dev": {
+      "acc": 0.8368,
+      "recall": 0.9883,
+      "precision": 0.8353,
+      "f1": 0.9054,
+      "fpr": 0.7323,
+      "miss": 0.0117,
+      "auc": 0.9027,
+      "miss_at_fpr0.075": 0.3381,
+      "thr_at_fpr0.075": 0.9947,
+      "n_frames": 16064
+     }
+    },
+    "sec": 18.2
+   },
+   "block15": {
+    "block": 15,
+    "train_frames": 75300,
+    "logreg": {
+     "fit_sec": 1.6,
+     "vad_ami_dev": {
+      "acc": 0.9005,
+      "recall": 0.9147,
+      "precision": 0.9541,
+      "f1": 0.9339,
+      "fpr": 0.1465,
+      "miss": 0.0853,
+      "auc": 0.9594,
+      "miss_at_fpr0.075": 0.1601,
+      "thr_at_fpr0.075": 0.8273,
+      "n_frames": 16064
+     },
+     "vad_icsi_dev": {
+      "acc": 0.8384,
+      "recall": 0.9797,
+      "precision": 0.8417,
+      "f1": 0.9054,
+      "fpr": 0.6923,
+      "miss": 0.0203,
+      "auc": 0.8776,
+      "miss_at_fpr0.075": 0.4129,
+      "thr_at_fpr0.075": 0.9955,
+      "n_frames": 16064
+     }
+    },
+    "mlp64": {
+     "fit_sec": 12.4,
+     "vad_ami_dev": {
+      "acc": 0.9155,
+      "recall": 0.9424,
+      "precision": 0.9474,
+      "f1": 0.9449,
+      "fpr": 0.1739,
+      "miss": 0.0576,
+      "auc": 0.9661,
+      "miss_at_fpr0.075": 0.1291,
+      "thr_at_fpr0.075": 0.8637,
+      "n_frames": 16064
+     },
+     "vad_icsi_dev": {
+      "acc": 0.8345,
+      "recall": 0.987,
+      "precision": 0.8339,
+      "f1": 0.904,
+      "fpr": 0.7385,
+      "miss": 0.013,
+      "auc": 0.8949,
+      "miss_at_fpr0.075": 0.3817,
+      "thr_at_fpr0.075": 0.998,
+      "n_frames": 16064
+     }
+    },
+    "sec": 18.1
+   },
+   "block16": {
+    "block": 16,
+    "train_frames": 75300,
+    "logreg": {
+     "fit_sec": 1.6,
+     "vad_ami_dev": {
+      "acc": 0.902,
+      "recall": 0.9199,
+      "precision": 0.951,
+      "f1": 0.9352,
+      "fpr": 0.1575,
+      "miss": 0.0801,
+      "auc": 0.9594,
+      "miss_at_fpr0.075": 0.1606,
+      "thr_at_fpr0.075": 0.8435,
+      "n_frames": 16064
+     },
+     "vad_icsi_dev": {
+      "acc": 0.8361,
+      "recall": 0.975,
+      "precision": 0.8423,
+      "f1": 0.9038,
+      "fpr": 0.6858,
+      "miss": 0.025,
+      "auc": 0.878,
+      "miss_at_fpr0.075": 0.4094,
+      "thr_at_fpr0.075": 0.9954,
+      "n_frames": 16064
+     }
+    },
+    "mlp64": {
+     "fit_sec": 11.3,
+     "vad_ami_dev": {
+      "acc": 0.9121,
+      "recall": 0.9453,
+      "precision": 0.9406,
+      "f1": 0.943,
+      "fpr": 0.1984,
+      "miss": 0.0547,
+      "auc": 0.9637,
+      "miss_at_fpr0.075": 0.1315,
+      "thr_at_fpr0.075": 0.8812,
+      "n_frames": 16064
+     },
+     "vad_icsi_dev": {
+      "acc": 0.8287,
+      "recall": 0.9843,
+      "precision": 0.8303,
+      "f1": 0.9008,
+      "fpr": 0.7557,
+      "miss": 0.0157,
+      "auc": 0.8793,
+      "miss_at_fpr0.075": 0.4374,
+      "thr_at_fpr0.075": 0.998,
+      "n_frames": 16064
+     }
+    },
+    "sec": 17.2
+   },
+   "block17": {
+    "block": 17,
+    "train_frames": 75300,
+    "logreg": {
+     "fit_sec": 1.3,
+     "vad_ami_dev": {
+      "acc": 0.9091,
+      "recall": 0.9291,
+      "precision": 0.9515,
+      "f1": 0.9401,
+      "fpr": 0.1575,
+      "miss": 0.0709,
+      "auc": 0.9631,
+      "miss_at_fpr0.075": 0.1381,
+      "thr_at_fpr0.075": 0.8131,
+      "n_frames": 16064
+     },
+     "vad_icsi_dev": {
+      "acc": 0.8421,
+      "recall": 0.9621,
+      "precision": 0.8559,
+      "f1": 0.9059,
+      "fpr": 0.6085,
+      "miss": 0.0379,
+      "auc": 0.8606,
+      "miss_at_fpr0.075": 0.4665,
+      "thr_at_fpr0.075": 0.9945,
+      "n_frames": 16064
+     }
+    },
+    "mlp64": {
+     "fit_sec": 11.3,
+     "vad_ami_dev": {
+      "acc": 0.9166,
+      "recall": 0.9502,
+      "precision": 0.9419,
+      "f1": 0.946,
+      "fpr": 0.1949,
+      "miss": 0.0498,
+      "auc": 0.9662,
+      "miss_at_fpr0.075": 0.1221,
+      "thr_at_fpr0.075": 0.869,
+      "n_frames": 16064
+     },
+     "vad_icsi_dev": {
+      "acc": 0.8338,
+      "recall": 0.982,
+      "precision": 0.8361,
+      "f1": 0.9032,
+      "fpr": 0.7231,
+      "miss": 0.018,
+      "auc": 0.866,
+      "miss_at_fpr0.075": 0.4784,
+      "thr_at_fpr0.075": 0.9972,
+      "n_frames": 16064
+     }
+    },
+    "sec": 17.1
+   },
+   "block18": {
+    "block": 18,
+    "train_frames": 75300,
+    "logreg": {
+     "fit_sec": 1.4,
+     "vad_ami_dev": {
+      "acc": 0.9096,
+      "recall": 0.93,
+      "precision": 0.9513,
+      "f1": 0.9406,
+      "fpr": 0.1583,
+      "miss": 0.07,
+      "auc": 0.9619,
+      "miss_at_fpr0.075": 0.1466,
+      "thr_at_fpr0.075": 0.8258,
+      "n_frames": 16064
+     },
+     "vad_icsi_dev": {
+      "acc": 0.8317,
+      "recall": 0.9842,
+      "precision": 0.833,
+      "f1": 0.9023,
+      "fpr": 0.7412,
+      "miss": 0.0158,
+      "auc": 0.8909,
+      "miss_at_fpr0.075": 0.3671,
+      "thr_at_fpr0.075": 0.995,
+      "n_frames": 16064
+     }
+    },
+    "mlp64": {
+     "fit_sec": 11.5,
+     "vad_ami_dev": {
+      "acc": 0.916,
+      "recall": 0.9491,
+      "precision": 0.9421,
+      "f1": 0.9456,
+      "fpr": 0.1939,
+      "miss": 0.0509,
+      "auc": 0.9635,
+      "miss_at_fpr0.075": 0.133,
+      "thr_at_fpr0.075": 0.8726,
+      "n_frames": 16064
+     },
+     "vad_icsi_dev": {
+      "acc": 0.8302,
+      "recall": 0.9856,
+      "precision": 0.8309,
+      "f1": 0.9016,
+      "fpr": 0.7536,
+      "miss": 0.0144,
+      "auc": 0.8863,
+      "miss_at_fpr0.075": 0.4155,
+      "thr_at_fpr0.075": 0.9973,
+      "n_frames": 16064
+     }
+    },
+    "sec": 17.3
+   },
+   "block19": {
+    "block": 19,
+    "train_frames": 75300,
+    "logreg": {
+     "fit_sec": 1.5,
+     "vad_ami_dev": {
+      "acc": 0.9095,
+      "recall": 0.933,
+      "precision": 0.9485,
+      "f1": 0.9406,
+      "fpr": 0.1686,
+      "miss": 0.067,
+      "auc": 0.9609,
+      "miss_at_fpr0.075": 0.1426,
+      "thr_at_fpr0.075": 0.8268,
+      "n_frames": 16064
+     },
+     "vad_icsi_dev": {
+      "acc": 0.8354,
+      "recall": 0.9833,
+      "precision": 0.8369,
+      "f1": 0.9042,
+      "fpr": 0.7202,
+      "miss": 0.0167,
+      "auc": 0.8735,
+      "miss_at_fpr0.075": 0.4301,
+      "thr_at_fpr0.075": 0.9977,
+      "n_frames": 16064
+     }
+    },
+    "mlp64": {
+     "fit_sec": 11.5,
+     "vad_ami_dev": {
+      "acc": 0.9163,
+      "recall": 0.9559,
+      "precision": 0.9366,
+      "f1": 0.9461,
+      "fpr": 0.2151,
+      "miss": 0.0441,
+      "auc": 0.9599,
+      "miss_at_fpr0.075": 0.1449,
+      "thr_at_fpr0.075": 0.9079,
+      "n_frames": 16064
+     },
+     "vad_icsi_dev": {
+      "acc": 0.8268,
+      "recall": 0.9866,
+      "precision": 0.8273,
+      "f1": 0.9,
+      "fpr": 0.7738,
+      "miss": 0.0134,
+      "auc": 0.882,
+      "miss_at_fpr0.075": 0.4206,
+      "thr_at_fpr0.075": 0.9984,
+      "n_frames": 16064
+     }
+    },
+    "sec": 18.8
+   },
+   "block20": {
+    "block": 20,
+    "train_frames": 75300,
+    "logreg": {
+     "fit_sec": 1.3,
+     "vad_ami_dev": {
+      "acc": 0.909,
+      "recall": 0.9366,
+      "precision": 0.9446,
+      "f1": 0.9406,
+      "fpr": 0.1828,
+      "miss": 0.0634,
+      "auc": 0.9551,
+      "miss_at_fpr0.075": 0.1528,
+      "thr_at_fpr0.075": 0.8611,
+      "n_frames": 16064
+     },
+     "vad_icsi_dev": {
+      "acc": 0.8369,
+      "recall": 0.9785,
+      "precision": 0.841,
+      "f1": 0.9045,
+      "fpr": 0.695,
+      "miss": 0.0215,
+      "auc": 0.8458,
+      "miss_at_fpr0.075": 0.5295,
+      "thr_at_fpr0.075": 0.9986,
+      "n_frames": 16064
+     }
+    },
+    "mlp64": {
+     "fit_sec": 11.3,
+     "vad_ami_dev": {
+      "acc": 0.9122,
+      "recall": 0.9561,
+      "precision": 0.9315,
+      "f1": 0.9437,
+      "fpr": 0.2337,
+      "miss": 0.0439,
+      "auc": 0.9582,
+      "miss_at_fpr0.075": 0.1505,
+      "thr_at_fpr0.075": 0.9173,
+      "n_frames": 16064
+     },
+     "vad_icsi_dev": {
+      "acc": 0.8261,
+      "recall": 0.9875,
+      "precision": 0.8262,
+      "f1": 0.8997,
+      "fpr": 0.7803,
+      "miss": 0.0125,
+      "auc": 0.8617,
+      "miss_at_fpr0.075": 0.5072,
+      "thr_at_fpr0.075": 0.9987,
+      "n_frames": 16064
+     }
+    },
+    "sec": 17.1
+   },
+   "block21": {
+    "block": 21,
+    "train_frames": 75300,
+    "logreg": {
+     "fit_sec": 1.1,
+     "vad_ami_dev": {
+      "acc": 0.9064,
+      "recall": 0.9446,
+      "precision": 0.9343,
+      "f1": 0.9394,
+      "fpr": 0.2208,
+      "miss": 0.0554,
+      "auc": 0.9518,
+      "miss_at_fpr0.075": 0.1727,
+      "thr_at_fpr0.075": 0.8984,
+      "n_frames": 16064
+     },
+     "vad_icsi_dev": {
+      "acc": 0.8318,
+      "recall": 0.978,
+      "precision": 0.8366,
+      "f1": 0.9018,
+      "fpr": 0.7175,
+      "miss": 0.022,
+      "auc": 0.8298,
+      "miss_at_fpr0.075": 0.5996,
+      "thr_at_fpr0.075": 0.9989,
+      "n_frames": 16064
+     }
+    },
+    "mlp64": {
+     "fit_sec": 11.5,
+     "vad_ami_dev": {
+      "acc": 0.9141,
+      "recall": 0.9623,
+      "precision": 0.9285,
+      "f1": 0.9451,
+      "fpr": 0.2464,
+      "miss": 0.0377,
+      "auc": 0.9561,
+      "miss_at_fpr0.075": 0.1697,
+      "thr_at_fpr0.075": 0.9415,
+      "n_frames": 16064
+     },
+     "vad_icsi_dev": {
+      "acc": 0.825,
+      "recall": 0.9887,
+      "precision": 0.8246,
+      "f1": 0.8992,
+      "fpr": 0.7901,
+      "miss": 0.0113,
+      "auc": 0.8539,
+      "miss_at_fpr0.075": 0.5194,
+      "thr_at_fpr0.075": 0.9988,
+      "n_frames": 16064
+     }
+    },
+    "sec": 17.2
+   },
+   "block22": {
+    "block": 22,
+    "train_frames": 75300,
+    "logreg": {
+     "fit_sec": 1.1,
+     "vad_ami_dev": {
+      "acc": 0.8998,
+      "recall": 0.9419,
+      "precision": 0.9288,
+      "f1": 0.9353,
+      "fpr": 0.2402,
+      "miss": 0.0581,
+      "auc": 0.9429,
+      "miss_at_fpr0.075": 0.2133,
+      "thr_at_fpr0.075": 0.9246,
+      "n_frames": 16064
+     },
+     "vad_icsi_dev": {
+      "acc": 0.826,
+      "recall": 0.9807,
+      "precision": 0.8299,
+      "f1": 0.899,
+      "fpr": 0.7551,
+      "miss": 0.0193,
+      "auc": 0.8182,
+      "miss_at_fpr0.075": 0.6168,
+      "thr_at_fpr0.075": 0.9985,
+      "n_frames": 16064
+     }
+    },
+    "mlp64": {
+     "fit_sec": 12.8,
+     "vad_ami_dev": {
+      "acc": 0.907,
+      "recall": 0.9633,
+      "precision": 0.9195,
+      "f1": 0.9409,
+      "fpr": 0.2803,
+      "miss": 0.0367,
+      "auc": 0.9491,
+      "miss_at_fpr0.075": 0.1967,
+      "thr_at_fpr0.075": 0.953,
+      "n_frames": 16064
+     },
+     "vad_icsi_dev": {
+      "acc": 0.8172,
+      "recall": 0.9877,
+      "precision": 0.8184,
+      "f1": 0.8951,
+      "fpr": 0.8232,
+      "miss": 0.0123,
+      "auc": 0.8277,
+      "miss_at_fpr0.075": 0.5871,
+      "thr_at_fpr0.075": 0.9993,
+      "n_frames": 16064
+     }
+    },
+    "sec": 18.8
+   },
+   "block23": {
+    "block": 23,
+    "train_frames": 75300,
+    "logreg": {
+     "fit_sec": 1.1,
+     "vad_ami_dev": {
+      "acc": 0.899,
+      "recall": 0.9538,
+      "precision": 0.9181,
+      "f1": 0.9356,
+      "fpr": 0.283,
+      "miss": 0.0462,
+      "auc": 0.9353,
+      "miss_at_fpr0.075": 0.2426,
+      "thr_at_fpr0.075": 0.9437,
+      "n_frames": 16064
+     },
+     "vad_icsi_dev": {
+      "acc": 0.822,
+      "recall": 0.9804,
+      "precision": 0.8266,
+      "f1": 0.8969,
+      "fpr": 0.7729,
+      "miss": 0.0196,
+      "auc": 0.8165,
+      "miss_at_fpr0.075": 0.5927,
+      "thr_at_fpr0.075": 0.9969,
+      "n_frames": 16064
+     }
+    },
+    "mlp64": {
+     "fit_sec": 11.6,
+     "vad_ami_dev": {
+      "acc": 0.9038,
+      "recall": 0.9693,
+      "precision": 0.9112,
+      "f1": 0.9394,
+      "fpr": 0.3139,
+      "miss": 0.0307,
+      "auc": 0.9402,
+      "miss_at_fpr0.075": 0.2372,
+      "thr_at_fpr0.075": 0.9638,
+      "n_frames": 16064
+     },
+     "vad_icsi_dev": {
+      "acc": 0.8163,
+      "recall": 0.9867,
+      "precision": 0.8182,
+      "f1": 0.8946,
+      "fpr": 0.8238,
+      "miss": 0.0133,
+      "auc": 0.8024,
+      "miss_at_fpr0.075": 0.6398,
+      "thr_at_fpr0.075": 0.9992,
+      "n_frames": 16064
+     }
+    },
+    "sec": 17.0
+   },
+   "block24": {
+    "block": 24,
+    "train_frames": 75300,
+    "logreg": {
+     "fit_sec": 1.3,
+     "vad_ami_dev": {
+      "acc": 0.8959,
+      "recall": 0.9553,
+      "precision": 0.9132,
+      "f1": 0.9338,
+      "fpr": 0.3018,
+      "miss": 0.0447,
+      "auc": 0.9323,
+      "miss_at_fpr0.075": 0.2599,
+      "thr_at_fpr0.075": 0.9431,
+      "n_frames": 16064
+     },
+     "vad_icsi_dev": {
+      "acc": 0.8201,
+      "recall": 0.983,
+      "precision": 0.8234,
+      "f1": 0.8962,
+      "fpr": 0.7918,
+      "miss": 0.017,
+      "auc": 0.7924,
+      "miss_at_fpr0.075": 0.6596,
+      "thr_at_fpr0.075": 0.9975,
+      "n_frames": 16064
+     }
+    },
+    "mlp64": {
+     "fit_sec": 11.7,
+     "vad_ami_dev": {
+      "acc": 0.8942,
+      "recall": 0.9653,
+      "precision": 0.9037,
+      "f1": 0.9335,
+      "fpr": 0.3419,
+      "miss": 0.0347,
+      "auc": 0.9352,
+      "miss_at_fpr0.075": 0.2459,
+      "thr_at_fpr0.075": 0.9576,
+      "n_frames": 16064
+     },
+     "vad_icsi_dev": {
+      "acc": 0.8134,
+      "recall": 0.9879,
+      "precision": 0.815,
+      "f1": 0.8932,
+      "fpr": 0.8425,
+      "miss": 0.0121,
+      "auc": 0.7825,
+      "miss_at_fpr0.075": 0.6802,
+      "thr_at_fpr0.075": 0.9987,
+      "n_frames": 16064
+     }
+    },
+    "sec": 16.6
+   }
+  }
+ }
+}

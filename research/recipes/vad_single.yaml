@@ -1,0 +1,37 @@
+# Single-layer VAD head (research/VAD_SINGLE.md): the served VAD head's recipe with ONE encoder block as input.
+#
+# The served head (runs/stage1_served.afm heads.vad, bit-identical to runs/stage1_heads_pretrained.afm's: trail6 froze
+# it) is a 64-hidden frame head on a learned softmax mix of all 17 blocks, trained by
+# research/recipes/stage1_heads_pretrained.yaml: frozen encoder in train mode (dropout 0.1, SpecAugment 2 x 27 mel bins +
+# 10 x 5 % time), a random lookahead per step from the checkpoint's att_context_sizes [[70,13],[70,6],[70,1],[70,0]],
+# single-source batches of 6 from three sources (conv synthetic 2500, AMI turn 16 s 3274, AMI diar 16 s 2697 windows;
+# vad = any speaker active), AdamW lr 1e-3 (betas 0.9 / 0.98, wd 1e-3), 100 warmup steps + cosine, 2000 steps,
+# BCE weight 0.5, grad clip 1.0. This recipe keeps all of that and changes only from_layers; it is NOT run through
+# audioforge.cli train (that would retrain every stage-1 head). Driver: scripts/research/vad_single.py train, which
+# reads this file (data block through audioforge.train.load_data, the same MixedData / Trainer._batches order), runs
+# only blocks 1..k+1 of the frozen encoder (block k+1's output is the same whether or not deeper blocks run) and trains
+# only heads.vad. Checkpoints on the SSD, resumable within a --budget.
+#
+#   scripts/dev/gate.sh .venv/bin/python scripts/research/vad_single.py train --layer 3 --budget 1080   # repeat until done
+#   scripts/dev/gate.sh .venv/bin/python scripts/research/vad_single.py train --layer 8 --budget 1080
+name: vad_single
+init: {from: runs/stage1_served.afm, pretrained_lr_mult: 0, train_only: [heads.vad.]}
+heads:
+  vad: {type: frame, key: vad, hidden: 64, from_layers: [3], weight: 0.5}   # --layer overrides (3 = block 4, 8 = block 9)
+data:
+  mix:
+    - {name: conv, synthetic: {kind: conversation, preset: default, n_train: 2500}, weight: 1.0, drop_keys: [speaker]}
+    - {name: ami_turn, ami: {mode: turn, window_sec: 16}, weight: 1.0}
+    - {name: ami_diar, ami: {mode: diar, window_sec: 16}, weight: 1.0}
+  derive: [vad, eou]
+  batching: source
+trainer:
+  device: mps
+  batch_size: 6
+  lr: 1.0e-3
+  weight_decay: 1.0e-3
+  warmup_steps: 100
+  max_steps: 2000
+  grad_clip: 1.0
+  att_context_sizes: [[70, 13], [70, 6], [70, 1], [70, 0]]   # as the served head's run (random per step)
+  checkpoint_every: 250

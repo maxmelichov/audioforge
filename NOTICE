@@ -1,0 +1,35 @@
+audioforge
+Copyright 2026 Max Melichov
+
+This product's source code is licensed under the Apache License, Version 2.0 (see LICENSE).
+
+Not covered by that licence:
+
+1. Model weights. audioforge contains no NVIDIA or third-party model weights. `audioforge-download` fetches them
+   from their publishers, and each keeps its own licence (full table: docs/MODELS.md):
+   - NVIDIA stt_en_fastconformer_hybrid_large_streaming_multi, diar_streaming_sortformer_4spk-v2,
+     parakeet-tdt-0.6b-v3, parakeet-ctc-0.6b, speakerverification_en_titanet_large: CC-BY-4.0
+     (attribution to NVIDIA required when redistributing the weights or derived models).
+   - NVIDIA Nemotron-3-Diarization: OpenMDW-1.1.
+   - NVIDIA nemotron-speech-streaming-en-0.6b, parakeet_realtime_eou_120m-v1, diar_streaming_sortformer_4spk-v2.1:
+     NVIDIA Open Model License.
+   - NVIDIA langid_ambernet (NGC): NGC Terms of Use.
+   - Silero VAD: MIT.
+   The served ASR model is NVIDIA's stt_en_fastconformer_hybrid_large_streaming_multi (CC-BY-4.0, unchanged) plus
+   heads trained by this project (assets/served_heads_v0.1.pt, trained on AMI (CC-BY-4.0), ICSI and LibriSpeech
+   (CC-BY-4.0) derived features on top of the frozen NVIDIA encoder). The merged model is an adaptation of a
+   CC-BY-4.0 work: redistribute it with attribution to NVIDIA and a link to the licence.
+
+2. Baselines used only by the benchmarks (not installed or bundled): smart-turn (BSD-2-Clause), LiveKit turn
+   detector (LiveKit Model License: use only with LiveKit Agents), pyannote, SpeechBrain, Whisper, WebRTC VAD.
+
+3. integrations/turnbench_scorer/ is vendored from the TurnBench scorer, MIT License (see its LICENSE file).
+
+4. examples/audio/two_speakers_10s.wav is made from two LibriSpeech test-clean utterances, CC-BY-4.0
+   (Panayotov et al., ICASSP 2015; https://www.openslr.org/12).
+
+5. examples/audio/two_party_call_16s.wav (and its voice print two_party_call_16s.voiceprint.json) is a 16 s excerpt
+   of one conversation of otoSpeech-full-duplex-processed-141h by otoearth, CC BY 4.0
+   (https://huggingface.co/datasets/otoearth/otoSpeech-full-duplex-processed-141h); the two channels were averaged
+   to mono and resampled to 16 kHz, nothing else changed. The dataset card prohibits attempts to identify the
+   speakers.

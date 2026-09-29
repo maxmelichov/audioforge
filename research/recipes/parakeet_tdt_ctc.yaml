@@ -1,0 +1,15 @@
+# REPRODUCE: Parakeet-TDT-CTC (nvidia/parakeet-tdt_ctc-110m, -1.1b, parakeet-tdt-0.6b-v2/v3)
+# Offline FastConformer + TDT decoder with auxiliary CTC head (hybrid loss).
+# Production scale (0.6B): d_model 1024, n_layers 24, n_heads 8, vocab 8192 SPM, 128 mels.
+name: parakeet_tdt_ctc_tiny
+sample_rate: 16000
+preprocessor: {n_mels: 80, normalize: per_feature}
+spec_augment: {freq_masks: 2, freq_width: 15, time_masks: 2, time_width: 0.05}
+encoder: {d_model: 144, n_layers: 4, n_heads: 4, conv_kernel: 9, subsampling_channels: 64, dropout: 0.1}
+tokenizer: {kind: char}
+heads:
+  tdt: {type: tdt, durations: [0, 1, 2, 3, 4], pred_hidden: 160, joint_hidden: 160, weight: 0.7}
+  ctc: {type: ctc, weight: 0.3}
+decoding: {primary: tdt}
+data: {synthetic: {kind: asr, n_train: 3000, n_val: 64}}
+trainer: {max_steps: 2000, batch_size: 16, lr: 2.0e-3, warmup_steps: 150, log_every: 50}

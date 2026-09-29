@@ -1,0 +1,40 @@
+# research/SPK_HEAD.md - distillation: the same speaker head (learned mix over all 17 encoder layers, as stage 1), supervised by cosine
+# distillation onto frozen NVIDIA TitaNet-Large embeddings (CC-BY-4.0; 192-d, cached per single-speaker segment
+# by scripts/research/cache_titanet.py) instead of AAM over the 190 AMI ids. Data: AMI train + ICSI train single-speaker
+# segments and 5k LibriSpeech train-clean-100 utterances. Head only (init.train_only); the ASR is untouched.
+#
+# CPU first (teacher cache, resumable, each process < 10 min):
+#   for s in ami_asr icsi_asr librispeech val; do .venv/bin/python scripts/research/cache_titanet.py --recipe spk_distill_titanet.yaml --source $s; done
+# GPU (one job on the machine):
+#   PYTORCH_MPS_HIGH_WATERMARK_RATIO=0.6 PYTORCH_MPS_LOW_WATERMARK_RATIO=0.5 .venv/bin/python scripts/research/spk_head.py train \
+#     --recipe research/recipes/spk_distill_titanet.yaml --out runs/spk_distill_titanet.afm
+name: spk_distill_titanet
+init: {from: runs/stage1_heads_pretrained.afm, pretrained_lr_mult: 0, train_only: [heads.spk, layer_mix.spk]}
+heads:
+  rnnt: {weight: 0}
+  ctc: {weight: 0}
+  vad: {weight: 0}
+  eou: {weight: 0}
+  diar: {weight: 0}
+  turn: {weight: 0}
+  # distill: 1 - cos(student, spk_teacher); aam_weight 0: no class labels used (ICSI / LibriSpeech ids are not AMI's)
+  spk: {type: speaker, num_speakers: 190, from_layers: all, weight: 1.0,
+        distill: {target: spk_teacher, weight: 1.0}, aam_weight: 0.0}
+data:
+  mix:
+    # weights balance the three sources (~2.8k / 3.2k / 3.0k items per epoch)
+    - {name: ami_asr, ami: {mode: asr}, spk_teacher: data/cache/titanet/ami_train.npz, weight: 3.0}
+    - {name: icsi_asr, icsi: {mode: asr}, spk_teacher: data/cache/titanet/icsi_train.npz, weight: 1.0,
+       drop_keys: [speaker]}
+    - {name: librispeech, librispeech: {train_split: train-clean-100, n_train: 5000, max_sec: 12, bucket: false, seed: 0},
+       spk_teacher: data/cache/titanet/librispeech_train.npz, weight: 0.6, drop_keys: [speaker]}
+  val: {ami: {mode: asr, val_split: dev, n_val: 64}, spk_teacher: data/cache/titanet/ami_dev.npz}
+  batching: source
+trainer:
+  device: mps
+  batch_size: 6
+  lr: 1.0e-3
+  warmup_steps: 100
+  max_steps: 2000
+  log_every: 50
+  checkpoint_every: 1000

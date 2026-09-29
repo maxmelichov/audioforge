@@ -1,0 +1,47 @@
+# Conversational action tokens, run 1a (research/YIELD_TOKENS.md): the SINGLE-SPEAKER fallback. Targets are AMI train
+# asr-mode segments (datasets/ami.py AMI.asr: one speaker's run, no other speaker's word within 0.2 s, <= 15 s; 930
+# segments in the 12 train meetings) with <HOLD> at >= 0.3 s pauses inside the segment and an END token: <YIELD> if the
+# last word ends a floor-definition turn of that speaker (410), <HOLD> if the run ends but the turn continues (317: a
+# >= 0.5 s pause with nobody taking the floor), none if the chunk was cut by max_sec (203). The audio stops 0.1 s after
+# the last word, so the end token must come from the words / prosody, not from the following silence: the cleanest
+# test of "syntax solves hesitations" this data allows (dev: 354 segments, 155 <YIELD> / 140 <HOLD> ends).
+# Run 2 (research/recipes/stage1_rnnt_yieldhold.yaml, all-speaker interleaved transcripts of the mixed 16 s windows) kept the
+# LibriSpeech gate (2.26 -> 2.30 %) but never learnt to emit either token (max log P(<YIELD>) -6.9 on dev, 0 emissions
+# on train windows): with a frozen encoder the decoder cannot align interleaved overlapped speech (AMI loss stayed at
+# 2-3 nats / token). Same model surgery and frozen encoder as run 2; lr 1e-4 (the tiny clean set must be learnt in
+# ~1200 steps), LibriSpeech 1:1 anchor, gate + checkpoint every 100 steps.
+#   PYTORCH_MPS_HIGH_WATERMARK_RATIO=0.6 PYTORCH_MPS_LOW_WATERMARK_RATIO=0.5 .venv/bin/python -m audioforge.cli train \
+#       research/recipes/stage1_rnnt_yieldhold_1a.yaml -o runs/stage1_rnnt_yieldhold_1a.afm 2>&1 | tee runs/stage1_rnnt_yieldhold_1a.log
+name: stage1_rnnt_yieldhold_1a
+init:
+  from: runs/stage1_rnnt_yieldhold_init.afm
+  pretrained_lr_mult: 0
+  pretrained_scope: [preprocessor., encoder., layer_mix., heads.vad., heads.eou., heads.spk., heads.diar., heads.turn.]
+encoder: {att_context_size: [70, 1], att_context_sizes: [[70, 1]], speaker_kernel_layers: [0, 2]}
+heads:
+  rnnt: {fused_batch_size: 2, weight: 1.0}
+  ctc: {weight: 0.1}
+  vad: {weight: 0}
+  eou: {weight: 0}
+  spk: {weight: 0}
+  diar: {weight: 0}
+  turn: {weight: 0}
+data:
+  mix:
+    - {name: ami_asr_actions, ami: {mode: asr, asr_max_sec: 15.0, action_tokens: {hes_gap: 0.3}}, weight: 3.0,
+       drop_keys: [speaker, vad, eou]}  # 930 segments x 3 = 2790 items per pass
+    - {name: librispeech_anchor, librispeech: {train_split: train-clean-100, n_train: 2800, n_val: 200, max_sec: 16.0,
+                                               bucket: false},
+       weight: 1.0, drop_keys: [speaker, vad, eou]}
+  val: {ami: {mode: asr, val_split: dev, asr_max_sec: 15.0, action_tokens: {hes_gap: 0.3}, n_val: 64}, drop_keys: [speaker, vad, eou]}
+  batching: source
+trainer:
+  device: mps
+  batch_size: 6
+  lr: 1.0e-4
+  warmup_steps: 100
+  max_steps: 1200
+  log_every: 50
+  checkpoint_every: 100
+  checkpoint_keep: 2
+  wer_gate: {manifest: data/librispeech/test-clean-first200.jsonl, n: 100, every: 100, max_delta: 0.005, head: rnnt}

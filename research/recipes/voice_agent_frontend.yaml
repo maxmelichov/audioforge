@@ -1,0 +1,29 @@
+# NEW SOLUTION: one streaming encoder pass -> ASR + VAD + end-of-utterance + speaker ID.
+# NVIDIA ships these as separate models (Nemotron-ASR, Frame-VAD MarbleNet, parakeet_realtime_eou,
+# TitaNet), each re-encoding the same audio. They share the same front end, so one cache-aware
+# FastConformer can feed all heads: ~1/4 the encoder compute and perfectly aligned 80 ms events.
+name: voice_agent_frontend_tiny
+preprocessor: {n_mels: 80, normalize: fixed}  # global stats: streaming-safe
+spec_augment: {freq_masks: 2, freq_width: 15, time_masks: 2, time_width: 0.05}
+encoder:
+  d_model: 144
+  n_layers: 4
+  n_heads: 4
+  subsampling_channels: 64
+  causal: true
+  att_context_size: [16, 1]
+  att_context_sizes: [[16, 1], [16, 0], [16, 3]]
+tokenizer: {kind: char}
+heads:
+  tdt: {type: tdt, pred_hidden: 160, joint_hidden: 160, weight: 0.6}
+  ctc: {type: ctc, weight: 0.2}
+  # grad_scale: auxiliary heads train at full rate but only lightly steer the shared encoder.
+  # Without it the AAM speaker loss (starts ~12) dominates the clipped gradient and ASR never learns.
+  vad: {type: frame, key: vad, hidden: 64, weight: 0.2, grad_scale: 0.3}
+  eou: {type: frame, key: eou, hidden: 64, pos_weight: 5.0, weight: 0.2, grad_scale: 0.3}
+  # from_layers: all -> speaker head reads a learned mix of all layers (speaker info fades at the top)
+  spk: {type: speaker, num_speakers: 8, emb_dim: 64, margin: 0.1, scale: 15.0, weight: 0.3, grad_scale: 0.3,
+        from_layers: all}
+decoding: {primary: tdt}
+data: {synthetic: {kind: multitask, n_train: 3000, n_val: 64}}
+trainer: {max_steps: 2000, batch_size: 16, lr: 2.0e-3, warmup_steps: 150, log_every: 50}

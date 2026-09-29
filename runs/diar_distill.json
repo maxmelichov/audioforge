@@ -1,0 +1,387 @@
+{
+ "eval": {
+  "nemotron3_max": {
+   "ckpt": "runs/nemo_nemotron3_diar.afm",
+   "head": "diar",
+   "head_cfg": {
+    "type": "sortformer",
+    "d_model": 512,
+    "num_spks": 8,
+    "d_hidden": 192,
+    "n_layers": 31,
+    "n_heads": 8,
+    "d_ff": 2048,
+    "upsample": 8,
+    "rope_theta": 10000.0
+   },
+   "pool": "max",
+   "layer_weights": null,
+   "head_params": 98702216,
+   "ami": {
+    "n": 64,
+    "frame_der": {
+     "der_pooled": 0.2321,
+     "miss": 0.191,
+     "fa": 0.0272,
+     "confusion": 0.0139,
+     "speaker_frames": 14428
+    },
+    "count": {
+     "mean": -0.141,
+     "mean_abs": 0.234,
+     "hyp_mean": 2.16,
+     "ref_mean": 2.3
+    },
+    "sec": 29.8
+   },
+   "icsi": {
+    "n": 64,
+    "frame_der": {
+     "der_pooled": 0.2364,
+     "miss": 0.0045,
+     "fa": 0.2283,
+     "confusion": 0.0036,
+     "speaker_frames": 13213
+    },
+    "count": {
+     "mean": 0.062,
+     "mean_abs": 0.094,
+     "hyp_mean": 1.7,
+     "ref_mean": 1.64
+    },
+    "sec": 30.9
+   }
+  },
+  "served_stage1": {
+   "ckpt": "runs/stage1_served.afm",
+   "head": "diar",
+   "head_cfg": {
+    "type": "sortformer",
+    "num_spks": 4,
+    "from_layers": "all",
+    "prefix_prob": 0.5,
+    "prefix_min": 8,
+    "weight": 0
+   },
+   "pool": null,
+   "layer_weights": [
+    0.0536,
+    0.0544,
+    0.0627,
+    0.067,
+    0.0719,
+    0.0792,
+    0.0739,
+    0.0694,
+    0.0626,
+    0.0528,
+    0.0495,
+    0.0485,
+    0.0487,
+    0.0483,
+    0.049,
+    0.0495,
+    0.0588
+   ],
+   "head_params": 1915780,
+   "ami": {
+    "n": 64,
+    "frame_der": {
+     "der_pooled": 0.3937,
+     "miss": 0.2456,
+     "fa": 0.059,
+     "confusion": 0.0891,
+     "speaker_frames": 14428
+    },
+    "count": {
+     "mean": -0.719,
+     "mean_abs": 0.75,
+     "hyp_mean": 1.58,
+     "ref_mean": 2.3
+    },
+    "sec": 8.4
+   },
+   "icsi": {
+    "n": 64,
+    "frame_der": {
+     "der_pooled": 0.3541,
+     "miss": 0.0792,
+     "fa": 0.2092,
+     "confusion": 0.0657,
+     "speaker_frames": 13213
+    },
+    "count": {
+     "mean": -0.281,
+     "mean_abs": 0.281,
+     "hyp_mean": 1.36,
+     "ref_mean": 1.64
+    },
+    "sec": 8.2
+   }
+  },
+  "b6_1800": {
+   "ckpt": "/Volumes/ExternalSSD/nvidia-audio-models/scratch/diar/ckpt/distill_b6.afm",
+   "head": "diar",
+   "head_cfg": {
+    "type": "sortformer",
+    "num_spks": 4,
+    "from_layers": [
+     5
+    ],
+    "prefix_prob": 0.5,
+    "prefix_min": 8,
+    "weight": 1.0,
+    "distill": {
+     "key": "diar_teacher",
+     "weight": 0.5
+    }
+   },
+   "pool": null,
+   "layer_weights": [
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    1.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ],
+   "head_params": 1915780,
+   "ami": {
+    "n": 64,
+    "frame_der": {
+     "der_pooled": 0.3848,
+     "miss": 0.3039,
+     "fa": 0.0308,
+     "confusion": 0.0502,
+     "speaker_frames": 14428
+    },
+    "count": {
+     "mean": -0.688,
+     "mean_abs": 0.75,
+     "hyp_mean": 1.61,
+     "ref_mean": 2.3
+    },
+    "sec": 8.2
+   },
+   "icsi": {
+    "n": 64,
+    "frame_der": {
+     "der_pooled": 0.1932,
+     "miss": 0.0758,
+     "fa": 0.0817,
+     "confusion": 0.0358,
+     "speaker_frames": 13213
+    },
+    "count": {
+     "mean": -0.219,
+     "mean_abs": 0.219,
+     "hyp_mean": 1.42,
+     "ref_mean": 1.64
+    },
+    "sec": 8.2
+   }
+  },
+  "mix46_1800": {
+   "ckpt": "/Volumes/ExternalSSD/nvidia-audio-models/scratch/diar/ckpt/distill_mix46.afm",
+   "head": "diar",
+   "head_cfg": {
+    "type": "sortformer",
+    "num_spks": 4,
+    "from_layers": [
+     3,
+     5
+    ],
+    "prefix_prob": 0.5,
+    "prefix_min": 8,
+    "weight": 1.0,
+    "distill": {
+     "key": "diar_teacher",
+     "weight": 0.5
+    }
+   },
+   "pool": null,
+   "layer_weights": [
+    0.0,
+    0.0,
+    0.0,
+    0.3711,
+    0.0,
+    0.6289,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ],
+   "head_params": 1915780,
+   "ami": {
+    "n": 64,
+    "frame_der": {
+     "der_pooled": 0.3673,
+     "miss": 0.2695,
+     "fa": 0.031,
+     "confusion": 0.0668,
+     "speaker_frames": 14428
+    },
+    "count": {
+     "mean": -0.656,
+     "mean_abs": 0.719,
+     "hyp_mean": 1.64,
+     "ref_mean": 2.3
+    },
+    "sec": 7.1
+   },
+   "icsi": {
+    "n": 64,
+    "frame_der": {
+     "der_pooled": 0.196,
+     "miss": 0.0747,
+     "fa": 0.0812,
+     "confusion": 0.0401,
+     "speaker_frames": 13213
+    },
+    "count": {
+     "mean": -0.234,
+     "mean_abs": 0.234,
+     "hyp_mean": 1.41,
+     "ref_mean": 1.64
+    },
+    "sec": 7.7
+   }
+  }
+ },
+ "train": {
+  "b6_1800": {
+   "variant": "b6",
+   "recipe": "/Users/maxm/nvidia-audio-models/recipes/diar_distill_nemotron3.yaml",
+   "overrides": [
+    "heads.diar.from_layers=[5]",
+    "trainer.max_steps=1800",
+    "trainer.log_every=100"
+   ],
+   "ckpt": "/Volumes/ExternalSSD/nvidia-audio-models/scratch/diar/ckpt/distill_b6.afm",
+   "sec": 564.0,
+   "steps": 1800,
+   "final_eval": {
+    "acc_vad": 0.9462,
+    "recall_vad": 0.98,
+    "der_diar": 0.3866
+   },
+   "frozen_tensors_identical": 704,
+   "changed_tensors": 54,
+   "dropped_from_init": [
+    "layer_mix.diar"
+   ],
+   "new_in_out": [],
+   "head_params": 1915780,
+   "head_cfg": {
+    "type": "sortformer",
+    "num_spks": 4,
+    "from_layers": [
+     5
+    ],
+    "prefix_prob": 0.5,
+    "prefix_min": 8,
+    "weight": 1.0,
+    "distill": {
+     "key": "diar_teacher",
+     "weight": 0.5
+    }
+   },
+   "layer_weights": [
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    1.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ],
+   "size_mb": 443.3
+  },
+  "mix46_1800": {
+   "variant": "mix46",
+   "recipe": "/Users/maxm/nvidia-audio-models/recipes/diar_distill_nemotron3.yaml",
+   "overrides": [
+    "heads.diar.from_layers=[3,5]",
+    "trainer.max_steps=1800",
+    "trainer.log_every=100"
+   ],
+   "ckpt": "/Volumes/ExternalSSD/nvidia-audio-models/scratch/diar/ckpt/distill_mix46.afm",
+   "sec": 493.3,
+   "steps": 1800,
+   "final_eval": {
+    "acc_vad": 0.9462,
+    "recall_vad": 0.98,
+    "der_diar": 0.3651
+   },
+   "frozen_tensors_identical": 704,
+   "changed_tensors": 55,
+   "dropped_from_init": [],
+   "new_in_out": [],
+   "head_params": 1915780,
+   "head_cfg": {
+    "type": "sortformer",
+    "num_spks": 4,
+    "from_layers": [
+     3,
+     5
+    ],
+    "prefix_prob": 0.5,
+    "prefix_min": 8,
+    "weight": 1.0,
+    "distill": {
+     "key": "diar_teacher",
+     "weight": 0.5
+    }
+   },
+   "layer_weights": [
+    0.0,
+    0.0,
+    0.0,
+    0.3711,
+    0.0,
+    0.6289,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ],
+   "size_mb": 443.3
+  }
+ }
+}

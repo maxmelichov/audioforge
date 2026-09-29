@@ -1,0 +1,184 @@
+<!doctype html><html><head><meta charset="utf-8"><link rel="stylesheet" href="common.css">
+<style>
+.lab { position: absolute; font-size: 40px; line-height: 1.12; color: var(--fg); white-space: nowrap; }
+.lab .s { color: var(--fg2); }
+.box { position: absolute; border-radius: 18px; display: flex; flex-direction: column; justify-content: center; padding: 0 22px; font-size: 40px; line-height: 1.12; white-space: nowrap; }
+.nv { background: var(--surface2); border: 3px solid var(--livekit); color: var(--fg); }
+.nv .s { color: #C7C7CC; }
+.us { background: var(--ours); color: #0B0B0C; font-weight: 700; }
+.us .s { font-weight: 400; }
+.bar { position: absolute; background: var(--pipecat); border-radius: 4px; }
+.wv { position: absolute; display: flex; align-items: center; justify-content: space-between; }
+.wv i { display: block; border-radius: 999px; background: var(--user); }
+.words { position: absolute; font-size: 40px; line-height: 1.2; color: var(--fg); overflow: hidden; border-left: 4px solid var(--fg2); padding-left: 22px; white-space: normal; }
+.chip { display: inline-block; font-size: 34px; font-weight: 700; padding: 2px 16px; border-radius: 999px; background: #0B0B0C; color: var(--fg); margin-top: 6px; }
+.meter { position: absolute; }
+.meter .trk { position: absolute; left: 0; right: 0; height: 22px; border-radius: 11px; background: var(--surface2); }
+.meter .fil { position: absolute; left: 0; height: 22px; border-radius: 11px; background: var(--ours); }
+.meter .thr { position: absolute; width: 4px; background: var(--fg); }
+</style></head><body><script src="common.js"></script><script>
+// The architecture of the served model as a flat, paper-style figure, built one element per beat: NVIDIA's streaming
+// speech model (grey, frozen), our three heads at their real tap points (orange), the turn head's second encoder pass,
+// NVIDIA's diarizer feeding it and Parakeet rewriting finished turns. Live values from a recorded session (AMI IS1008b).
+// Sizes and taps: runs/stage1_served.afm, audioforge/modules/fastconformer.py, heads/turn.py, serve.py (fine print).
+let D, P, R, ct, svg, E = {}, G, melImg, bars1 = [], bars2 = [];
+const NS = "http://www.w3.org/2000/svg";
+function frameAt(at) { const F = R.frames; let lo = 0, hi = F.length - 1; while (lo < hi) { const m = (lo + hi + 1) >> 1; if (F[m][0] <= at) lo = m; else hi = m - 1; } return F[lo]; }
+function wordsAt(at) { let w = []; for (const [t, ws] of R.words) { if (t <= at) w = ws; else break; } return w.map(x => x[1]); }
+function geom(W) {
+  const M = S.M, sq = S.sq;
+  if (!sq) return {   // 16:9: the figure fills 64..~870 px of height
+    lab: 64, el: 172, elh: 230,
+    wave: [64, 172, 200, 230], mel: [296, 172, 170, 230], sub: [498, 172, 150, 230],
+    s1: [716, 172, 440, 230], rnnt: [1196, 212, 220, 150], words: [1448, 172, 408, 230],
+    spk: [600, 482, 300, 130], vad: [930, 482, 320, 130], tdt: [1448, 472, 408, 170],
+    dz: [64, 672, 400, 136], s2: [520, 678, 400, 130], turn: [960, 666, 250, 130], meter: [1244, 680, 400, 120],
+    s2lab: [520, 816], ey: 640, cache: [64, 560, 470, 60], cachelab: [64, 452],
+  };
+  return {   // 1:1 (content area x 64..1016, y 64..~838)
+    lab: 64, el: 160, elh: 120,
+    wave: [64, 160, 150, 120], mel: [236, 160, 120, 120], sub: [378, 160, 110, 120],
+    s1: [540, 160, 280, 120], rnnt: [848, 170, 168, 100], words: [620, 300, 396, 132],
+    spk: [64, 316, 260, 106], vad: [340, 316, 260, 106], tdt: [620, 470, 396, 100],
+    dz: [64, 470, 340, 110], s2: [64, 614, 420, 100], turn: [506, 604, 196, 110], meter: [724, 604, 292, 116],
+    s2lab: [64, 726], ey: 0, cache: [64, 380, 536, 40], cachelab: [64, 300],
+  };
+}
+function place(e, r) { U.css(e, { left: r[0], top: r[1], width: r[2], height: r[3] }); }
+function init(data, params, W, H) {
+  D = data; P = params; ct = stage(W, H); R = D.clips[P.clip]; G = geom(W);
+  const fs = S.sq ? 34 : 40;
+  const pr = U.el("div", null, ct); pr.setAttribute("data-primary", ""); U.css(pr, { position: "absolute", left: S.M, top: S.M, width: W - 2 * S.M, height: S.bottom - S.M });
+  svg = document.createElementNS(NS, "svg"); U.css(svg, { position: "absolute", left: 0, top: 0, width: W, height: H }); svg.setAttribute("width", W); svg.setAttribute("height", H); ct.appendChild(svg);
+  const lab = (id, x, y, html, anchor) => { const e = U.el("div", "lab", ct, html); e.style.fontSize = fs + "px"; U.css(e, { left: x, top: y }); if (anchor === "c") e.dataset.center = "1"; E[id] = e; return e; };
+  const box = (id, cls, r, html) => { const e = U.el("div", "box " + cls, ct, html); e.style.fontSize = fs + "px"; place(e, r); if (S.sq) e.style.padding = "0 14px"; E[id] = e; return e; };
+  // row 1: NVIDIA's streaming speech model
+  E.wave = U.el("div", "wv", ct); place(E.wave, G.wave); for (let i = 0; i < (S.sq ? 12 : 16); i++) U.el("i", null, E.wave).style.width = (G.wave[2] / (S.sq ? 12 : 16) * 0.5) + "px";
+  lab("lwave", G.wave[0], G.lab, `audio<br><span class="s">160 ms</span>`);
+  E.mel = document.createElement("canvas"); E.mel.width = 160; E.mel.height = 80; ct.appendChild(E.mel); U.css(E.mel, { position: "absolute", left: G.mel[0], top: G.mel[1], width: G.mel[2], height: G.mel[3], borderRadius: "10px" });
+  lab("lmel", G.mel[0], G.lab, `log-mel<br><span class="s">80 bins</span>`);
+  box("sub", "nv", G.sub, `<div style="text-align:center">×8</div>`);
+  lab("lsub", G.sub[0], G.lab, `sub-<br>sampling`);
+  const [sx, sy, sw, sh] = G.s1, n = 17, bw = sw / (n * 1.6), gap = (sw - n * bw) / (n - 1);
+  for (let k = 0; k < n; k++) { const b = U.el("div", "bar", ct); U.css(b, { left: sx + k * (bw + gap), top: sy, width: bw, height: sh }); bars1.push(b); }
+  lab("ls1", sx, G.lab, S.sq ? `17 × FastConformer<br><span class="s">frozen · NVIDIA</span>` : `17 × FastConformer block<br><span class="s">cache-aware streaming · frozen · NVIDIA</span>`);
+  box("rnnt", "nv", G.rnnt, `RNNT<br><span class="s">decoder</span>`);
+  E.words = U.el("div", "words", ct); place(E.words, G.words); E.words.style.fontSize = "44px"; E.words.dataset.clipok = "";
+  // row 2: our heads (orange) and Parakeet (grey)
+  box("spk", "us", G.spk, `Speaker head<br><span class="s">who is this?</span>`);
+  box("vad", "us", G.vad, `Speech head<br><span class="s">all 17 blocks</span>`);
+  box("tdt", "nv", G.tdt, S.sq ? `NVIDIA Parakeet<br><span class="s">rewrites each sentence</span>` : `NVIDIA Parakeet<br><span class="s">rewrites each finished<br>sentence</span>`);
+  // row 3: the diarizer, the second pass, the turn head
+  box("dz", "nv", G.dz, S.sq ? `Nemotron-3<br><span class="s">who is in the room</span>` : `NVIDIA Nemotron-3<br><span class="s">who is in the room</span>`);
+  const [tx, ty, tw, th] = G.s2, bw2 = tw / (n * 1.6), gap2 = (tw - n * bw2) / (n - 1);
+  for (let k = 0; k < n; k++) { const b = U.el("div", "bar", ct); U.css(b, { left: tx + k * (bw2 + gap2), top: ty, width: bw2, height: th }); bars2.push(b); }
+  lab("ls2", G.s2lab[0], G.s2lab[1], S.sq ? `<span class="s">same encoder, second pass</span>` : `<span class="s">same encoder, second pass, told who is speaking</span>`);
+  box("turn", "us", G.turn, `Turn head<br><span class="s">GRU</span>`);
+  E.meter = U.el("div", "meter", ct); place(E.meter, G.meter);
+  E.meter.innerHTML = `<div class="lab" style="position:relative;font-size:${fs}px">turn over?</div><div class="trk" style="top:${G.meter[3] - 30}px"></div><div class="fil" style="top:${G.meter[3] - 30}px"></div><div class="thr" style="top:${G.meter[3] - 40}px;height:42px"></div>`;
+  // cache-aware streaming: 70 cached frames + the new 160 ms chunk (2 frames of 80 ms)
+  E.cache = U.el("div", null, ct); E.cache.style.position = "absolute"; E.cache.style.overflow = "hidden"; place(E.cache, G.cache); E.cache.dataset.clipok = "";
+  E.cells = []; const nc = 72, cw = G.cache[2] / nc;
+  for (let i = 0; i < nc; i++) { const c = U.el("div", null, E.cache); U.css(c, { position: "absolute", left: i * cw, top: 0, width: cw * 0.7, height: G.cache[3], borderRadius: "2px", background: i < 70 ? "#636366" : "#FFFFFF" }); E.cells.push(c); }
+  lab("lcache", G.cachelab[0], G.cachelab[1], `cache: 70 frames = 5.6 s<br><span class="s">new: one 160 ms chunk</span>`);
+  // speaker head finding
+  E.spkfact = lab("lspkf", 0, 0, `<span class="s">block 4, not all 17:</span><br>speaker errors 32 % → 14 %`);
+  // engineering card
+  E.card = U.el("div", "box nv", ct); E.card.style.fontSize = fs + "px";
+  const cw2 = S.sq ? W - 2 * S.M : 1100, ch2 = S.sq ? 560 : 520;
+  U.css(E.card, { left: (W - cw2) / 2, top: S.sq ? 180 : 170, width: cw2, height: ch2, padding: "0 48px", justifyContent: "center", background: "#161618" });
+  E.card.style.fontSize = (S.sq ? 40 : 48) + "px";
+  E.card.innerHTML = `<div style="font-weight:700;margin-bottom:18px">Engineering for speed</div>
+    <div class="s">cached position projections</div><div class="s">column-major weights</div>
+    <div class="s">one subsampling for both passes</div><div class="s">cached RNNT joint</div>
+    <div style="margin-top:22px;color:#FFFFFF;font-weight:700;border-left:6px solid #FF7A1A;padding-left:18px">same decisions · 38 % less compute</div>`;
+  const raw = atob(R.mel); melImg = new Uint8Array(raw.length); for (let i = 0; i < raw.length; i++) melImg[i] = raw.charCodeAt(i);
+}
+// beats: one per narration line (5); inside beat 1 the chain builds left to right
+function beats(ctx) { const sg = (ctx.segs || []).filter(s => s.kind === "say").map(s => Math.max(0, s.start - 0.2)); while (sg.length < 7) sg.push((sg[sg.length - 1] || 0) + 4); return sg; }
+function holdStart(ctx) { const h = (ctx.segs || []).find(s => s.kind === "hold"); return h ? h.start : 1e9; }
+const show = (e, a) => { if (!e) return; e.style.opacity = a.toFixed(3); };
+function line(x1, y1, x2, y2, col, w, op) { return `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="${col}" stroke-width="${w}" stroke-opacity="${op.toFixed(3)}" stroke-linecap="round"/>`; }
+function render(t, ctx) {
+  const Lr = (ctx.segs || []).filter(s => s.kind === "say");
+  chrome(t, Object.assign({}, ctx, { breathe: Lr.length > 3 && t > Lr[3].start - 0.3 }));   // keep the card phase moving
+  // four narration lines: (1) model + cache, (2) speech head + speaker head, (3) turn pass, (4) NVIDIA helpers + engineering
+  const L4 = (ctx.segs || []).filter(s => s.kind === "say");
+  const mid = (i, f) => L4[i] ? L4[i].start + f * (L4[i].end - L4[i].start) : 1e9;
+  const b1 = L4[0] ? L4[0].start - 0.2 : 0, bC = mid(0, 0.45), b2 = mid(1, 0) - 0.2, b3 = mid(1, 0.35), b4 = mid(2, 0) - 0.2, b5 = mid(2, 0.7), bE = mid(3, 0) - 0.1;
+  const hS = holdStart(ctx), at = 3.4 + t, fr = frameAt(at), ap = (ta) => U.ease(U.seg(t, ta, 0.35));
+  const ORANGE = "#FF7A1A", GREY = "#8E8E93", DIM = "#636366";
+  // beat 1: audio -> log-mel -> x8 -> 17 blocks -> RNNT -> words
+  const aW = 1, aM = 1, aS = ap(b1 + 0.6), aR = ap(b1 + 2.6), aWd = ap(b1 + 3.0);
+  show(E.wave, aW); show(E.lwave, aW); show(E.mel, aM); show(E.lmel, aM); show(E.sub, aS); show(E.lsub, aS);
+  bars1.forEach((b, k) => show(b, ap(b1 + 1.4 + k * 0.06)));
+  show(E.ls1, ap(b1 + 1.6)); show(E.rnnt, aR); show(E.words, aWd);
+  const wb = E.wave.querySelectorAll("i");
+  wb.forEach((b, i) => { const v = Math.pow(U.env(R, at - 1.2 + 1.2 * (i + 0.5) / wb.length), 0.8); b.style.height = Math.max(8, v * G.wave[3] * 0.95) + "px"; });
+  const g = E.mel.getContext("2d"), img = g.createImageData(160, 80), f0 = Math.floor(at * 100) - 160;
+  for (let x = 0; x < 160; x++) for (let y = 0; y < 80; y++) { const fi = f0 + x, b = 79 - y; const v = fi >= 0 && fi * 80 + b < melImg.length ? melImg[fi * 80 + b] / 255 : 0; const c = Math.round(28 + 227 * v * v); const o = (y * 160 + x) * 4; img.data[o] = img.data[o + 1] = img.data[o + 2] = c; img.data[o + 3] = 255; }
+  g.putImageData(img, 0, 0);
+  // a quiet highlight climbs the stack once per 160 ms chunk (the chunk moving through the encoder)
+  const cur = Math.floor((t % 0.16) / 0.16 * 17);
+  bars1.forEach((b, k) => b.style.background = k === cur && t > b1 + 2.6 ? "#FFFFFF" : GREY);
+  const ww = wordsAt(at), fmt = (a, cut) => { if (!a.length) return "…"; a = a.slice(); a[0] = a[0][0].toUpperCase() + a[0].slice(1); return (cut ? "… " : "") + a.join(" ") + "."; };
+  let k = Math.min(12, ww.length); E.words.textContent = fmt(ww.slice(-k), k < ww.length);
+  while (E.words.scrollHeight > E.words.clientHeight + 1 && k > 1) { k--; E.words.textContent = fmt(ww.slice(-k), true); }
+  // cache beat: 70 cached frames (grey) + the new chunk (white) sliding in every 160 ms
+  const aC = ap(bC) * (S.sq ? 1 - ap(b2 - 0.2) : 1 - ap(b3 - 0.2));   // the cache card makes room for the speaker finding
+  show(E.cache, aC); show(E.lcache, aC);
+  const ph = (t % 0.16) / 0.16;
+  E.cells.forEach((c, i) => { c.style.transform = `translateX(${(-ph * 2 * G.cache[2] / 72).toFixed(2)}px)`; c.style.background = i >= 70 ? "#FFFFFF" : "#636366"; });
+  // beat 2: speech head reads a learned mix of all 17 blocks
+  const aV = ap(b2), aSp = ap(b3), aT = ap(b4), aDz = ap(b5), aP = ap(b5 + 0.9);
+  show(E.vad, aV);
+  E.vad.innerHTML = `Speech head<br><span class="s">${fr[2] > 0.5 ? "speech" : "silence"}</span>`;
+  // beat 3: speaker head at block 4
+  show(E.spk, aSp);
+  const prim = fr[4]; E.spk.innerHTML = `Speaker head<br><span class="s">${prim == null ? "who is this?" : "Person " + (prim + 1)}</span>`;
+  const fx = S.sq ? G.spk[0] : G.spk[0] - 20, fy = S.sq ? G.spk[1] + G.spk[3] + 8 : G.spk[1] + G.spk[3] + 14;
+  U.css(E.spkfact, { left: 64, top: S.sq ? 440 : 470 }); show(E.spkfact, ap(b3 + 0.8) * (S.sq ? 1 - ap(b5 - 0.3) : 1));
+  // engineering beat: the figure dims behind a card, then the full figure holds
+  const aE = ap(bE) * (1 - ap(hS));
+  show(E.card, aE);
+  // beat 4: second pass + turn head
+  bars2.forEach((b, k2) => { show(b, ap(b4 + 0.2 + k2 * 0.03)); b.style.background = GREY; });
+  show(E.ls2, ap(b4 + 0.6)); show(E.turn, ap(b4 + 1.0)); show(E.meter, ap(b4 + 1.3));
+  const p = fr[3] == null ? 0 : fr[3], fired = R.turn_ends.some(x => at >= x && at - x < 1.0), thr = 0.9;
+  const fw = (G.meter[2]) * (fired ? 1 : Math.min(0.97, p));
+  E.meter.querySelector(".fil").style.width = fw + "px"; E.meter.querySelector(".thr").style.left = (G.meter[2] * thr) + "px";
+  E.meter.querySelector(".lab").style.color = fired ? ORANGE : "#FFFFFF";
+  // beat 5: diarizer feeding the second pass; Parakeet rewriting finished turns
+  show(E.dz, aDz); show(E.tdt, aP);
+  // connectors
+  const cx = r => r[0] + r[2] / 2, cy = r => r[1] + r[3] / 2, out = [];
+  const [sx, sy, sw, sh] = G.s1;
+  out.push(line(G.wave[0] + G.wave[2] + 6, cy(G.wave), G.mel[0] - 6, cy(G.mel), DIM, 3, aM));
+  out.push(line(G.mel[0] + G.mel[2] + 6, cy(G.mel), G.sub[0] - 6, cy(G.sub), DIM, 3, aS));
+  out.push(line(G.sub[0] + G.sub[2] + 6, cy(G.sub), sx - 6, cy(G.s1), DIM, 3, ap(b1 + 1.4)));
+  out.push(line(sx + sw + 6, cy(G.s1), G.rnnt[0] - 6, cy(G.rnnt), DIM, 3, aR));
+  if (!S.sq) out.push(line(G.rnnt[0] + G.rnnt[2] + 6, cy(G.rnnt), G.words[0] - 6, cy(G.words), DIM, 3, aWd));
+  else out.push(line(cx(G.rnnt), G.rnnt[1] + G.rnnt[3] + 6, cx(G.rnnt), G.words[1] - 6, DIM, 3, aWd));   // down into the words box
+  const barX = kk => bars1[kk].offsetLeft + bars1[kk].offsetWidth / 2;
+  for (let kk = 0; kk < 17; kk++) out.push(line(barX(kk), sy + sh + 4, cx(G.vad), G.vad[1] - 4, ORANGE, 1.5, 0.55 * aV));
+  out.push(line(barX(3), sy + sh + 4, cx(G.spk), G.spk[1] - 4, ORANGE, 3, aSp));
+  // same features into the second pass (elbow from the x8 block), diarizer into blocks 1 and 3, pass -> turn head
+  const [tx, ty, tw, th] = G.s2, ey = G.ey;
+  const a2 = ap(b4 + 0.2);
+  out.push(line(cx(G.sub), G.sub[1] + G.sub[3] + 6, cx(G.sub), ey, DIM, 3, a2 * (S.sq ? 0 : 1)));
+  if (!S.sq) { out.push(line(cx(G.sub), ey, tx + 10, ey, DIM, 3, a2)); out.push(line(tx + 10, ey, tx + 10, ty - 6, DIM, 3, a2)); }
+  for (const kk of [0, 2]) { const bx = bars2[kk].offsetLeft + bars2[kk].offsetWidth / 2;
+    if (S.sq) out.push(line(bx, G.dz[1] + G.dz[3] + 6, bx, ty - 6, GREY, 3, aDz));
+    else out.push(line(G.dz[0] + G.dz[2] + 6, cy(G.dz) + (kk ? 22 : -22), tx - 8, cy(G.s2) + (kk ? 22 : -22), GREY, 3, aDz)); }
+  out.push(line(tx + tw + 6, cy(G.s2), G.turn[0] - 6, cy(G.turn), DIM, 3, ap(b4 + 1.0)));
+  out.push(line(G.turn[0] + G.turn[2] + 6, cy(G.turn), G.meter[0] - 6, cy(G.turn), ORANGE, 3, ap(b4 + 1.3)));
+  if (!S.sq) out.push(line(cx(G.words), G.words[1] + G.words[3] + 6, cx(G.tdt), G.tdt[1] - 6, DIM, 3, aP));
+  else out.push(line(cx(G.words), G.words[1] + G.words[3] + 6, cx(G.tdt), G.tdt[1] - 6, DIM, 3, aP));
+  svg.innerHTML = out.join("");
+  const dim = 1 - 0.8 * aE;
+  svg.style.opacity = dim.toFixed(3);
+  for (const k of Object.keys(E)) if (!["card", "cells"].includes(k) && E[k] && E[k].style && E[k] !== E.card) E[k].style.filter = "none";
+  ct.querySelectorAll(".lab, .box, .bar, .wv, .words, canvas, .meter").forEach(e => { if (e !== E.card) e.style.opacity = (parseFloat(e.style.opacity || "1") * dim).toFixed(3); });
+}
+window.init = init; window.render = render;
+</script></body></html>

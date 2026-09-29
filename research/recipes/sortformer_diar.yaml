@@ -1,0 +1,10 @@
+# REPRODUCE: Sortformer diarization (diar_sortformer_4spk-v1, Nemotron-3-Diarization).
+# FastConformer (NEST) encoder -> Transformer -> 4 sigmoid outputs, trained with
+# arrival-order sort loss + PIL. Production: 17-layer NEST-L + 18-layer transformer (d=192).
+name: sortformer_tiny
+preprocessor: {n_mels: 80}
+encoder: {d_model: 144, n_layers: 4, n_heads: 4, subsampling_channels: 64}
+heads:
+  diar: {type: sortformer, num_spks: 4, d_hidden: 96, n_layers: 2, pil_weight: 0.5}
+data: {synthetic: {kind: diar, n_train: 3000, n_val: 64}}
+trainer: {max_steps: 1500, batch_size: 16, lr: 1.5e-3, warmup_steps: 100, log_every: 50}

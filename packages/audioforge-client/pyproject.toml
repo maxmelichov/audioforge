@@ -1,0 +1,56 @@
+[build-system]
+requires = ["hatchling>=1.25"]
+build-backend = "hatchling.build"
+
+[project]
+name = "audioforge-client"
+version = "0.1.0"
+description = "WebSocket client and message framing for the audioforge streaming speech server (ASR + VAD + speaker activity + end-of-turn events)"
+readme = "README.md"
+license = "Apache-2.0"
+license-files = ["LICENSE"]
+requires-python = ">=3.10"
+authors = [{ name = "Max Melichov" }]
+keywords = ["speech", "asr", "vad", "turn-detection", "diarization", "voice-agent", "websocket", "streaming"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: Apache Software License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Multimedia :: Sound/Audio :: Speech",
+    "Framework :: AsyncIO",
+    "Typing :: Typed",
+]
+dependencies = ["websockets>=13,<16"]
+
+[project.optional-dependencies]
+test = ["pytest>=8", "pytest-asyncio>=0.24"]
+
+[project.urls]
+Source = "https://github.com/maxmelichov/audioforge"
+Server = "https://github.com/maxmelichov/audioforge/blob/main/audioforge/serve.py"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/audioforge_client"]
+
+[tool.hatch.build.targets.sdist]
+include = ["/src", "/tests", "/README.md", "/LICENSE"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+
+[tool.ruff.lint]
+# explicit, so the result does not depend on the installed ruff's default rule set
+select = ["F", "E9", "I", "B"]
+
+[tool.mypy]
+strict = true

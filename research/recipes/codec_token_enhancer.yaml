@@ -1,0 +1,17 @@
+# NEW SOLUTION: speech enhancement as codec-token prediction.
+# FastConformer frames (80 ms = 12.5 Hz) line up 1:1 with NVIDIA's 12.5 fps NanoCodec, so a
+# non-autoregressive head can map *noisy* audio to the *clean* speech's FSQ tokens in one pass;
+# the codec decoder renders the waveform. Same trick works for voice conversion / bandwidth ext.
+# Here the codec is our FSQ MelCodec (NVIDIA mel-codec pattern): 8 stacked 10 ms mel frames = 12.5 fps,
+# 4 codebooks of 8x5x5x4 = 800 codes. Train it first:  python -m audioforge.cli train-codec --mel -o runs/codec.pt
+# (without codec_path a fixed random codec is used, whose tokens are near-constant = trivial task).
+name: codec_token_enhancer_tiny
+preprocessor: {n_mels: 80}
+encoder: {d_model: 144, n_layers: 4, n_heads: 4, subsampling_channels: 64}
+heads:
+  codes: {type: codec_tokens, num_codebooks: 4, codebook_size: 800, hidden: 144, n_layers: 1}
+data:
+  synthetic: {kind: enhance, n_train: 3000, n_val: 64}
+  codec: {type: mel, levels: [8, 5, 5, 4], num_codebooks: 4}
+  codec_path: runs/codec.pt
+trainer: {max_steps: 1500, batch_size: 16, lr: 1.5e-3, warmup_steps: 100, log_every: 50}

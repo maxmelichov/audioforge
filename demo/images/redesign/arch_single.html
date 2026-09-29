@@ -1,0 +1,212 @@
+<!doctype html><!-- single-model mode: architecture_single.png --><html><head><meta charset="utf-8"><link rel="stylesheet" href="style.css">
+<style>
+.block { position: absolute; background: var(--slate); border-radius: 18px; }
+.block .t { position: absolute; color: #FFFFFF; font-size: 28px; font-weight: 700; line-height: 1.15; }
+.block .s { position: absolute; color: var(--onslate); font-size: 22px; line-height: 1.25; }
+.slab { position: absolute; background: var(--slab); border-radius: 4px; }
+.slab.tap { background: var(--ours); }
+.lyr { position: absolute; background: var(--slate); color: var(--onslate); font-size: 22px; line-height: 1; white-space: nowrap; }
+.lyr.tap { color: #FFFFFF; font-weight: 700; }
+.card { position: absolute; background: #FFFFFF; border-radius: 14px; padding: 14px 18px; line-height: 1.2; }
+.card.head { border: 2px solid var(--ours); }
+.card.plain { border: 1.5px solid #C3C9D1; }
+.card .q { font-size: 27px; font-weight: 700; color: var(--ink); }
+.card .row { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.chip { font-size: 22px; font-weight: 700; color: var(--ink); background: var(--ours-tint); border-radius: 999px; padding: 3px 12px; white-space: nowrap; }
+.card .c { font-size: 22px; color: var(--ink2); margin-top: 6px; }
+.card .n { font-size: 27px; font-weight: 700; color: var(--ink); }
+.lab { position: absolute; font-size: 22px; line-height: 1.25; color: var(--ink2); }
+.lab.b { color: var(--ink); font-weight: 700; font-size: 24px; }
+.tbox { position: absolute; background: var(--panel); border: 1.5px solid var(--rule); border-radius: 12px; font-size: 22px; color: #2B3138;
+        display: flex; align-items: center; justify-content: center; white-space: nowrap; }
+.wave { position: absolute; }
+.wave i { position: absolute; background: #6B7280; border-radius: 3px; }
+</style></head><body><div id="stage"></div><script>
+// Architecture figure for the post (DESIGN_NOTES.md). ?layout=flow (A1, horizontal, NVIDIA Nemotron-3 / Llama 4 look) or
+// ?layout=stack (A2, vertical layer stack with side annotations, Alammar / Llama 4 look). Facts, as in the reviewed v5
+// figure (demo/v5/images/architecture2.html): the frozen NVIDIA streaming FastConformer has 17 layers; the "speaking?"
+// head reads a learned mix of all 17 (research/VAD_LAYERS.md), the "who?" head reads layer 4 (research/SPK_HEAD.md,
+// FINAL_REPORT.md), the "turn over?" head reads a second pass of the same model conditioned on the speaker;
+// Nemotron-3 (diarizer) and Parakeet-TDT (per-turn transcript) run alongside. No measured numbers on this image.
+const st = document.getElementById("stage");
+const W0 = [], wires = [];
+function el(cls, html, x, y, w, h) { const e = document.createElement("div"); e.className = cls; if (html != null) e.innerHTML = html;
+  Object.assign(e.style, { left: x + "px", top: y + "px" }); if (w) e.style.width = w + "px"; if (h) e.style.height = h + "px"; st.appendChild(e); return e; }
+function R(e) { const r = e.getBoundingClientRect(); return { l: r.left, t: r.top, r: r.right, b: r.bottom, cx: (r.left + r.right) / 2, cy: (r.top + r.bottom) / 2 }; }
+// thin connector; open chevron head (Llama 4 figure); dash for the second pass
+function wire(pts, { col = "var(--line)", w = 2, head = true, dash = false } = {}) {
+  const d = pts.map((p, i) => (i ? "L" : "M") + p[0] + " " + p[1]).join(" ");
+  wires.push(`<path d="${d}" fill="none" stroke="${col}" stroke-width="${w}" stroke-linecap="round" stroke-linejoin="round"${dash ? ' stroke-dasharray="7 7"' : ""}/>`);
+  if (head) { const [x2, y2] = pts[pts.length - 1], [x1, y1] = pts[pts.length - 2], a = Math.atan2(y2 - y1, x2 - x1), s = 11;
+    wires.push(`<path d="M${x2 - s * Math.cos(a - 0.6)} ${y2 - s * Math.sin(a - 0.6)} L${x2} ${y2} L${x2 - s * Math.cos(a + 0.6)} ${y2 - s * Math.sin(a + 0.6)}" fill="none" stroke="${col}" stroke-width="${w}" stroke-linecap="round" stroke-linejoin="round"/>`); } }
+function wave(x, y, w, h) { const v = [0.25, 0.5, 0.8, 0.45, 1, 0.65, 0.35, 0.75, 0.5, 0.3, 0.6, 0.2]; const box = el("wave", "", x, y, w, h);
+  v.forEach((k, i) => { const b = document.createElement("i"); Object.assign(b.style, { left: (i * w / v.length + w / v.length * 0.2) + "px", width: (w / v.length * 0.55) + "px", top: (h * (1 - k) / 2) + "px", height: (h * k) + "px" }); box.appendChild(b); }); return box; }
+const HEADS = {
+  A: ["Is someone speaking?", "yes", "reads all 17 layers"],
+  B: ["Who is speaking?", "Person 2", "reads layer 4 of 17"],
+  C: ["Is the turn over?", "not yet", "second pass, told who is speaking"] };
+function head(k, x, y, w, z = {}) { const [q, a, c0] = HEADS[k], c = z.cap || c0;
+  const e = el("card head", `<div class="row"><span class="q" style="${z.q ? "font-size:" + z.q + "px" : ""}">${q}</span><span class="chip">${a}</span></div><div class="c">${c}</div>`, x, y, w);
+  if (z.wrap) e.querySelector(".row").style.flexWrap = "wrap"; return e; }
+function helper(n, c, x, y, w) { return el("card plain", `<div class="n">${n}</div><div class="c">${c}</div>`, x, y, w); }
+// the frozen model: slate block, 17 layer slabs, layer 4 in the accent. dir "h": slabs left->right; "v": bottom->top
+function model(x, y, w, h, dir, o) {
+  const b = el("block", "", x, y, w, h);
+  el("t", o.title, 0, 0).style.cssText += `left:${o.pad}px;top:${o.pad - 4}px;width:${w - 2 * o.pad}px`; b.appendChild(st.lastChild);
+  const s = el("s", "17 layers · frozen" + (o.cap ? " · " + o.cap : ""), 0, 0); s.style.cssText += `left:${o.pad}px;top:${o.subY}px;width:${w - 2 * o.pad}px`; b.appendChild(s);
+  const slabs = [];
+  for (let k = 1; k <= 17; k++) {
+    let sx, sy, sw, sh;
+    if (dir === "h") { sw = o.sw; sh = o.sh; const gap = (o.rw - 17 * sw) / 16; sx = o.rx + (k - 1) * (sw + gap); sy = o.ry; }
+    else { sw = o.rw; sh = o.sh; const gap = (o.rh - 17 * sh) / 16; sx = o.rx; sy = o.ry + o.rh - k * sh - (k - 1) * gap; }
+    const e = el("slab" + (k === 4 ? " tap" : ""), "", x + sx, y + sy, sw, sh); slabs.push(e);
+  }
+  const lab = (k, txt) => { const r = R(slabs[k - 1]); const e = el("lyr" + (k === 4 ? " tap" : ""), txt, 0, 0);
+    if (dir === "h") { e.style.left = r.l + "px"; e.style.top = (r.b + 8) + "px"; if (k === 17) e.style.left = (r.r - e.offsetWidth) + "px"; }
+    else { e.style.left = (x + o.pad) + "px"; e.style.top = (r.cy - 11) + "px"; } };
+  lab(1, "layer 1"); lab(4, "layer 4"); lab(17, "layer 17");
+  return { b, slabs }; }
+function today(x, y, dir, o = {}) {   // today's default chain, bottom-up in the stacked layout
+  const names = ["Silero VAD", "turn detector", "Whisper"], bw = o.bw || 200, bh = o.bh || 56, gap = o.gap || 56, boxes = [];
+  if (dir === "h") {
+    el("lab b", "Today", x, y + (bh - 30) / 2);
+    let cx = x + (o.lw || 96);
+    names.forEach((n, i) => { boxes.push(el("tbox", n, cx, y, bw, bh)); cx += bw + gap; });
+    for (let i = 0; i < 2; i++) { const a = R(boxes[i]), b = R(boxes[i + 1]); wire([[a.r + 8, a.cy], [b.l - 8, b.cy]]); }
+    el("lab", "one model per question", cx - gap + 28, y + (bh - 28) / 2);
+  } else {
+    el("lab b", "Today", x, y);
+    el("lab", "one model per question", x, y + 32, o.w);
+    let cy = y + (o.top || 84) + 2 * (bh + gap);
+    names.forEach((n, i) => { boxes.push(el("tbox", n, x, cy, bw, bh)); cy -= bh + gap; });
+    for (let i = 0; i < 2; i++) { const a = R(boxes[i]), b = R(boxes[i + 1]); wire([[a.cx, a.t - 8], [a.cx, b.b + 8]]); }
+  }
+  return boxes; }
+const FOOT = "For engineers: FastConformer, 109 M encoder, cache-aware (70 frames), log-mel 80 bins, ×8 subsampling, RNNT decoder · heads 33 K / 0.5 M / 0.32 M (GRU) · turn pass conditioned at blocks 1 and 3 · column-major weights, cached projections and RNNT joint";
+const FOOT_SQ = "For engineers: FastConformer 109 M, cache-aware, log-mel 80, ×8 subsampling, RNNT · heads 33 K / 0.5 M / 0.32 M (GRU) · turn pass conditioned at blocks 1 and 3";
+const TITLE = "audioforge: three small heads on NVIDIA’s streaming speech model";
+const SUB = "One pass of a frozen NVIDIA model answers the three questions a voice agent asks, while the words stream out.";
+
+// Single-model mode (the product for a known user): the 115M frozen NVIDIA streaming model + our heads, no diarizer
+// (`serve --turn-input tsvad --diar-off`). Verified in the code: the VAD head reads a learned mix of all 17 blocks; the
+// TS-VAD head (runs/tsvad_spk.pt, 0.26 M) reads block 4 and, given the 5 s voice print (embedded by the block-4
+// speaker head), gives [P(you), P(someone else)] per 80 ms frame (audioforge/tsvad_stream.py); the turn head runs on a
+// second, speaker-conditioned encoder pass fed P(you) and the columns [P(you), P(other), 0, 0] (serve.py _act_tsvad,
+// run_turn_on_diar); Parakeet-TDT (--final-asr) is optional.
+const TITLE_S = "audioforge: one model, three small heads, following one voice";
+const SUB_S = "A frozen NVIDIA streaming speech model plus three small heads: is someone speaking, is it you, and is your turn over, while the words stream out.";
+const FOOT_S = "For engineers: FastConformer, 109 M encoder, cache-aware (70 frames), log-mel 80 bins, ×8 subsampling, RNNT decoder · heads: VAD 33 K on all 17 layers; speaker 0.5 M on layer 4 (embeds the voice sample); TS-VAD head 0.26 M on layer 4; turn 0.32 M (GRU), turn pass conditioned on your voice track at blocks 1 and 3 · no diarizer: --turn-input tsvad --diar-off";
+const FOOT_S_SQ = "For engineers: FastConformer 109 M, cache-aware, log-mel 80, ×8 subsampling, RNNT · heads: VAD 33 K (all layers), speaker 0.5 M and TS-VAD 0.26 M (layer 4), turn 0.32 M GRU on a pass conditioned on your voice track · --turn-input tsvad --diar-off";
+const PILLS = {
+  A: ["Is someone speaking?", "a speech probability every 80 ms, read from all 17 layers"],
+  B: ["Is it you speaking?", "every 80 ms: you, someone else, or no one, using your 5-second voice sample; reads layer 4 of 17"],
+  C: ["Is your turn over?", "a second pass of the same model, fed your voice track; an end-of-turn probability every 80 ms"] };
+const PILLS_SQ = { A: PILLS.A, B: ["Is it you speaking?", "every 80 ms, from your 5-second voice sample; reads layer 4"], C: ["Is your turn over?", "second pass fed your voice track; end-of-turn probability every 80 ms"] };
+let SQP = false;
+function pill(k, x, y, w, qz) { const [q, c] = (SQP ? PILLS_SQ : PILLS)[k];
+  return el("card head", `<div class="q" style="${qz ? "font-size:" + qz + "px" : ""}">${q}</div><div class="c">${c}</div>`, x, y, w); }
+function stemS(x, y1, y2) { wire([[x, y1], [x, y2]], { col: "var(--ours)", w: 2.5, head: false }); }
+function flow(W, H) {
+  const M = 64, sq = H / W > 0.9; SQP = sq;
+  const P = sq ? { tf: 36, sf: 22, subY: 150, bx: 170, by: 384, bw: 640, bh: 206, rw: 590, sw: 22, sh: 72, ry: 90, pad: 24, A: [330, 0, 480], B: [250, 640, 310], C: [680, 640, 336], wx: 64, ww: 72,
+                   words: [846, 170], samp: [64, 0, 150], note: null }
+               : { tf: 44, sf: 26, subY: 122, bx: 276, by: 330, bw: 820, bh: 236, rw: 764, sw: 28, sh: 96, ry: 100, pad: 28, A: [446, 202, 620], B: [250, 616, 470], C: [852, 616, 480], wx: 64, ww: 140,
+                   words: [1160, 300], samp: [64, 740, 172], note: [1500, 616, 356] };
+  el("h1 abs", TITLE_S, M, M + 4, W - 2 * M).style.fontSize = P.tf + "px"; el("sub abs", SUB_S, M, P.subY, W - 2 * M).style.fontSize = P.sf + "px";
+  const m = model(P.bx, P.by, P.bw, P.bh, "h", { title: "NVIDIA streaming speech model", cap: sq ? "" : "turns your voice into words as you speak", pad: P.pad, subY: 58, rx: P.pad, ry: P.ry, rw: P.rw, sw: P.sw, sh: P.sh });
+  const bb = R(m.b), s4 = R(m.slabs[3]), s17 = R(m.slabs[16]);
+  // top: is someone speaking? (all 17 layers), stem from the top of the block
+  const A = pill("A", P.A[0], P.A[1], P.A[2]); const a = R(A); A.style.top = (bb.t - 34 - a.b + a.t) + "px"; stemS(R(A).cx, R(A).b, bb.t);
+  // audio in, words out
+  const c1 = s17.cy; wave(P.wx, c1 - (sq ? 36 : 50), P.ww, sq ? 72 : 100); wire([[P.wx + P.ww + 8, c1], [bb.l - 8, c1]]);
+  el("lab", "you speak", P.wx, c1 + (sq ? 44 : 60));
+  const words = el("card plain", `<div class="n">words</div><div class="c">stream out as you speak (every 160 ms)</div>`, P.words[0], 0, sq ? W - M - P.words[0] : P.words[1]);
+  if (sq) { words.style.padding = "10px 12px"; words.querySelector(".c").innerHTML = "stream out as you speak (every 160 ms)"; }
+  words.style.top = (c1 - words.offsetHeight / 2) + "px"; wire([[bb.r + 8, c1], [R(words).l - 8, c1]]);
+  // below: is it you? under layer 4; is your turn over? under layer 17; the voice track conditions the turn pass
+  const B = pill("B", P.B[0], P.B[1], P.B[2], sq ? 24 : 0), C = pill("C", P.C[0], P.C[1], P.C[2], sq ? 24 : 0);
+  stemS(s4.cx, bb.b, R(B).t); stemS(s17.cx, bb.b, R(C).t);
+  const b = R(B), c = R(C), vt = el("lab", "your voice<br>track →", 0, 0); vt.style.textAlign = "center"; vt.style.color = "var(--ink)";
+  vt.style.left = ((b.r + c.l) / 2 - vt.offsetWidth / 2) + "px"; vt.style.top = (Math.max(b.t, c.t) + 16) + "px";
+  // the 5 s voice sample: a small input on the far left with one short solid line into "is it you?"
+  const sm = el("tbox", "your voice<br>sample (5 s)", P.samp[0], 0, P.samp[2], 64); sm.style.whiteSpace = "normal"; sm.style.textAlign = "center"; sm.style.lineHeight = "1.15";
+  sm.style.top = (b.cy - 32) + "px"; wire([[R(sm).r + 6, b.cy], [b.l - 6, b.cy]], { col: "var(--line)", w: 2, head: true });
+  // alongside: one optional box, and the note
+  if (!sq) {
+    el("lab b", "Optional, alongside", 1500, bb.t);
+    helper("Parakeet (optional)", "rewrites each finished sentence", 1500, bb.t + 44, 356);
+    el("lab", "Everything above comes from one model; Parakeet is an optional second pass for the final transcript.", P.note[0], P.note[1], P.note[2]);
+  } else {
+    el("lab", "Optional: <b style='color:var(--ink)'>Parakeet</b> rewrites each finished sentence. Everything else comes from one model.", M, R(B).b + 26, W - 2 * M);
+  }
+  const f = foot(sq ? FOOT_S_SQ : FOOT_S, W, H), bh = sq ? 44 : 48, tY = f.offsetTop - (sq ? 14 : 24) - bh;
+  if (sq) today(M, tY, "h", { bw: 170, bh, gap: 36, lw: 84 }); else today(M, tY, "h", { bw: 190, bh, gap: 50 });
+}
+
+function stack(W, H) {
+  const M = 64, sq = H / W > 0.9;
+  if (!sq) {
+    el("h1 abs", TITLE, M, M + 4, W - 2 * M); el("sub abs", SUB, M, 124, W - 2 * M);
+    const bx = 560, by = 322, bw = 440, bh = 536;
+    const words = el("card plain", `<div class="n">words</div><div class="c">stream out as you speak</div>`, bx + 60, 180, bw - 120);
+    const m = model(bx, by, bw, bh, "v", { title: "NVIDIA streaming<br>speech model", pad: 26, subY: 92, rx: 132, ry: 146, rw: 282, rh: 366, sh: 14 });
+    const bb = R(m.b), w = R(words);
+    wire([[bb.cx, bb.t - 8], [bb.cx, w.b + 8]]);
+    wave(bb.cx - 70, bb.b + 30, 140, 50); wire([[bb.cx, bb.b + 28], [bb.cx, bb.b + 6]], { head: true });
+    el("lab", "you speak", bb.cx + 86, bb.b + 40);
+    // left: the "speaking?" head on a bracket over all 17 layers
+    const s1 = R(m.slabs[0]), s17 = R(m.slabs[16]), bxl = bb.l - 18;
+    wire([[bxl + 10, s17.cy], [bxl, s17.cy], [bxl, s1.cy], [bxl + 10, s1.cy]], { col: "var(--ours)", w: 2.5, head: false });
+    const A = head("A", M, 520, 440), a = R(A);
+    wire([[bxl, a.cy], [a.r + 6, a.cy]], { col: "var(--ours)", w: 2.5 });
+    el("lab", "Three small heads (orange) share the model’s single pass: no separate models for these questions.", M, 300, 420);
+    // right: "who?" at layer 4, "turn over?" on the second pass
+    const s4 = R(m.slabs[3]);
+    const B = head("B", 1110, s4.cy - 52, 400), b = R(B);
+    wire([[s4.r + 8, s4.cy], [b.l - 6, s4.cy]], { col: "var(--ours)", w: 2.5 });
+    const C = head("C", 1110, 520, 420), c = R(C);
+    wire([[bb.r + 8, c.cy], [c.l - 6, c.cy]], { col: "var(--ours)", w: 2.5, dash: true });
+    el("lab", "second pass", bb.r + 14, c.t - 34);
+    wire([[b.cx, b.t - 6], [b.cx, c.b + 8]], { col: "var(--ours)", w: 2.5, dash: true });
+    el("lab", "who is speaking", b.cx + 14, (b.t + c.b) / 2 - 14);
+    el("lab b", "Alongside, by NVIDIA", 1600, 322, 256);
+    helper("Nemotron-3", "who is in the room", 1600, 366, 256); helper("Parakeet", "rewrites each finished sentence", 1600, 474, 256);
+    today(1600, 640, "v", { w: 256, bw: 220, bh: 50, gap: 26, top: 80 });
+    foot(FOOT, W, H);
+  } else {
+    el("h1 abs", TITLE, M, M + 4, W - 2 * M).style.fontSize = "40px"; el("sub abs", SUB, M, 164, W - 2 * M).style.fontSize = "24px";
+    const bx = 356, by = 334, bw = 368, bh = 480;
+    const words = el("card plain", `<div class="n">words</div><div class="c">as you speak</div>`, bx + 64, 240, bw - 128);
+    words.style.padding = "8px 18px";
+    const m = model(bx, by, bw, bh, "v", { title: "NVIDIA streaming<br>speech model", pad: 22, subY: 86, rx: 120, ry: 136, rw: 226, rh: 322, sh: 12 });
+    const bb = R(m.b), w = R(words);
+    wire([[bb.cx, bb.t - 8], [bb.cx, w.b + 8]]);
+    wave(bb.cx - 60, bb.b + 34, 120, 46); wire([[bb.cx, bb.b + 30], [bb.cx, bb.b + 6]]);
+    const s1 = R(m.slabs[0]), s17 = R(m.slabs[16]), bxl = bb.l - 16;
+    wire([[bxl + 10, s17.cy], [bxl, s17.cy], [bxl, s1.cy], [bxl + 10, s1.cy]], { col: "var(--ours)", w: 2.5, head: false });
+    const A = head("A", M, 520, 256, { q: 24, wrap: true }), a = R(A);
+    wire([[bxl, a.cy], [a.r + 6, a.cy]], { col: "var(--ours)", w: 2.5 });
+    el("lab", "Three small heads (orange) share one pass of the model.", M, 334, 256);
+    const s4 = R(m.slabs[3]);
+    const B = head("B", 760, 0, 256, { q: 24, wrap: true }); B.style.top = (s4.cy - B.offsetHeight / 2) + "px"; const b = R(B);
+    wire([[s4.r + 8, s4.cy], [b.l - 6, s4.cy]], { col: "var(--ours)", w: 2.5 });
+    const C = head("C", 760, 488, 256, { q: 24, wrap: true }), c = R(C);
+    wire([[bb.r + 8, c.cy], [c.l - 6, c.cy]], { col: "var(--ours)", w: 2.5, dash: true });
+    wire([[b.cx, b.t - 6], [b.cx, c.b + 8]], { col: "var(--ours)", w: 2.5, dash: true });
+    el("lab b", "Alongside, by NVIDIA", 760, 236, 256);
+    const h1 = helper("Nemotron-3", "who is in the room", 760, 274, 256), h2 = helper("Parakeet", "rewrites each finished sentence", 760, 0, 256);
+    [h1, h2].forEach(h => { h.style.padding = "8px 16px"; h.querySelector(".n").style.fontSize = "24px"; }); h2.style.top = (R(h1).b + 8) + "px";
+    today(M, 700, "v", { w: 256, bw: 200, bh: 40, gap: 18, top: 70 });
+    foot(FOOT_SQ, W, H);
+  }
+}
+function foot(t, W, H) { const e = el("foot abs", t, 64, 0, W - 128); e.style.top = (H - 64 - e.offsetHeight - 4) + "px"; return e; }
+function build(W, H, layout) {
+  Object.assign(st.style, { width: W + "px", height: H + "px" }); st.innerHTML = ""; wires.length = 0;
+  (layout === "stack" ? stack : flow)(W, H);
+  const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg"); svg.setAttribute("class", "wires"); svg.setAttribute("width", W); svg.setAttribute("height", H);
+  svg.innerHTML = wires.join(""); st.appendChild(svg);
+}
+window.build = build;
+const q = new URLSearchParams(location.search); if (q.get("layout")) build(innerWidth, innerHeight, q.get("layout"));
+</script></body></html>

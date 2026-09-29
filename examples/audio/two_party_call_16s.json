@@ -1,0 +1,62 @@
+{
+ "duration_s": 16.0,
+ "sample_rate": 16000,
+ "source": "otoSpeech-full-duplex-processed-141h (otoearth), conversation 8eadd289ac73b01dfebfeff8d4addf20, seconds 368.00-384.00",
+ "mix": "the user's channel (channel 0) and the other party's channel averaged to mono, as research/E2E_FINAL.md built its clips",
+ "user_intervals": [
+  [
+   3.9,
+   5.0
+  ],
+  [
+   5.3,
+   7.5
+  ],
+  [
+   8.0,
+   8.4
+  ],
+  [
+   9.1,
+   10.8
+  ]
+ ],
+ "other_intervals": [
+  [
+   12.9,
+   13.8
+  ],
+  [
+   13.9,
+   15.0
+  ]
+ ],
+ "user_turn_ends": [
+  10.8
+ ],
+ "voiceprint": {
+  "file": "two_party_call_16s.voiceprint.json",
+  "from": "10 s of the user's own channel with the other party silent, outside this excerpt +-2 s",
+  "intervals_s": [
+   [
+    301.7,
+    304.5
+   ],
+   [
+    138.2,
+    140.0
+   ],
+   [
+    275.7,
+    280.8
+   ],
+   [
+    624.2,
+    624.5
+   ]
+  ]
+ },
+ "text": null,
+ "text_note": "otoSpeech has no transcripts; no reference text",
+ "license": "CC BY 4.0 (otoSpeech-full-duplex-processed-141h, otoearth, https://huggingface.co/datasets/otoearth/otoSpeech-full-duplex-processed-141h); the card prohibits attempts to identify the speakers"
+}

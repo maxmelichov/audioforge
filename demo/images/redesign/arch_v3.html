@@ -1,0 +1,229 @@
+<!doctype html><html><head><meta charset="utf-8"><link rel="stylesheet" href="style.css">
+<style>
+.l1 { position: absolute; font-weight: 700; color: var(--ink); line-height: 1.1; white-space: nowrap; }
+.l2 { position: absolute; font-size: 22px; color: var(--ink2); line-height: 1.2; white-space: nowrap; }
+.blk { position: absolute; background: var(--slate); border-radius: 16px; }
+.blk .bt { position: absolute; color: #FFFFFF; font-weight: 700; white-space: nowrap; line-height: 1.1; }
+.blk .bs { position: absolute; color: var(--onslate); font-size: 22px; white-space: nowrap; line-height: 1.1; }
+.slab { position: absolute; background: var(--slab); border-radius: 4px; }
+.slab.tap { background: var(--ours); }
+.box { position: absolute; display: flex; flex-direction: column; align-items: center; justify-content: center; border-radius: 12px; line-height: 1.15; text-align: center; }
+.box.ours { background: #FFFFFF; border: 2.5px solid var(--ours); }
+.box.nv { background: var(--slate); color: #FFFFFF; }
+.box.grey { background: var(--panel); border: 1.5px solid #C3C9D1; }
+.box.grey .a { color: #3F4753; }
+.box .m { font-weight: 700; color: var(--ink); }
+.box.nv .m { color: #FFFFFF; }
+.box .a { font-size: 22px; color: var(--ink2); margin-top: 2px; }
+.box.nv .a { color: var(--onslate); }
+.zone { position: absolute; border: 2px dashed #AEB6C0; border-radius: 18px; background: #FAFBFC; }
+.wave i { position: absolute; background: #6B7280; border-radius: 3px; }
+</style></head><body><div id="stage"></div><script>
+// architecture_v3 (demo/images/EXPLAINER.md is the source of truth; hierarchy in V3_SKETCH.md). One frozen NVIDIA
+// FastConformer drawn as two column-aligned lanes with a non-flow reuse bracket on the far left: pass 1 (audio) and pass 2 (audio +
+// your voice track at blocks 1 and 3; speaker_kernel_layers [0, 2] in runs/stage1_served.afm). Pass 1 taps: all 17
+// layers (bracket) -> Speech?; layer 4 -> TS-VAD ("Is it you?", conditioned on the voice print that the speaker head
+// makes once from the 5 s sample's layer-4 features of the same frozen model, tsvad_stream.voiceprint) -> your voice track; layer 17 -> NVIDIA
+// RNNT decoder -> streaming words. Pass 2 layer 17 -> turn head (GRU) -> end-of-turn probability -> turn end ->
+// (optional, --final-asr) Parakeet on the finished turn -> final transcript. ?notext=1 hides every label.
+const st = document.getElementById("stage"); const wires = [];
+const css = k => getComputedStyle(document.documentElement).getPropertyValue(k).trim();
+function el(cls, html, x, y, w, h) { const e = document.createElement("div"); e.className = cls; if (html != null) e.innerHTML = html;
+  Object.assign(e.style, { left: x + "px", top: y + "px" }); if (w) e.style.width = w + "px"; if (h) e.style.height = h + "px"; st.appendChild(e); return e; }
+function R(e) { const r = e.getBoundingClientRect(); return { l: r.left, t: r.top, r: r.right, b: r.bottom, cx: (r.left + r.right) / 2, cy: (r.top + r.bottom) / 2 }; }
+function wire(pts, { col = "#8A939E", w = 2.2, head = true, dash = false } = {}) {
+  wires.push(`<path d="${pts.map((p, i) => (i ? "L" : "M") + p[0] + " " + p[1]).join(" ")}" fill="none" stroke="${col}" stroke-width="${w}" stroke-linecap="round" stroke-linejoin="round"${dash ? ' stroke-dasharray="6 6"' : ""}/>`);
+  if (head) { const [x2, y2] = pts[pts.length - 1], [x1, y1] = pts[pts.length - 2], a = Math.atan2(y2 - y1, x2 - x1), s = 11;
+    wires.push(`<path d="M${x2 - s * Math.cos(a - 0.55)} ${y2 - s * Math.sin(a - 0.55)} L${x2} ${y2} L${x2 - s * Math.cos(a + 0.55)} ${y2 - s * Math.sin(a + 0.55)}" fill="none" stroke="${col}" stroke-width="${w}" stroke-linecap="round" stroke-linejoin="round"/>`); } }
+const OR = () => ({ col: css("--ours"), w: 2.6 });
+function l1(t, x, y, z) { const e = el("l1", t, x, y); e.style.fontSize = z + "px"; return e; }
+function l2(t, x, y) { return el("l2", t, x, y); }
+function box(cls, main, ann, x, y, w, h, z) { const e = el("box " + cls, `<div class="m" style="font-size:${z}px">${main}</div>` + (ann ? `<div class="a">${ann}</div>` : ""), x, y, w, h); return e; }
+function wave(x, y, w, h) { const v = [0.3, 0.55, 0.85, 0.5, 1, 0.7, 0.4, 0.8, 0.55, 0.35, 0.6, 0.25]; const b = el("wave", "", x, y, w, h); b.style.position = "absolute";
+  v.forEach((k, i) => { const s = document.createElement("i"); Object.assign(s.style, { left: (i * w / v.length + w / v.length * 0.2) + "px", width: (w / v.length * 0.55) + "px", top: (h * (1 - k) / 2) + "px", height: (h * k) + "px" }); b.appendChild(s); }); return b; }
+// one lane of the frozen model: 17 slabs; returns slab centres
+function lane(x, y, w, h, o, title, sub) {
+  const b = el("blk", "", x, y, w, h);
+  const t = document.createElement("div"); t.className = "bt"; t.innerHTML = title; Object.assign(t.style, { left: o.pad + "px", top: "12px", fontSize: o.tz + "px" }); b.appendChild(t);
+  if (sub) { const s = document.createElement("div"); s.className = "bs"; s.innerHTML = sub; Object.assign(s.style, { right: o.pad + "px", top: "14px" }); b.appendChild(s); }
+  const gap = (w - 2 * o.pad - 17 * o.sw) / 16, cx = [];
+  for (let k = 1; k <= 17; k++) { const sx = x + o.pad + (k - 1) * (o.sw + gap); el("slab" + (o.tap === k ? " tap" : ""), "", sx, y + o.top, o.sw, h - o.top - o.bot); cx.push(sx + o.sw / 2); }
+  return { b, cx, R: R(b), sy0: y + o.top, sy1: y + h - o.bot }; }
+function brace(x1, x2, y, up, col) {   // curly brace over [x1, x2]; tip away from the lane
+  const d = up ? -1 : 1, y1 = y + 14 * d, tip = y + 28 * d, mx = (x1 + x2) / 2, r = 14;
+  wires.push(`<path d="M${x1} ${y} Q${x1} ${y1} ${x1 + r} ${y1} L${mx - r} ${y1} Q${mx} ${y1} ${mx} ${tip} Q${mx} ${y1} ${mx + r} ${y1} L${x2 - r} ${y1} Q${x2} ${y1} ${x2} ${y}" fill="none" stroke="${col}" stroke-width="2.6" stroke-linejoin="round"/>`);
+  return { mx, tip }; }
+
+// the reuse marker: a dashed grey bracket on the far left spanning both lanes, a vertical "↻ one model, used twice";
+// it touches neither lane's output side, so nothing can read as pass-1 output flowing into pass 2
+function reuse(xb, y0, y1, lx) {
+  wires.push(`<path d="M${xb + 12} ${y0} L${xb} ${y0} L${xb} ${y1} L${xb + 12} ${y1}" fill="none" stroke="#9AA3AE" stroke-width="2" stroke-dasharray="6 6"/>`);
+  const e = el("l2", "↻ one model, used twice", 0, 0); Object.assign(e.style, { writingMode: "vertical-rl", transform: "rotate(180deg)" });
+  e.style.left = lx + "px"; e.style.top = ((y0 + y1) / 2 - e.offsetHeight / 2) + "px"; return e; }
+function build(W, H) {
+  Object.assign(st.style, { width: W + "px", height: H + "px" }); st.innerHTML = ""; wires.length = 0;
+  const M = 64, sq = H / W > 0.9, O = css("--ours");
+  if (sq) return buildSq(W, H);
+  const P = sq ? { tz: 34, z1: 26, zb: 22, bx: 290, bw: 470, lh: 104, y1: 236, y2: 556, gapY: 420, ox: 812, wx: 64, ww: 96, pad: 18, sw: 14, top: 44, bot: 14, samp: [64, 170], spk: [0, 130], tsw: 150,
+                   dec: [0, 0], zone: [64, 800, 952, 110], turnW: 150 }
+               : { tz: 40, z1: 30, zb: 24, bx: 510, bw: 670, lh: 120, y1: 236, y2: 660, gapY: 514, ox: 1450, wx: 118, ww: 120, pad: 24, sw: 24, top: 52, bot: 16, samp: [150, 170], spk: [0, 176], tsw: 200,
+                   dec: [1210, 180], zone: [1210, 830, 646, 112], turnW: 160 };
+  l1("One frozen NVIDIA model, small audioforge heads, two passes", M, M + 2, P.tz);
+  const lo = { pad: P.pad, sw: P.sw, top: P.top, bot: P.bot, tz: P.zb };
+  const A = lane(P.bx, P.y1, P.bw, P.lh, { ...lo, tap: 4 }, "Frozen FastConformer", "17 layers");
+  const B = lane(P.bx, P.y2, P.bw, P.lh, lo, "Frozen FastConformer", "same weights");
+  const c1 = (A.sy0 + A.sy1) / 2, c2 = (B.sy0 + B.sy1) / 2;
+  // pass tags, left of the lanes
+  const p1 = l1("Pass 1", 0, 0, P.z1), p2 = l1("Pass 2", 0, 0, P.z1);
+  p1.style.left = (P.bx - 24 - p1.offsetWidth) + "px"; p1.style.top = (A.R.t - p1.offsetHeight - 6) + "px";
+  p2.style.left = (P.bx - 24 - p2.offsetWidth) + "px"; p2.style.top = (B.R.t - p2.offsetHeight - 6) + "px";
+  reuse(102, A.R.t, B.R.b, 64);
+  // audio: into pass 1, and down into pass 2 (pass 2 reuses pass 1's front end)
+  const wy = c1 - (sq ? 30 : 36);
+  const au = l1("Audio", P.wx, 0, P.z1); au.style.top = (wy - au.offsetHeight - 10) + "px";
+  wave(P.wx, wy, P.ww, sq ? 60 : 72);
+  wire([[P.wx + P.ww + 10, c1], [A.R.l - 8, c1]]);
+  const vx = P.wx + 14; wire([[vx, wy + (sq ? 66 : 80)], [vx, c2], [B.R.l - 8, c2]]);
+  // Speech?: a brace over all 17 layers of pass 1 -> up -> right
+  const br = brace(A.cx[0], A.cx[16], A.R.t - 8, true, O), sy = sq ? 196 : 176;
+  wire([[br.mx, br.tip], [br.mx, sy], [P.ox - 14, sy]], OR());
+  const sa = l2("all layers · every 80 ms · 33K", br.mx + 14, 0); sa.style.top = (sy + 10) + "px";
+  const sp = l1("Speech?", P.ox, 0, P.z1); sp.style.top = (sy - sp.offsetHeight / 2) + "px";
+  // streaming words: pass-1 layer 17 -> NVIDIA RNNT decoder -> words
+  let wd;
+  if (!sq) { const d = box("nv", "RNNT decoder", null, P.dec[0], c1 - 28, P.dec[1], 56, 22); wd = d; d.querySelector(".m").style.whiteSpace = "nowrap";
+    wire([[A.R.r + 8, c1], [P.dec[0] - 8, c1]]); wire([[P.dec[0] + P.dec[1] + 8, c1], [P.ox - 14, c1]]); }
+  else { const d = box("nv", "RNNT<br>decoder", null, A.R.r + 30, c1 - 32, 100, 64, 20); wd = d; d.style.fontSize = "20px";
+    wire([[A.R.r + 8, c1], [A.R.r + 22, c1]]); }
+  const wl = l1("Streaming words", P.ox, 0, P.z1); wl.style.top = (c1 - wl.offsetHeight / 2 - (sq ? 0 : 12)) + "px";
+  if (sq) { wl.style.left = (R(wd).l) + "px"; wl.style.top = (R(wd).b + 12) + "px"; wl.style.fontSize = "24px"; }
+  const w2 = l2("every 160 ms", 0, 0); w2.style.left = wl.style.left; w2.style.top = (R(wl).b + 4) + "px";
+  // Is it you?: layer 4 -> TS-VAD; voice sample -> speaker head (once) -> voice print -> TS-VAD
+  const s4 = A.cx[3], gy = P.gapY;
+  const ts = box("ours", "Is it you?", "TS-VAD · 0.26M", s4 - P.tsw / 2, gy - 38, P.tsw, 76, P.zb);
+  const t = R(ts);
+  wire([[s4, A.R.b + 4], [s4, t.t - 6]], OR());
+  l2("layer 4", s4 + 12, A.R.b + (sq ? 12 : 16));
+  const sk = box("ours", "Speaker head", null, 0, gy - 28, P.spk[1], 56, 22); sk.style.left = (t.l - 36 - P.spk[1]) + "px";
+  const k = R(sk);
+  const ch = box("nv", "same model", "layer 4 · once", k.l, gy - 28 - 92, P.spk[1], 60, 22), cr = R(ch);
+  const sm = box("grey", "Voice sample", "5 s", 0, cr.t, 166, 60, 22); sm.style.left = (cr.l - 28 - 166) + "px";
+  const s_ = R(sm);
+  wire([[s_.r + 6, cr.cy], [cr.l - 6, cr.cy]]); wire([[cr.cx, cr.b + 4], [cr.cx, k.t - 6]]); wire([[k.r + 6, gy], [t.l - 6, gy]], OR());
+  // your voice track: TS-VAD -> track -> down into pass 2 at blocks 1 and 3
+  const trx = t.r + 30, vt = l1("Your voice track", trx + 16, 0, P.zb + 2); vt.style.top = (gy - vt.offsetHeight - 2) + "px";
+  wire([[t.r + 6, gy], [trx + 8, gy]], OR());
+  // a tiny you / other / no one strip under the label
+  const strip = [[0.20, O], [0.12, "#C8CDD4"], [0.18, "#FFFFFF"], [0.28, O], [0.10, "#C8CDD4"], [0.12, O]];
+  let sx0 = trx + 16; const swd = sq ? 150 : 200, shh = 14;
+  strip.forEach(([f, c]) => { wires.push(`<rect x="${sx0}" y="${gy + 8}" width="${f * swd}" height="${shh}" fill="${c}" stroke="#AEB6C0" stroke-width="1"/>`); sx0 += f * swd; });
+  const va = l2("you · other · no one, every 80 ms", trx + 16, gy + 8 + shh + 6);
+  const dy = B.R.t - (sq ? 34 : 40), b1 = B.cx[0], b3 = B.cx[2];
+  wire([[trx, gy], [trx, dy], [b1, dy], [b1, B.R.t - 4]], OR());
+  wire([[b3, dy], [b3, B.R.t - 4]], OR());
+  const ib = l2("into blocks 1 and 3", 0, dy - 32); ib.style.left = (b1 - 14 - ib.offsetWidth) + "px";
+  // turn: pass-2 layer 17 -> turn head (GRU) -> probability with threshold -> turn end
+  let th;
+  if (!sq) { th = box("ours", "Turn head", "GRU · 0.32M", P.dec[0], c2 - 38, P.turnW, 76, P.zb); wire([[B.R.r + 8, c2], [P.dec[0] - 8, c2]], OR()); }
+  else { th = box("ours", "Turn head", "GRU · 0.32M", B.R.r + 30, c2 - 38, 150, 76, 20); wire([[B.R.r + 8, c2], [B.R.r + 22, c2]], OR()); }
+  const h = R(th);
+  const tox = sq ? h.l : P.ox, toy = sq ? h.b + 16 : c2 - 64;
+  const tl = l1("Turn over?", tox, toy, sq ? 24 : P.z1);
+  if (!sq) wire([[h.r + 8, c2], [P.ox - 14, c2]], OR());
+  // sparkline of the end-of-turn probability crossing a threshold, then the turn-end event
+  const gx = tox, gw = sq ? 160 : 220, gh = sq ? 50 : 60, gyy = R(tl).b + 8, thr = gyy + gh * 0.28;
+  const ps = [0.05, 0.08, 0.06, 0.1, 0.07, 0.12, 0.09, 0.2, 0.35, 0.55, 0.8];
+  const pts = ps.map((p, i) => [gx + i * gw / (ps.length - 1), gyy + gh * (1 - p)]);
+  wires.push(`<line x1="${gx}" y1="${thr}" x2="${gx + gw}" y2="${thr}" stroke="#8A939E" stroke-width="1.5"/>`);
+  wires.push(`<polyline points="${pts.map(p => p.join(",")).join(" ")}" fill="none" stroke="${O}" stroke-width="2.6"/>`);
+  const cross = pts[pts.length - 1]; wires.push(`<circle cx="${cross[0]}" cy="${cross[1]}" r="6" fill="${O}"/>`);
+  wires.push(`<line x1="${gx}" y1="${gyy + gh}" x2="${gx + gw}" y2="${gyy + gh}" stroke="#C8CDD4" stroke-width="1.5"/>`);
+  const ea = l2("every 80 ms", gx, gyy + gh + 6);
+  const te = l1("Turn end", 0, 0, sq ? 24 : P.zb + 2); te.style.left = (gx + gw + 44) + "px"; te.style.top = (cross[1] - te.offsetHeight / 2) + "px";
+  wire([[cross[0] + 10, cross[1]], [gx + gw + 36, cross[1]]], OR());
+  // optional zone: turn end -> Parakeet on the finished turn -> final transcript
+  const [zx, zy, zw, zh] = P.zone; const z = el("zone", "", zx, zy, zw, zh);
+  l1("Optional", zx + 18, zy + 12, sq ? 22 : P.zb).style.color = "var(--ink2)";
+  const pk = box("grey", "Parakeet", "on the finished turn", zx + (sq ? 24 : 24), zy + (sq ? 44 : 48), sq ? 240 : 260, sq ? 58 : 62, sq ? 22 : P.zb);
+  const pr = R(pk), ft = l1("Final transcript", pr.r + 60, 0, sq ? 24 : P.zb + 2); ft.style.top = (pr.cy - ft.offsetHeight / 2) + "px";
+  wire([[pr.r + 8, pr.cy], [pr.r + 50, pr.cy]]);
+  const tr = R(te);
+  wire([[tr.cx, tr.b + 8], [tr.cx, zy - 14], [pr.cx, zy - 14], [pr.cx, pr.t - 6]]);
+  // level 3: the footer
+  const f = el("foot abs", sq ? "Encoder: NVIDIA FastConformer 109 M, cache-aware, 80 ms frames, 160 ms chunks · voice print: 192-d, made once by the speaker head (0.5 M) from the sample’s layer-4 features · pass 2 reuses pass 1’s front end; speaker kernels at blocks 1 and 3 · no diarizer"
+                              : "Encoder: NVIDIA FastConformer 109 M, cache-aware (70 frames), log-mel 80, ×8 subsampling, 80 ms frames, 160 ms chunks · voice print: 192-d, made once by the speaker head (0.5 M) from the sample’s layer-4 features · pass 2 reuses pass 1’s front end; speaker kernels at blocks 1 and 3 · no diarizer (--turn-input tsvad --diar-off)", M, 0, W - 2 * M);
+  f.style.top = (H - M - f.offsetHeight - 2) + "px";
+  const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg"); svg.setAttribute("class", "wires"); svg.setAttribute("width", W); svg.setAttribute("height", H);
+  svg.innerHTML = wires.join(""); st.appendChild(svg);
+  if (new URLSearchParams(location.search).get("notext")) notext();
+}
+
+// square: the same graph, compressed; outputs sit right of their source, the optional zone spans the bottom
+function buildSq(W, H) {
+  const M = 64, O = css("--ours");
+  const h = el("h1 abs", "One frozen NVIDIA model, small audioforge heads, two passes", M, M + 4, W - 2 * M); h.style.fontSize = "30px";
+  const lo = { pad: 18, sw: 13, top: 44, bot: 14, tz: 22 };
+  const A = lane(280, 236, 410, 104, { ...lo, tap: 4 }, "Frozen FastConformer · 17 layers", ""), B = lane(280, 624, 410, 104, lo, "FastConformer · same weights", "");
+  const c1 = (A.sy0 + A.sy1) / 2, c2 = (B.sy0 + B.sy1) / 2;
+  const p1 = l1("Pass 1", 0, 0, 24), p2 = l1("Pass 2", 0, 0, 24);
+  place(p1, A.R.l - 16, A.R.t - 4, 1, 1); place(p2, B.R.l - 16, B.R.t - 4, 1, 1);
+  reuse(96, A.R.t, B.R.b, 64);
+  // audio
+  const wy = c1 - 28; place(l1("Audio", 0, 0, 24), 112, wy - 8, 0, 1); wave(112, wy, 90, 56);
+  wire([[210, c1], [A.R.l - 8, c1]]);
+  const vx = 110; wire([[vx, wy + 62], [vx, c2], [B.R.l - 8, c2]]);
+  // speech?
+  const br = brace(A.cx[0], A.cx[16], A.R.t - 8, true, O), sy = 180, ox = 800;
+  wire([[br.mx, br.tip], [br.mx, sy], [ox - 12, sy]], OR());
+  place(l2("all layers · 80 ms · 33K", 0, 0), br.mx + 14, sy - 6, 0, 1);
+  place(l1("Speech?", 0, 0, 26), ox, sy, 0, 0.5);
+  // words
+  const d = box("nv", "RNNT<br>decoder", null, 712, c1 - 34, 100, 68, 22); wire([[A.R.r + 6, c1], [704, c1]]);
+  wire([[818, c1], [838, c1]]);
+  const wl = l1("Streaming<br>words", 846, 0, 24); wl.style.whiteSpace = "normal"; place(wl, 846, c1, 0, 0.5);
+  place(l2("every 160 ms", 0, 0), 846, R(wl).b + 4);
+  // is it you?  (voice sample -> speaker head, once -> TS-VAD <- layer 4)
+  const s4 = A.cx[3], gy = 526;
+  const ts = box("ours", "Is it you?", "TS-VAD · 0.26M", s4 - 82, gy - 38, 176, 76, 22), t = R(ts);
+  wire([[s4, A.R.b + 4], [s4, t.t - 6]], OR()); l2("layer 4", s4 + 12, A.R.b + 12);
+  const sm = box("grey", "Voice sample", "5 s", 120, 354, 156, 56, 22), cp = box("nv", "same model", "layer 4 · once", 120, 426, 156, 56, 22),
+        sk = box("ours", "Speaker head", null, 120, gy - 24, 156, 48, 22);
+  wire([[198, R(sm).b + 3], [198, R(cp).t - 5]]); wire([[198, R(cp).b + 3], [198, R(sk).t - 5]]); wire([[R(sk).r + 4, gy], [t.l - 6, gy]], OR());
+  const trx = t.r + 26; wire([[t.r + 6, gy], [trx + 6, gy]], OR());
+  const vt = l1("Your voice track", trx + 14, 0, 22); place(vt, trx + 14, gy - 4, 0, 1);
+  const strip = [[0.20, O], [0.12, "#C8CDD4"], [0.18, "#FFFFFF"], [0.28, O], [0.10, "#C8CDD4"], [0.12, O]]; let sx0 = trx + 14;
+  strip.forEach(([f, c]) => { wires.push(`<rect x="${sx0}" y="${gy + 6}" width="${f * 150}" height="12" fill="${c}" stroke="#AEB6C0" stroke-width="1"/>`); sx0 += f * 150; });
+  l2("every 80 ms", trx + 14, gy + 24);
+  const dy = B.R.t - 30, b1 = B.cx[0], b3 = B.cx[2];
+  wire([[trx, gy], [trx, dy], [b1, dy], [b1, B.R.t - 4]], OR()); wire([[b3, dy], [b3, B.R.t - 4]], OR());
+  place(l2("blocks 1, 3", 0, 0), trx + 12, dy, 0, 0.5);
+  // turn
+  const th = box("ours", "Turn head", "GRU · 0.32M", 712, c2 - 38, 150, 76, 22); wire([[B.R.r + 6, c2], [704, c2]], OR());
+  const hr = R(th), tl = l1("Turn over?", 712, hr.b + 14, 24);
+  const gx = 712, gw = 150, gh = 46, gyy = R(tl).b + 8, thr = gyy + gh * 0.28;
+  const ps = [0.05, 0.08, 0.06, 0.1, 0.07, 0.12, 0.09, 0.2, 0.35, 0.55, 0.8];
+  const pts = ps.map((p, i) => [gx + i * gw / (ps.length - 1), gyy + gh * (1 - p)]);
+  wires.push(`<line x1="${gx}" y1="${thr}" x2="${gx + gw}" y2="${thr}" stroke="#8A939E" stroke-width="1.5"/>`);
+  wires.push(`<polyline points="${pts.map(p => p.join(",")).join(" ")}" fill="none" stroke="${O}" stroke-width="2.6"/>`);
+  const cross = pts[pts.length - 1]; wires.push(`<circle cx="${cross[0]}" cy="${cross[1]}" r="6" fill="${O}"/>`);
+  wires.push(`<line x1="${gx}" y1="${gyy + gh}" x2="${gx + gw}" y2="${gyy + gh}" stroke="#C8CDD4" stroke-width="1.5"/>`);
+  const te = l1("Turn<br>end", 0, 0, 24); te.style.whiteSpace = "normal"; place(te, gx + gw + 36, cross[1], 0, 0.5);
+  wire([[cross[0] + 8, cross[1]], [gx + gw + 28, cross[1]]], OR());
+  place(l2("every 80 ms", 0, 0), gx - 14, gyy + gh / 2, 1, 0.5);
+  // optional zone along the bottom
+  const f = el("foot abs", "FastConformer 109 M, cache-aware · voice print made once by the speaker head (0.5 M) from layer-4 features · pass 2 reuses pass 1’s front end; speaker kernels at blocks 1, 3 · no diarizer", M, 0, W - 2 * M);
+  f.style.top = (H - M - f.offsetHeight - 2) + "px";
+  const zy = f.offsetTop - 20 - 76, z = el("zone", "", M, zy, W - 2 * M, 76);
+  place(l1("Optional", 0, 0, 22), M + 20, zy + 38, 0, 0.5).style.color = "var(--ink2)";
+  const pk = box("grey", "Parakeet", "on the finished turn", 440, zy + 8, 240, 60, 22), pr = R(pk);
+  wire([[pr.r + 8, pr.cy], [pr.r + 40, pr.cy]]); place(l1("Final transcript", 0, 0, 24), pr.r + 48, pr.cy, 0, 0.5);
+  const tr = R(te); wire([[tr.cx, tr.b + 6], [tr.cx, zy - 12], [pr.cx, zy - 12], [pr.cx, pr.t - 6]]);
+  const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg"); svg.setAttribute("class", "wires"); svg.setAttribute("width", W); svg.setAttribute("height", H);
+  svg.innerHTML = wires.join(""); st.appendChild(svg);
+}
+function place(e, x, y, ax = 0, ay = 0) { e.style.left = (x - ax * e.offsetWidth) + "px"; e.style.top = (y - ay * e.offsetHeight) + "px"; return e; }
+// removal test: hide every explanatory annotation (level 2) and the footer (level 3); level-1 labels stay
+function notext() { const s = document.createElement("style"); s.textContent = "#stage .l2, #stage .foot, #stage .box .a { color: transparent !important; } /* transparent !important */"; document.head.appendChild(s); }
+window.build = build; window.notext = notext;
+const q = new URLSearchParams(location.search); if (q.get("w")) build(+q.get("w"), +q.get("h"));
+</script></body></html>

@@ -1,0 +1,120 @@
+[build-system]
+requires = ["setuptools>=77", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "audioforge"
+dynamic = ["version"]
+description = "Streaming speech front end for voice agents: NVIDIA FastConformer ASR + VAD + speaker activity + end-of-turn over one WebSocket, in plain PyTorch (no NeMo)"
+readme = "README.md"
+license = "Apache-2.0"
+license-files = ["LICENSE", "NOTICE"]
+requires-python = ">=3.10"
+authors = [{ name = "Max Melichov" }]
+keywords = ["speech", "asr", "streaming", "vad", "diarization", "turn-detection", "voice-agent", "fastconformer", "nvidia", "websocket"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Science/Research",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Multimedia :: Sound/Audio :: Speech",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+]
+# torch is deliberately unpinned (any 2.x with torch.nn.functional.scaled_dot_product_attention works; tested on
+# 2.14). Install the CPU wheel first if you do not want CUDA: pip install torch --index-url https://download.pytorch.org/whl/cpu
+dependencies = [
+    "torch>=2.1",
+    "numpy>=1.24",
+    "pyyaml>=6",
+    "sentencepiece>=0.1.99",
+    "soundfile>=0.12",
+    "huggingface_hub>=0.23",
+]
+
+[project.optional-dependencies]
+# the WebSocket server (audioforge-serve); onnxruntime runs Silero VAD for the hybrid_silero / hybrid_dyn policies
+serve = ["websockets>=13", "onnxruntime>=1.17"]
+# the Pipecat adapter and demo (audioforge.integrations.pipecat, examples/pipecat_local_demo.py)
+pipecat = ["audioforge[serve]", "pipecat-ai>=1.0"]
+# the LiveKit adapter and demos (audioforge.integrations.livekit, examples/livekit_*.py)
+livekit = ["audioforge[serve]", "livekit>=1.0", "livekit-agents>=1.2", "livekit-plugins-silero>=1.2"]
+# importing NVIDIA .nemo checkpoints yourself (audioforge.nemo_import / --from-local); requests fetches NGC files
+nemo-import = ["requests>=2.31"]
+dev = ["audioforge[serve,nemo-import]", "pytest>=8", "ruff>=0.6", "pre-commit>=3", "build>=1", "onnx>=1.15"]
+# everything the research drivers in scripts/research/ and the baseline benchmarks import
+research = [
+    "audioforge[serve]",
+    "transformers>=4.40",
+    "torchaudio>=2.1",
+    "scipy>=1.10",
+    "jiwer>=3",
+    "pyarrow>=14",
+    "datasets>=2.18",
+    "silero-vad>=5.1",
+    "onnx>=1.15",
+    "psutil>=5.9",
+    "requests>=2.31",
+    "speechbrain>=1.0",
+    "pyannote.audio>=3.1",
+    "pyannote.metrics>=3.2",
+    "webrtcvad-wheels>=2.0",
+    "faster-whisper>=1.0",
+    "matplotlib>=3.7",
+]
+
+[project.scripts]
+audioforge = "audioforge.cli:main"
+audioforge-serve = "audioforge.launch:serve_main"
+audioforge-download = "audioforge.hub:main"
+audioforge-bench = "audioforge.bench:main"
+
+[project.urls]
+Homepage = "https://github.com/maxmelichov/audioforge"
+Source = "https://github.com/maxmelichov/audioforge"
+Issues = "https://github.com/maxmelichov/audioforge/issues"
+Changelog = "https://github.com/maxmelichov/audioforge/blob/main/CHANGELOG.md"
+
+[tool.setuptools.dynamic]
+version = { attr = "audioforge.__version__" }
+
+[tool.setuptools.packages.find]
+include = ["audioforge", "audioforge.*"]
+
+[tool.ruff]
+line-length = 120
+target-version = "py310"
+extend-exclude = ["research", "data", "runs", "models", "packages/audioforge-client",  # the client has its own config
+                  "integrations/turnbench_scorer"]  # vendored unchanged (MIT)
+
+[tool.ruff.lint]
+# pyflakes, syntax errors, import order and bugbear; style (line wrapping, quotes) is not enforced
+select = ["F", "E9", "I", "B"]
+# B905 zip(strict=): 120 call sites over equal-length sequences; B008: tensors bound as lambda defaults on purpose
+ignore = ["B905", "B008"]
+
+[tool.ruff.lint.per-file-ignores]
+# the server's regression tests are kept byte-identical across the 2026-09-29 serve.py split (import order only)
+"tests/test_bulletproof.py" = ["I001", "B017"]
+"tests/test_serve.py" = ["I001"]
+"tests/test_serve_shipped.py" = ["I001"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["audioforge", "integrations", "audioforge_client"]
+
+[tool.mypy]
+# the public surface only (audioforge.load / Frontend / Session, the launcher and the flag table); CI runs
+# mypy with this config: mypy audioforge/__init__.py audioforge/api.py audioforge/launch.py audioforge/server/cli.py
+python_version = "3.10"
+follow_imports = "silent"
+ignore_missing_imports = true
+warn_unused_ignores = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q -p no:cacheprovider"
+filterwarnings = ["ignore::DeprecationWarning"]

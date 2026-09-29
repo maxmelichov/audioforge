@@ -1,0 +1,463 @@
+{
+ "tsvad": {
+  "ami": {
+   "hybrid_dyn": {
+    "n": 974,
+    "fc_rate": 0.0534,
+    "p50_ms": 3280.0,
+    "p90_ms": Infinity,
+    "miss_rate": 0.3471,
+    "n_pauses": 0,
+    "fc_per_pause": null,
+    "p10_ms": 1680.0,
+    "miss_rate_ci": [
+     0.3145,
+     0.3805
+    ],
+    "p50_ms_ci": [
+     3040.0,
+     3520.0
+    ],
+    "open_miss": 0.1906779661016949,
+    "cfg_by_fold": {
+     "0": {
+      "m": null,
+      "theta": 0.997634,
+      "offset": 6.0,
+      "tau": Infinity
+     },
+     "1": {
+      "m": null,
+      "theta": 0.997317,
+      "offset": 5.0,
+      "tau": Infinity
+     }
+    },
+    "cfg_all": {
+     "m": null,
+     "theta": 0.997634,
+     "offset": 4.0,
+     "tau": Infinity
+    }
+   },
+   "hybrid_fast_160ms": {
+    "n": 974,
+    "fc_rate": 0.0637,
+    "p50_ms": 3200.0,
+    "p90_ms": Infinity,
+    "miss_rate": 0.3388,
+    "n_pauses": 0,
+    "fc_per_pause": null,
+    "p10_ms": 1600.0,
+    "miss_rate_ci": [
+     0.3085,
+     0.3716
+    ],
+    "p50_ms_ci": [
+     2960.0,
+     3440.0
+    ],
+    "open_miss": 0.18220338983050846,
+    "cfg_by_fold": {
+     "0": {
+      "m": 2,
+      "theta": 0.997634,
+      "offset": 6.0,
+      "tau": 0.9953512385795856
+     },
+     "1": {
+      "m": 2,
+      "theta": 0.997317,
+      "offset": 5.0,
+      "tau": 0.9831165921277013
+     }
+    },
+    "cfg_all": {
+     "m": 2,
+     "theta": 0.997634,
+     "offset": 5.0,
+     "tau": 0.9953512385795856
+    }
+   },
+   "hybrid_fast_240ms": {
+    "n": 974,
+    "fc_rate": 0.0616,
+    "p50_ms": 3200.0,
+    "p90_ms": Infinity,
+    "miss_rate": 0.3381,
+    "n_pauses": 0,
+    "fc_per_pause": null,
+    "p10_ms": 1600.0,
+    "miss_rate_ci": [
+     0.3076,
+     0.3703
+    ],
+    "p50_ms_ci": [
+     2960.0,
+     3440.0
+    ],
+    "open_miss": 0.18220338983050846,
+    "cfg_by_fold": {
+     "0": {
+      "m": 3,
+      "theta": 0.997634,
+      "offset": 6.0,
+      "tau": 0.9955747073272179
+     },
+     "1": {
+      "m": 3,
+      "theta": 0.997317,
+      "offset": 5.0,
+      "tau": 0.9802444451471855
+     }
+    },
+    "cfg_all": {
+     "m": 3,
+     "theta": 0.997634,
+     "offset": 5.0,
+     "tau": 0.9955747073272179
+    }
+   },
+   "hybrid_fast_320ms": {
+    "n": 974,
+    "fc_rate": 0.0595,
+    "p50_ms": 3200.0,
+    "p90_ms": Infinity,
+    "miss_rate": 0.3406,
+    "n_pauses": 0,
+    "fc_per_pause": null,
+    "p10_ms": 1600.0,
+    "miss_rate_ci": [
+     0.3098,
+     0.3725
+    ],
+    "p50_ms_ci": [
+     2960.0,
+     3440.0
+    ],
+    "open_miss": 0.18220338983050846,
+    "cfg_by_fold": {
+     "0": {
+      "m": 4,
+      "theta": 0.997634,
+      "offset": 6.0,
+      "tau": 0.9959059882986134
+     },
+     "1": {
+      "m": 4,
+      "theta": 0.997317,
+      "offset": 5.0,
+      "tau": 0.9852350508139052
+     }
+    },
+    "cfg_all": {
+     "m": 4,
+     "theta": 0.997634,
+     "offset": 5.0,
+     "tau": 0.9959059882986134
+    }
+   },
+   "hybrid_fast_480ms": {
+    "n": 974,
+    "fc_rate": 0.0565,
+    "p50_ms": 3200.0,
+    "p90_ms": Infinity,
+    "miss_rate": 0.3428,
+    "n_pauses": 0,
+    "fc_per_pause": null,
+    "p10_ms": 1600.0,
+    "miss_rate_ci": [
+     0.3114,
+     0.3746
+    ],
+    "p50_ms_ci": [
+     2960.0,
+     3440.0
+    ],
+    "open_miss": 0.18220338983050846,
+    "cfg_by_fold": {
+     "0": {
+      "m": 6,
+      "theta": 0.997634,
+      "offset": 6.0,
+      "tau": 0.9969434324626265
+     },
+     "1": {
+      "m": 6,
+      "theta": 0.997317,
+      "offset": 5.0,
+      "tau": 0.9893214483261108
+     }
+    },
+    "cfg_all": {
+     "m": 6,
+     "theta": 0.997634,
+     "offset": 4.0,
+     "tau": 0.9969434324626265
+    }
+   }
+  },
+  "icsi": {
+   "hybrid_dyn": {
+    "n": 1312,
+    "fc_rate": 0.0373,
+    "p50_ms": 2080.0,
+    "p90_ms": Infinity,
+    "miss_rate": 0.2146,
+    "n_pauses": 0,
+    "fc_per_pause": null,
+    "p10_ms": 1040.0,
+    "miss_rate_ci": [
+     0.1929,
+     0.2387
+    ],
+    "p50_ms_ci": [
+     2000.0,
+     2160.0
+    ],
+    "open_miss": 0.12962962962962962,
+    "cfg_by_fold": {
+     "0": {
+      "m": null,
+      "theta": 0.993214,
+      "offset": 3.5,
+      "tau": Infinity
+     },
+     "1": {
+      "m": null,
+      "theta": 0.993214,
+      "offset": 2.0,
+      "tau": Infinity
+     }
+    },
+    "frozen_ami": {
+     "n": 1312,
+     "fc_rate": 0.0168,
+     "p50_ms": 3120.0,
+     "p90_ms": Infinity,
+     "miss_rate": 0.3287,
+     "n_pauses": 0,
+     "fc_per_pause": null,
+     "p10_ms": 1840.0,
+     "miss_rate_ci": [
+      0.3027,
+      0.3563
+     ],
+     "p50_ms_ci": [
+      2960.0,
+      3280.0
+     ],
+     "open_miss": 0.22685185185185186
+    }
+   },
+   "hybrid_fast_160ms": {
+    "n": 1312,
+    "fc_rate": 0.0457,
+    "p50_ms": 2080.0,
+    "p90_ms": Infinity,
+    "miss_rate": 0.2149,
+    "n_pauses": 0,
+    "fc_per_pause": null,
+    "p10_ms": 1040.0,
+    "miss_rate_ci": [
+     0.1936,
+     0.2386
+    ],
+    "p50_ms_ci": [
+     2000.0,
+     2160.0
+    ],
+    "open_miss": 0.12962962962962962,
+    "cfg_by_fold": {
+     "0": {
+      "m": 2,
+      "theta": 0.993214,
+      "offset": 3.5,
+      "tau": 0.9881803441869802
+     },
+     "1": {
+      "m": 2,
+      "theta": 0.993214,
+      "offset": 2.0,
+      "tau": 0.9616153047331448
+     }
+    },
+    "frozen_ami": {
+     "n": 1312,
+     "fc_rate": 0.016,
+     "p50_ms": 3120.0,
+     "p90_ms": Infinity,
+     "miss_rate": 0.3277,
+     "n_pauses": 0,
+     "fc_per_pause": null,
+     "p10_ms": 1760.0,
+     "miss_rate_ci": [
+      0.3033,
+      0.3542
+     ],
+     "p50_ms_ci": [
+      2960.0,
+      3280.0
+     ],
+     "open_miss": 0.25462962962962965
+    }
+   },
+   "hybrid_fast_240ms": {
+    "n": 1312,
+    "fc_rate": 0.0633,
+    "p50_ms": 2080.0,
+    "p90_ms": Infinity,
+    "miss_rate": 0.2075,
+    "n_pauses": 0,
+    "fc_per_pause": null,
+    "p10_ms": 1040.0,
+    "miss_rate_ci": [
+     0.1865,
+     0.2315
+    ],
+    "p50_ms_ci": [
+     2000.0,
+     2160.0
+    ],
+    "open_miss": 0.11574074074074074,
+    "cfg_by_fold": {
+     "0": {
+      "m": 3,
+      "theta": 0.993214,
+      "offset": 3.5,
+      "tau": 0.989581253732073
+     },
+     "1": {
+      "m": 3,
+      "theta": 0.993214,
+      "offset": 2.0,
+      "tau": 0.856668131889968
+     }
+    },
+    "frozen_ami": {
+     "n": 1312,
+     "fc_rate": 0.016,
+     "p50_ms": 3120.0,
+     "p90_ms": Infinity,
+     "miss_rate": 0.33,
+     "n_pauses": 0,
+     "fc_per_pause": null,
+     "p10_ms": 1760.0,
+     "miss_rate_ci": [
+      0.3053,
+      0.3568
+     ],
+     "p50_ms_ci": [
+      2960.0,
+      3280.0
+     ],
+     "open_miss": 0.25462962962962965
+    }
+   },
+   "hybrid_fast_320ms": {
+    "n": 1312,
+    "fc_rate": 0.0617,
+    "p50_ms": 2080.0,
+    "p90_ms": Infinity,
+    "miss_rate": 0.208,
+    "n_pauses": 0,
+    "fc_per_pause": null,
+    "p10_ms": 1040.0,
+    "miss_rate_ci": [
+     0.1868,
+     0.2316
+    ],
+    "p50_ms_ci": [
+     2000.0,
+     2160.0
+    ],
+    "open_miss": 0.11574074074074074,
+    "cfg_by_fold": {
+     "0": {
+      "m": 4,
+      "theta": 0.993214,
+      "offset": 3.5,
+      "tau": 0.9891760094659082
+     },
+     "1": {
+      "m": 4,
+      "theta": 0.993214,
+      "offset": 2.0,
+      "tau": 0.854823964752
+     }
+    },
+    "frozen_ami": {
+     "n": 1312,
+     "fc_rate": 0.016,
+     "p50_ms": 3120.0,
+     "p90_ms": Infinity,
+     "miss_rate": 0.33,
+     "n_pauses": 0,
+     "fc_per_pause": null,
+     "p10_ms": 1760.0,
+     "miss_rate_ci": [
+      0.3053,
+      0.3568
+     ],
+     "p50_ms_ci": [
+      2960.0,
+      3280.0
+     ],
+     "open_miss": 0.25462962962962965
+    }
+   },
+   "hybrid_fast_480ms": {
+    "n": 1312,
+    "fc_rate": 0.0625,
+    "p50_ms": 2080.0,
+    "p90_ms": Infinity,
+    "miss_rate": 0.2098,
+    "n_pauses": 0,
+    "fc_per_pause": null,
+    "p10_ms": 1032.0000000000005,
+    "miss_rate_ci": [
+     0.1877,
+     0.2333
+    ],
+    "p50_ms_ci": [
+     2000.0,
+     2160.0
+    ],
+    "open_miss": 0.11574074074074074,
+    "cfg_by_fold": {
+     "0": {
+      "m": 6,
+      "theta": 0.993214,
+      "offset": 3.5,
+      "tau": 0.9898350749036362
+     },
+     "1": {
+      "m": 6,
+      "theta": 0.993214,
+      "offset": 2.0,
+      "tau": 0.7850707630206799
+     }
+    },
+    "frozen_ami": {
+     "n": 1312,
+     "fc_rate": 0.0168,
+     "p50_ms": 3120.0,
+     "p90_ms": Infinity,
+     "miss_rate": 0.3271,
+     "n_pauses": 0,
+     "fc_per_pause": null,
+     "p10_ms": 1832.0000000000005,
+     "miss_rate_ci": [
+      0.3016,
+      0.3542
+     ],
+     "p50_ms_ci": [
+      2960.0,
+      3280.0
+     ],
+     "open_miss": 0.22685185185185186
+    }
+   }
+  }
+ }
+}

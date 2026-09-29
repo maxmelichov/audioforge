@@ -1,0 +1,771 @@
+{
+ "protocol": "scripts/bench_serve.py: served models streamed in 20 ms blocks through serve.Session in process, as fast as the CPU allows, 2 torch threads, via scripts/dev/gate.sh (nice 5). RTF = processing wall / audio; cpu_rtf = process CPU time / audio (both threads). Per-component sums are the Session's own timers (asr = feed_frames: mel + encoder + RNNT + VAD head; turn = speaker-conditioned encoder pass + turn head; diar = StreamingDiarizer.feed). 'components' installs leaf timers (ms per 160 ms of audio). 'ab' interleaves two engines per clip so both see the same machine load; 'compare' checks protocol-message equality. load_* = 1/5/15 min load averages, swap_used_mb = macOS swap at the end of the run: the machine was shared with other agents' jobs throughout (load 4-10), so wall figures are upper bounds; ratios within one 'ab' run are the fair comparison.",
+ "machine": {
+  "model": "Mac17,2",
+  "cores": 10,
+  "ram_gb": 24,
+  "python": "3.12.11",
+  "torch": "2.14.0",
+  "blas": "Apple Accelerate",
+  "threads": 2
+ },
+ "clips": {
+  "e2e5": "the 5 AMI Mix-Headset windows of research/E2E_FINAL.md (88.4 s)",
+  "long": "ES2011b 600-720 s (120 s; speaker cache + FIFO full after ~30 s)",
+  "streams": "K sessions over 60 s AMI windows at different offsets, interleaved on one worker"
+ },
+ "audit_reconciliation": "research/PERFORMANCE.md section 1",
+ "baseline_none": {
+  "e2e5": {
+   "load_s": 5.63,
+   "rss_after_load_mb": 733.6,
+   "rss_before_load_mb": 200.1,
+   "diar": "nemotron",
+   "threads": 2,
+   "policy": "timeout",
+   "enroll": "dominant",
+   "opt": [],
+   "clips": "e2e5",
+   "load_start": [
+    4.7,
+    5.17,
+    6.74
+   ],
+   "audio_s": 88.44,
+   "rtf": 0.8449,
+   "cpu_rtf": 0.8467,
+   "comp_rtf": {
+    "asr": 0.2767,
+    "turn": 0.2816,
+    "diar": 0.2844,
+    "silero": 0.0,
+    "enroll": 0.0,
+    "lookahead": 0.0
+   },
+   "chunk_ms_p50": 132.04,
+   "chunk_ms_p95": 259.14,
+   "chunk_ms_max": 825.51,
+   "peak_rss_mb": 1208.1,
+   "rss_end_mb": 934.4,
+   "load_end": [
+    4.77,
+    5.06,
+    6.55
+   ]
+  },
+  "long": {
+   "load_s": 4.93,
+   "rss_after_load_mb": 1293.8,
+   "rss_before_load_mb": 199.9,
+   "diar": "nemotron",
+   "threads": 2,
+   "policy": "timeout",
+   "enroll": "dominant",
+   "opt": [],
+   "clips": "long",
+   "load_start": [
+    4.77,
+    5.06,
+    6.55
+   ],
+   "audio_s": 120.0,
+   "rtf": 1.3796,
+   "cpu_rtf": 1.4043,
+   "comp_rtf": {
+    "asr": 0.3332,
+    "turn": 0.356,
+    "diar": 0.6872,
+    "silero": 0.0,
+    "enroll": 0.0,
+    "lookahead": 0.0
+   },
+   "chunk_ms_p50": 246.59,
+   "chunk_ms_p95": 397.74,
+   "chunk_ms_max": 2243.04,
+   "peak_rss_mb": 1410.1,
+   "rss_end_mb": 949.4,
+   "load_end": [
+    6.83,
+    5.58,
+    6.46
+   ]
+  }
+ },
+ "components_none": {
+  "e2e5": {
+   "load_s": 8.97,
+   "rss_after_load_mb": 765.1,
+   "rss_before_load_mb": 189.8,
+   "diar": "nemotron",
+   "threads": 2,
+   "policy": "hybrid_dyn",
+   "opt": [],
+   "clips": "e2e5",
+   "audio_s": 88.44,
+   "load_start": [
+    6.6,
+    5.64,
+    6.42
+   ],
+   "load_end": [
+    9.81,
+    7.27,
+    6.95
+   ],
+   "swap_used_mb": 14298.88,
+   "ms_per_160ms": {
+    "asr.mel": 0.684,
+    "asr.pass_total": 72.843,
+    "diar.total": 85.981,
+    "turn.pass_total": 79.009,
+    "silero.total": 1.273,
+    "session.total": 240.077,
+    "asr.subsample": 23.761,
+    "asr.layers": 59.032,
+    "asr.encoder_step": 70.73,
+    "asr.vad_head": 0.058,
+    "asr.rnnt_decode": 0.833,
+    "diar.encode": 0.623,
+    "diar.head": 85.109,
+    "turn.layers": 65.247,
+    "turn.encoder_step": 77.605,
+    "turn.head": 1.324
+   },
+   "calls_per_160ms": {
+    "asr.mel": 8.011,
+    "asr.pass_total": 8.011,
+    "diar.total": 8.011,
+    "turn.pass_total": 8.011,
+    "silero.total": 8.011,
+    "session.total": 8.011,
+    "asr.subsample": 2.015,
+    "asr.layers": 1.009,
+    "asr.encoder_step": 1.008,
+    "asr.vad_head": 1.008,
+    "asr.rnnt_decode": 2.012,
+    "diar.encode": 0.673,
+    "diar.head": 0.673,
+    "turn.layers": 1.009,
+    "turn.encoder_step": 1.008,
+    "turn.head": 2.012
+   },
+   "python_and_other_ms_per_160ms": 1.884,
+   "rtf": 1.5005,
+   "chunk_ms_p50": 238.01,
+   "chunk_ms_p95": 456.41,
+   "chunk_ms_max": 1340.01,
+   "first_partial_server_lag_ms": [
+    59.2,
+    53.6,
+    65.6,
+    69.2,
+    74.0
+   ],
+   "first_partial_after_onset_ms": [
+    640.0,
+    1440.0,
+    640.0,
+    640.0,
+    1440.0
+   ],
+   "speaker_head_embed_5s_ms": 0.586,
+   "peak_rss_mb": 1025.6,
+   "rss_end_mb": 963.4
+  },
+  "long": {
+   "load_s": 11.41,
+   "rss_after_load_mb": 310.7,
+   "rss_before_load_mb": 200.0,
+   "diar": "nemotron",
+   "threads": 2,
+   "policy": "hybrid_dyn",
+   "opt": [],
+   "clips": "long",
+   "audio_s": 120.0,
+   "load_start": [
+    9.3,
+    7.32,
+    6.98
+   ],
+   "load_end": [
+    7.18,
+    7.85,
+    7.36
+   ],
+   "swap_used_mb": 14933.38,
+   "ms_per_160ms": {
+    "asr.mel": 0.642,
+    "asr.pass_total": 74.018,
+    "diar.total": 142.125,
+    "turn.pass_total": 77.522,
+    "silero.total": 1.283,
+    "session.total": 296.176,
+    "asr.subsample": 23.322,
+    "asr.layers": 59.005,
+    "asr.encoder_step": 71.424,
+    "asr.vad_head": 0.055,
+    "asr.rnnt_decode": 1.326,
+    "diar.encode": 0.429,
+    "diar.head": 141.373,
+    "turn.layers": 65.02,
+    "turn.encoder_step": 76.244,
+    "turn.head": 1.186
+   },
+   "calls_per_160ms": {
+    "asr.mel": 8.001,
+    "asr.pass_total": 8.001,
+    "diar.total": 8.001,
+    "turn.pass_total": 8.001,
+    "silero.total": 8.001,
+    "session.total": 8.001,
+    "asr.subsample": 2.003,
+    "asr.layers": 1.001,
+    "asr.encoder_step": 1.001,
+    "asr.vad_head": 1.001,
+    "asr.rnnt_decode": 2.001,
+    "diar.encode": 0.668,
+    "diar.head": 0.668,
+    "turn.layers": 1.001,
+    "turn.encoder_step": 1.001,
+    "turn.head": 2.001
+   },
+   "python_and_other_ms_per_160ms": 2.212,
+   "rtf": 1.8511,
+   "chunk_ms_p50": 310.99,
+   "chunk_ms_p95": 605.94,
+   "chunk_ms_max": 1606.18,
+   "first_partial_server_lag_ms": [
+    102.8
+   ],
+   "first_partial_after_onset_ms": [
+    10560.0
+   ],
+   "speaker_head_embed_5s_ms": 0.494,
+   "peak_rss_mb": 1027.7,
+   "rss_end_mb": 978.0
+  }
+ },
+ "components_default": {
+  "e2e5": {
+   "load_s": 4.1,
+   "rss_after_load_mb": 1451.2,
+   "rss_before_load_mb": 200.1,
+   "diar": "nemotron",
+   "threads": 2,
+   "policy": "hybrid_dyn",
+   "opt": [
+    "default"
+   ],
+   "clips": "e2e5",
+   "audio_s": 88.44,
+   "load_start": [
+    3.51,
+    4.81,
+    6.13
+   ],
+   "load_end": [
+    4.11,
+    4.8,
+    6.06
+   ],
+   "swap_used_mb": 7341.06,
+   "ms_per_160ms": {
+    "asr.mel": 0.293,
+    "asr.pass_total": 22.369,
+    "diar.total": 31.81,
+    "turn.pass_total": 17.157,
+    "silero.total": 0.636,
+    "session.total": 72.403,
+    "asr.subsample": 4.594,
+    "asr.layers": 16.878,
+    "asr.encoder_step": 21.542,
+    "asr.vad_head": 0.024,
+    "asr.rnnt_decode": 0.291,
+    "diar.encode": 0.156,
+    "diar.head": 31.541,
+    "turn.layers": 16.507,
+    "turn.encoder_step": 16.545,
+    "turn.head": 0.569
+   },
+   "calls_per_160ms": {
+    "asr.mel": 8.011,
+    "asr.pass_total": 8.011,
+    "diar.total": 8.011,
+    "turn.pass_total": 8.011,
+    "silero.total": 8.011,
+    "session.total": 8.011,
+    "asr.subsample": 1.008,
+    "asr.layers": 1.009,
+    "asr.encoder_step": 1.008,
+    "asr.vad_head": 1.008,
+    "asr.rnnt_decode": 2.012,
+    "diar.encode": 0.673,
+    "diar.head": 0.673,
+    "turn.layers": 1.009,
+    "turn.encoder_step": 1.008,
+    "turn.head": 2.012
+   },
+   "python_and_other_ms_per_160ms": 0.801,
+   "rtf": 0.4525,
+   "chunk_ms_p50": 78.86,
+   "chunk_ms_p95": 125.37,
+   "chunk_ms_max": 335.91,
+   "first_partial_server_lag_ms": [
+    20.9,
+    24.4,
+    24.1,
+    20.5,
+    24.1
+   ],
+   "first_partial_after_onset_ms": [
+    640.0,
+    1440.0,
+    640.0,
+    640.0,
+    1440.0
+   ],
+   "speaker_head_embed_5s_ms": 0.204,
+   "peak_rss_mb": 1554.2,
+   "rss_end_mb": 1112.9
+  },
+  "long": {
+   "load_s": 3.78,
+   "rss_after_load_mb": 1451.0,
+   "rss_before_load_mb": 200.1,
+   "diar": "nemotron",
+   "threads": 2,
+   "policy": "hybrid_dyn",
+   "opt": [
+    "default"
+   ],
+   "clips": "long",
+   "audio_s": 120.0,
+   "load_start": [
+    4.11,
+    4.8,
+    6.06
+   ],
+   "load_end": [
+    3.8,
+    4.53,
+    5.83
+   ],
+   "swap_used_mb": 7221.06,
+   "ms_per_160ms": {
+    "asr.mel": 0.289,
+    "asr.pass_total": 20.242,
+    "diar.total": 61.782,
+    "turn.pass_total": 15.687,
+    "silero.total": 0.615,
+    "session.total": 98.966,
+    "asr.subsample": 4.625,
+    "asr.layers": 14.676,
+    "asr.encoder_step": 19.364,
+    "asr.vad_head": 0.023,
+    "asr.rnnt_decode": 0.347,
+    "diar.encode": 0.147,
+    "diar.head": 61.515,
+    "turn.layers": 15.071,
+    "turn.encoder_step": 15.104,
+    "turn.head": 0.543
+   },
+   "calls_per_160ms": {
+    "asr.mel": 8.001,
+    "asr.pass_total": 8.001,
+    "diar.total": 8.001,
+    "turn.pass_total": 8.001,
+    "silero.total": 8.001,
+    "session.total": 8.001,
+    "asr.subsample": 1.001,
+    "asr.layers": 1.001,
+    "asr.encoder_step": 1.001,
+    "asr.vad_head": 1.001,
+    "asr.rnnt_decode": 2.001,
+    "diar.encode": 0.668,
+    "diar.head": 0.668,
+    "turn.layers": 1.001,
+    "turn.encoder_step": 1.001,
+    "turn.head": 2.001
+   },
+   "python_and_other_ms_per_160ms": 0.995,
+   "rtf": 0.6185,
+   "chunk_ms_p50": 119.44,
+   "chunk_ms_p95": 179.64,
+   "chunk_ms_max": 338.89,
+   "first_partial_server_lag_ms": [
+    18.5
+   ],
+   "first_partial_after_onset_ms": [
+    10560.0
+   ],
+   "speaker_head_embed_5s_ms": 0.218,
+   "peak_rss_mb": 1554.3,
+   "rss_end_mb": 992.8
+  }
+ },
+ "ab": {
+  "default_all": {
+   "diar": "nemotron",
+   "threads": 2,
+   "policy": "timeout",
+   "clips": "e2e5",
+   "reps": 1,
+   "opt_a": "default",
+   "opt_b": "all",
+   "perf_info": [
+    {
+     "linear_t": 0,
+     "pos_cache": 17,
+     "share_subsample": true,
+     "joint_cache": true
+    },
+    {
+     "linear_t": 0,
+     "pos_cache": 17,
+     "share_subsample": true,
+     "fast_subsample": 2,
+     "joint_cache": true
+    }
+   ],
+   "audio_s_per_config": 88.4,
+   "load_end": [
+    5.05,
+    4.64,
+    5.64
+   ],
+   "swap_used_mb": 7060.94,
+   "peak_rss_mb": 2348.4,
+   "A": {
+    "rtf": 0.58,
+    "cpu_rtf": 0.6125,
+    "asr_rtf": 0.1703,
+    "turn_rtf": 0.1337,
+    "diar_rtf": 0.2741,
+    "silero_rtf": 0.0,
+    "chunk_ms_p50": 97.24,
+    "chunk_ms_p95": 175.65
+   },
+   "B": {
+    "rtf": 0.565,
+    "cpu_rtf": 0.6015,
+    "asr_rtf": 0.1496,
+    "turn_rtf": 0.1347,
+    "diar_rtf": 0.2787,
+    "silero_rtf": 0.0,
+    "chunk_ms_p50": 94.03,
+    "chunk_ms_p95": 190.16
+   },
+   "ratio_B_over_A": {
+    "rtf": 0.974,
+    "cpu_rtf": 0.982,
+    "asr_rtf": 0.878,
+    "turn_rtf": 1.007,
+    "diar_rtf": 1.017,
+    "chunk_ms_p95": 1.083
+   },
+   "compare": {
+    "n_msgs": 1313,
+    "identical": false,
+    "within_tol": true,
+    "decision_diffs": {
+     "turn_end": 0,
+     "final": 0,
+     "partial": 0,
+     "primary": 0
+    },
+    "maxdiff": {
+     "t": 0.0,
+     "vad": 0.0001,
+     "speakers": 0.0,
+     "eot": 1e-05,
+     "primary": 0.0,
+     "silence_ms": 0.0,
+     "speaker": 0.0
+    },
+    "n_struct": 0,
+    "n_num": 0,
+    "n_str": 0,
+    "examples": []
+   }
+  },
+  "none_default": {
+   "diar": "nemotron",
+   "threads": 2,
+   "policy": "timeout",
+   "clips": "e2e5",
+   "reps": 1,
+   "opt_a": "none",
+   "opt_b": "default",
+   "perf_info": [
+    {
+     "joint_cache": false
+    },
+    {
+     "linear_t": 290,
+     "pos_cache": 17,
+     "share_subsample": true,
+     "joint_cache": true
+    }
+   ],
+   "audio_s_per_config": 88.4,
+   "load_end": [
+    7.0,
+    8.03,
+    7.66
+   ],
+   "swap_used_mb": 11074.56,
+   "peak_rss_mb": 1783.3,
+   "A": {
+    "rtf": 1.389,
+    "cpu_rtf": 1.0889,
+    "asr_rtf": 0.4361,
+    "turn_rtf": 0.4151,
+    "diar_rtf": 0.5332,
+    "silero_rtf": 0.0,
+    "chunk_ms_p50": 145.6,
+    "chunk_ms_p95": 655.74
+   },
+   "B": {
+    "rtf": 0.8556,
+    "cpu_rtf": 0.7237,
+    "asr_rtf": 0.3033,
+    "turn_rtf": 0.1724,
+    "diar_rtf": 0.3773,
+    "silero_rtf": 0.0,
+    "chunk_ms_p50": 96.15,
+    "chunk_ms_p95": 246.88
+   },
+   "ratio_B_over_A": {
+    "rtf": 0.616,
+    "cpu_rtf": 0.665,
+    "asr_rtf": 0.695,
+    "turn_rtf": 0.415,
+    "diar_rtf": 0.708,
+    "chunk_ms_p95": 0.376
+   },
+   "compare": {
+    "n_msgs": 1313,
+    "identical": false,
+    "within_tol": true,
+    "decision_diffs": {
+     "turn_end": 0,
+     "final": 0,
+     "partial": 0,
+     "primary": 0
+    },
+    "maxdiff": {
+     "t": 0.0,
+     "vad": 0.0,
+     "speakers": 0.0,
+     "eot": 1e-05,
+     "primary": 0.0,
+     "silence_ms": 0.0,
+     "speaker": 0.0
+    },
+    "n_struct": 0,
+    "n_num": 0,
+    "n_str": 0,
+    "examples": []
+   }
+  }
+ },
+ "streams_default": {
+  "streams1_default": {
+   "load_s": 4.14,
+   "rss_after_load_mb": 1427.3,
+   "rss_before_load_mb": 200.2,
+   "diar": "nemotron",
+   "threads": 2,
+   "policy": "timeout",
+   "enroll": "dominant",
+   "opt": [
+    "default"
+   ],
+   "clips": "e2e5",
+   "load_start": [
+    5.05,
+    4.64,
+    5.64
+   ],
+   "audio_s": 88.44,
+   "rtf": 0.5137,
+   "cpu_rtf": 0.5477,
+   "comp_rtf": {
+    "asr": 0.1546,
+    "turn": 0.1183,
+    "diar": 0.239,
+    "silero": 0.0,
+    "enroll": 0.0,
+    "lookahead": 0.0
+   },
+   "chunk_ms_p50": 85.23,
+   "chunk_ms_p95": 162.1,
+   "chunk_ms_max": 480.57,
+   "peak_rss_mb": 1554.1,
+   "rss_end_mb": 1129.9,
+   "load_end": [
+    4.7,
+    4.59,
+    5.56
+   ],
+   "swap_used_mb": 7060.94
+  },
+  "streams2_default": {
+   "load_s": 4.65,
+   "rss_after_load_mb": 1427.9,
+   "rss_before_load_mb": 200.4,
+   "diar": "nemotron",
+   "threads": 2,
+   "policy": "timeout",
+   "enroll": "dominant",
+   "opt": [
+    "default"
+   ],
+   "clips": "e2e5",
+   "load_start": [
+    4.7,
+    4.59,
+    5.56
+   ],
+   "streams": 2,
+   "stream_seconds": 60.0,
+   "audio_s_per_stream": 60.0,
+   "batch": false,
+   "agg_rtf": 1.3077,
+   "per_stream_rtf": 0.6539,
+   "agg_cpu_rtf": 1.4849,
+   "lat_ms_p50": 8932.5,
+   "lat_ms_p95": 17596.35,
+   "lat_ms_max": 19060.5,
+   "lat_growth_ms": 17492.4,
+   "realtime": false,
+   "chunk_ms_p95": 180.06,
+   "peak_rss_mb": 1554.7,
+   "rss_end_mb": 1238.1,
+   "load_end": [
+    5.61,
+    4.91,
+    5.59
+   ],
+   "swap_used_mb": 7028.94
+  },
+  "streams3_default": {
+   "load_s": 3.7,
+   "rss_after_load_mb": 1427.5,
+   "rss_before_load_mb": 200.2,
+   "diar": "nemotron",
+   "threads": 2,
+   "policy": "timeout",
+   "enroll": "dominant",
+   "opt": [
+    "default"
+   ],
+   "clips": "e2e5",
+   "load_start": [
+    5.61,
+    4.91,
+    5.59
+   ],
+   "streams": 3,
+   "stream_seconds": 60.0,
+   "audio_s_per_stream": 60.0,
+   "batch": false,
+   "agg_rtf": 1.7656,
+   "per_stream_rtf": 0.5885,
+   "agg_cpu_rtf": 2.0275,
+   "lat_ms_p50": 15425.97,
+   "lat_ms_p95": 43410.31,
+   "lat_ms_max": 46471.0,
+   "lat_growth_ms": 43371.5,
+   "realtime": false,
+   "chunk_ms_p95": 172.95,
+   "peak_rss_mb": 1554.3,
+   "rss_end_mb": 1380.6,
+   "load_end": [
+    4.1,
+    4.71,
+    5.44
+   ],
+   "swap_used_mb": 6980.94
+  }
+ },
+ "micro": {
+  "load": [
+   3.53076171875,
+   5.2099609375,
+   6.3740234375
+  ],
+  "fp32_default": {
+   "ms_per_160": 20.79
+  },
+  "fast_subsample": {
+   "ms_per_160": 17.28,
+   "same_tokens": true
+  },
+  "inference_mode": {
+   "ms_per_160": 20.53,
+   "same_tokens": true
+  },
+  "int8_error": "RuntimeError(\"Didn't find engine for operation quantized::linear_prepack NoQEngine\")",
+  "fp32_default_again": {
+   "ms_per_160": 20.98
+  },
+  "torch_compile_layers": {
+   "ms_per_160": 26.39,
+   "first_run_incl_compile_s": 22.2,
+   "same_tokens": true
+  },
+  "load_end": [
+   3.5068359375,
+   4.81494140625,
+   6.1279296875
+  ]
+ },
+ "rss_probe": {
+  "what": "load stage1_served in a fresh process (2 threads), RSS after load / after fast_conv / after perf.linear_t on the encoder (psutil, MB); second model re-laid out in place with Tensor.set_",
+  "loaded_mb": 1082,
+  "fast_conv_mb": 1082,
+  "linear_t_mb": 1083,
+  "set_variant_delta_mb": 0
+ },
+ "sortformer_default": {
+  "load_s": 3.76,
+  "rss_after_load_mb": 1563.7,
+  "rss_before_load_mb": 200.4,
+  "diar": "sortformer",
+  "threads": 2,
+  "policy": "timeout",
+  "enroll": "dominant",
+  "opt": [
+   "default"
+  ],
+  "clips": "e2e5",
+  "load_start": [
+   3.68,
+   4.55,
+   5.35
+  ],
+  "audio_s": 88.44,
+  "rtf": 0.6142,
+  "cpu_rtf": 0.7307,
+  "comp_rtf": {
+   "asr": 0.1355,
+   "turn": 0.1006,
+   "diar": 0.3764,
+   "silero": 0.0,
+   "enroll": 0.0,
+   "lookahead": 0.0
+  },
+  "chunk_ms_p50": 102.56,
+  "chunk_ms_p95": 185.95,
+  "chunk_ms_max": 325.92,
+  "peak_rss_mb": 3577.6,
+  "rss_end_mb": 2278.1,
+  "load_end": [
+   3.2,
+   4.26,
+   5.19
+  ],
+  "swap_used_mb": 6964.94
+ }
+}

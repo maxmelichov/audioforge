@@ -1,0 +1,2963 @@
+{
+ "variants": {
+  "untrained_meanpool": {
+   "layers": {
+    "ckpt": "runs/stage1_heads_pretrained.afm",
+    "ami_n64": {
+     "per_layer": [
+      {
+       "layer": 0,
+       "eer": 0.1578,
+       "eer_within_meeting": 0.3144
+      },
+      {
+       "layer": 1,
+       "eer": 0.1513,
+       "eer_within_meeting": 0.3017
+      },
+      {
+       "layer": 2,
+       "eer": 0.1578,
+       "eer_within_meeting": 0.3017
+      },
+      {
+       "layer": 3,
+       "eer": 0.1635,
+       "eer_within_meeting": 0.3002
+      },
+      {
+       "layer": 4,
+       "eer": 0.1776,
+       "eer_within_meeting": 0.3081
+      },
+      {
+       "layer": 5,
+       "eer": 0.1771,
+       "eer_within_meeting": 0.3144
+      },
+      {
+       "layer": 6,
+       "eer": 0.2039,
+       "eer_within_meeting": 0.3491
+      },
+      {
+       "layer": 7,
+       "eer": 0.2099,
+       "eer_within_meeting": 0.3428
+      },
+      {
+       "layer": 8,
+       "eer": 0.2633,
+       "eer_within_meeting": 0.3633
+      },
+      {
+       "layer": 9,
+       "eer": 0.3094,
+       "eer_within_meeting": 0.4108
+      },
+      {
+       "layer": 10,
+       "eer": 0.3427,
+       "eer_within_meeting": 0.4313
+      },
+      {
+       "layer": 11,
+       "eer": 0.3487,
+       "eer_within_meeting": 0.4298
+      },
+      {
+       "layer": 12,
+       "eer": 0.3956,
+       "eer_within_meeting": 0.4455
+      },
+      {
+       "layer": 13,
+       "eer": 0.3883,
+       "eer_within_meeting": 0.444
+      },
+      {
+       "layer": 14,
+       "eer": 0.3815,
+       "eer_within_meeting": 0.4377
+      },
+      {
+       "layer": 15,
+       "eer": 0.4154,
+       "eer_within_meeting": 0.466
+      },
+      {
+       "layer": 16,
+       "eer": 0.3891,
+       "eer_within_meeting": 0.4645
+      }
+     ]
+    },
+    "ami_n200": {
+     "per_layer": [
+      {
+       "layer": 0,
+       "eer": 0.1924,
+       "eer_within_meeting": 0.3472
+      },
+      {
+       "layer": 1,
+       "eer": 0.189,
+       "eer_within_meeting": 0.3341
+      },
+      {
+       "layer": 2,
+       "eer": 0.1918,
+       "eer_within_meeting": 0.3347
+      },
+      {
+       "layer": 3,
+       "eer": 0.1935,
+       "eer_within_meeting": 0.3419
+      },
+      {
+       "layer": 4,
+       "eer": 0.2009,
+       "eer_within_meeting": 0.346
+      },
+      {
+       "layer": 5,
+       "eer": 0.2055,
+       "eer_within_meeting": 0.3382
+      },
+      {
+       "layer": 6,
+       "eer": 0.2164,
+       "eer_within_meeting": 0.3523
+      },
+      {
+       "layer": 7,
+       "eer": 0.2249,
+       "eer_within_meeting": 0.3588
+      },
+      {
+       "layer": 8,
+       "eer": 0.2568,
+       "eer_within_meeting": 0.3727
+      },
+      {
+       "layer": 9,
+       "eer": 0.3151,
+       "eer_within_meeting": 0.4333
+      },
+      {
+       "layer": 10,
+       "eer": 0.3533,
+       "eer_within_meeting": 0.4639
+      },
+      {
+       "layer": 11,
+       "eer": 0.3706,
+       "eer_within_meeting": 0.4801
+      },
+      {
+       "layer": 12,
+       "eer": 0.4013,
+       "eer_within_meeting": 0.4885
+      },
+      {
+       "layer": 13,
+       "eer": 0.3864,
+       "eer_within_meeting": 0.4838
+      },
+      {
+       "layer": 14,
+       "eer": 0.3967,
+       "eer_within_meeting": 0.4797
+      },
+      {
+       "layer": 15,
+       "eer": 0.4395,
+       "eer_within_meeting": 0.4987
+      },
+      {
+       "layer": 16,
+       "eer": 0.4133,
+       "eer_within_meeting": 0.4868
+      }
+     ]
+    },
+    "icsi_n64": {
+     "per_layer": [
+      {
+       "layer": 0,
+       "eer": 0.2748,
+       "eer_within_meeting": 0.3632
+      },
+      {
+       "layer": 1,
+       "eer": 0.2714,
+       "eer_within_meeting": 0.3415
+      },
+      {
+       "layer": 2,
+       "eer": 0.2411,
+       "eer_within_meeting": 0.3049
+      },
+      {
+       "layer": 3,
+       "eer": 0.2297,
+       "eer_within_meeting": 0.2819
+      },
+      {
+       "layer": 4,
+       "eer": 0.2382,
+       "eer_within_meeting": 0.2893
+      },
+      {
+       "layer": 5,
+       "eer": 0.2604,
+       "eer_within_meeting": 0.3123
+      },
+      {
+       "layer": 6,
+       "eer": 0.2951,
+       "eer_within_meeting": 0.3442
+      },
+      {
+       "layer": 7,
+       "eer": 0.3055,
+       "eer_within_meeting": 0.334
+      },
+      {
+       "layer": 8,
+       "eer": 0.321,
+       "eer_within_meeting": 0.3516
+      },
+      {
+       "layer": 9,
+       "eer": 0.3924,
+       "eer_within_meeting": 0.4363
+      },
+      {
+       "layer": 10,
+       "eer": 0.4183,
+       "eer_within_meeting": 0.4797
+      },
+      {
+       "layer": 11,
+       "eer": 0.4331,
+       "eer_within_meeting": 0.4783
+      },
+      {
+       "layer": 12,
+       "eer": 0.446,
+       "eer_within_meeting": 0.5061
+      },
+      {
+       "layer": 13,
+       "eer": 0.4405,
+       "eer_within_meeting": 0.5061
+      },
+      {
+       "layer": 14,
+       "eer": 0.4316,
+       "eer_within_meeting": 0.5041
+      },
+      {
+       "layer": 15,
+       "eer": 0.4334,
+       "eer_within_meeting": 0.5027
+      },
+      {
+       "layer": 16,
+       "eer": 0.4723,
+       "eer_within_meeting": 0.5129
+      }
+     ]
+    },
+    "icsi_n200": {
+     "per_layer": [
+      {
+       "layer": 0,
+       "eer": 0.2667,
+       "eer_within_meeting": 0.3266
+      },
+      {
+       "layer": 1,
+       "eer": 0.2599,
+       "eer_within_meeting": 0.3192
+      },
+      {
+       "layer": 2,
+       "eer": 0.246,
+       "eer_within_meeting": 0.2968
+      },
+      {
+       "layer": 3,
+       "eer": 0.2394,
+       "eer_within_meeting": 0.2873
+      },
+      {
+       "layer": 4,
+       "eer": 0.2512,
+       "eer_within_meeting": 0.3002
+      },
+      {
+       "layer": 5,
+       "eer": 0.2655,
+       "eer_within_meeting": 0.3121
+      },
+      {
+       "layer": 6,
+       "eer": 0.3004,
+       "eer_within_meeting": 0.3489
+      },
+      {
+       "layer": 7,
+       "eer": 0.3059,
+       "eer_within_meeting": 0.3416
+      },
+      {
+       "layer": 8,
+       "eer": 0.3285,
+       "eer_within_meeting": 0.3567
+      },
+      {
+       "layer": 9,
+       "eer": 0.3904,
+       "eer_within_meeting": 0.4331
+      },
+      {
+       "layer": 10,
+       "eer": 0.4109,
+       "eer_within_meeting": 0.4575
+      },
+      {
+       "layer": 11,
+       "eer": 0.4243,
+       "eer_within_meeting": 0.4689
+      },
+      {
+       "layer": 12,
+       "eer": 0.4349,
+       "eer_within_meeting": 0.4884
+      },
+      {
+       "layer": 13,
+       "eer": 0.434,
+       "eer_within_meeting": 0.4836
+      },
+      {
+       "layer": 14,
+       "eer": 0.4242,
+       "eer_within_meeting": 0.4816
+      },
+      {
+       "layer": 15,
+       "eer": 0.4335,
+       "eer_within_meeting": 0.4851
+      },
+      {
+       "layer": 16,
+       "eer": 0.4675,
+       "eer_within_meeting": 0.4887
+      }
+     ]
+    }
+   }
+  },
+  "stage1_spk_head": {
+   "eval": {
+    "ckpt": "runs/stage1_heads_pretrained.afm",
+    "head_params": 496448,
+    "spk_cfg": {
+     "type": "speaker",
+     "num_speakers": 190,
+     "from_layers": "all",
+     "weight": 0.3
+    },
+    "layer_weights": [
+     0.0621,
+     0.0648,
+     0.0671,
+     0.0706,
+     0.0717,
+     0.07,
+     0.0644,
+     0.0615,
+     0.0573,
+     0.0527,
+     0.0509,
+     0.0501,
+     0.0502,
+     0.0504,
+     0.0511,
+     0.052,
+     0.0531
+    ],
+    "att_context_size": [
+     70,
+     1
+    ],
+    "ami_n64": {
+     "eer": 0.1502,
+     "eer_within_meeting": 0.3222,
+     "mean_cos_same_within": 0.769,
+     "mean_cos_diff_within": 0.615,
+     "n_segments": 64,
+     "n_speakers": 15,
+     "n_trials": 2016,
+     "n_target": 152,
+     "n_within": 487,
+     "sec": 11.0,
+     "rtf_shared_pass": 0.0277,
+     "eval_stage1": {
+      "n_segments": 64,
+      "n_speakers": 15,
+      "n_trials": 2016,
+      "n_target_trials": 152,
+      "n_within_meeting_trials": 487,
+      "mean_sec": 6.2,
+      "eer_spk_head": 0.1502,
+      "eer_spk_head_within_meeting": 0.3222,
+      "eer_meanpool_layer_mix": 0.199,
+      "eer_meanpool_layer_mix_within_meeting": 0.335
+     },
+     "teacher_student_cos": -0.0356,
+     "teacher": {
+      "eer": 0.0659,
+      "eer_within_meeting": 0.0822,
+      "mean_cos_same_within": 0.618,
+      "mean_cos_diff_within": 0.133,
+      "n_segments": 64,
+      "n_speakers": 15,
+      "n_trials": 2016,
+      "n_target": 152,
+      "n_within": 487
+     }
+    },
+    "ami_n200": {
+     "eer": 0.1633,
+     "eer_within_meeting": 0.2915,
+     "mean_cos_same_within": 0.752,
+     "mean_cos_diff_within": 0.599,
+     "n_segments": 200,
+     "n_speakers": 15,
+     "n_trials": 19900,
+     "n_target": 1752,
+     "n_within": 5101,
+     "sec": 23.2,
+     "rtf_shared_pass": 0.0198,
+     "teacher_student_cos": -0.0375,
+     "teacher": {
+      "eer": 0.109,
+      "eer_within_meeting": 0.1197,
+      "mean_cos_same_within": 0.55,
+      "mean_cos_diff_within": 0.116,
+      "n_segments": 200,
+      "n_speakers": 15,
+      "n_trials": 19900,
+      "n_target": 1752,
+      "n_within": 5101
+     }
+    },
+    "icsi_n64": {
+     "eer": 0.365,
+     "eer_within_meeting": 0.4228,
+     "mean_cos_same_within": 0.725,
+     "mean_cos_diff_within": 0.683,
+     "n_segments": 64,
+     "n_speakers": 5,
+     "n_trials": 2016,
+     "n_target": 688,
+     "n_within": 1476,
+     "sec": 7.8,
+     "rtf_shared_pass": 0.0261,
+     "teacher_student_cos": -0.0632,
+     "teacher": {
+      "eer": 0.0144,
+      "eer_within_meeting": 0.0102,
+      "mean_cos_same_within": 0.573,
+      "mean_cos_diff_within": 0.07,
+      "n_segments": 64,
+      "n_speakers": 5,
+      "n_trials": 2016,
+      "n_target": 688,
+      "n_within": 1476
+     }
+    },
+    "icsi_n200": {
+     "eer": 0.3526,
+     "eer_within_meeting": 0.4099,
+     "mean_cos_same_within": 0.729,
+     "mean_cos_diff_within": 0.674,
+     "n_segments": 200,
+     "n_speakers": 9,
+     "n_trials": 19900,
+     "n_target": 6325,
+     "n_within": 14524,
+     "sec": 27.3,
+     "rtf_shared_pass": 0.0325,
+     "teacher_student_cos": -0.0623,
+     "teacher": {
+      "eer": 0.0218,
+      "eer_within_meeting": 0.0206,
+      "mean_cos_same_within": 0.549,
+      "mean_cos_diff_within": 0.077,
+      "n_segments": 200,
+      "n_speakers": 9,
+      "n_trials": 19900,
+      "n_target": 6325,
+      "n_within": 14524
+     }
+    }
+   },
+   "supervision": {
+    "train_speakers": 45,
+    "classes": 190,
+    "data": "AMI turn windows (16 s, multi-speaker, primary label)",
+    "objective": "AAM 0.3 (stage 1)"
+   }
+  },
+  "L2": {
+   "train": {
+    "recipe": "recipes/spk_layer_sweep_L2.yaml",
+    "ckpt": "runs/spk_sweep_L2.afm",
+    "init": "runs/stage1_heads_pretrained.afm",
+    "sec": 278.2,
+    "final_eval": {
+     "wer_rnnt": 0.245,
+     "wer_ctc": 0.2592,
+     "acc_vad": 0.9423,
+     "recall_vad": 0.9598,
+     "acc_eou": 0.9826,
+     "recall_eou": 0.0,
+     "spk_acc_spk": 0.0
+    },
+    "frozen_tensors_identical": 744,
+    "changed_tensors": [
+     "heads.spk.W",
+     "heads.spk.pool.att.0.weight",
+     "heads.spk.pool.att.0.bias",
+     "heads.spk.pool.att.2.weight",
+     "heads.spk.pool.att.2.bias",
+     "heads.spk.emb.0.weight",
+     "heads.spk.emb.0.bias",
+     "heads.spk.emb.1.weight",
+     "heads.spk.emb.1.bias",
+     "heads.spk.emb.1.running_mean",
+     "heads.spk.emb.1.running_var",
+     "heads.spk.emb.1.num_batches_tracked"
+    ],
+    "rnnt_ctc_encoder_unchanged": true,
+    "spk_cfg": {
+     "type": "speaker",
+     "num_speakers": 190,
+     "from_layers": [
+      1
+     ],
+     "weight": 1.0
+    },
+    "layer_weights": [
+     0.0,
+     1.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0
+    ]
+   },
+   "eval": {
+    "ckpt": "runs/spk_sweep_L2.afm",
+    "head_params": 496448,
+    "spk_cfg": {
+     "type": "speaker",
+     "num_speakers": 190,
+     "from_layers": [
+      1
+     ],
+     "weight": 1.0
+    },
+    "layer_weights": [
+     0.0,
+     1.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0
+    ],
+    "att_context_size": [
+     70,
+     1
+    ],
+    "ami_n64": {
+     "eer": 0.0987,
+     "eer_within_meeting": 0.2054,
+     "mean_cos_same_within": 0.736,
+     "mean_cos_diff_within": 0.443,
+     "n_segments": 64,
+     "n_speakers": 15,
+     "n_trials": 2016,
+     "n_target": 152,
+     "n_within": 487,
+     "sec": 13.5,
+     "rtf_shared_pass": 0.034,
+     "eval_stage1": {
+      "n_segments": 64,
+      "n_speakers": 15,
+      "n_trials": 2016,
+      "n_target_trials": 152,
+      "n_within_meeting_trials": 487,
+      "mean_sec": 6.2,
+      "eer_spk_head": 0.0987,
+      "eer_spk_head_within_meeting": 0.2054,
+      "eer_meanpool_layer_mix": 0.1513,
+      "eer_meanpool_layer_mix_within_meeting": 0.3017
+     },
+     "teacher_student_cos": 0.0047,
+     "teacher": {
+      "eer": 0.0659,
+      "eer_within_meeting": 0.0822,
+      "mean_cos_same_within": 0.618,
+      "mean_cos_diff_within": 0.133,
+      "n_segments": 64,
+      "n_speakers": 15,
+      "n_trials": 2016,
+      "n_target": 152,
+      "n_within": 487
+     }
+    },
+    "ami_n200": {
+     "eer": 0.1176,
+     "eer_within_meeting": 0.2223,
+     "mean_cos_same_within": 0.703,
+     "mean_cos_diff_within": 0.408,
+     "n_segments": 200,
+     "n_speakers": 15,
+     "n_trials": 19900,
+     "n_target": 1752,
+     "n_within": 5101,
+     "sec": 80.9,
+     "rtf_shared_pass": 0.0689,
+     "teacher_student_cos": -0.0053,
+     "teacher": {
+      "eer": 0.109,
+      "eer_within_meeting": 0.1197,
+      "mean_cos_same_within": 0.55,
+      "mean_cos_diff_within": 0.116,
+      "n_segments": 200,
+      "n_speakers": 15,
+      "n_trials": 19900,
+      "n_target": 1752,
+      "n_within": 5101
+     }
+    },
+    "icsi_n64": {
+     "eer": 0.2252,
+     "eer_within_meeting": 0.2764,
+     "mean_cos_same_within": 0.735,
+     "mean_cos_diff_within": 0.621,
+     "n_segments": 64,
+     "n_speakers": 5,
+     "n_trials": 2016,
+     "n_target": 688,
+     "n_within": 1476,
+     "sec": 27.4,
+     "rtf_shared_pass": 0.0921,
+     "teacher_student_cos": -0.0462,
+     "teacher": {
+      "eer": 0.0144,
+      "eer_within_meeting": 0.0102,
+      "mean_cos_same_within": 0.573,
+      "mean_cos_diff_within": 0.07,
+      "n_segments": 64,
+      "n_speakers": 5,
+      "n_trials": 2016,
+      "n_target": 688,
+      "n_within": 1476
+     }
+    },
+    "icsi_n200": {
+     "eer": 0.2054,
+     "eer_within_meeting": 0.2515,
+     "mean_cos_same_within": 0.735,
+     "mean_cos_diff_within": 0.566,
+     "n_segments": 200,
+     "n_speakers": 9,
+     "n_trials": 19900,
+     "n_target": 6325,
+     "n_within": 14524,
+     "sec": 53.3,
+     "rtf_shared_pass": 0.0636,
+     "teacher_student_cos": -0.0469,
+     "teacher": {
+      "eer": 0.0218,
+      "eer_within_meeting": 0.0206,
+      "mean_cos_same_within": 0.549,
+      "mean_cos_diff_within": 0.077,
+      "n_segments": 200,
+      "n_speakers": 9,
+      "n_trials": 19900,
+      "n_target": 6325,
+      "n_within": 14524
+     }
+    }
+   },
+   "supervision": {
+    "train_speakers": 45,
+    "classes": 190
+   }
+  },
+  "L4": {
+   "train": {
+    "recipe": "recipes/spk_layer_sweep_L4.yaml",
+    "ckpt": "runs/spk_sweep_L4.afm",
+    "init": "runs/stage1_heads_pretrained.afm",
+    "sec": 287.9,
+    "final_eval": {
+     "wer_rnnt": 0.245,
+     "wer_ctc": 0.2592,
+     "acc_vad": 0.9423,
+     "recall_vad": 0.9598,
+     "acc_eou": 0.9826,
+     "recall_eou": 0.0,
+     "spk_acc_spk": 0.0
+    },
+    "frozen_tensors_identical": 744,
+    "changed_tensors": [
+     "heads.spk.W",
+     "heads.spk.pool.att.0.weight",
+     "heads.spk.pool.att.0.bias",
+     "heads.spk.pool.att.2.weight",
+     "heads.spk.pool.att.2.bias",
+     "heads.spk.emb.0.weight",
+     "heads.spk.emb.0.bias",
+     "heads.spk.emb.1.weight",
+     "heads.spk.emb.1.bias",
+     "heads.spk.emb.1.running_mean",
+     "heads.spk.emb.1.running_var",
+     "heads.spk.emb.1.num_batches_tracked"
+    ],
+    "rnnt_ctc_encoder_unchanged": true,
+    "spk_cfg": {
+     "type": "speaker",
+     "num_speakers": 190,
+     "from_layers": [
+      3
+     ],
+     "weight": 1.0
+    },
+    "layer_weights": [
+     0.0,
+     0.0,
+     0.0,
+     1.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0
+    ]
+   },
+   "eval": {
+    "ckpt": "runs/spk_sweep_L4.afm",
+    "head_params": 496448,
+    "spk_cfg": {
+     "type": "speaker",
+     "num_speakers": 190,
+     "from_layers": [
+      3
+     ],
+     "weight": 1.0
+    },
+    "layer_weights": [
+     0.0,
+     0.0,
+     0.0,
+     1.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0
+    ],
+    "att_context_size": [
+     70,
+     1
+    ],
+    "ami_n64": {
+     "eer": 0.0849,
+     "eer_within_meeting": 0.1565,
+     "mean_cos_same_within": 0.741,
+     "mean_cos_diff_within": 0.443,
+     "n_segments": 64,
+     "n_speakers": 15,
+     "n_trials": 2016,
+     "n_target": 152,
+     "n_within": 487,
+     "sec": 17.0,
+     "rtf_shared_pass": 0.0429,
+     "eval_stage1": {
+      "n_segments": 64,
+      "n_speakers": 15,
+      "n_trials": 2016,
+      "n_target_trials": 152,
+      "n_within_meeting_trials": 487,
+      "mean_sec": 6.2,
+      "eer_spk_head": 0.0849,
+      "eer_spk_head_within_meeting": 0.1565,
+      "eer_meanpool_layer_mix": 0.1635,
+      "eer_meanpool_layer_mix_within_meeting": 0.3002
+     },
+     "teacher_student_cos": -0.0118,
+     "teacher": {
+      "eer": 0.0659,
+      "eer_within_meeting": 0.0822,
+      "mean_cos_same_within": 0.618,
+      "mean_cos_diff_within": 0.133,
+      "n_segments": 64,
+      "n_speakers": 15,
+      "n_trials": 2016,
+      "n_target": 152,
+      "n_within": 487
+     }
+    },
+    "ami_n200": {
+     "eer": 0.1102,
+     "eer_within_meeting": 0.1905,
+     "mean_cos_same_within": 0.71,
+     "mean_cos_diff_within": 0.415,
+     "n_segments": 200,
+     "n_speakers": 15,
+     "n_trials": 19900,
+     "n_target": 1752,
+     "n_within": 5101,
+     "sec": 43.5,
+     "rtf_shared_pass": 0.0371,
+     "teacher_student_cos": -0.023,
+     "teacher": {
+      "eer": 0.109,
+      "eer_within_meeting": 0.1197,
+      "mean_cos_same_within": 0.55,
+      "mean_cos_diff_within": 0.116,
+      "n_segments": 200,
+      "n_speakers": 15,
+      "n_trials": 19900,
+      "n_target": 1752,
+      "n_within": 5101
+     }
+    },
+    "icsi_n64": {
+     "eer": 0.1439,
+     "eer_within_meeting": 0.1741,
+     "mean_cos_same_within": 0.733,
+     "mean_cos_diff_within": 0.535,
+     "n_segments": 64,
+     "n_speakers": 5,
+     "n_trials": 2016,
+     "n_target": 688,
+     "n_within": 1476,
+     "sec": 16.5,
+     "rtf_shared_pass": 0.0556,
+     "teacher_student_cos": -0.0527,
+     "teacher": {
+      "eer": 0.0144,
+      "eer_within_meeting": 0.0102,
+      "mean_cos_same_within": 0.573,
+      "mean_cos_diff_within": 0.07,
+      "n_segments": 64,
+      "n_speakers": 5,
+      "n_trials": 2016,
+      "n_target": 688,
+      "n_within": 1476
+     }
+    },
+    "icsi_n200": {
+     "eer": 0.1477,
+     "eer_within_meeting": 0.1765,
+     "mean_cos_same_within": 0.728,
+     "mean_cos_diff_within": 0.496,
+     "n_segments": 200,
+     "n_speakers": 9,
+     "n_trials": 19900,
+     "n_target": 6325,
+     "n_within": 14524,
+     "sec": 59.1,
+     "rtf_shared_pass": 0.0706,
+     "teacher_student_cos": -0.0479,
+     "teacher": {
+      "eer": 0.0218,
+      "eer_within_meeting": 0.0206,
+      "mean_cos_same_within": 0.549,
+      "mean_cos_diff_within": 0.077,
+      "n_segments": 200,
+      "n_speakers": 9,
+      "n_trials": 19900,
+      "n_target": 6325,
+      "n_within": 14524
+     }
+    }
+   },
+   "supervision": {
+    "train_speakers": 45,
+    "classes": 190
+   }
+  },
+  "L8": {
+   "train": {
+    "recipe": "recipes/spk_layer_sweep_L8.yaml",
+    "ckpt": "runs/spk_sweep_L8.afm",
+    "init": "runs/stage1_heads_pretrained.afm",
+    "sec": 281.9,
+    "final_eval": {
+     "wer_rnnt": 0.245,
+     "wer_ctc": 0.2592,
+     "acc_vad": 0.9423,
+     "recall_vad": 0.9598,
+     "acc_eou": 0.9826,
+     "recall_eou": 0.0,
+     "spk_acc_spk": 0.0
+    },
+    "frozen_tensors_identical": 744,
+    "changed_tensors": [
+     "heads.spk.W",
+     "heads.spk.pool.att.0.weight",
+     "heads.spk.pool.att.0.bias",
+     "heads.spk.pool.att.2.weight",
+     "heads.spk.pool.att.2.bias",
+     "heads.spk.emb.0.weight",
+     "heads.spk.emb.0.bias",
+     "heads.spk.emb.1.weight",
+     "heads.spk.emb.1.bias",
+     "heads.spk.emb.1.running_mean",
+     "heads.spk.emb.1.running_var",
+     "heads.spk.emb.1.num_batches_tracked"
+    ],
+    "rnnt_ctc_encoder_unchanged": true,
+    "spk_cfg": {
+     "type": "speaker",
+     "num_speakers": 190,
+     "from_layers": [
+      7
+     ],
+     "weight": 1.0
+    },
+    "layer_weights": [
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     1.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0
+    ]
+   },
+   "eval": {
+    "ckpt": "runs/spk_sweep_L8.afm",
+    "head_params": 496448,
+    "spk_cfg": {
+     "type": "speaker",
+     "num_speakers": 190,
+     "from_layers": [
+      7
+     ],
+     "weight": 1.0
+    },
+    "layer_weights": [
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     1.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0
+    ],
+    "att_context_size": [
+     70,
+     1
+    ],
+    "ami_n64": {
+     "eer": 0.119,
+     "eer_within_meeting": 0.2748,
+     "mean_cos_same_within": 0.623,
+     "mean_cos_diff_within": 0.403,
+     "n_segments": 64,
+     "n_speakers": 15,
+     "n_trials": 2016,
+     "n_target": 152,
+     "n_within": 487,
+     "sec": 14.3,
+     "rtf_shared_pass": 0.0362,
+     "eval_stage1": {
+      "n_segments": 64,
+      "n_speakers": 15,
+      "n_trials": 2016,
+      "n_target_trials": 152,
+      "n_within_meeting_trials": 487,
+      "mean_sec": 6.2,
+      "eer_spk_head": 0.119,
+      "eer_spk_head_within_meeting": 0.2748,
+      "eer_meanpool_layer_mix": 0.2099,
+      "eer_meanpool_layer_mix_within_meeting": 0.3428
+     },
+     "teacher_student_cos": -0.0077,
+     "teacher": {
+      "eer": 0.0659,
+      "eer_within_meeting": 0.0822,
+      "mean_cos_same_within": 0.618,
+      "mean_cos_diff_within": 0.133,
+      "n_segments": 64,
+      "n_speakers": 15,
+      "n_trials": 2016,
+      "n_target": 152,
+      "n_within": 487
+     }
+    },
+    "ami_n200": {
+     "eer": 0.1404,
+     "eer_within_meeting": 0.2729,
+     "mean_cos_same_within": 0.62,
+     "mean_cos_diff_within": 0.383,
+     "n_segments": 200,
+     "n_speakers": 15,
+     "n_trials": 19900,
+     "n_target": 1752,
+     "n_within": 5101,
+     "sec": 64.2,
+     "rtf_shared_pass": 0.0547,
+     "teacher_student_cos": -0.009,
+     "teacher": {
+      "eer": 0.109,
+      "eer_within_meeting": 0.1197,
+      "mean_cos_same_within": 0.55,
+      "mean_cos_diff_within": 0.116,
+      "n_segments": 200,
+      "n_speakers": 15,
+      "n_trials": 19900,
+      "n_target": 1752,
+      "n_within": 5101
+     }
+    },
+    "icsi_n64": {
+     "eer": 0.1742,
+     "eer_within_meeting": 0.1917,
+     "mean_cos_same_within": 0.552,
+     "mean_cos_diff_within": 0.305,
+     "n_segments": 64,
+     "n_speakers": 5,
+     "n_trials": 2016,
+     "n_target": 688,
+     "n_within": 1476,
+     "sec": 15.9,
+     "rtf_shared_pass": 0.0535,
+     "teacher_student_cos": -0.0625,
+     "teacher": {
+      "eer": 0.0144,
+      "eer_within_meeting": 0.0102,
+      "mean_cos_same_within": 0.573,
+      "mean_cos_diff_within": 0.07,
+      "n_segments": 64,
+      "n_speakers": 5,
+      "n_trials": 2016,
+      "n_target": 688,
+      "n_within": 1476
+     }
+    },
+    "icsi_n200": {
+     "eer": 0.1775,
+     "eer_within_meeting": 0.1931,
+     "mean_cos_same_within": 0.541,
+     "mean_cos_diff_within": 0.299,
+     "n_segments": 200,
+     "n_speakers": 9,
+     "n_trials": 19900,
+     "n_target": 6325,
+     "n_within": 14524,
+     "sec": 28.9,
+     "rtf_shared_pass": 0.0344,
+     "teacher_student_cos": -0.0579,
+     "teacher": {
+      "eer": 0.0218,
+      "eer_within_meeting": 0.0206,
+      "mean_cos_same_within": 0.549,
+      "mean_cos_diff_within": 0.077,
+      "n_segments": 200,
+      "n_speakers": 9,
+      "n_trials": 19900,
+      "n_target": 6325,
+      "n_within": 14524
+     }
+    }
+   },
+   "supervision": {
+    "train_speakers": 45,
+    "classes": 190
+   }
+  },
+  "L12": {
+   "train": {
+    "recipe": "recipes/spk_layer_sweep_L12.yaml",
+    "ckpt": "runs/spk_sweep_L12.afm",
+    "init": "runs/stage1_heads_pretrained.afm",
+    "sec": 316.4,
+    "final_eval": {
+     "wer_rnnt": 0.245,
+     "wer_ctc": 0.2592,
+     "acc_vad": 0.9423,
+     "recall_vad": 0.9598,
+     "acc_eou": 0.9826,
+     "recall_eou": 0.0,
+     "spk_acc_spk": 0.0
+    },
+    "frozen_tensors_identical": 744,
+    "changed_tensors": [
+     "heads.spk.W",
+     "heads.spk.pool.att.0.weight",
+     "heads.spk.pool.att.0.bias",
+     "heads.spk.pool.att.2.weight",
+     "heads.spk.pool.att.2.bias",
+     "heads.spk.emb.0.weight",
+     "heads.spk.emb.0.bias",
+     "heads.spk.emb.1.weight",
+     "heads.spk.emb.1.bias",
+     "heads.spk.emb.1.running_mean",
+     "heads.spk.emb.1.running_var",
+     "heads.spk.emb.1.num_batches_tracked"
+    ],
+    "rnnt_ctc_encoder_unchanged": true,
+    "spk_cfg": {
+     "type": "speaker",
+     "num_speakers": 190,
+     "from_layers": [
+      11
+     ],
+     "weight": 1.0
+    },
+    "layer_weights": [
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     1.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0
+    ]
+   },
+   "eval": {
+    "ckpt": "runs/spk_sweep_L12.afm",
+    "head_params": 496448,
+    "spk_cfg": {
+     "type": "speaker",
+     "num_speakers": 190,
+     "from_layers": [
+      11
+     ],
+     "weight": 1.0
+    },
+    "layer_weights": [
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     1.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0
+    ],
+    "att_context_size": [
+     70,
+     1
+    ],
+    "ami_n64": {
+     "eer": 0.2367,
+     "eer_within_meeting": 0.3902,
+     "mean_cos_same_within": 0.402,
+     "mean_cos_diff_within": 0.304,
+     "n_segments": 64,
+     "n_speakers": 15,
+     "n_trials": 2016,
+     "n_target": 152,
+     "n_within": 487,
+     "sec": 10.4,
+     "rtf_shared_pass": 0.0262,
+     "eval_stage1": {
+      "n_segments": 64,
+      "n_speakers": 15,
+      "n_trials": 2016,
+      "n_target_trials": 152,
+      "n_within_meeting_trials": 487,
+      "mean_sec": 6.2,
+      "eer_spk_head": 0.2367,
+      "eer_spk_head_within_meeting": 0.3902,
+      "eer_meanpool_layer_mix": 0.3487,
+      "eer_meanpool_layer_mix_within_meeting": 0.4298
+     },
+     "teacher_student_cos": 0.0129,
+     "teacher": {
+      "eer": 0.0659,
+      "eer_within_meeting": 0.0822,
+      "mean_cos_same_within": 0.618,
+      "mean_cos_diff_within": 0.133,
+      "n_segments": 64,
+      "n_speakers": 15,
+      "n_trials": 2016,
+      "n_target": 152,
+      "n_within": 487
+     }
+    },
+    "ami_n200": {
+     "eer": 0.27,
+     "eer_within_meeting": 0.4062,
+     "mean_cos_same_within": 0.368,
+     "mean_cos_diff_within": 0.285,
+     "n_segments": 200,
+     "n_speakers": 15,
+     "n_trials": 19900,
+     "n_target": 1752,
+     "n_within": 5101,
+     "sec": 38.8,
+     "rtf_shared_pass": 0.033,
+     "teacher_student_cos": 0.0065,
+     "teacher": {
+      "eer": 0.109,
+      "eer_within_meeting": 0.1197,
+      "mean_cos_same_within": 0.55,
+      "mean_cos_diff_within": 0.116,
+      "n_segments": 200,
+      "n_speakers": 15,
+      "n_trials": 19900,
+      "n_target": 1752,
+      "n_within": 5101
+     }
+    },
+    "icsi_n64": {
+     "eer": 0.4201,
+     "eer_within_meeting": 0.4404,
+     "mean_cos_same_within": 0.268,
+     "mean_cos_diff_within": 0.215,
+     "n_segments": 64,
+     "n_speakers": 5,
+     "n_trials": 2016,
+     "n_target": 688,
+     "n_within": 1476,
+     "sec": 13.2,
+     "rtf_shared_pass": 0.0443,
+     "teacher_student_cos": -0.0184,
+     "teacher": {
+      "eer": 0.0144,
+      "eer_within_meeting": 0.0102,
+      "mean_cos_same_within": 0.573,
+      "mean_cos_diff_within": 0.07,
+      "n_segments": 64,
+      "n_speakers": 5,
+      "n_trials": 2016,
+      "n_target": 688,
+      "n_within": 1476
+     }
+    },
+    "icsi_n200": {
+     "eer": 0.4153,
+     "eer_within_meeting": 0.4296,
+     "mean_cos_same_within": 0.263,
+     "mean_cos_diff_within": 0.21,
+     "n_segments": 200,
+     "n_speakers": 9,
+     "n_trials": 19900,
+     "n_target": 6325,
+     "n_within": 14524,
+     "sec": 36.5,
+     "rtf_shared_pass": 0.0435,
+     "teacher_student_cos": -0.0145,
+     "teacher": {
+      "eer": 0.0218,
+      "eer_within_meeting": 0.0206,
+      "mean_cos_same_within": 0.549,
+      "mean_cos_diff_within": 0.077,
+      "n_segments": 200,
+      "n_speakers": 9,
+      "n_trials": 19900,
+      "n_target": 6325,
+      "n_within": 14524
+     }
+    }
+   },
+   "supervision": {
+    "train_speakers": 45,
+    "classes": 190
+   }
+  },
+  "L17": {
+   "train": {
+    "recipe": "recipes/spk_layer_sweep_L17.yaml",
+    "ckpt": "runs/spk_sweep_L17.afm",
+    "init": "runs/stage1_heads_pretrained.afm",
+    "sec": 276.2,
+    "final_eval": {
+     "wer_rnnt": 0.245,
+     "wer_ctc": 0.2592,
+     "acc_vad": 0.9423,
+     "recall_vad": 0.9598,
+     "acc_eou": 0.9826,
+     "recall_eou": 0.0,
+     "spk_acc_spk": 0.0
+    },
+    "frozen_tensors_identical": 744,
+    "changed_tensors": [
+     "heads.spk.W",
+     "heads.spk.pool.att.0.weight",
+     "heads.spk.pool.att.0.bias",
+     "heads.spk.pool.att.2.weight",
+     "heads.spk.pool.att.2.bias",
+     "heads.spk.emb.0.weight",
+     "heads.spk.emb.0.bias",
+     "heads.spk.emb.1.weight",
+     "heads.spk.emb.1.bias",
+     "heads.spk.emb.1.running_mean",
+     "heads.spk.emb.1.running_var",
+     "heads.spk.emb.1.num_batches_tracked"
+    ],
+    "rnnt_ctc_encoder_unchanged": true,
+    "spk_cfg": {
+     "type": "speaker",
+     "num_speakers": 190,
+     "from_layers": [
+      16
+     ],
+     "weight": 1.0
+    },
+    "layer_weights": [
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     1.0
+    ]
+   },
+   "eval": {
+    "ckpt": "runs/spk_sweep_L17.afm",
+    "head_params": 496448,
+    "spk_cfg": {
+     "type": "speaker",
+     "num_speakers": 190,
+     "from_layers": [
+      16
+     ],
+     "weight": 1.0
+    },
+    "layer_weights": [
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     1.0
+    ],
+    "att_context_size": [
+     70,
+     1
+    ],
+    "ami_n64": {
+     "eer": 0.2896,
+     "eer_within_meeting": 0.4298,
+     "mean_cos_same_within": 0.302,
+     "mean_cos_diff_within": 0.241,
+     "n_segments": 64,
+     "n_speakers": 15,
+     "n_trials": 2016,
+     "n_target": 152,
+     "n_within": 487,
+     "sec": 17.2,
+     "rtf_shared_pass": 0.0433,
+     "eval_stage1": {
+      "n_segments": 64,
+      "n_speakers": 15,
+      "n_trials": 2016,
+      "n_target_trials": 152,
+      "n_within_meeting_trials": 487,
+      "mean_sec": 6.2,
+      "eer_spk_head": 0.2896,
+      "eer_spk_head_within_meeting": 0.4298,
+      "eer_meanpool_layer_mix": 0.3891,
+      "eer_meanpool_layer_mix_within_meeting": 0.4645
+     },
+     "teacher_student_cos": -0.0087,
+     "teacher": {
+      "eer": 0.0659,
+      "eer_within_meeting": 0.0822,
+      "mean_cos_same_within": 0.618,
+      "mean_cos_diff_within": 0.133,
+      "n_segments": 64,
+      "n_speakers": 15,
+      "n_trials": 2016,
+      "n_target": 152,
+      "n_within": 487
+     }
+    },
+    "ami_n200": {
+     "eer": 0.3465,
+     "eer_within_meeting": 0.4508,
+     "mean_cos_same_within": 0.262,
+     "mean_cos_diff_within": 0.209,
+     "n_segments": 200,
+     "n_speakers": 15,
+     "n_trials": 19900,
+     "n_target": 1752,
+     "n_within": 5101,
+     "sec": 51.9,
+     "rtf_shared_pass": 0.0442,
+     "teacher_student_cos": -0.0131,
+     "teacher": {
+      "eer": 0.109,
+      "eer_within_meeting": 0.1197,
+      "mean_cos_same_within": 0.55,
+      "mean_cos_diff_within": 0.116,
+      "n_segments": 200,
+      "n_speakers": 15,
+      "n_trials": 19900,
+      "n_target": 1752,
+      "n_within": 5101
+     }
+    },
+    "icsi_n64": {
+     "eer": 0.449,
+     "eer_within_meeting": 0.4797,
+     "mean_cos_same_within": 0.206,
+     "mean_cos_diff_within": 0.184,
+     "n_segments": 64,
+     "n_speakers": 5,
+     "n_trials": 2016,
+     "n_target": 688,
+     "n_within": 1476,
+     "sec": 15.6,
+     "rtf_shared_pass": 0.0524,
+     "teacher_student_cos": -0.0041,
+     "teacher": {
+      "eer": 0.0144,
+      "eer_within_meeting": 0.0102,
+      "mean_cos_same_within": 0.573,
+      "mean_cos_diff_within": 0.07,
+      "n_segments": 64,
+      "n_speakers": 5,
+      "n_trials": 2016,
+      "n_target": 688,
+      "n_within": 1476
+     }
+    },
+    "icsi_n200": {
+     "eer": 0.4556,
+     "eer_within_meeting": 0.4771,
+     "mean_cos_same_within": 0.201,
+     "mean_cos_diff_within": 0.181,
+     "n_segments": 200,
+     "n_speakers": 9,
+     "n_trials": 19900,
+     "n_target": 6325,
+     "n_within": 14524,
+     "sec": 41.4,
+     "rtf_shared_pass": 0.0494,
+     "teacher_student_cos": -0.0069,
+     "teacher": {
+      "eer": 0.0218,
+      "eer_within_meeting": 0.0206,
+      "mean_cos_same_within": 0.549,
+      "mean_cos_diff_within": 0.077,
+      "n_segments": 200,
+      "n_speakers": 9,
+      "n_trials": 19900,
+      "n_target": 6325,
+      "n_within": 14524
+     }
+    }
+   },
+   "supervision": {
+    "train_speakers": 45,
+    "classes": 190
+   }
+  },
+  "all": {
+   "train": {
+    "recipe": "recipes/spk_layer_sweep_all.yaml",
+    "ckpt": "runs/spk_sweep_all.afm",
+    "init": "runs/stage1_heads_pretrained.afm",
+    "sec": 264.8,
+    "final_eval": {
+     "wer_rnnt": 0.245,
+     "wer_ctc": 0.2592,
+     "acc_vad": 0.9423,
+     "recall_vad": 0.9598,
+     "acc_eou": 0.9826,
+     "recall_eou": 0.0,
+     "spk_acc_spk": 0.0
+    },
+    "frozen_tensors_identical": 744,
+    "changed_tensors": [
+     "heads.spk.W",
+     "heads.spk.pool.att.0.weight",
+     "heads.spk.pool.att.0.bias",
+     "heads.spk.pool.att.2.weight",
+     "heads.spk.pool.att.2.bias",
+     "heads.spk.emb.0.weight",
+     "heads.spk.emb.0.bias",
+     "heads.spk.emb.1.weight",
+     "heads.spk.emb.1.bias",
+     "heads.spk.emb.1.running_mean",
+     "heads.spk.emb.1.running_var",
+     "heads.spk.emb.1.num_batches_tracked",
+     "layer_mix.spk"
+    ],
+    "rnnt_ctc_encoder_unchanged": true,
+    "spk_cfg": {
+     "type": "speaker",
+     "num_speakers": 190,
+     "from_layers": "all",
+     "weight": 1.0
+    },
+    "layer_weights": [
+     0.0579,
+     0.0638,
+     0.0717,
+     0.0877,
+     0.0894,
+     0.0891,
+     0.0737,
+     0.0649,
+     0.0562,
+     0.0467,
+     0.0431,
+     0.0416,
+     0.0416,
+     0.0418,
+     0.0424,
+     0.0435,
+     0.045
+    ]
+   },
+   "eval": {
+    "ckpt": "runs/spk_sweep_all.afm",
+    "head_params": 496448,
+    "spk_cfg": {
+     "type": "speaker",
+     "num_speakers": 190,
+     "from_layers": "all",
+     "weight": 1.0
+    },
+    "layer_weights": [
+     0.0579,
+     0.0638,
+     0.0717,
+     0.0877,
+     0.0894,
+     0.0891,
+     0.0737,
+     0.0649,
+     0.0562,
+     0.0467,
+     0.0431,
+     0.0416,
+     0.0416,
+     0.0418,
+     0.0424,
+     0.0435,
+     0.045
+    ],
+    "att_context_size": [
+     70,
+     1
+    ],
+    "ami_n64": {
+     "eer": 0.1052,
+     "eer_within_meeting": 0.2117,
+     "mean_cos_same_within": 0.688,
+     "mean_cos_diff_within": 0.421,
+     "n_segments": 64,
+     "n_speakers": 15,
+     "n_trials": 2016,
+     "n_target": 152,
+     "n_within": 487,
+     "sec": 14.1,
+     "rtf_shared_pass": 0.0355,
+     "eval_stage1": {
+      "n_segments": 64,
+      "n_speakers": 15,
+      "n_trials": 2016,
+      "n_target_trials": 152,
+      "n_within_meeting_trials": 487,
+      "mean_sec": 6.2,
+      "eer_spk_head": 0.1052,
+      "eer_spk_head_within_meeting": 0.2117,
+      "eer_meanpool_layer_mix": 0.1909,
+      "eer_meanpool_layer_mix_within_meeting": 0.335
+     },
+     "teacher_student_cos": -0.0114,
+     "teacher": {
+      "eer": 0.0659,
+      "eer_within_meeting": 0.0822,
+      "mean_cos_same_within": 0.618,
+      "mean_cos_diff_within": 0.133,
+      "n_segments": 64,
+      "n_speakers": 15,
+      "n_trials": 2016,
+      "n_target": 152,
+      "n_within": 487
+     }
+    },
+    "ami_n200": {
+     "eer": 0.1341,
+     "eer_within_meeting": 0.2223,
+     "mean_cos_same_within": 0.671,
+     "mean_cos_diff_within": 0.4,
+     "n_segments": 200,
+     "n_speakers": 15,
+     "n_trials": 19900,
+     "n_target": 1752,
+     "n_within": 5101,
+     "sec": 43.1,
+     "rtf_shared_pass": 0.0368,
+     "teacher_student_cos": -0.024,
+     "teacher": {
+      "eer": 0.109,
+      "eer_within_meeting": 0.1197,
+      "mean_cos_same_within": 0.55,
+      "mean_cos_diff_within": 0.116,
+      "n_segments": 200,
+      "n_speakers": 15,
+      "n_trials": 19900,
+      "n_target": 1752,
+      "n_within": 5101
+     }
+    },
+    "icsi_n64": {
+     "eer": 0.2093,
+     "eer_within_meeting": 0.2602,
+     "mean_cos_same_within": 0.648,
+     "mean_cos_diff_within": 0.501,
+     "n_segments": 64,
+     "n_speakers": 5,
+     "n_trials": 2016,
+     "n_target": 688,
+     "n_within": 1476,
+     "sec": 10.2,
+     "rtf_shared_pass": 0.0344,
+     "teacher_student_cos": -0.0525,
+     "teacher": {
+      "eer": 0.0144,
+      "eer_within_meeting": 0.0102,
+      "mean_cos_same_within": 0.573,
+      "mean_cos_diff_within": 0.07,
+      "n_segments": 64,
+      "n_speakers": 5,
+      "n_trials": 2016,
+      "n_target": 688,
+      "n_within": 1476
+     }
+    },
+    "icsi_n200": {
+     "eer": 0.1944,
+     "eer_within_meeting": 0.2395,
+     "mean_cos_same_within": 0.648,
+     "mean_cos_diff_within": 0.466,
+     "n_segments": 200,
+     "n_speakers": 9,
+     "n_trials": 19900,
+     "n_target": 6325,
+     "n_within": 14524,
+     "sec": 36.5,
+     "rtf_shared_pass": 0.0436,
+     "teacher_student_cos": -0.053,
+     "teacher": {
+      "eer": 0.0218,
+      "eer_within_meeting": 0.0206,
+      "mean_cos_same_within": 0.549,
+      "mean_cos_diff_within": 0.077,
+      "n_segments": 200,
+      "n_speakers": 9,
+      "n_trials": 19900,
+      "n_target": 6325,
+      "n_within": 14524
+     }
+    }
+   },
+   "supervision": {
+    "train_speakers": 45,
+    "classes": 190
+   }
+  },
+  "spk_distill_titanet": {
+   "train": {
+    "recipe": "recipes/spk_distill_titanet.yaml",
+    "ckpt": "runs/spk_distill_titanet.afm",
+    "init": "runs/stage1_heads_pretrained.afm",
+    "sec": 473.0,
+    "final_eval": {
+     "wer_rnnt": 0.245,
+     "wer_ctc": 0.2592,
+     "acc_vad": 0.9423,
+     "recall_vad": 0.9598,
+     "acc_eou": 0.9826,
+     "recall_eou": 0.0,
+     "spk_acc_spk": 0.0
+    },
+    "frozen_tensors_identical": 744,
+    "changed_tensors": [
+     "heads.spk.pool.att.0.weight",
+     "heads.spk.pool.att.0.bias",
+     "heads.spk.pool.att.2.weight",
+     "heads.spk.pool.att.2.bias",
+     "heads.spk.emb.0.weight",
+     "heads.spk.emb.0.bias",
+     "heads.spk.emb.1.weight",
+     "heads.spk.emb.1.bias",
+     "heads.spk.emb.1.running_mean",
+     "heads.spk.emb.1.running_var",
+     "heads.spk.emb.1.num_batches_tracked",
+     "layer_mix.spk"
+    ],
+    "rnnt_ctc_encoder_unchanged": true,
+    "spk_cfg": {
+     "type": "speaker",
+     "num_speakers": 190,
+     "from_layers": "all",
+     "weight": 1.0,
+     "distill": {
+      "target": "spk_teacher",
+      "weight": 1.0
+     },
+     "aam_weight": 0.0
+    },
+    "layer_weights": [
+     0.0413,
+     0.0474,
+     0.068,
+     0.1355,
+     0.1486,
+     0.1471,
+     0.0908,
+     0.0652,
+     0.0443,
+     0.0291,
+     0.0258,
+     0.0249,
+     0.025,
+     0.0253,
+     0.0262,
+     0.0272,
+     0.0284
+    ]
+   },
+   "eval": {
+    "ckpt": "runs/spk_distill_titanet.afm",
+    "head_params": 496448,
+    "spk_cfg": {
+     "type": "speaker",
+     "num_speakers": 190,
+     "from_layers": "all",
+     "weight": 1.0,
+     "distill": {
+      "target": "spk_teacher",
+      "weight": 1.0
+     },
+     "aam_weight": 0.0
+    },
+    "layer_weights": [
+     0.0413,
+     0.0474,
+     0.068,
+     0.1355,
+     0.1486,
+     0.1471,
+     0.0908,
+     0.0652,
+     0.0443,
+     0.0291,
+     0.0258,
+     0.0249,
+     0.025,
+     0.0253,
+     0.0262,
+     0.0272,
+     0.0284
+    ],
+    "att_context_size": [
+     70,
+     1
+    ],
+    "ami_n64": {
+     "eer": 0.0987,
+     "eer_within_meeting": 0.199,
+     "mean_cos_same_within": 0.734,
+     "mean_cos_diff_within": 0.442,
+     "n_segments": 64,
+     "n_speakers": 15,
+     "n_trials": 2016,
+     "n_target": 152,
+     "n_within": 487,
+     "sec": 9.2,
+     "rtf_shared_pass": 0.0233,
+     "eval_stage1": {
+      "n_segments": 64,
+      "n_speakers": 15,
+      "n_trials": 2016,
+      "n_target_trials": 152,
+      "n_within_meeting_trials": 487,
+      "mean_sec": 6.2,
+      "eer_spk_head": 0.0987,
+      "eer_spk_head_within_meeting": 0.199,
+      "eer_meanpool_layer_mix": 0.1776,
+      "eer_meanpool_layer_mix_within_meeting": 0.3271
+     },
+     "teacher_student_cos": 0.4178,
+     "teacher": {
+      "eer": 0.0659,
+      "eer_within_meeting": 0.0822,
+      "mean_cos_same_within": 0.618,
+      "mean_cos_diff_within": 0.133,
+      "n_segments": 64,
+      "n_speakers": 15,
+      "n_trials": 2016,
+      "n_target": 152,
+      "n_within": 487
+     }
+    },
+    "ami_n200": {
+     "eer": 0.1233,
+     "eer_within_meeting": 0.2307,
+     "mean_cos_same_within": 0.693,
+     "mean_cos_diff_within": 0.385,
+     "n_segments": 200,
+     "n_speakers": 15,
+     "n_trials": 19900,
+     "n_target": 1752,
+     "n_within": 5101,
+     "sec": 35.3,
+     "rtf_shared_pass": 0.0301,
+     "teacher_student_cos": 0.4095,
+     "teacher": {
+      "eer": 0.109,
+      "eer_within_meeting": 0.1197,
+      "mean_cos_same_within": 0.55,
+      "mean_cos_diff_within": 0.116,
+      "n_segments": 200,
+      "n_speakers": 15,
+      "n_trials": 19900,
+      "n_target": 1752,
+      "n_within": 5101
+     }
+    },
+    "icsi_n64": {
+     "eer": 0.0521,
+     "eer_within_meeting": 0.0623,
+     "mean_cos_same_within": 0.684,
+     "mean_cos_diff_within": 0.281,
+     "n_segments": 64,
+     "n_speakers": 5,
+     "n_trials": 2016,
+     "n_target": 688,
+     "n_within": 1476,
+     "sec": 14.1,
+     "rtf_shared_pass": 0.0475,
+     "teacher_student_cos": 0.5669,
+     "teacher": {
+      "eer": 0.0144,
+      "eer_within_meeting": 0.0102,
+      "mean_cos_same_within": 0.573,
+      "mean_cos_diff_within": 0.07,
+      "n_segments": 64,
+      "n_speakers": 5,
+      "n_trials": 2016,
+      "n_target": 688,
+      "n_within": 1476
+     }
+    },
+    "icsi_n200": {
+     "eer": 0.0778,
+     "eer_within_meeting": 0.0837,
+     "mean_cos_same_within": 0.665,
+     "mean_cos_diff_within": 0.271,
+     "n_segments": 200,
+     "n_speakers": 9,
+     "n_trials": 19900,
+     "n_target": 6325,
+     "n_within": 14524,
+     "sec": 26.7,
+     "rtf_shared_pass": 0.0318,
+     "teacher_student_cos": 0.551,
+     "teacher": {
+      "eer": 0.0218,
+      "eer_within_meeting": 0.0206,
+      "mean_cos_same_within": 0.549,
+      "mean_cos_diff_within": 0.077,
+      "n_segments": 200,
+      "n_speakers": 9,
+      "n_trials": 19900,
+      "n_target": 6325,
+      "n_within": 14524
+     }
+    }
+   },
+   "supervision": {
+    "train_speakers": "45 AMI + 33 ICSI + 251 LibriSpeech = 329 (no ids used)",
+    "classes": 0,
+    "objective": "1 - cos to TitaNet-L"
+   }
+  },
+  "spk_distill_titanet_bestlayer": {
+   "train": {
+    "recipe": "recipes/spk_distill_titanet_bestlayer.yaml",
+    "ckpt": "runs/spk_distill_titanet_bestlayer.afm",
+    "init": "runs/stage1_heads_pretrained.afm",
+    "sec": 472.6,
+    "final_eval": {
+     "wer_rnnt": 0.245,
+     "wer_ctc": 0.2592,
+     "acc_vad": 0.9423,
+     "recall_vad": 0.9598,
+     "acc_eou": 0.9826,
+     "recall_eou": 0.0,
+     "spk_acc_spk": 0.0
+    },
+    "frozen_tensors_identical": 744,
+    "changed_tensors": [
+     "heads.spk.pool.att.0.weight",
+     "heads.spk.pool.att.0.bias",
+     "heads.spk.pool.att.2.weight",
+     "heads.spk.pool.att.2.bias",
+     "heads.spk.emb.0.weight",
+     "heads.spk.emb.0.bias",
+     "heads.spk.emb.1.weight",
+     "heads.spk.emb.1.bias",
+     "heads.spk.emb.1.running_mean",
+     "heads.spk.emb.1.running_var",
+     "heads.spk.emb.1.num_batches_tracked"
+    ],
+    "rnnt_ctc_encoder_unchanged": true,
+    "spk_cfg": {
+     "type": "speaker",
+     "num_speakers": 190,
+     "from_layers": [
+      3
+     ],
+     "weight": 1.0,
+     "distill": {
+      "target": "spk_teacher",
+      "weight": 1.0
+     },
+     "aam_weight": 0.0
+    },
+    "layer_weights": [
+     0.0,
+     0.0,
+     0.0,
+     1.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0
+    ]
+   },
+   "eval": {
+    "ckpt": "runs/spk_distill_titanet_bestlayer.afm",
+    "head_params": 496448,
+    "spk_cfg": {
+     "type": "speaker",
+     "num_speakers": 190,
+     "from_layers": [
+      3
+     ],
+     "weight": 1.0,
+     "distill": {
+      "target": "spk_teacher",
+      "weight": 1.0
+     },
+     "aam_weight": 0.0
+    },
+    "layer_weights": [
+     0.0,
+     0.0,
+     0.0,
+     1.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0
+    ],
+    "att_context_size": [
+     70,
+     1
+    ],
+    "ami_n64": {
+     "eer": 0.0854,
+     "eer_within_meeting": 0.1579,
+     "mean_cos_same_within": 0.744,
+     "mean_cos_diff_within": 0.453,
+     "n_segments": 64,
+     "n_speakers": 15,
+     "n_trials": 2016,
+     "n_target": 152,
+     "n_within": 487,
+     "sec": 9.9,
+     "rtf_shared_pass": 0.0249,
+     "eval_stage1": {
+      "n_segments": 64,
+      "n_speakers": 15,
+      "n_trials": 2016,
+      "n_target_trials": 152,
+      "n_within_meeting_trials": 487,
+      "mean_sec": 6.2,
+      "eer_spk_head": 0.0854,
+      "eer_spk_head_within_meeting": 0.1579,
+      "eer_meanpool_layer_mix": 0.1635,
+      "eer_meanpool_layer_mix_within_meeting": 0.3002
+     },
+     "teacher_student_cos": 0.4258,
+     "teacher": {
+      "eer": 0.0659,
+      "eer_within_meeting": 0.0822,
+      "mean_cos_same_within": 0.618,
+      "mean_cos_diff_within": 0.133,
+      "n_segments": 64,
+      "n_speakers": 15,
+      "n_trials": 2016,
+      "n_target": 152,
+      "n_within": 487
+     }
+    },
+    "ami_n200": {
+     "eer": 0.1113,
+     "eer_within_meeting": 0.2163,
+     "mean_cos_same_within": 0.702,
+     "mean_cos_diff_within": 0.401,
+     "n_segments": 200,
+     "n_speakers": 15,
+     "n_trials": 19900,
+     "n_target": 1752,
+     "n_within": 5101,
+     "sec": 40.7,
+     "rtf_shared_pass": 0.0347,
+     "teacher_student_cos": 0.417,
+     "teacher": {
+      "eer": 0.109,
+      "eer_within_meeting": 0.1197,
+      "mean_cos_same_within": 0.55,
+      "mean_cos_diff_within": 0.116,
+      "n_segments": 200,
+      "n_speakers": 15,
+      "n_trials": 19900,
+      "n_target": 1752,
+      "n_within": 5101
+     }
+    },
+    "icsi_n64": {
+     "eer": 0.0496,
+     "eer_within_meeting": 0.0569,
+     "mean_cos_same_within": 0.707,
+     "mean_cos_diff_within": 0.269,
+     "n_segments": 64,
+     "n_speakers": 5,
+     "n_trials": 2016,
+     "n_target": 688,
+     "n_within": 1476,
+     "sec": 18.8,
+     "rtf_shared_pass": 0.0631,
+     "teacher_student_cos": 0.5946,
+     "teacher": {
+      "eer": 0.0144,
+      "eer_within_meeting": 0.0102,
+      "mean_cos_same_within": 0.573,
+      "mean_cos_diff_within": 0.07,
+      "n_segments": 64,
+      "n_speakers": 5,
+      "n_trials": 2016,
+      "n_target": 688,
+      "n_within": 1476
+     }
+    },
+    "icsi_n200": {
+     "eer": 0.0644,
+     "eer_within_meeting": 0.0697,
+     "mean_cos_same_within": 0.692,
+     "mean_cos_diff_within": 0.251,
+     "n_segments": 200,
+     "n_speakers": 9,
+     "n_trials": 19900,
+     "n_target": 6325,
+     "n_within": 14524,
+     "sec": 43.0,
+     "rtf_shared_pass": 0.0513,
+     "teacher_student_cos": 0.5785,
+     "teacher": {
+      "eer": 0.0218,
+      "eer_within_meeting": 0.0206,
+      "mean_cos_same_within": 0.549,
+      "mean_cos_diff_within": 0.077,
+      "n_segments": 200,
+      "n_speakers": 9,
+      "n_trials": 19900,
+      "n_target": 6325,
+      "n_within": 14524
+     }
+    }
+   },
+   "supervision": {
+    "train_speakers": "329 (no ids used)",
+    "classes": 0,
+    "objective": "1 - cos to TitaNet-L"
+   }
+  },
+  "spk_relational_titanet": {
+   "train": {
+    "recipe": "recipes/spk_relational_titanet.yaml",
+    "ckpt": "runs/spk_relational_titanet.afm",
+    "init": "runs/stage1_heads_pretrained.afm",
+    "sec": 465.9,
+    "final_eval": {
+     "wer_rnnt": 0.245,
+     "wer_ctc": 0.2592,
+     "acc_vad": 0.9423,
+     "recall_vad": 0.9598,
+     "acc_eou": 0.9826,
+     "recall_eou": 0.0,
+     "spk_acc_spk": 0.0
+    },
+    "frozen_tensors_identical": 744,
+    "changed_tensors": [
+     "heads.spk.W",
+     "heads.spk.pool.att.0.weight",
+     "heads.spk.pool.att.0.bias",
+     "heads.spk.pool.att.2.weight",
+     "heads.spk.pool.att.2.bias",
+     "heads.spk.emb.0.weight",
+     "heads.spk.emb.0.bias",
+     "heads.spk.emb.1.weight",
+     "heads.spk.emb.1.bias",
+     "heads.spk.emb.1.running_mean",
+     "heads.spk.emb.1.running_var",
+     "heads.spk.emb.1.num_batches_tracked"
+    ],
+    "rnnt_ctc_encoder_unchanged": true,
+    "spk_cfg": {
+     "type": "speaker",
+     "num_speakers": 190,
+     "from_layers": [
+      3
+     ],
+     "weight": 1.0,
+     "distill": {
+      "target": "spk_teacher",
+      "weight": 0.5,
+      "relational_weight": 1.0
+     },
+     "aam_weight": 1.0
+    },
+    "layer_weights": [
+     0.0,
+     0.0,
+     0.0,
+     1.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0
+    ]
+   },
+   "eval": {
+    "ckpt": "runs/spk_relational_titanet.afm",
+    "head_params": 496448,
+    "spk_cfg": {
+     "type": "speaker",
+     "num_speakers": 190,
+     "from_layers": [
+      3
+     ],
+     "weight": 1.0,
+     "distill": {
+      "target": "spk_teacher",
+      "weight": 0.5,
+      "relational_weight": 1.0
+     },
+     "aam_weight": 1.0
+    },
+    "layer_weights": [
+     0.0,
+     0.0,
+     0.0,
+     1.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0
+    ],
+    "att_context_size": [
+     70,
+     1
+    ],
+    "ami_n64": {
+     "eer": 0.0854,
+     "eer_within_meeting": 0.1438,
+     "mean_cos_same_within": 0.753,
+     "mean_cos_diff_within": 0.499,
+     "n_segments": 64,
+     "n_speakers": 15,
+     "n_trials": 2016,
+     "n_target": 152,
+     "n_within": 487,
+     "sec": 9.6,
+     "rtf_shared_pass": 0.0242,
+     "eval_stage1": {
+      "n_segments": 64,
+      "n_speakers": 15,
+      "n_trials": 2016,
+      "n_target_trials": 152,
+      "n_within_meeting_trials": 487,
+      "mean_sec": 6.2,
+      "eer_spk_head": 0.0854,
+      "eer_spk_head_within_meeting": 0.1438,
+      "eer_meanpool_layer_mix": 0.1635,
+      "eer_meanpool_layer_mix_within_meeting": 0.3002
+     },
+     "teacher_student_cos": 0.318,
+     "teacher": {
+      "eer": 0.0659,
+      "eer_within_meeting": 0.0822,
+      "mean_cos_same_within": 0.618,
+      "mean_cos_diff_within": 0.133,
+      "n_segments": 64,
+      "n_speakers": 15,
+      "n_trials": 2016,
+      "n_target": 152,
+      "n_within": 487
+     }
+    },
+    "ami_n200": {
+     "eer": 0.113,
+     "eer_within_meeting": 0.1978,
+     "mean_cos_same_within": 0.721,
+     "mean_cos_diff_within": 0.462,
+     "n_segments": 200,
+     "n_speakers": 15,
+     "n_trials": 19900,
+     "n_target": 1752,
+     "n_within": 5101,
+     "sec": 29.3,
+     "rtf_shared_pass": 0.025,
+     "teacher_student_cos": 0.3075,
+     "teacher": {
+      "eer": 0.109,
+      "eer_within_meeting": 0.1197,
+      "mean_cos_same_within": 0.55,
+      "mean_cos_diff_within": 0.116,
+      "n_segments": 200,
+      "n_speakers": 15,
+      "n_trials": 19900,
+      "n_target": 1752,
+      "n_within": 5101
+     }
+    },
+    "icsi_n64": {
+     "eer": 0.0466,
+     "eer_within_meeting": 0.0522,
+     "mean_cos_same_within": 0.733,
+     "mean_cos_diff_within": 0.354,
+     "n_segments": 64,
+     "n_speakers": 5,
+     "n_trials": 2016,
+     "n_target": 688,
+     "n_within": 1476,
+     "sec": 8.6,
+     "rtf_shared_pass": 0.0289,
+     "teacher_student_cos": 0.5255,
+     "teacher": {
+      "eer": 0.0144,
+      "eer_within_meeting": 0.0102,
+      "mean_cos_same_within": 0.573,
+      "mean_cos_diff_within": 0.07,
+      "n_segments": 64,
+      "n_speakers": 5,
+      "n_trials": 2016,
+      "n_target": 688,
+      "n_within": 1476
+     }
+    },
+    "icsi_n200": {
+     "eer": 0.0643,
+     "eer_within_meeting": 0.0702,
+     "mean_cos_same_within": 0.714,
+     "mean_cos_diff_within": 0.325,
+     "n_segments": 200,
+     "n_speakers": 9,
+     "n_trials": 19900,
+     "n_target": 6325,
+     "n_within": 14524,
+     "sec": 26.3,
+     "rtf_shared_pass": 0.0314,
+     "teacher_student_cos": 0.5112,
+     "teacher": {
+      "eer": 0.0218,
+      "eer_within_meeting": 0.0206,
+      "mean_cos_same_within": 0.549,
+      "mean_cos_diff_within": 0.077,
+      "n_segments": 200,
+      "n_speakers": 9,
+      "n_trials": 19900,
+      "n_target": 6325,
+      "n_within": 14524
+     }
+    }
+   },
+   "supervision": {
+    "train_speakers": "329 (45 with AMI ids)",
+    "classes": 190,
+    "objective": "AAM (AMI batches) + relational MSE 1.0 + cos 0.5"
+   }
+  },
+  "L4_libri": {
+   "train": {
+    "recipe": "recipes/spk_layer_sweep_L4_libri.yaml",
+    "ckpt": "runs/spk_sweep_L4_libri.afm",
+    "init": "runs/stage1_heads_pretrained.afm",
+    "sec": 243.0,
+    "final_eval": {
+     "wer_rnnt": 0.245,
+     "wer_ctc": 0.2592,
+     "acc_vad": 0.9423,
+     "recall_vad": 0.9598,
+     "acc_eou": 0.9826,
+     "recall_eou": 0.0,
+     "spk_acc_spk": 0.0
+    },
+    "frozen_tensors_identical": 744,
+    "changed_tensors": [
+     "heads.spk.W",
+     "heads.spk.pool.att.0.weight",
+     "heads.spk.pool.att.0.bias",
+     "heads.spk.pool.att.2.weight",
+     "heads.spk.pool.att.2.bias",
+     "heads.spk.emb.0.weight",
+     "heads.spk.emb.0.bias",
+     "heads.spk.emb.1.weight",
+     "heads.spk.emb.1.bias",
+     "heads.spk.emb.1.running_mean",
+     "heads.spk.emb.1.running_var",
+     "heads.spk.emb.1.num_batches_tracked"
+    ],
+    "rnnt_ctc_encoder_unchanged": true,
+    "spk_cfg": {
+     "type": "speaker",
+     "num_speakers": 1251,
+     "from_layers": [
+      3
+     ],
+     "weight": 1.0
+    },
+    "layer_weights": [
+     0.0,
+     0.0,
+     0.0,
+     1.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0
+    ]
+   },
+   "eval": {
+    "ckpt": "runs/spk_sweep_L4_libri.afm",
+    "head_params": 700160,
+    "spk_cfg": {
+     "type": "speaker",
+     "num_speakers": 1251,
+     "from_layers": [
+      3
+     ],
+     "weight": 1.0
+    },
+    "layer_weights": [
+     0.0,
+     0.0,
+     0.0,
+     1.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0
+    ],
+    "att_context_size": [
+     70,
+     1
+    ],
+    "ami_n64": {
+     "eer": 0.1242,
+     "eer_within_meeting": 0.2274,
+     "mean_cos_same_within": 0.757,
+     "mean_cos_diff_within": 0.53,
+     "n_segments": 64,
+     "n_speakers": 15,
+     "n_trials": 2016,
+     "n_target": 152,
+     "n_within": 487,
+     "sec": 9.6,
+     "rtf_shared_pass": 0.0242,
+     "eval_stage1": {
+      "n_segments": 64,
+      "n_speakers": 15,
+      "n_trials": 2016,
+      "n_target_trials": 152,
+      "n_within_meeting_trials": 487,
+      "mean_sec": 6.2,
+      "eer_spk_head": 0.1242,
+      "eer_spk_head_within_meeting": 0.2274,
+      "eer_meanpool_layer_mix": 0.1635,
+      "eer_meanpool_layer_mix_within_meeting": 0.3002
+     },
+     "teacher_student_cos": -0.0208,
+     "teacher": {
+      "eer": 0.0659,
+      "eer_within_meeting": 0.0822,
+      "mean_cos_same_within": 0.618,
+      "mean_cos_diff_within": 0.133,
+      "n_segments": 64,
+      "n_speakers": 15,
+      "n_trials": 2016,
+      "n_target": 152,
+      "n_within": 487
+     }
+    },
+    "ami_n200": {
+     "eer": 0.1392,
+     "eer_within_meeting": 0.2884,
+     "mean_cos_same_within": 0.729,
+     "mean_cos_diff_within": 0.483,
+     "n_segments": 200,
+     "n_speakers": 15,
+     "n_trials": 19900,
+     "n_target": 1752,
+     "n_within": 5101,
+     "sec": 24.7,
+     "rtf_shared_pass": 0.0211,
+     "teacher_student_cos": -0.0241,
+     "teacher": {
+      "eer": 0.109,
+      "eer_within_meeting": 0.1197,
+      "mean_cos_same_within": 0.55,
+      "mean_cos_diff_within": 0.116,
+      "n_segments": 200,
+      "n_speakers": 15,
+      "n_trials": 19900,
+      "n_target": 1752,
+      "n_within": 5101
+     }
+    },
+    "icsi_n64": {
+     "eer": 0.1672,
+     "eer_within_meeting": 0.2093,
+     "mean_cos_same_within": 0.719,
+     "mean_cos_diff_within": 0.552,
+     "n_segments": 64,
+     "n_speakers": 5,
+     "n_trials": 2016,
+     "n_target": 688,
+     "n_within": 1476,
+     "sec": 6.4,
+     "rtf_shared_pass": 0.0215,
+     "teacher_student_cos": -0.0848,
+     "teacher": {
+      "eer": 0.0144,
+      "eer_within_meeting": 0.0102,
+      "mean_cos_same_within": 0.573,
+      "mean_cos_diff_within": 0.07,
+      "n_segments": 64,
+      "n_speakers": 5,
+      "n_trials": 2016,
+      "n_target": 688,
+      "n_within": 1476
+     }
+    },
+    "icsi_n200": {
+     "eer": 0.159,
+     "eer_within_meeting": 0.1908,
+     "mean_cos_same_within": 0.711,
+     "mean_cos_diff_within": 0.507,
+     "n_segments": 200,
+     "n_speakers": 9,
+     "n_trials": 19900,
+     "n_target": 6325,
+     "n_within": 14524,
+     "sec": 22.4,
+     "rtf_shared_pass": 0.0268,
+     "teacher_student_cos": -0.0782,
+     "teacher": {
+      "eer": 0.0218,
+      "eer_within_meeting": 0.0206,
+      "mean_cos_same_within": 0.549,
+      "mean_cos_diff_within": 0.077,
+      "n_segments": 200,
+      "n_speakers": 9,
+      "n_trials": 19900,
+      "n_target": 6325,
+      "n_within": 14524
+     }
+    }
+   },
+   "supervision": {
+    "train_speakers": 296,
+    "classes": 1251,
+    "data": "AMI segments + 5000 LibriSpeech train-clean-100 utts (251 speakers, ids 1000+)"
+   }
+  },
+  "stage1_served": {
+   "eval": {
+    "ckpt": "runs/stage1_served.afm",
+    "head_params": 496448,
+    "spk_cfg": {
+     "type": "speaker",
+     "num_speakers": 190,
+     "from_layers": [
+      3
+     ],
+     "aam_weight": 1.0,
+     "weight": 0.3
+    },
+    "layer_weights": [
+     0.0,
+     0.0,
+     0.0,
+     1.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0
+    ],
+    "att_context_size": [
+     70,
+     1
+    ],
+    "ami_n64": {
+     "eer": 0.0854,
+     "eer_within_meeting": 0.1438,
+     "mean_cos_same_within": 0.753,
+     "mean_cos_diff_within": 0.499,
+     "n_segments": 64,
+     "n_speakers": 15,
+     "n_trials": 2016,
+     "n_target": 152,
+     "n_within": 487,
+     "sec": 4.8,
+     "rtf_shared_pass": 0.012,
+     "eval_stage1": {
+      "n_segments": 64,
+      "n_speakers": 15,
+      "n_trials": 2016,
+      "n_target_trials": 152,
+      "n_within_meeting_trials": 487,
+      "mean_sec": 6.2,
+      "eer_spk_head": 0.0854,
+      "eer_spk_head_within_meeting": 0.1438,
+      "eer_meanpool_layer_mix": 0.1635,
+      "eer_meanpool_layer_mix_within_meeting": 0.3002
+     },
+     "teacher_student_cos": 0.318,
+     "teacher": {
+      "eer": 0.0659,
+      "eer_within_meeting": 0.0822,
+      "mean_cos_same_within": 0.618,
+      "mean_cos_diff_within": 0.133,
+      "n_segments": 64,
+      "n_speakers": 15,
+      "n_trials": 2016,
+      "n_target": 152,
+      "n_within": 487
+     }
+    },
+    "ami_n200": {
+     "eer": 0.113,
+     "eer_within_meeting": 0.1978,
+     "mean_cos_same_within": 0.721,
+     "mean_cos_diff_within": 0.462,
+     "n_segments": 200,
+     "n_speakers": 15,
+     "n_trials": 19900,
+     "n_target": 1752,
+     "n_within": 5101,
+     "sec": 14.3,
+     "rtf_shared_pass": 0.0122,
+     "teacher_student_cos": 0.3075,
+     "teacher": {
+      "eer": 0.109,
+      "eer_within_meeting": 0.1197,
+      "mean_cos_same_within": 0.55,
+      "mean_cos_diff_within": 0.116,
+      "n_segments": 200,
+      "n_speakers": 15,
+      "n_trials": 19900,
+      "n_target": 1752,
+      "n_within": 5101
+     }
+    },
+    "icsi_n64": {
+     "eer": 0.0466,
+     "eer_within_meeting": 0.0522,
+     "mean_cos_same_within": 0.733,
+     "mean_cos_diff_within": 0.354,
+     "n_segments": 64,
+     "n_speakers": 5,
+     "n_trials": 2016,
+     "n_target": 688,
+     "n_within": 1476,
+     "sec": 4.2,
+     "rtf_shared_pass": 0.0141,
+     "teacher_student_cos": 0.5255,
+     "teacher": {
+      "eer": 0.0144,
+      "eer_within_meeting": 0.0102,
+      "mean_cos_same_within": 0.573,
+      "mean_cos_diff_within": 0.07,
+      "n_segments": 64,
+      "n_speakers": 5,
+      "n_trials": 2016,
+      "n_target": 688,
+      "n_within": 1476
+     }
+    },
+    "icsi_n200": {
+     "eer": 0.0643,
+     "eer_within_meeting": 0.0702,
+     "mean_cos_same_within": 0.714,
+     "mean_cos_diff_within": 0.325,
+     "n_segments": 200,
+     "n_speakers": 9,
+     "n_trials": 19900,
+     "n_target": 6325,
+     "n_within": 14524,
+     "sec": 12.2,
+     "rtf_shared_pass": 0.0146,
+     "teacher_student_cos": 0.5112,
+     "teacher": {
+      "eer": 0.0218,
+      "eer_within_meeting": 0.0206,
+      "mean_cos_same_within": 0.549,
+      "mean_cos_diff_within": 0.077,
+      "n_segments": 200,
+      "n_speakers": 9,
+      "n_trials": 19900,
+      "n_target": 6325,
+      "n_within": 14524
+     }
+    }
+   }
+  }
+ },
+ "overlap": {
+  "block4": {
+   "overlap": {
+    "n": 125,
+    "nearest_is_louder": 0.528,
+    "n_louder_defined": 72,
+    "nearest_is_primary": 0.392,
+    "n_primary_present": 97,
+    "nearest_is_neither_present": 0.112,
+    "cos_primary": 0.715,
+    "cos_other_present": 0.719,
+    "cos_absent": 0.691
+   },
+   "single": {
+    "n": 259,
+    "nearest_is_active": 0.849,
+    "cos_active": 0.784,
+    "cos_absent": 0.725
+   }
+  },
+  "block8": {
+   "overlap": {
+    "n": 125,
+    "nearest_is_louder": 0.361,
+    "n_louder_defined": 72,
+    "nearest_is_primary": 0.381,
+    "n_primary_present": 97,
+    "nearest_is_neither_present": 0.192,
+    "cos_primary": 0.671,
+    "cos_other_present": 0.67,
+    "cos_absent": 0.649
+   },
+   "single": {
+    "n": 259,
+    "nearest_is_active": 0.598,
+    "cos_active": 0.704,
+    "cos_absent": 0.666
+   }
+  },
+  "titanet": {
+   "overlap": {
+    "n": 125,
+    "nearest_is_louder": 0.667,
+    "n_louder_defined": 72,
+    "nearest_is_primary": 0.402,
+    "n_primary_present": 97,
+    "nearest_is_neither_present": 0.008,
+    "cos_primary": 0.272,
+    "cos_other_present": 0.272,
+    "cos_absent": 0.119
+   },
+   "single": {
+    "n": 259,
+    "nearest_is_active": 0.973,
+    "cos_active": 0.509,
+    "cos_absent": 0.125
+   }
+  },
+  "head:runs/spk_sweep_L4.afm": {
+   "overlap": {
+    "n": 125,
+    "nearest_is_louder": 0.528,
+    "n_louder_defined": 72,
+    "nearest_is_primary": 0.361,
+    "n_primary_present": 97,
+    "nearest_is_neither_present": 0.112,
+    "cos_primary": 0.595,
+    "cos_other_present": 0.604,
+    "cos_absent": 0.513
+   },
+   "single": {
+    "n": 259,
+    "nearest_is_active": 0.834,
+    "cos_active": 0.688,
+    "cos_absent": 0.488
+   }
+  },
+  "_meta": {
+   "n_windows": 64,
+   "span_frames": 12,
+   "n_spans": {
+    "single": 259,
+    "overlap": 125
+   },
+   "louder_by": "label frames in span (mixed audio only)",
+   "sec": 98.0
+  },
+  "head:runs/spk_distill_titanet.afm": {
+   "overlap": {
+    "n": 125,
+    "nearest_is_louder": 0.486,
+    "n_louder_defined": 72,
+    "nearest_is_primary": 0.402,
+    "n_primary_present": 97,
+    "nearest_is_neither_present": 0.104,
+    "cos_primary": 0.595,
+    "cos_other_present": 0.607,
+    "cos_absent": 0.521
+   },
+   "single": {
+    "n": 259,
+    "nearest_is_active": 0.915,
+    "cos_active": 0.711,
+    "cos_absent": 0.524
+   }
+  },
+  "head:runs/spk_distill_titanet_bestlayer.afm": {
+   "overlap": {
+    "n": 125,
+    "nearest_is_louder": 0.486,
+    "n_louder_defined": 72,
+    "nearest_is_primary": 0.381,
+    "n_primary_present": 97,
+    "nearest_is_neither_present": 0.104,
+    "cos_primary": 0.594,
+    "cos_other_present": 0.61,
+    "cos_absent": 0.506
+   },
+   "single": {
+    "n": 259,
+    "nearest_is_active": 0.919,
+    "cos_active": 0.723,
+    "cos_absent": 0.514
+   }
+  },
+  "head:runs/spk_relational_titanet.afm": {
+   "overlap": {
+    "n": 125,
+    "nearest_is_louder": 0.514,
+    "n_louder_defined": 72,
+    "nearest_is_primary": 0.34,
+    "n_primary_present": 97,
+    "nearest_is_neither_present": 0.12,
+    "cos_primary": 0.616,
+    "cos_other_present": 0.63,
+    "cos_absent": 0.543
+   },
+   "single": {
+    "n": 259,
+    "nearest_is_active": 0.907,
+    "cos_active": 0.739,
+    "cos_absent": 0.552
+   }
+  }
+ },
+ "kill_lines": {
+  "sweep_wins_if_any_layer_within_meeting_ami_dev_lt": 0.2,
+  "sweep_result": "win: L4 15.7 % (n=64) / 19.1 % (n=200); L2 20.5 / 22.2, L8 27.5 / 27.3",
+  "distill_wins_if_within_meeting_ami_and_icsi_dev_lt": 0.2,
+  "distill_result": "win: all-layer mix 19.9 % AMI (n=64; 23.1 % at n=200) and 6.2-8.4 % ICSI; block-4 15.8 % / 21.6 % AMI, 5.7-7.0 % ICSI; relational 14.4 % / 19.8 % AMI, 5.2-7.0 % ICSI"
+ },
+ "saved_heads": {
+  "runs/stage1_spk_L4.afm": "L4 (AAM, block 4)",
+  "runs/stage1_spk_distill_titanet.afm": "distill, all-layer mix",
+  "runs/stage1_spk_distill_L4.afm": "distill, block 4",
+  "runs/stage1_spk_relational.afm": "relational + AAM + cos, block 4 (recommended)"
+ }
+}

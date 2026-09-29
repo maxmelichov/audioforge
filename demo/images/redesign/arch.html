@@ -1,0 +1,232 @@
+<!doctype html><html><head><meta charset="utf-8"><link rel="stylesheet" href="style.css">
+<style>
+.block { position: absolute; background: var(--slate); border-radius: 18px; }
+.block .t { position: absolute; color: #FFFFFF; font-size: 28px; font-weight: 700; line-height: 1.15; }
+.block .s { position: absolute; color: var(--onslate); font-size: 22px; line-height: 1.25; }
+.slab { position: absolute; background: var(--slab); border-radius: 4px; }
+.slab.tap { background: var(--ours); }
+.lyr { position: absolute; background: var(--slate); color: var(--onslate); font-size: 22px; line-height: 1; white-space: nowrap; }
+.lyr.tap { color: #FFFFFF; font-weight: 700; }
+.card { position: absolute; background: #FFFFFF; border-radius: 14px; padding: 14px 18px; line-height: 1.2; }
+.card.head { border: 2px solid var(--ours); }
+.card.plain { border: 1.5px solid #C3C9D1; }
+.card .q { font-size: 27px; font-weight: 700; color: var(--ink); }
+.card .row { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.chip { font-size: 22px; font-weight: 700; color: var(--ink); background: var(--ours-tint); border-radius: 999px; padding: 3px 12px; white-space: nowrap; }
+.card .c { font-size: 22px; color: var(--ink2); margin-top: 6px; }
+.card .n { font-size: 27px; font-weight: 700; color: var(--ink); }
+.lab { position: absolute; font-size: 22px; line-height: 1.25; color: var(--ink2); }
+.lab.b { color: var(--ink); font-weight: 700; font-size: 24px; }
+.tbox { position: absolute; background: var(--panel); border: 1.5px solid var(--rule); border-radius: 12px; font-size: 22px; color: #2B3138;
+        display: flex; align-items: center; justify-content: center; white-space: nowrap; }
+.wave { position: absolute; }
+.wave i { position: absolute; background: #6B7280; border-radius: 3px; }
+</style></head><body><div id="stage"></div><script>
+// Architecture figure for the post (DESIGN_NOTES.md). ?layout=flow (A1, horizontal, NVIDIA Nemotron-3 / Llama 4 look) or
+// ?layout=stack (A2, vertical layer stack with side annotations, Alammar / Llama 4 look). Facts, as in the reviewed v5
+// figure (demo/v5/images/architecture2.html): the frozen NVIDIA streaming FastConformer has 17 layers; the "speaking?"
+// head reads a learned mix of all 17 (research/VAD_LAYERS.md), the "who?" head reads layer 4 (research/SPK_HEAD.md,
+// FINAL_REPORT.md), the "turn over?" head reads a second pass of the same model conditioned on the speaker;
+// Nemotron-3 (diarizer) and Parakeet-TDT (per-turn transcript) run alongside. No measured numbers on this image.
+const st = document.getElementById("stage");
+const W0 = [], wires = [];
+function el(cls, html, x, y, w, h) { const e = document.createElement("div"); e.className = cls; if (html != null) e.innerHTML = html;
+  Object.assign(e.style, { left: x + "px", top: y + "px" }); if (w) e.style.width = w + "px"; if (h) e.style.height = h + "px"; st.appendChild(e); return e; }
+function R(e) { const r = e.getBoundingClientRect(); return { l: r.left, t: r.top, r: r.right, b: r.bottom, cx: (r.left + r.right) / 2, cy: (r.top + r.bottom) / 2 }; }
+// thin connector; open chevron head (Llama 4 figure); dash for the second pass
+function wire(pts, { col = "var(--line)", w = 2, head = true, dash = false } = {}) {
+  const d = pts.map((p, i) => (i ? "L" : "M") + p[0] + " " + p[1]).join(" ");
+  wires.push(`<path d="${d}" fill="none" stroke="${col}" stroke-width="${w}" stroke-linecap="round" stroke-linejoin="round"${dash ? ' stroke-dasharray="7 7"' : ""}/>`);
+  if (head) { const [x2, y2] = pts[pts.length - 1], [x1, y1] = pts[pts.length - 2], a = Math.atan2(y2 - y1, x2 - x1), s = 11;
+    wires.push(`<path d="M${x2 - s * Math.cos(a - 0.6)} ${y2 - s * Math.sin(a - 0.6)} L${x2} ${y2} L${x2 - s * Math.cos(a + 0.6)} ${y2 - s * Math.sin(a + 0.6)}" fill="none" stroke="${col}" stroke-width="${w}" stroke-linecap="round" stroke-linejoin="round"/>`); } }
+function wave(x, y, w, h) { const v = [0.25, 0.5, 0.8, 0.45, 1, 0.65, 0.35, 0.75, 0.5, 0.3, 0.6, 0.2]; const box = el("wave", "", x, y, w, h);
+  v.forEach((k, i) => { const b = document.createElement("i"); Object.assign(b.style, { left: (i * w / v.length + w / v.length * 0.2) + "px", width: (w / v.length * 0.55) + "px", top: (h * (1 - k) / 2) + "px", height: (h * k) + "px" }); box.appendChild(b); }); return box; }
+const HEADS = {
+  A: ["Is someone speaking?", "yes", "reads all 17 layers"],
+  B: ["Who is speaking?", "Person 2", "reads layer 4 of 17"],
+  C: ["Is the turn over?", "not yet", "second pass, told who is speaking"] };
+function head(k, x, y, w, z = {}) { const [q, a, c0] = HEADS[k], c = z.cap || c0;
+  const e = el("card head", `<div class="row"><span class="q" style="${z.q ? "font-size:" + z.q + "px" : ""}">${q}</span><span class="chip">${a}</span></div><div class="c">${c}</div>`, x, y, w);
+  if (z.wrap) e.querySelector(".row").style.flexWrap = "wrap"; return e; }
+function helper(n, c, x, y, w) { return el("card plain", `<div class="n">${n}</div><div class="c">${c}</div>`, x, y, w); }
+// the frozen model: slate block, 17 layer slabs, layer 4 in the accent. dir "h": slabs left->right; "v": bottom->top
+function model(x, y, w, h, dir, o) {
+  const b = el("block", "", x, y, w, h);
+  el("t", o.title, 0, 0).style.cssText += `left:${o.pad}px;top:${o.pad - 4}px;width:${w - 2 * o.pad}px`; b.appendChild(st.lastChild);
+  const s = el("s", "17 layers · frozen" + (o.cap ? " · " + o.cap : ""), 0, 0); s.style.cssText += `left:${o.pad}px;top:${o.subY}px;width:${w - 2 * o.pad}px`; b.appendChild(s);
+  const slabs = [];
+  for (let k = 1; k <= 17; k++) {
+    let sx, sy, sw, sh;
+    if (dir === "h") { sw = o.sw; sh = o.sh; const gap = (o.rw - 17 * sw) / 16; sx = o.rx + (k - 1) * (sw + gap); sy = o.ry; }
+    else { sw = o.rw; sh = o.sh; const gap = (o.rh - 17 * sh) / 16; sx = o.rx; sy = o.ry + o.rh - k * sh - (k - 1) * gap; }
+    const e = el("slab" + (k === 4 ? " tap" : ""), "", x + sx, y + sy, sw, sh); slabs.push(e);
+  }
+  const lab = (k, txt) => { const r = R(slabs[k - 1]); const e = el("lyr" + (k === 4 ? " tap" : ""), txt, 0, 0);
+    if (dir === "h") { e.style.left = r.l + "px"; e.style.top = (r.b + 8) + "px"; if (k === 17) e.style.left = (r.r - e.offsetWidth) + "px"; }
+    else { e.style.left = (x + o.pad) + "px"; e.style.top = (r.cy - 11) + "px"; } };
+  lab(1, "layer 1"); lab(4, "layer 4"); lab(17, "layer 17");
+  return { b, slabs }; }
+function today(x, y, dir, o = {}) {   // today's default chain, bottom-up in the stacked layout
+  const names = ["Silero VAD", "turn detector", "Whisper"], bw = o.bw || 200, bh = o.bh || 56, gap = o.gap || 56, boxes = [];
+  if (dir === "h") {
+    el("lab b", "Today", x, y + (bh - 30) / 2);
+    let cx = x + (o.lw || 96);
+    names.forEach((n, i) => { boxes.push(el("tbox", n, cx, y, bw, bh)); cx += bw + gap; });
+    for (let i = 0; i < 2; i++) { const a = R(boxes[i]), b = R(boxes[i + 1]); wire([[a.r + 8, a.cy], [b.l - 8, b.cy]]); }
+    el("lab", "one model per question", cx - gap + 28, y + (bh - 28) / 2);
+  } else {
+    el("lab b", "Today", x, y);
+    el("lab", "one model per question", x, y + 32, o.w);
+    let cy = y + (o.top || 84) + 2 * (bh + gap);
+    names.forEach((n, i) => { boxes.push(el("tbox", n, x, cy, bw, bh)); cy -= bh + gap; });
+    for (let i = 0; i < 2; i++) { const a = R(boxes[i]), b = R(boxes[i + 1]); wire([[a.cx, a.t - 8], [a.cx, b.b + 8]]); }
+  }
+  return boxes; }
+const FOOT = "For engineers: FastConformer, 109 M encoder, cache-aware (70 frames), log-mel 80 bins, ×8 subsampling, RNNT decoder · heads 33 K / 0.5 M / 0.32 M (GRU) · turn pass conditioned at blocks 1 and 3 · column-major weights, cached projections and RNNT joint";
+const FOOT_SQ = "For engineers: FastConformer 109 M, cache-aware, log-mel 80, ×8 subsampling, RNNT · heads 33 K / 0.5 M / 0.32 M (GRU) · turn pass conditioned at blocks 1 and 3";
+const TITLE = "audioforge: three small heads on NVIDIA’s streaming speech model";
+const SUB = "One pass of a frozen NVIDIA model answers the three questions a voice agent asks, while the words stream out.";
+
+// A1 (post image): a picture first, words after. Data flows left -> right. Row 1: voice -> the frozen NVIDIA model
+// (17 vertical slabs, layer 1 left, 17 right) -> decoder -> words. Under row 1: a brace over all 17 slabs -> "Speaking?"
+// (the VAD head reads a learned mix of all 17 layers); a line straight down from slab 4 -> "Who?" (speaker head,
+// block 4). Row 2: a lighter copy of the same model (the speaker-conditioned second pass), fed by the voice and by the
+// diarizer's "who is talking" columns (Nemotron-3) -> "Turn over?". Every output sits in one column, icon + <= 3 words.
+const TITLE_A1 = "audioforge on NVIDIA’s speech model";
+const ICON = {
+  wave: '<path d="M3 12v0M6 8v8M9 5v14M12 9v6M15 6v12M18 9v6M21 11v2"/>',
+  text: '<path d="M4 6h16M4 10h16M4 14h11M4 18h14"/>',
+  speaking: '<circle cx="6" cy="12" r="2.2" fill="currentColor" stroke="none"/><path d="M11 8.5a5 5 0 0 1 0 7M14.5 5.5a9.5 9.5 0 0 1 0 13M18 3a13 13 0 0 1 0 18"/>',
+  person: '<circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.4 3.6-7 8-7s8 2.6 8 7"/>',
+  turn: '<path d="M4 5h16a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1h-9l-5 4v-4H4a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1z"/><path d="M8.5 10.5l2.5 2.5 4.5-4.5"/>',
+  group: '<circle cx="12" cy="7.5" r="3.2"/><path d="M6 20c0-3.6 2.7-5.8 6-5.8s6 2.2 6 5.8"/><circle cx="5" cy="9.5" r="2.4"/><path d="M1.5 18.5c0-2.6 1.6-4.2 3.8-4.4"/><circle cx="19" cy="9.5" r="2.4"/><path d="M22.5 18.5c0-2.6-1.6-4.2-3.8-4.4"/>' };
+function icon(k, x, y, size, col) {   // explicit stroke/fill so the icon survives the no-text check (text colour hidden)
+  const c = col.startsWith("var(") ? getComputedStyle(document.documentElement).getPropertyValue(col.slice(4, -1)).trim() : col;
+  const e = el("abs", `<svg viewBox="0 0 24 24" width="${size}" height="${size}" fill="none" stroke="${c}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${ICON[k].replace("currentColor", c)}</svg>`, x, y);
+  e.style.lineHeight = "0"; return e; }
+function outRow(k, lab, x, cy, big, ic, col) { icon(ic, x, cy - ic_s(big) / 2, ic_s(big), col);
+  const t = el("abs", lab, x + ic_s(big) + 22, 0); Object.assign(t.style, { fontSize: big + "px", fontWeight: 700, lineHeight: 1.1, color: "var(--ink)", whiteSpace: "nowrap" });
+  t.style.top = (cy - t.offsetHeight / 2) + "px"; return t; }
+const ic_s = big => Math.round(big * 1.25);
+function slabRow(x, y, w, h, o, light) {
+  const b = el(light ? "tbox" : "block", "", x, y, w, h); if (light) { b.style.background = "#FFFFFF"; b.style.border = "1.5px solid #AEB6C0"; b.style.borderRadius = "18px"; }
+  const gap = (w - 2 * o.pad - 17 * o.sw) / 16, slabs = [];
+  for (let k = 1; k <= 17; k++) { const e = el("slab" + (k === 4 && !light ? " tap" : ""), "", x + o.pad + (k - 1) * (o.sw + gap), y + o.top, o.sw, h - o.top - o.bot);
+    if (light) { e.style.background = "#E6E9ED"; e.style.border = "1.5px solid #B8C0C9"; } slabs.push(e); }
+  return { b, slabs }; }
+function small(t, x, y) { const e = el("lab", t, x, y); return e; }
+function flow(W, H) {
+  const M = 64, sq = H / W > 0.9;
+  const P = sq ? { tf: 44, wx: 64, ww: 44, bx: 130, bw: 360, dx: 516, dw: 110, cx: 670, big: 40, b1: [236, 130], b2: [744, 96], cy: [0, 484, 600, 0], nem: [64, 646], sw: 12, pad: 18, todayY: 952 }
+               : { tf: 48, wx: 64, ww: 120, bx: 250, bw: 700, dx: 1010, dw: 150, cx: 1250, big: 48, b1: [210, 160], b2: [770, 110], cy: [0, 486, 616, 0], nem: [64, 664], sw: 26, pad: 28, todayY: 952 };
+  el("h1 abs", TITLE_A1, M, M + 4, W - 2 * M).style.fontSize = P.tf + "px";
+  const ax = P.cx - 18, OR = { col: "var(--ours)", w: 2.5 }, GREY = "#5B6573";
+  // row 1: the frozen NVIDIA model
+  const r1 = slabRow(P.bx, P.b1[0], P.bw, P.b1[1], { pad: P.pad, sw: P.sw, top: 20, bot: 46 });
+  const bb = R(r1.b), c1 = bb.t + 20 + (P.b1[1] - 66) / 2, S = r1.slabs.map(R);
+  [[1, "1"], [4, "4"], [17, "17"]].forEach(([k, t]) => { const e = el("lyr" + (k === 4 ? " tap" : ""), t, 0, 0); e.style.left = (S[k - 1].cx - e.offsetWidth / 2) + "px"; e.style.top = (bb.b - 36) + "px"; });
+  const nv = small("NVIDIA", 0, 0); nv.style.left = (bb.r - nv.offsetWidth) + "px"; nv.style.top = (bb.t - 34) + "px";
+  icon("wave", P.wx, c1 - P.ww / 2, P.ww, GREY); wire([[P.wx + P.ww + 8, c1], [bb.l - 8, c1]]);
+  // words: right end of row 1 -> decoder -> Words
+  el("tbox", "Decoder", P.dx, c1 - 26, P.dw, 52);
+  wire([[bb.r + 8, c1], [P.dx - 8, c1]]); wire([[P.dx + P.dw + 8, c1], [ax, c1]]);
+  const wt = outRow("words", "Words", P.cx, c1, P.big, "text", "var(--ink)");
+  const pk = el("tbox", "Parakeet", 0, 0, 0, 40); pk.style.padding = "0 14px"; pk.style.width = "auto"; pk.style.left = (R(wt).r + 20) + "px"; pk.style.top = (c1 - 20) + "px";
+  // speaking?: brace under all 17 slabs, one arrow from its centre
+  const x1 = S[0].cx, x2 = S[16].cx, y0 = bb.b + 10, y1 = bb.b + 24, tip = bb.b + 38, mx = (x1 + x2) / 2, r = 14;
+  wires.push(`<path d="M${x1} ${y0} Q${x1} ${y1} ${x1 + r} ${y1} L${mx - r} ${y1} Q${mx} ${y1} ${mx} ${tip} Q${mx} ${y1} ${mx + r} ${y1} L${x2 - r} ${y1} Q${x2} ${y1} ${x2} ${y0}" fill="none" stroke="var(--ours)" stroke-width="2.5" stroke-linejoin="round"/>`);
+  wire([[mx, tip], [mx, P.cy[1]], [ax, P.cy[1]]], OR);
+  small("All layers", mx + 14, tip + 6);
+  outRow("vad", "Speaking?", P.cx, P.cy[1], P.big, "speaking", "var(--ours)");
+  // who?: straight down from slab 4 (white halo where it crosses the brace), then right
+  const s4x = S[3].cx;
+  wires.push(`<path d="M${s4x} ${bb.b + 2} L${s4x} ${P.cy[2]}" stroke="#FFFFFF" stroke-width="9"/>`);
+  wire([[s4x, bb.b + 2], [s4x, P.cy[2]], [ax, P.cy[2]]], OR);
+  small("Layer 4", s4x + 14, P.cy[2] - 34);
+  outRow("spk", "Who?", P.cx, P.cy[2], P.big, "person", "var(--ours)");
+  // row 2: the same model, second pass, told who is talking by Nemotron-3 -> turn over?
+  const r2 = slabRow(P.bx, P.b2[0], P.bw, P.b2[1], { pad: P.pad, sw: P.sw, top: 16, bot: 16 }, true);
+  const b2 = R(r2.b), c2 = b2.cy, gs = sq ? 44 : 52;
+  const gi = icon("group", P.nem[0], P.nem[1], gs, GREY), nx = P.bx + P.bw * 0.5, ny = P.nem[1] + gs / 2;
+  small("Nemotron-3", P.nem[0] + gs + 14, ny - 34);
+  wire([[R(gi).r + 10, ny], [nx, ny], [nx, b2.t - 8]]);
+  icon("wave", P.wx, c2 - P.ww / 2 * 0.8, P.ww * 0.8, GREY); wire([[P.wx + P.ww * 0.8 + 8, c2], [b2.l - 8, c2]]);
+  const l2 = small("Second pass", 0, 0); l2.style.left = (b2.r - l2.offsetWidth) + "px"; l2.style.top = (b2.b + 8) + "px";
+  wire([[b2.r + 8, c2], [ax, c2]], OR);
+  outRow("turn", "Turn over?", P.cx, c2, P.big, "turn", "var(--ours)");
+  // Today: three small grey boxes
+  const bh = sq ? 44 : 48, tY = H - M - bh;
+  const tl = el("lab b", "Today", M, tY + (bh - 30) / 2);
+  let x = M + R(tl).r - R(tl).l + 28; const boxes = [];
+  ["VAD", "Turn", "Whisper"].forEach(n => { const w = sq ? 110 : 130; boxes.push(el("tbox", n, x, tY, w, bh)); x += w + (sq ? 40 : 52); });
+  for (let k = 0; k < 2; k++) { const a = R(boxes[k]), b = R(boxes[k + 1]); wire([[a.r + 8, a.cy], [b.l - 8, b.cy]]); }
+  const rule = el("sep abs", "", M, tY - (sq ? 26 : 34), W - 2 * M); Object.assign(rule.style, { height: "1px", background: "var(--rule)" });
+}
+
+function stack(W, H) {
+  const M = 64, sq = H / W > 0.9;
+  if (!sq) {
+    el("h1 abs", TITLE, M, M + 4, W - 2 * M); el("sub abs", SUB, M, 124, W - 2 * M);
+    const bx = 560, by = 322, bw = 440, bh = 536;
+    const words = el("card plain", `<div class="n">words</div><div class="c">stream out as you speak</div>`, bx + 60, 180, bw - 120);
+    const m = model(bx, by, bw, bh, "v", { title: "NVIDIA streaming<br>speech model", pad: 26, subY: 92, rx: 132, ry: 146, rw: 282, rh: 366, sh: 14 });
+    const bb = R(m.b), w = R(words);
+    wire([[bb.cx, bb.t - 8], [bb.cx, w.b + 8]]);
+    wave(bb.cx - 70, bb.b + 30, 140, 50); wire([[bb.cx, bb.b + 28], [bb.cx, bb.b + 6]], { head: true });
+    el("lab", "you speak", bb.cx + 86, bb.b + 40);
+    // left: the "speaking?" head on a bracket over all 17 layers
+    const s1 = R(m.slabs[0]), s17 = R(m.slabs[16]), bxl = bb.l - 18;
+    wire([[bxl + 10, s17.cy], [bxl, s17.cy], [bxl, s1.cy], [bxl + 10, s1.cy]], { col: "var(--ours)", w: 2.5, head: false });
+    const A = head("A", M, 520, 440), a = R(A);
+    wire([[bxl, a.cy], [a.r + 6, a.cy]], { col: "var(--ours)", w: 2.5 });
+    el("lab", "Three small heads (orange) share the model’s single pass: no separate models for these questions.", M, 300, 420);
+    // right: "who?" at layer 4, "turn over?" on the second pass
+    const s4 = R(m.slabs[3]);
+    const B = head("B", 1110, s4.cy - 52, 400), b = R(B);
+    wire([[s4.r + 8, s4.cy], [b.l - 6, s4.cy]], { col: "var(--ours)", w: 2.5 });
+    const C = head("C", 1110, 520, 420), c = R(C);
+    wire([[bb.r + 8, c.cy], [c.l - 6, c.cy]], { col: "var(--ours)", w: 2.5, dash: true });
+    el("lab", "second pass", bb.r + 14, c.t - 34);
+    wire([[b.cx, b.t - 6], [b.cx, c.b + 8]], { col: "var(--ours)", w: 2.5, dash: true });
+    el("lab", "who is speaking", b.cx + 14, (b.t + c.b) / 2 - 14);
+    el("lab b", "Alongside, by NVIDIA", 1600, 322, 256);
+    helper("Nemotron-3", "who is in the room", 1600, 366, 256); helper("Parakeet", "rewrites each finished sentence", 1600, 474, 256);
+    today(1600, 640, "v", { w: 256, bw: 220, bh: 50, gap: 26, top: 80 });
+    foot(FOOT, W, H);
+  } else {
+    el("h1 abs", TITLE, M, M + 4, W - 2 * M).style.fontSize = "40px"; el("sub abs", SUB, M, 164, W - 2 * M).style.fontSize = "24px";
+    const bx = 356, by = 334, bw = 368, bh = 480;
+    const words = el("card plain", `<div class="n">words</div><div class="c">as you speak</div>`, bx + 64, 240, bw - 128);
+    words.style.padding = "8px 18px";
+    const m = model(bx, by, bw, bh, "v", { title: "NVIDIA streaming<br>speech model", pad: 22, subY: 86, rx: 120, ry: 136, rw: 226, rh: 322, sh: 12 });
+    const bb = R(m.b), w = R(words);
+    wire([[bb.cx, bb.t - 8], [bb.cx, w.b + 8]]);
+    wave(bb.cx - 60, bb.b + 34, 120, 46); wire([[bb.cx, bb.b + 30], [bb.cx, bb.b + 6]]);
+    const s1 = R(m.slabs[0]), s17 = R(m.slabs[16]), bxl = bb.l - 16;
+    wire([[bxl + 10, s17.cy], [bxl, s17.cy], [bxl, s1.cy], [bxl + 10, s1.cy]], { col: "var(--ours)", w: 2.5, head: false });
+    const A = head("A", M, 520, 256, { q: 24, wrap: true }), a = R(A);
+    wire([[bxl, a.cy], [a.r + 6, a.cy]], { col: "var(--ours)", w: 2.5 });
+    el("lab", "Three small heads (orange) share one pass of the model.", M, 334, 256);
+    const s4 = R(m.slabs[3]);
+    const B = head("B", 760, 0, 256, { q: 24, wrap: true }); B.style.top = (s4.cy - B.offsetHeight / 2) + "px"; const b = R(B);
+    wire([[s4.r + 8, s4.cy], [b.l - 6, s4.cy]], { col: "var(--ours)", w: 2.5 });
+    const C = head("C", 760, 488, 256, { q: 24, wrap: true }), c = R(C);
+    wire([[bb.r + 8, c.cy], [c.l - 6, c.cy]], { col: "var(--ours)", w: 2.5, dash: true });
+    wire([[b.cx, b.t - 6], [b.cx, c.b + 8]], { col: "var(--ours)", w: 2.5, dash: true });
+    el("lab b", "Alongside, by NVIDIA", 760, 236, 256);
+    const h1 = helper("Nemotron-3", "who is in the room", 760, 274, 256), h2 = helper("Parakeet", "rewrites each finished sentence", 760, 0, 256);
+    [h1, h2].forEach(h => { h.style.padding = "8px 16px"; h.querySelector(".n").style.fontSize = "24px"; }); h2.style.top = (R(h1).b + 8) + "px";
+    today(M, 700, "v", { w: 256, bw: 200, bh: 40, gap: 18, top: 70 });
+    foot(FOOT_SQ, W, H);
+  }
+}
+function foot(t, W, H) { const e = el("foot abs", t, 64, 0, W - 128); e.style.top = (H - 64 - e.offsetHeight - 4) + "px"; return e; }
+function build(W, H, layout) {
+  Object.assign(st.style, { width: W + "px", height: H + "px" }); st.innerHTML = ""; wires.length = 0;
+  (layout === "stack" ? stack : flow)(W, H);
+  const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg"); svg.setAttribute("class", "wires"); svg.setAttribute("width", W); svg.setAttribute("height", H);
+  svg.innerHTML = wires.join(""); st.appendChild(svg);
+}
+window.build = build;
+const q = new URLSearchParams(location.search); if (q.get("layout")) build(innerWidth, innerHeight, q.get("layout"));
+</script></body></html>

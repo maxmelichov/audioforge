@@ -1,0 +1,284 @@
+{
+ "A | head_trail6 - head_v3 | stream_oracle | 2s": {
+  "all": {
+   "miss_diff": -0.192,
+   "miss_diff_ci": [
+    -0.2228,
+    -0.1634
+   ],
+   "fc_a": 0.0544,
+   "fc_b": 0.0513,
+   "p50_a": Infinity,
+   "p50_b": Infinity,
+   "p50_diff_ci": [
+    0.0,
+    0.0
+   ]
+  },
+  "open": {
+   "miss_diff": -0.1757,
+   "miss_diff_ci": [
+    -0.2464,
+    -0.1071
+   ],
+   "fc_a": 0.0805,
+   "fc_b": 0.0593,
+   "p50_a": Infinity,
+   "p50_b": Infinity,
+   "p50_diff_ci": [
+    0.0,
+    0.0
+   ]
+  },
+  "taken": {
+   "miss_diff": -0.1966,
+   "miss_diff_ci": [
+    -0.2273,
+    -0.1653
+   ],
+   "fc_a": 0.0461,
+   "fc_b": 0.0488,
+   "p50_a": Infinity,
+   "p50_b": Infinity,
+   "p50_diff_ci": [
+    -Infinity,
+    0.0
+   ]
+  }
+ },
+ "A | head_trail6 - head_v3 | stream_causal_dominant | 2s": {
+  "all": {
+   "miss_diff": -0.0607,
+   "miss_diff_ci": [
+    -0.0853,
+    -0.0356
+   ],
+   "fc_a": 0.0534,
+   "fc_b": 0.0534,
+   "p50_a": Infinity,
+   "p50_b": Infinity,
+   "p50_diff_ci": [
+    0.0,
+    0.0
+   ]
+  },
+  "open": {
+   "miss_diff": -0.1307,
+   "miss_diff_ci": [
+    -0.1941,
+    -0.0695
+   ],
+   "fc_a": 0.0678,
+   "fc_b": 0.0763,
+   "p50_a": Infinity,
+   "p50_b": Infinity,
+   "p50_diff_ci": [
+    0.0,
+    0.0
+   ]
+  },
+  "taken": {
+   "miss_diff": -0.0389,
+   "miss_diff_ci": [
+    -0.0633,
+    -0.0131
+   ],
+   "fc_a": 0.0488,
+   "fc_b": 0.0461,
+   "p50_a": Infinity,
+   "p50_b": Infinity,
+   "p50_diff_ci": [
+    0.0,
+    0.0
+   ]
+  }
+ },
+ "C | head_trail6 - head_v3 | stream_oracle | 2s": {
+  "all": {
+   "miss_diff": -0.0384,
+   "miss_diff_ci": [
+    -0.0602,
+    -0.019
+   ],
+   "fc_a": 0.0544,
+   "fc_b": 0.0513,
+   "p50_a": Infinity,
+   "p50_b": Infinity,
+   "p50_diff_ci": [
+    0.0,
+    0.0
+   ]
+  },
+  "open": {
+   "miss_diff": -0.0427,
+   "miss_diff_ci": [
+    -0.0825,
+    -0.0071
+   ],
+   "fc_a": 0.0805,
+   "fc_b": 0.0593,
+   "p50_a": Infinity,
+   "p50_b": Infinity,
+   "p50_diff_ci": [
+    0.0,
+    0.0
+   ]
+  },
+  "taken": {
+   "miss_diff": -0.0366,
+   "miss_diff_ci": [
+    -0.0601,
+    -0.0127
+   ],
+   "fc_a": 0.0461,
+   "fc_b": 0.0488,
+   "p50_a": Infinity,
+   "p50_b": Infinity,
+   "p50_diff_ci": [
+    0.0,
+    0.0
+   ]
+  }
+ },
+ "C | head_trail6 - head_v3 | stream_oracle | 6s": {
+  "all": {
+   "miss_diff": -0.1938,
+   "miss_diff_ci": [
+    -0.2212,
+    -0.1692
+   ],
+   "fc_a": 0.0544,
+   "fc_b": 0.0513,
+   "p50_a": 2960.0,
+   "p50_b": 6000.0,
+   "p50_diff_ci": [
+    -Infinity,
+    -2160.0
+   ]
+  },
+  "open": {
+   "miss_diff": -0.3059,
+   "miss_diff_ci": [
+    -0.3705,
+    -0.2403
+   ],
+   "fc_a": 0.0805,
+   "fc_b": 0.0593,
+   "p50_a": 3280.0,
+   "p50_b": Infinity,
+   "p50_diff_ci": [
+    -Infinity,
+    -2080.0
+   ]
+  },
+  "taken": {
+   "miss_diff": -0.1591,
+   "miss_diff_ci": [
+    -0.1869,
+    -0.1322
+   ],
+   "fc_a": 0.0461,
+   "fc_b": 0.0488,
+   "p50_a": 2880.0,
+   "p50_b": 5520.0,
+   "p50_diff_ci": [
+    -Infinity,
+    -1840.0
+   ]
+  }
+ },
+ "C | head_trail6 - head_v3 | stream_causal_dominant | 2s": {
+  "all": {
+   "miss_diff": -0.0076,
+   "miss_diff_ci": [
+    -0.025,
+    0.0114
+   ],
+   "fc_a": 0.0534,
+   "fc_b": 0.0534,
+   "p50_a": Infinity,
+   "p50_b": Infinity,
+   "p50_diff_ci": [
+    0.0,
+    0.0
+   ]
+  },
+  "open": {
+   "miss_diff": -0.036,
+   "miss_diff_ci": [
+    -0.0754,
+    0.0002
+   ],
+   "fc_a": 0.0678,
+   "fc_b": 0.0763,
+   "p50_a": Infinity,
+   "p50_b": Infinity,
+   "p50_diff_ci": [
+    0.0,
+    0.0
+   ]
+  },
+  "taken": {
+   "miss_diff": 0.0012,
+   "miss_diff_ci": [
+    -0.0213,
+    0.0228
+   ],
+   "fc_a": 0.0488,
+   "fc_b": 0.0461,
+   "p50_a": Infinity,
+   "p50_b": Infinity,
+   "p50_diff_ci": [
+    0.0,
+    0.0
+   ]
+  }
+ },
+ "C | head_trail6 - head_v3 | stream_causal_dominant | 6s": {
+  "all": {
+   "miss_diff": -0.1312,
+   "miss_diff_ci": [
+    -0.1595,
+    -0.1034
+   ],
+   "fc_a": 0.0534,
+   "fc_b": 0.0534,
+   "p50_a": Infinity,
+   "p50_b": Infinity,
+   "p50_diff_ci": [
+    0.0,
+    0.0
+   ]
+  },
+  "open": {
+   "miss_diff": -0.23,
+   "miss_diff_ci": [
+    -0.2994,
+    -0.1651
+   ],
+   "fc_a": 0.0678,
+   "fc_b": 0.0763,
+   "p50_a": Infinity,
+   "p50_b": Infinity,
+   "p50_diff_ci": [
+    0.0,
+    0.0
+   ]
+  },
+  "taken": {
+   "miss_diff": -0.1003,
+   "miss_diff_ci": [
+    -0.1343,
+    -0.0704
+   ],
+   "fc_a": 0.0488,
+   "fc_b": 0.0461,
+   "p50_a": Infinity,
+   "p50_b": Infinity,
+   "p50_diff_ci": [
+    0.0,
+    0.0
+   ]
+  }
+ }
+}

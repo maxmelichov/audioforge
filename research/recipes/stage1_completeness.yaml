@@ -1,0 +1,37 @@
+# Completeness head (research/COMPLETENESS.md): smart-turn's task ("is what the user said so far a complete
+# utterance?") as a head on OUR frozen 115M streaming encoder, trained head-only on pipecat-ai/human_5_all (the one
+# smart-turn dataset with a licence: BSD-2-Clause; 3 862 English clips, balanced). Eval split = the human_5 clips of
+# smart-turn-data-v3.2-test (neither smart-turn v3.2 nor this head trained on them; datasets/smartturn.py).
+#
+# The head emits a per-frame P(complete so far) (causal GRU) and one pooled utterance logit over the last 2 s before
+# the utterance end. Everything pretrained is frozen (pretrained_lr_mult 0, no scope = all loaded tensors); all other
+# heads have weight 0 (their label keys are absent from these batches anyway).
+#
+# Run (GPU, when no other training process exists; ~20-30 min):
+#   PYTORCH_MPS_HIGH_WATERMARK_RATIO=0.6 PYTORCH_MPS_LOW_WATERMARK_RATIO=0.5 .venv/bin/python -m audioforge.cli train \
+#       research/recipes/stage1_completeness.yaml -o runs/stage1_completeness.afm 2>&1 | tee runs/stage1_completeness.log
+name: stage1_completeness
+init:
+  from: runs/stage1_heads_pretrained.afm  # the 160 ms model (att_context_size [70, 1])
+  pretrained_lr_mult: 0
+encoder: {att_context_size: [70, 1], att_context_sizes: [[70, 1]]}
+heads:
+  rnnt: {weight: 0}
+  ctc: {weight: 0}
+  vad: {weight: 0}
+  eou: {weight: 0}
+  spk: {weight: 0}
+  diar: {weight: 0}
+  turn: {weight: 0}
+  completeness: {type: completeness, hidden: 96, pool_frames: 25, frame_weight: 0.5, mid_weight: 0.1, weight: 1.0}
+data:
+  smartturn: {root: data/smartturn, mid_weight: 0.1, rel_db: 30.0, seed: 0}
+trainer:
+  device: auto
+  batch_size: 8
+  lr: 1.0e-3
+  warmup_steps: 100
+  max_steps: 2000
+  log_every: 50
+  checkpoint_every: 250
+  checkpoint_keep: 3

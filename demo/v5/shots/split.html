@@ -1,0 +1,207 @@
+<!doctype html><html><head><meta charset="utf-8"><link rel="stylesheet" href="common.css">
+<style>
+/* Two example layouts, one page (REFERENCE_DEMOS.md shots 8 and 9). Every value comes from the clip record in
+   data.json: t0/t1 = the span both systems play (at once), sides.*.cut_ins / responses / first_text / user_turns /
+   text = the recorded run, agent_voice = the agent line scheduled at each event, subs = the caller's words.
+   mode "cutins": four lanes on one time axis with one playhead (default Caller + Agent, audioforge Caller + Agent).
+   mode "words": one panel per system with a stopwatch from speech onset to that system's recorded first word. */
+.ax { position: absolute; font-size: 28px; color: var(--fg2); white-space: nowrap; }
+.axl { position: absolute; width: 2px; background: var(--rule); }
+.live { position: absolute; font-size: 30px; font-weight: 700; color: var(--fg); border: 3px solid var(--fg); border-radius: 8px; padding: 0 12px; white-space: nowrap; display: flex; align-items: center; gap: 10px; }
+.live i { width: 14px; height: 14px; border-radius: 50%; background: var(--fg); display: inline-block; }
+.hdr { position: absolute; display: flex; align-items: center; gap: 20px; white-space: nowrap; }
+.hdr .nm { font-size: 44px; font-weight: 700; color: var(--fg); display: flex; align-items: center; gap: 16px; }
+.hdr .nm i { width: 24px; height: 24px; border-radius: 50%; display: inline-block; flex: none; }
+.pill { font-size: 30px; font-weight: 700; padding: 1px 16px; border-radius: 999px; border: 3px solid var(--rule); color: var(--fg2); white-space: nowrap; }
+.role { position: absolute; font-size: 30px; font-weight: 700; color: var(--fg); white-space: nowrap; }
+.rule { position: absolute; height: 2px; background: var(--rule); }
+.wb { position: absolute; background: var(--user); border-radius: 3px; }
+.ab { position: absolute; border-radius: 6px; }
+.tick { position: absolute; width: 4px; border-radius: 2px; }
+.tag { position: absolute; z-index: 2; font-size: 30px; font-weight: 700; color: var(--fg); background: #1C1C1E; border: 3px solid; padding: 0 12px; border-radius: 8px; white-space: nowrap; }
+.play { position: absolute; z-index: 1; width: 3px; background: var(--fg); }
+.cnt { position: absolute; text-align: right; white-space: nowrap; }
+.cnt .v { font-size: 112px; font-weight: 700; line-height: 1; }
+.cnt .l { font-size: 30px; color: var(--fg2); margin-top: 4px; }
+/* words mode */
+.pn { position: absolute; background: var(--surface); border-radius: 36px; border: 4px solid var(--rule); overflow: hidden; }
+.pn .hdr { left: 40px; top: 30px; }
+.sw { position: absolute; left: 40px; right: 40px; text-align: center; white-space: nowrap; }
+.sw .v { font-size: 150px; font-weight: 700; line-height: 1; font-variant-numeric: tabular-nums; }
+.sw .l { font-size: 32px; color: var(--fg2); margin-top: 8px; }
+.tx { position: absolute; left: 40px; right: 40px; font-size: 44px; line-height: 1.25; color: var(--fg); overflow: hidden; }
+#subs { justify-content: flex-start !important; }
+#subs .who { font-size: 30px; color: var(--bg); background: var(--user); padding: 3px 16px; border-radius: 999px; margin-right: 8px; flex: none; }
+#subs .sw2 { font-size: 46px; display: inline-block; margin-right: 0 !important; }
+#subs .who { margin-right: 4px !important; }
+.sq .hdr .nm { font-size: 38px; }
+.sq .cnt .v { font-size: 80px; }
+.sq .cnt .l, .sq .role, .sq .pill, .sq .tag, .sq .live { font-size: 28px; }
+.sq .sw .v { font-size: 104px; }
+.sq #subs .sw2 { font-size: 44px; }
+.sq #subs .who { font-size: 28px; }
+</style></head><body><script src="common.js"></script><script>
+let D, P, clip, SPAN, G = {}, E = {};
+const COL = { Pipecat: "var(--pipecat)", LiveKit: "var(--livekit)" };
+const T0 = () => SPAN[0], TL = () => SPAN[1] - SPAN[0];
+function agentLines(sk) { return (clip.agent_voice || {})[sk] || []; }
+function fwName() { return (clip.sides[P.panels.L].label || "Pipecat").split(" ")[0]; }
+function clipState(ctx, t) {
+  const sg = (ctx.segs || []).filter(s => s.kind === "clip")[0];
+  if (!sg) return { at: T0() + t, vt: T0() + t, phase: "during" };
+  const vt = T0() + (t - sg.start);   // unclamped: an agent line may finish after the clip audio ends
+  if (t < sg.start) return { at: T0(), vt, phase: "before", sg };
+  if (t <= sg.end) return { at: Math.min(SPAN[1], vt), vt, phase: "during", sg };
+  return { at: SPAN[1], vt, phase: "after", sg };
+}
+function envBars(n) {
+  const env = [];
+  for (let i = 0; i < n; i++) { const a = T0() + TL() * i / n, b = T0() + TL() * (i + 1) / n; let m = 0; for (let tt = a; tt < b; tt += clip.hop) m = Math.max(m, U.env(clip, tt)); env.push(m); }
+  const mx = Math.max(1e-6, ...env); return env.map(v => Math.pow(v / mx, 0.8));
+}
+function header(ct, name, col) {
+  const h = U.el("div", "hdr", ct);
+  U.el("div", "nm", h, `<i style="background:${col}"></i>${name}`);
+  const pill = U.el("div", "pill", h);
+  return { h, pill };
+}
+function setPill(p, speaking, ours, col) {
+  p.textContent = speaking ? "Speaking" : "Listening";
+  U.css(p, { background: speaking && ours ? "var(--ours)" : (speaking ? "#2C2C2E" : "transparent"), color: speaking ? (ours ? "var(--bg)" : "var(--fg)") : "var(--fg2)", borderColor: speaking ? col : "var(--rule)" });
+}
+
+// ---------------- cut-ins: four lanes ----------------
+function initLanes(ct, W, H) {
+  const sq = S.sq, M = S.M, roleW = sq ? 118 : 170, cntW = sq ? 150 : 250;
+  const x0 = M + roleW, x1 = W - M - cntW, X = tt => x0 + (x1 - x0) * (tt - T0()) / TL();
+  G.X = X; G.x0 = x0; G.x1 = x1;
+  const fw = fwName();
+  const sys = [{ key: "L", sk: P.panels.L, name: `${fw} default`, col: COL[fw] || "var(--pipecat)", ours: false },
+               { key: "R", sk: P.panels.R, name: "audioforge", col: "var(--ours)", ours: true }];
+  // events per system inside the span, and their tags; tag rows so that no two tags overlap
+  sys.forEach(s => { const sd = clip.sides[s.sk];
+    s.evs = [...sd.cut_ins.filter(c => c >= T0() && c < SPAN[1]).map(c => ({ t: c, cut: true })), ...sd.responses.filter(r => r >= T0() && r < SPAN[1]).map(r => ({ t: r, cut: false }))].sort((a, b) => a.t - b.t);
+    s.evs.forEach(e => { if (!e.cut) { const end = (sd.user_turns.filter(u => u[1] <= e.t).pop() || [0, null])[1]; e.delay = end != null ? e.t - end : null; } }); });
+  const rowsNeeded = [];
+  sys.forEach(s => { const placed = [];
+    s.evs.forEach(e => {
+      const el = U.el("div", "tag", ct, e.cut ? "CUT IN" : ("ANSWERED" + (e.delay != null ? ` · ${e.delay.toFixed(1)} s after` : "")));
+      el.style.borderColor = e.cut ? "var(--red)" : "var(--ours)";
+      const w = el.offsetWidth; let l = X(e.t) - 2; if (l + w > x1) l = X(e.t) + 2 - w;   // right-anchored at the end of the axis
+      let row = 0; while (placed.some(p => p.row === row && !(l + w + 8 <= p.l || p.l + p.w + 8 <= l))) row++;
+      placed.push({ l, w, row }); Object.assign(e, { el, l, row }); });
+    rowsNeeded.push(placed.reduce((m, p) => Math.max(m, p.row + 1), 1)); });
+  const rows = Math.max(...rowsNeeded), tagH = sq ? 44 : 48;
+  // vertical plan: axis, then per pair: header, caller lane, tag rows, agent bar
+  const axH = 44, hdrH = sq ? 54 : 60, agH = sq ? 34 : 40, gapP = sq ? 22 : 28;
+  const avail = S.bottom - M - axH - gapP;
+  const fixed = hdrH + 10 + 8 + rows * tagH + agH;
+  const callH = Math.max(60, Math.min(sq ? 110 : 130, avail / 2 - fixed));
+  const pairH = fixed + callH;
+  E.axis = []; for (let s = 0; s <= Math.floor(TL() + 1e-6); s += sq ? 2 : 1) {
+    const lab = U.el("div", "ax", ct, `${s} s`); const l = X(T0() + s) - 2; if (l + lab.offsetWidth > x1 + 6) { lab.remove(); continue; }
+    U.css(lab, { left: l, top: M }); const ln = U.el("div", "axl", ct); U.css(ln, { left: X(T0() + s) - 1, top: M + 36, height: 8 }); E.axis.push(lab); }
+  E.live = U.el("div", "live", ct, "<i></i>LIVE"); U.css(E.live, { right: M, top: M });
+  sys.forEach((s, p) => {
+    const y = M + axH + p * (pairH + gapP);
+    s.hd = header(ct, s.name, s.col); U.css(s.hd.h, { left: M, top: y });
+    s.cy = y + hdrH + 10; s.ch = callH; s.ty = s.cy + callH + 8; s.ay = s.ty + rows * tagH; s.ah = agH;
+    s.rc = U.el("div", "role", ct, "Caller"); U.css(s.rc, { left: M, top: s.cy + callH / 2 - 20 });
+    s.ra = U.el("div", "role", ct, "Agent"); U.css(s.ra, { left: M, top: s.ay + agH / 2 - 20 });
+    s.rl = U.el("div", "rule", ct); U.css(s.rl, { left: x0, top: s.ay + agH / 2 - 1, width: x1 - x0 });
+    const nb = Math.round((x1 - x0) / (sq ? 9 : 10)); s.env = envBars(nb); s.bw = (x1 - x0) / nb;
+    s.bars = s.env.map((v, i) => { const b = U.el("div", "wb", ct); const h = Math.max(4, v * callH * 0.95); U.css(b, { left: x0 + i * s.bw + s.bw * 0.2, width: s.bw * 0.6, top: s.cy + callH / 2 - h / 2, height: h }); return b; });
+    s.lines = agentLines(s.sk).map(ln => { const b = U.el("div", "ab", ct); U.css(b, { top: s.ay, height: agH, background: s.col, left: X(ln.t) }); return { b, ln }; });
+    s.evs.forEach(e => { U.css(e.el, { left: e.l, top: s.ty + e.row * tagH + 2 });
+      e.tk = U.el("div", "tick", ct); U.css(e.tk, { left: X(e.t) - 2, top: s.cy, height: s.ay + agH - s.cy, background: e.cut ? "var(--red)" : "var(--ours)" }); });
+    s.cnt = U.el("div", "cnt", ct, `<div class="v">–</div><div class="l">cut-ins</div>`); s.v = s.cnt.querySelector(".v"); s.cnt.dataset.sys = s.key;
+    U.css(s.cnt, { right: M, top: s.cy + (s.ay + agH - s.cy) / 2 - (sq ? 60 : 76) });
+  });
+  G.sys = sys;
+  E.play = U.el("div", "play", ct); U.css(E.play, { top: sys[0].cy - 6, height: sys[1].ay + agH - sys[0].cy + 12 });
+  const pr = U.el("div", null, ct); pr.setAttribute("data-primary", ""); U.css(pr, { position: "absolute", left: M, top: M, width: W - 2 * M, height: S.bottom - M });
+}
+function renderLanes(t, ctx) {
+  const st = clipState(ctx, t), at = st.at, vt = st.vt, live = st.phase !== "before", X = G.X;
+  E.live.style.opacity = st.phase === "during" ? 1 : 0;
+  E.play.style.left = (X(at) - 1.5) + "px"; E.play.style.opacity = st.phase === "during" ? 1 : 0;
+  G.sys.forEach(s => {
+    s.bars.forEach((b, i) => { const tt = T0() + TL() * (i + 0.5) / s.bars.length; b.style.opacity = live && tt <= at ? 1 : 0.28; });
+    let speaking = false;
+    s.lines.forEach(({ b, ln }) => { const end = Math.min(ln.t + ln.dur, vt, SPAN[1]); const on = live && vt >= ln.t;
+      b.style.width = Math.max(0, X(end) - X(ln.t)) + "px"; b.style.opacity = on ? 1 : 0; if (on && vt < ln.t + ln.dur && st.phase !== "after") speaking = true; });
+    setPill(s.hd.pill, speaking, s.ours, s.col); s.hd.pill.style.opacity = live ? 1 : 0;
+    let cuts = 0;
+    s.evs.forEach(e => { const el = vt - e.t, on = live && at >= e.t; if (on && e.cut) cuts++;
+      const a = on ? U.eout(el / 0.15) : 0;
+      e.el.style.opacity = a; e.el.style.transform = `translateY(${((1 - a) * -8).toFixed(1)}px)`; e.tk.style.opacity = on ? 1 : 0; });
+    if (!live) { s.v.textContent = "–"; s.v.style.color = "var(--fg2)"; delete s.v.dataset.final; }
+    else { s.v.textContent = cuts; s.v.style.color = s.ours && !cuts ? "var(--ours)" : "var(--fg)"; s.v.style.borderBottom = cuts ? "6px solid var(--red)" : "0"; s.v.dataset.final = cuts; s.v.dataset.done = "0"; }   // red as a rule, not text (contrast)
+  });
+}
+
+// ---------------- words: one panel per system ----------------
+const norm = s => (s || "").toLowerCase().replace(/[^a-z0-9' ]+/g, " ").replace(/\s+/g, " ").trim();   // one style for both transcripts
+function initPanels(ct, W, H) {
+  const M = S.M, gap = S.sq ? 24 : 32, pw = (W - 2 * M - gap) / 2, ph = S.bottom - M, fw = fwName();
+  const wrap = U.el("div", null, ct); wrap.setAttribute("data-primary", ""); U.css(wrap, { position: "absolute", left: M, top: M, width: W - 2 * M, height: ph });
+  G.pn = [{ key: "L", sk: P.panels.L, name: `${fw} default`, col: COL[fw] || "var(--pipecat)", ours: false }, { key: "R", sk: P.panels.R, name: "audioforge", col: "var(--ours)", ours: true }].map((o, i) => {
+    o.sd = clip.sides[o.sk];
+    o.el = U.el("div", "pn", wrap); U.css(o.el, { left: i * (pw + gap), top: 0, width: pw, height: ph }); o.el.dataset.panel = o.key;
+    o.hd = header(o.el, o.name, o.col);
+    if (S.sq) { o.hd.h.style.flexDirection = "column"; o.hd.h.style.alignItems = "flex-start"; o.hd.h.style.gap = "10px"; }
+    const hy = S.sq ? 30 + 104 : 30 + 64;
+    o.sw = U.el("div", "sw", o.el, `<div class="v">–</div><div class="l">first word</div>`); U.css(o.sw, { top: hy + (S.sq ? 20 : 28) });
+    o.v = o.sw.querySelector(".v"); o.l = o.sw.querySelector(".l");
+    const ty = hy + (S.sq ? 20 : 28) + o.sw.offsetHeight + (S.sq ? 26 : 36);
+    o.tx = U.el("div", "tx", o.el); U.css(o.tx, { top: ty, height: ph - ty - 34 }); o.tx.dataset.clipok = "";
+    o.pts = (Array.isArray(o.sd.text) ? o.sd.text : []).map(([tt, str]) => [tt, norm(str)]);
+    return o;
+  });
+}
+function renderPanels(t, ctx) {
+  const st = clipState(ctx, t), at = st.at, live = st.phase !== "before";
+  G.pn.forEach(o => {
+    o.el.style.borderColor = st.phase === "during" ? o.col : "var(--rule)";
+    const turns = o.sd.user_turns, onset = (turns.find(u => u[1] >= T0()) || turns[0])[0], ft = o.sd.first_text;
+    const has = ft != null && at >= ft;
+    delete o.v.dataset.final;
+    if (!live || at < onset + 0.1) { o.v.textContent = "–"; o.l.textContent = "first word"; o.v.style.color = "var(--fg2)"; }
+    else if (!has) { o.v.textContent = (at - onset).toFixed(1) + " s"; o.l.textContent = "waiting…"; o.v.style.color = "var(--fg)"; }
+    else { const fv = (ft - onset).toFixed(1); o.v.textContent = fv + " s"; o.l.textContent = "first word"; o.v.style.color = o.ours ? "var(--ours)" : "var(--fg)"; o.v.dataset.final = fv; o.v.dataset.done = "0"; }
+    // one pill: is this system writing yet?
+    o.hd.pill.textContent = !live ? "ready" : (has ? "Writing" : "Listening");
+    U.css(o.hd.pill, { background: has && o.ours ? "var(--ours)" : (has ? "#2C2C2E" : "transparent"), color: has ? (o.ours ? "var(--bg)" : "var(--fg)") : "var(--fg2)", borderColor: has ? o.col : "var(--rule)" });
+    if (live && drawWords(o.tx, o.pts, at, 0)) {} else o.tx.innerHTML = "";
+  });
+}
+
+// ---------------- subtitles: the caller's words, word by word ----------------
+function subs(t, ctx) {
+  const el = document.getElementById("subs"); if (!el) return;
+  const cur = (ctx.segs || []).find(s => s.kind === "clip" && t >= s.start && t <= s.end);
+  if (!cur || !clip.subs) { el.style.opacity = 0; el.innerHTML = ""; return; }
+  const at = T0() + (t - cur.start);
+  let ws = clip.subs.filter(w => w[0] <= at && w[0] >= at - 5.0);
+  for (let i = ws.length - 1; i > 0; i--) if (ws[i][0] - ws[i - 1][1] > 1.2) { ws = ws.slice(i); break; }
+  el.innerHTML = `<span class="who">Speaker:</span>` + ws.map(w => `<span class="sw2" style="color:${at < w[1] + 0.12 ? "var(--fg)" : "#D1D1D6"}">${w[2]}</span>`).join(" ");
+  el.style.opacity = ws.length ? 1 : 0;
+  while (el.scrollWidth > el.clientWidth + 1 && el.querySelectorAll(".sw2").length > 1) el.querySelector(".sw2").remove();
+}
+function init(data, params, W, H) {
+  D = data; P = params; clip = D.clips[P.clip];
+  const ct = stage(W, H); document.body.classList.toggle("sq", S.sq);
+  const segs = (P.segs || []).filter(s => s.kind === "clip");
+  SPAN = [clip.t0 != null ? clip.t0 : (segs[0] || {}).t0 || 0, clip.t1 != null ? clip.t1 : (segs[0] || {}).t1 || clip.dur];
+  window.SPAN_MISMATCH = segs.filter(s => Math.abs(s.t0 - SPAN[0]) > 1e-3 || Math.abs(s.t1 - SPAN[1]) > 1e-3).map(s => [s.key, s.t0, s.t1]);
+  if (P.mode === "words") initPanels(ct, W, H); else initLanes(ct, W, H);
+  const sb = document.getElementById("subs"); if (sb) sb.dataset.clipok = "";
+}
+function render(t, ctx) {
+  // the content sits 64 px from the edge: push-in plus the idle breathing stay under 1.6 % so it keeps >= 48 px
+  chrome(t, ctx.breathe ? Object.assign({}, ctx, { push: Math.min(ctx.push == null ? 0.015 : ctx.push, 0.008) }) : ctx);
+  if (P.mode === "words") renderPanels(t, ctx); else renderLanes(t, ctx);
+  subs(t, ctx);
+}
+window.init = init; window.render = render;
+</script></body></html>

@@ -1,0 +1,118 @@
+<!doctype html><html><head><meta charset="utf-8"><link rel="stylesheet" href="style.css">
+<style>
+.card { position: absolute; }
+.ct { position: absolute; left: 0; top: 0; font-size: 28px; font-weight: 700; letter-spacing: -0.01em; color: var(--ink); white-space: nowrap; line-height: 1.1; }
+.lab { position: absolute; font-size: 22px; color: var(--ink2); white-space: nowrap; line-height: 1.1; }
+.lab.us { color: var(--ink); font-weight: 700; }
+.val { position: absolute; font-size: 24px; color: #2B3138; white-space: nowrap; line-height: 1; }
+.val.us { color: var(--ink); font-weight: 700; }
+.big { position: absolute; font-size: 52px; font-weight: 700; color: var(--ink); letter-spacing: -0.02em; line-height: 1; white-space: nowrap; }
+.big .u { font-size: 30px; font-weight: 700; margin-left: 4px; }
+.metric { position: absolute; font-size: 22px; color: var(--ink2); white-space: nowrap; line-height: 1.2; }
+.xl { position: absolute; font-size: 22px; color: var(--ink2); white-space: nowrap; line-height: 1.1; }
+.delta { position: absolute; font-size: 22px; color: var(--ink2); white-space: nowrap; line-height: 1; }
+.tag { position: absolute; font-size: 22px; font-weight: 400; color: #2B3138; background: var(--panel); border: 1.5px solid #C3C9D1; border-radius: 999px; padding: 3px 12px; white-space: nowrap; }
+.legend { font-size: 24px; color: var(--ink2); display: flex; align-items: center; gap: 10px; white-space: nowrap; }
+.sw { display: inline-block; width: 22px; height: 22px; border-radius: 5px; }
+</style></head><body><div id="stage"></div><script src="numbers_single.js"></script><script>
+// results_v6 (live only; layout as results_v3): six cards, each with its own encoding, scale and unit (V3_SKETCH.md). Values: numbers_single.json
+// (export_single.py <- runs/*.json); every number element carries data-key="ns:<key>" and render.py checks it.
+// Direction is drawn: dumbbells point to the better end, bars start at zero, compute has a real-time rule at 1.0.
+const st = document.getElementById("stage"); let svg = [];
+const css = k => getComputedStyle(document.documentElement).getPropertyValue(k).trim();
+const E = k => { const e = NS[k]; if (!e) throw new Error("numbers_single has no " + k); return e; };
+const s = k => E(k).shown ?? String(E(k).value), v = k => E(k).value;
+const N = k => `<span data-key="ns:${k}">${s(k)}</span>`;
+function el(cls, html, x, y, parent = st) { const e = document.createElement("div"); e.className = cls; e.innerHTML = html;
+  Object.assign(e.style, { left: x + "px", top: y + "px" }); parent.appendChild(e); return e; }
+function place(e, x, y, ax = 0, ay = 0) { e.style.left = (x - ax * e.offsetWidth) + "px"; e.style.top = (y - ay * e.offsetHeight) + "px"; return e; }
+const G = "#C8CDD4", GD = "#9AA3AE";
+function line(x1, y1, x2, y2, c = GD, w = 2) { svg.push(`<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="${c}" stroke-width="${w}" stroke-linecap="round"/>`); }
+function dot(x, y, c, r = 10) { svg.push(`<circle cx="${x}" cy="${y}" r="${r}" fill="${c}"/>`); }
+function bar(x, y, w, h, c) { svg.push(`<rect x="${x}" y="${y}" width="${Math.max(3, w)}" height="${h}" rx="5" fill="${c}"/>`); }
+function arrowTo(x1, y, x2, c, w = 3) { const d = Math.sign(x2 - x1), s_ = 11; line(x1, y, x2, y, c, w);
+  svg.push(`<path d="M${x2 - d * s_} ${y - 8} L${x2} ${y} L${x2 - d * s_} ${y + 8}" fill="none" stroke="${c}" stroke-width="${w}" stroke-linecap="round" stroke-linejoin="round"/>`); }
+// an axis with ticks (labels in the card's unit)
+function axis(c, x0, x1, y, lo, hi, ticks, fmt) { line(x0, y, x1, y, "#AEB6C0", 1.5); const X = t => x0 + (x1 - x0) * (t - lo) / (hi - lo);
+  ticks.forEach(t => { line(X(t), y, X(t), y + 7, "#AEB6C0", 1.5); place(el("lab", fmt(t), 0, 0, c), X(t), y + 12, 0.5, 0); }); return X; }
+
+// each card: (card element, x0, width, top of visual, bottom of visual) -> draws; returns {big, metric}
+// results_v4 cards (single-model mode). Values: numbers_single.json (export_single.py <- runs/improve_115m.json,
+// runs/single_model.json, runs/e2e_*.json, runs/baselines_sd.json); data-key="ns:<key>" on every number.
+function rowsDumbbell(c, x0, w, y0, y1, rows, X, lower) {   // rows: [label, greyKey, oursKey]
+  const gap = Math.max(34, (y1 - 40 - y0) / rows.length);
+  rows.forEach(([n, kg, ko], i) => { const y = y0 + 18 + i * gap;
+    place(el("lab", n, 0, 0, c), x0, y, 0, 0.5);
+    const xg = X(v(kg)), xo = X(v(ko)), d = Math.sign(xo - xg);
+    arrowTo(xg, y, xo - d * 12, css("--ours"), 3); dot(xg, y, G); dot(xo, y, css("--ours"));
+    place(el("val", N(kg), 0, 0, c), xg - d * 16, y, d > 0 ? 1 : 0, 0.5); place(el("val us", N(ko), 0, 0, c), xo + d * 16, y, d > 0 ? 0 : 1, 0.5); });
+}
+// results_v5: audioforge (single model) vs EXTERNAL shipped systems only. Every number: numbers_single.json.
+function hbars(c, x0, w, y0, y1, rows, max, ticks, fmt, lw) {   // rows: [label, key, us]; sorted by the caller
+  const n = rows.length, many = n >= 4, lx = x0 + lw, x1 = x0 + w - 70;
+  // many rows: no tick labels (each bar carries its value), just the zero baseline; else a ticked axis
+  const X = many ? (t => lx + (x1 - lx) * t / max) : axis(c, lx, x1, y1 - 26, 0, max, ticks, fmt);
+  if (many) line(lx, y0, lx, y1 - 4, "#AEB6C0", 1.5);
+  const pt = Math.max(29, Math.min(38, ((many ? y1 : y1 - 40) - y0) / n)), bh = Math.round(pt * 0.6);
+  rows.forEach(([lab, k, us], i) => { const y = y0 + 6 + i * pt; place(el("lab" + (us ? " us" : ""), lab, 0, 0, c), x0, y + bh / 2, 0, 0.5);
+    bar(lx, y, X(v(k)) - lx, bh, us ? css("--ours") : G); place(el("val" + (us ? " us" : ""), N(k), 0, 0, c), X(v(k)) + 10, y + bh / 2, 0, 0.5); });
+}
+function xlab(c, t, y1) { const e = el("xl", t, 0, 0, c); place(e, 0, y1 + 6); return e; }
+const CARDS = {
+  find: { title: "Finds your voice", xl: "speaker tracking F1 (0 to 1) · higher is better", xlSq: "tracking F1 (0–1) · higher is better", draw(c, x0, w, y0, y1) {
+      const X = axis(c, x0 + 70, x0 + w - 20, y1 - 26, 0, 1, [0, 0.5, 1], t => t === 0 ? "0" : t === 1 ? "1" : "0.5");
+      rowsDumbbell(c, x0, w, y0, y1, [["ICSI", "find/icsi/nemotron3", "find/icsi/ours"], ["AMI", "find/ami/nemotron3", "find/ami/ours"]], X);
+      return { big: N("find/icsi/ours"), bigSub: "ICSI", metric: "grey: NVIDIA Nemotron-3 · AMI is in its training", metricSq: "grey: Nemotron-3 · AMI in its training data" }; } },
+  done: { title: "Knows when you’re done", xl: "missed turn ends, AMI meetings (%) · lower is better", xlSq: "missed turn ends, AMI (%) · lower is better", draw(c, x0, w, y0, y1) {
+      const rows = [["audioforge", "ext/ami/ours", 1], [w < 500 ? "NVIDIA Parakeet-EOU" : "NVIDIA Parakeet-Realtime-EOU", "ext/ami/eou"], [w < 500 ? "Pipecat smart-turn" : "Pipecat smart-turn + Silero", "ext/ami/smartturn"],
+                    ["Silero timeout", "ext/ami/silero"], ["LiveKit turn detector", "ext/ami/livekit"]];
+      hbars(c, x0, w, y0, y1, rows, 100, [0, 50, 100], t => String(t), w < 500 ? 250 : 340);
+      return { big: N("ext/ami/ours"), bigUnit: "%", bigSub: `AMI · ICSI ${N("ext/icsi/ours")} % vs Silero ${N("ext/icsi/silero")} %`, bigSubSq: `ICSI ${N("ext/icsi/ours")} vs ${N("ext/icsi/silero")} %`,
+               metric: `ICSI: ${N("ext/icsi/ours")} % vs Silero ${N("ext/icsi/silero")} % · ≤ 5 % false cut-offs`, metricSq: `ICSI ${N("ext/icsi/ours")} vs Silero ${N("ext/icsi/silero")} %` }; } },
+  vad: { title: "Hears speech better", xl: "speech-detection F1 (× 100) · higher is better", xlSq: "speech-detection F1 · higher is better", draw(c, x0, w, y0, y1) {
+      hbars(c, x0, w, y0, y1, [["audioforge", "vad/ours", 1], ["NVIDIA MarbleNet", "vad/marblenet"], ["Silero", "vad/silero"]], 100, [0, 50, 100], t => String(t), 190);
+      return { big: N("vad/ours"), metric: "AMI meetings, 64 windows", metricSq: "AMI meetings" }; } },
+  answer: { title: "Answers when you finish", xl: "turns not answered within 3 s (%) · lower is better", xlSq: "not answered in 3 s (%) · lower is better", draw(c, x0, w, y0, y1) {
+      hbars(c, x0, w, y0, y1, [["audioforge", "s69/ours/missed3s", 1], ["LiveKit default", "s69/livekit/missed3s"], ["Pipecat default", "s69/pipecat/missed3s"]], 100, [0, 50, 100], t => String(t), 190);
+      return { big: N("s69/ours/missed3s"), bigUnit: "%", metric: `live, all ${N("live/sessions")} sessions`, metricSq: `live, ${N("live/sessions")} sessions` }; } },
+  cut: { title: "Talks over you less", xl: "interruptions per call · lower is better", xlSq: "interruptions per call · lower is better", draw(c, x0, w, y0, y1) {
+      hbars(c, x0, w, y0, y1, [["audioforge", "s69/ours/cutins", 1], ["LiveKit default", "s69/livekit/cutins"], ["Pipecat default", "s69/pipecat/cutins"]], 2, [0, 1, 2], t => String(t), 190);
+      return { big: N("s69/ours/cutins"), bigSub: "live", metric: `live, the same ${N("live/sessions")} sessions for all three`, metricSq: `live, same ${N("live/sessions")} sessions` }; } },
+  first: { title: "Words on screen sooner", xl: "seconds until the first words appear · lower is better", xlSq: "seconds to first words · lower is better", draw(c, x0, w, y0, y1) {
+      hbars(c, x0, w, y0, y1, [["audioforge", "first/ours", 1], ["Pipecat default", "first/pipecat"], ["LiveKit default", "first/livekit"]], 6, [0, 3, 6], t => t + " s", 190);
+      return { big: N("first/ours"), bigUnit: "s", metric: "live, median after you start speaking", metricSq: "live, median" }; } },
+};
+const ORDER = ["find", "done", "vad", "answer", "cut", "first"];
+const FOOT_SQ = () => `Meetings offline: audioforge and Nemotron-3 get the same 5 s sample, the turn detectors none · calls: live, defaults · audioforge: --mode single`;
+const FOOT = () => `Meetings: AMI and ICSI, offline; audioforge uses a stored 5-second voice sample of you, the external turn detectors do not have one (false cut-offs ≤ 5 % for all) · calls: ${N("live/sessions")} live sessions (16 real phone calls and 16 TurnBench calls, each as the mixed call and the user channel, plus 5 AMI windows) through Pipecat ${N("version/pipecat")} and LiveKit Agents ${N("version/livekit")} defaults; audioforge = the shipped --mode single rule · voice tracking: Nemotron-3 given the same 5 s sample, AMI is in its training data · first words: median over the 64 two-party sessions · speech detection: AMI`;
+
+function build(W, H) {
+  Object.assign(st.style, { width: W + "px", height: H + "px" }); st.innerHTML = ""; svg = [];
+  const M = 64, sq = H / W > 0.9;
+  const h1 = el("h1 abs", "audioforge in single-model mode, measured", M, M + 4); h1.style.width = (W - 2 * M) + "px"; if (sq) h1.style.fontSize = "38px";
+  const lg = el("legend abs", `<span class="sw" style="background:var(--ours)"></span>audioforge (single model)&nbsp;&nbsp;&nbsp;<span class="sw" style="background:${G}"></span>the system named on the row`, M, M + 8 + h1.offsetHeight + 8);
+  const f = el("foot abs", (sq ? FOOT_SQ : FOOT)(), M, 0); f.style.width = (W - 2 * M) + "px"; f.style.top = (H - M - f.offsetHeight - 2) + "px";
+  const top = lg.offsetTop + lg.offsetHeight + (sq ? 22 : 44), bot = f.offsetTop - (sq ? 22 : 40);
+  const cols = sq ? 2 : 3, rows = sq ? 3 : 2, gx = sq ? 48 : 72, gy = sq ? 14 : 44;
+  const cw = (W - 2 * M - gx * (cols - 1)) / cols, ch = (bot - top - gy * (rows - 1)) / rows;
+  ORDER.forEach((k, i) => {
+    // card: title (left) with the big measured value on the same line (right); visual; x-axis label; one small note
+    const C = CARDS[k], x = M + (i % cols) * (cw + gx), y = top + Math.floor(i / cols) * (ch + gy);
+    const c = el("card", "", x, y); Object.assign(c.style, { width: cw + "px", height: ch + "px" }); c.dataset.panel = k;
+    const t = el("ct", C.title, 0, 0, c); if (sq) t.style.fontSize = "24px";
+    let tagH = 0; if (C.tag && !sq) { const tg = el("tag", sq ? C.tagSq : C.tag, 0, 0, c); place(tg, t.offsetWidth + 12, t.offsetHeight / 2, 0, 0.5); }
+    const noteH = 28, xlH = 28, vy0 = t.offsetHeight + (sq ? 12 : 22), vy1 = ch - noteH - xlH - 20;
+    const r = C.draw(c, 0, cw, vy0, vy1); xlab(c, sq && C.xlSq ? C.xlSq : C.xl, vy1 + 16);
+    const b = el("big", r.big + (r.bigUnit ? `<span class="u">${r.bigUnit}</span>` : ""), 0, 0, c); b.style.fontSize = (sq ? 34 : 40) + "px";
+    b.querySelectorAll(".u").forEach(u => u.style.fontSize = (sq ? 22 : 26) + "px"); place(b, cw, t.offsetHeight / 2 + 2, 1, 0.5);
+    el("metric", (sq ? r.metricSq || r.metric : r.metric), 0, ch - noteH + 2, c);
+    const sv = document.createElementNS("http://www.w3.org/2000/svg", "svg"); sv.setAttribute("width", cw); sv.setAttribute("height", ch);
+    Object.assign(sv.style, { position: "absolute", left: 0, top: 0, overflow: "visible" }); sv.innerHTML = svg.join(""); svg = []; c.prepend(sv);
+  });
+  if (new URLSearchParams(location.search).get("notext")) notext();
+}
+// removal test: hide every explanatory line (metric lines, deltas, relative claims, legend, footer); titles, row labels and values stay
+function notext() { const s_ = document.createElement("style"); s_.textContent = "#stage .metric, #stage .delta, #stage .foot, #stage .legend { color: transparent !important; } #stage .legend .sw { opacity: 0; }"; document.head.appendChild(s_); }
+window.build = build; window.notext = notext;
+const q = new URLSearchParams(location.search); if (q.get("w")) build(+q.get("w"), +q.get("h"));
+</script></body></html>

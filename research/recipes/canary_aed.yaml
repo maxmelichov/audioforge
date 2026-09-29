@@ -1,0 +1,17 @@
+# REPRODUCE: Canary (canary-1b-v2, canary-1b-flash, canary-180m-flash).
+# FastConformer encoder + Transformer decoder; the task is chosen by prompt tokens
+# <|src|><|transcribe|/|translate|><|tgt|><|pnc|>. Synthetic "translation" = reversed word order.
+# Production (1b-v2): 32 enc / 8 dec layers, 16384 SPM vocab.
+# The auxiliary CTC head on the source transcript plays the role of NVIDIA's CTC-pretrained encoder
+# init: without it a small AED decoder collapses into a language model that ignores the audio.
+name: canary_aed_tiny
+preprocessor: {n_mels: 80}
+spec_augment: {freq_masks: 2, freq_width: 15, time_masks: 2, time_width: 0.05}
+encoder: {d_model: 144, n_layers: 4, n_heads: 4, subsampling_channels: 64}
+tokenizer: {kind: char, langs: [en, xx]}
+heads:
+  aed: {type: aed, d_dec: 144, n_layers: 2, n_heads: 4, weight: 0.7}
+  ctc: {type: ctc, key: source_text, weight: 0.3}
+decoding: {primary: aed}
+data: {synthetic: {kind: ast, n_train: 3000, n_val: 64}}
+trainer: {max_steps: 2000, batch_size: 16, lr: 1.5e-3, warmup_steps: 150, log_every: 50}

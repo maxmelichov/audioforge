@@ -1,0 +1,32 @@
+/* v5 shared look: flat near-black, white type, orange = audioforge, greys = default stacks, red = interruption. */
+:root {
+  /* v5 palette (keynote restraint): flat near-black, white type, one warm accent for audioforge, greys for the
+     default stacks, red only for interruptions, the user's speech in white. No gradients, glows or shadows. */
+  --bg: #0B0B0C; --fg: #FFFFFF; --fg2: #A1A1A6; --ours: #FF7A1A; --pipecat: #8E8E93; --livekit: #636366;
+  --red: #FF3B30; --user: #FFFFFF; --surface: #0F0F10; --surface2: #141416; --rule: #2C2C2E;
+  /* legacy names (pages written before the palette change read these) */
+  --navy: #0B0B0C; --indigo: #0B0B0C; --panel: #0F0F10; --panel2: #141416; --line: #3A3A3C;
+  --ink: #FFFFFF; --muted: #A1A1A6; --amber: #FFFFFF; --cyan: #FF7A1A; --lav: #8E8E93; --green: #FF7A1A;
+  --font: -apple-system, "SF Pro Display", "Inter", system-ui, sans-serif;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { width: 100%; height: 100%; background: var(--navy); overflow: hidden; }
+body { font-family: var(--font); color: var(--ink); -webkit-font-smoothing: antialiased; font-weight: 400; }
+b, strong, .b { font-weight: 700; }
+#stage { position: absolute; left: 0; top: 0; overflow: hidden; background: var(--bg); }
+#light { position: absolute; inset: 0; background: radial-gradient(ellipse at 50% 45%, rgba(255,255,255,0.025), rgba(0,0,0,0) 70%); pointer-events: none; }
+#content { position: absolute; left: 0; top: 0; width: 100%; height: 100%; transform-origin: 50% 45%; }
+#caption { position: absolute; left: 50%; transform: translateX(-50%); padding: 14px 34px; border-radius: 22px; background: rgba(28, 28, 30, 0.92);
+  font-size: 44px; line-height: 1.2; font-weight: 400; color: var(--ink); white-space: nowrap; text-align: center; }
+#fine { position: absolute; font-size: 29px; line-height: 1.24; color: var(--muted); white-space: normal; overflow: hidden; display: flex; align-items: flex-end; justify-content: center; text-align: center; }
+.h1 { font-size: 104px; font-weight: 700; letter-spacing: -0.02em; line-height: 1.02; }
+.body { font-size: 44px; line-height: 1.25; }
+.panel { position: absolute; background: var(--panel); border-radius: 36px; }
+.wave { position: absolute; display: flex; align-items: center; justify-content: space-between; }
+.wave i { display: block; border-radius: 999px; background: var(--amber); }
+#subs { position: absolute; display: flex; align-items: center; justify-content: center; gap: 12px; font-size: 44px; font-weight: 700; white-space: nowrap; overflow: hidden; }
+#subs b { font-size: 30px; color: #0B0B0C; padding: 4px 16px; border-radius: 999px; margin-right: 6px; }
+#subs span { display: inline-block; margin-right: 12px; }
+
+/* no glows, no shadows anywhere */
+#stage *, #stage { box-shadow: none !important; text-shadow: none !important; filter: none !important; }

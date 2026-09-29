@@ -1,0 +1,22 @@
+{
+ "duration_s": 10.195,
+ "sample_rate": 16000,
+ "segments": [
+  {
+   "speaker": "A",
+   "start": 0.2,
+   "end": 4.475,
+   "text": "a cold lucid indifference reigned in his soul",
+   "source": "LibriSpeech test-clean 1089-134686-0007"
+  },
+  {
+   "speaker": "B",
+   "start": 5.875,
+   "end": 9.895,
+   "text": "heaven a good place to be raised to",
+   "source": "LibriSpeech test-clean 121-121726-0004"
+  }
+ ],
+ "text": "a cold lucid indifference reigned in his soul heaven a good place to be raised to",
+ "license": "CC-BY-4.0 (LibriSpeech, Panayotov et al. 2015, https://www.openslr.org/12)"
+}

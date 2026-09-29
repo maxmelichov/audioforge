@@ -1,0 +1,70 @@
+{
+ "turn_ckpt": "runs/stage1_turn_v3_trail6.afm",
+ "spk_ckpt": "runs/stage1_spk_relational.afm",
+ "tensors_from_turn": 747,
+ "tensors_from_spk": 12,
+ "dropped": [
+  "layer_mix.spk"
+ ],
+ "spk_cfg": {
+  "type": "speaker",
+  "num_speakers": 190,
+  "from_layers": [
+   3
+  ],
+  "weight": 0.3,
+  "aam_weight": 1.0
+ },
+ "spk_cfg_before": {
+  "type": "speaker",
+  "num_speakers": 190,
+  "from_layers": "all",
+  "weight": 0.3
+ },
+ "heads": [
+  "rnnt",
+  "ctc",
+  "vad",
+  "eou",
+  "spk",
+  "diar",
+  "turn"
+ ],
+ "out": "runs/stage1_served.afm",
+ "verify": {
+  "identical_non_spk_tensors": 747,
+  "spk_tensors_from_relational": 12,
+  "layer_weights_spk": [
+   0.0,
+   0.0,
+   0.0,
+   1.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0
+  ],
+  "spk_head_params": 496448
+ },
+ "wer": {
+  "n": 100,
+  "wer_served": 0.0226,
+  "wer_trail6": 0.0226,
+  "identical_hyps": true,
+  "audio_sec": 901.1,
+  "sec": {
+   "served": 11.9,
+   "trail6": 12.1
+  }
+ },
+ "sec": 46.2
+}

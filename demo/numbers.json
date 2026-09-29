@@ -1,0 +1,908 @@
+{
+ "turn_miss_all/ours_hybrid": {
+  "value": 61.9,
+  "scope": "% missed turn ends, all ends, AMI dev n=974, 6 s, <=5 % FC",
+  "source": "runs/baselines_turn.json",
+  "path": "C_extended_windows_stream > systems > hybrid_stream_causal_dominant > 6s > fixed_5pct_turn_fc > miss_rate"
+ },
+ "turn_miss_open/ours_hybrid": {
+  "value": 45.9,
+  "scope": "% missed, floor-open ends (n=236)",
+  "source": "runs/baselines_turn.json",
+  "path": "C_extended_windows_stream > systems > hybrid_stream_causal_dominant > 6s > fixed_5pct_turn_fc > strata > open > miss_rate"
+ },
+ "turn_miss_all/silero_timeout": {
+  "value": 72.7,
+  "scope": "% missed turn ends, all ends, AMI dev n=974, 6 s, <=5 % FC",
+  "source": "runs/baselines_turn.json",
+  "path": "C_extended_windows_stream > systems > silero_timeout > 6s > fixed_5pct_turn_fc > miss_rate"
+ },
+ "turn_miss_open/silero_timeout": {
+  "value": 26.7,
+  "scope": "% missed, floor-open ends (n=236)",
+  "source": "runs/baselines_turn.json",
+  "path": "C_extended_windows_stream > systems > silero_timeout > 6s > fixed_5pct_turn_fc > strata > open > miss_rate"
+ },
+ "turn_miss_all/parakeet_eou": {
+  "value": 70.1,
+  "scope": "% missed turn ends, all ends, AMI dev n=974, 6 s, <=5 % FC",
+  "source": "runs/baselines_turn.json",
+  "path": "C_extended_windows_stream > systems > eou_posterior > 6s > fixed_5pct_turn_fc > miss_rate"
+ },
+ "turn_miss_open/parakeet_eou": {
+  "value": 42.9,
+  "scope": "% missed, floor-open ends (n=236)",
+  "source": "runs/baselines_turn.json",
+  "path": "C_extended_windows_stream > systems > eou_posterior > 6s > fixed_5pct_turn_fc > strata > open > miss_rate"
+ },
+ "turn_miss_all/smartturn_silero": {
+  "value": 72.6,
+  "scope": "% missed turn ends, all ends, AMI dev n=974, 6 s, <=5 % FC",
+  "source": "runs/baselines_turn.json",
+  "path": "C_extended_windows_stream > systems > smartturn_silero+timeout > 6s > fixed_5pct_turn_fc > miss_rate"
+ },
+ "turn_miss_open/smartturn_silero": {
+  "value": 26.7,
+  "scope": "% missed, floor-open ends (n=236)",
+  "source": "runs/baselines_turn.json",
+  "path": "C_extended_windows_stream > systems > smartturn_silero+timeout > 6s > fixed_5pct_turn_fc > strata > open > miss_rate"
+ },
+ "turn_miss_all/livekit_text": {
+  "value": 74.2,
+  "scope": "% missed turn ends, all ends, AMI dev n=974, 6 s, <=5 % FC",
+  "source": "runs/baselines_turn.json",
+  "path": "C_extended_windows_stream > systems > livekit_text_en_asr+timeout > 6s > fixed_5pct_turn_fc > miss_rate"
+ },
+ "turn_miss_open/livekit_text": {
+  "value": 30.9,
+  "scope": "% missed, floor-open ends (n=236)",
+  "source": "runs/baselines_turn.json",
+  "path": "C_extended_windows_stream > systems > livekit_text_en_asr+timeout > 6s > fixed_5pct_turn_fc > strata > open > miss_rate"
+ },
+ "turn_miss_all/ours_head_or_silero": {
+  "value": 59.6,
+  "scope": "% missed turn ends, all ends, AMI dev n=974, 6 s, <=5 % FC",
+  "source": "runs/baselines_turn.json",
+  "path": "C_extended_windows_stream > systems > head_trail6+silero_timeout > 6s > fixed_5pct_turn_fc > miss_rate"
+ },
+ "turn_miss_open/ours_head_or_silero": {
+  "value": 34.3,
+  "scope": "% missed, floor-open ends (n=236)",
+  "source": "runs/baselines_turn.json",
+  "path": "C_extended_windows_stream > systems > head_trail6+silero_timeout > 6s > fixed_5pct_turn_fc > strata > open > miss_rate"
+ },
+ "turn_n": {
+  "value": 974,
+  "scope": "turn ends scored",
+  "source": "runs/baselines_turn.json",
+  "path": "C_extended_windows_stream > n"
+ },
+ "turnbench_recall/vap": {
+  "value": 0.8409,
+  "scope": "recall, TurnBench dev",
+  "source": "runs/dyadic_bench.json",
+  "path": "turnbench_published_dev_rescored > vap > recall"
+ },
+ "turnbench_p50/vap": {
+  "value": 463,
+  "scope": "median latency ms",
+  "source": "runs/dyadic_bench.json",
+  "path": "turnbench_published_dev_rescored > vap > latency_ms > p50"
+ },
+ "turnbench_recall/smart_turn_v3": {
+  "value": 0.7537,
+  "scope": "recall, TurnBench dev",
+  "source": "runs/dyadic_bench.json",
+  "path": "turnbench_published_dev_rescored > smart_turn_v3 > recall"
+ },
+ "turnbench_p50/smart_turn_v3": {
+  "value": 1010,
+  "scope": "median latency ms",
+  "source": "runs/dyadic_bench.json",
+  "path": "turnbench_published_dev_rescored > smart_turn_v3 > latency_ms > p50"
+ },
+ "turnbench_recall/kyutai_semantic_vad": {
+  "value": 0.803,
+  "scope": "recall, TurnBench dev",
+  "source": "runs/dyadic_bench.json",
+  "path": "turnbench_published_dev_rescored > kyutai_semantic_vad > recall"
+ },
+ "turnbench_p50/kyutai_semantic_vad": {
+  "value": 1024,
+  "scope": "median latency ms",
+  "source": "runs/dyadic_bench.json",
+  "path": "turnbench_published_dev_rescored > kyutai_semantic_vad > latency_ms > p50"
+ },
+ "turnbench_recall/ours_hybrid": {
+  "value": 0.8351,
+  "scope": "recall, TurnBench dev, head OR Silero per channel",
+  "source": "runs/dyadic_bench.json",
+  "path": "turnbench_dev > hybrid > recall"
+ },
+ "turnbench_p50/ours_hybrid": {
+  "value": 1390,
+  "scope": "median latency ms",
+  "source": "runs/dyadic_bench.json",
+  "path": "turnbench_dev > hybrid > latency_ms > p50"
+ },
+ "turnbench_recall/ours_predictive": {
+  "value": 0.8619,
+  "scope": "recall, TurnBench dev, predictive trigger OR Silero, held-out halves pooled",
+  "source": "runs/dyadic_train.json",
+  "path": "turnbench_predictive > mh > families > predictive_or_silero > tb_halves_pooled > recall"
+ },
+ "turnbench_p50/ours_predictive": {
+  "value": 1137,
+  "scope": "median latency ms",
+  "source": "runs/dyadic_train.json",
+  "path": "turnbench_predictive > mh > families > predictive_or_silero > tb_halves_pooled > p50"
+ },
+ "spk_eer/original": {
+  "value": 32.2,
+  "scope": "% within-meeting EER, AMI dev n=64 (stage1_spk_head)",
+  "source": "runs/spk_head.json",
+  "path": "variants > stage1_spk_head > eval > ami_n64 > eer_within_meeting"
+ },
+ "spk_eer/shipped": {
+  "value": 14.4,
+  "scope": "% within-meeting EER, AMI dev n=64 (stage1_served)",
+  "source": "runs/spk_head.json",
+  "path": "variants > stage1_served > eval > ami_n64 > eer_within_meeting"
+ },
+ "wer/stream_libri": {
+  "value": 2.27,
+  "scope": "% WER LibriSpeech test-clean (200 utt), streaming 160 ms",
+  "source": "runs/final_asr.json",
+  "path": "results > served/libri > wer_whisper_norm > wer"
+ },
+ "wer/stream_ami": {
+  "value": 20.6,
+  "scope": "% WER AMI dev segments (200), streaming 160 ms",
+  "source": "runs/final_asr.json",
+  "path": "results > served/ami > wer_whisper_norm > wer"
+ },
+ "wer/tdt_v3_ami": {
+  "value": 9.5,
+  "scope": "% WER AMI dev segments (200), Parakeet-TDT 0.6B v3 per-turn final",
+  "source": "runs/hybrid_asr.json",
+  "path": "english > results > tdt_v3/ami > wer_whisper_norm > wer"
+ },
+ "wer/whisper_turbo_ami": {
+  "value": 12.9,
+  "scope": "% WER ami (200), whisper_turbo offline, Whisper-normalised",
+  "source": "runs/final_asr.json",
+  "path": "results > whisper_turbo/ami > wer_whisper_norm > wer"
+ },
+ "wer/whisper_small_libri": {
+  "value": 2.29,
+  "scope": "% WER libri (200), whisper_small offline, Whisper-normalised",
+  "source": "runs/final_asr.json",
+  "path": "results > whisper_small/libri > wer_whisper_norm > wer"
+ },
+ "wer/whisper_small_ami": {
+  "value": 14.4,
+  "scope": "% WER ami (200), whisper_small offline, Whisper-normalised",
+  "source": "runs/final_asr.json",
+  "path": "results > whisper_small/ami > wer_whisper_norm > wer"
+ },
+ "wer/parakeet_ctc_libri": {
+  "value": 1.63,
+  "scope": "% WER libri (200), parakeet offline, Whisper-normalised",
+  "source": "runs/final_asr.json",
+  "path": "results > parakeet/libri > wer_whisper_norm > wer"
+ },
+ "wer/parakeet_ctc_ami": {
+  "value": 14.1,
+  "scope": "% WER ami (200), parakeet offline, Whisper-normalised",
+  "source": "runs/final_asr.json",
+  "path": "results > parakeet/ami > wer_whisper_norm > wer"
+ },
+ "wer/whisper_turbo_libri": {
+  "value": 1.37,
+  "scope": "% WER libri (200), whisper_turbo offline, Whisper-normalised",
+  "source": "runs/final_asr.json",
+  "path": "results > whisper_turbo/libri > wer_whisper_norm > wer"
+ },
+ "wer/tdt_v3_libri": {
+  "value": 1.88,
+  "scope": "% WER LibriSpeech (200), Parakeet-TDT 0.6B v3 per turn",
+  "source": "runs/hybrid_asr.json",
+  "path": "english > results > tdt_v3/libri > wer_whisper_norm > wer"
+ },
+ "rtf/stream_asr_cpu2": {
+  "value": 0.0223,
+  "scope": "RTF, streaming ASR alone, 2 CPU threads",
+  "source": "runs/final_asr.json",
+  "path": "results > served/ami > rtf_cpu2"
+ },
+ "vad_f1/ours": {
+  "value": 0.9485,
+  "scope": "F1, AMI dev 80 ms frames",
+  "source": "runs/baselines_sd.json",
+  "path": "ours > vad_sweep > 0.5 > f1"
+ },
+ "vad_f1/silero": {
+  "value": 0.9147,
+  "scope": "F1, Silero v5 at 0.5",
+  "source": "runs/baselines_sd.json",
+  "path": "vad > silero_v5.1.2 > sweep > 0.5 > f1"
+ },
+ "e2e/ami/livekit/B": {
+  "value": {
+   "dead_air_ms_median": 2660,
+   "cut_ins_per_min": 3.392,
+   "missed_6s": 0.0,
+   "n_clips": 5,
+   "rtf": null,
+   "rss_mb": null,
+   "name": "LiveKit default"
+  },
+  "scope": "ami clips, mono mic, livekit",
+  "source": "runs/e2e_final.json",
+  "path": "table > ami|mono|livekit|B"
+ },
+ "e2e/ami/livekit/C": {
+  "value": {
+   "dead_air_ms_median": 1660,
+   "cut_ins_per_min": 3.392,
+   "missed_6s": 0.0,
+   "n_clips": 5,
+   "rtf": 0.713,
+   "rss_mb": 3564.2,
+   "name": "ours, 1 s timeout"
+  },
+  "scope": "ami clips, mono mic, livekit",
+  "source": "runs/e2e_final.json",
+  "path": "table > ami|mono|livekit|C"
+ },
+ "e2e/ami/livekit/CN": {
+  "value": {
+   "dead_air_ms_median": 1380,
+   "cut_ins_per_min": 2.035,
+   "missed_6s": 0.0,
+   "n_clips": 5,
+   "rtf": 0.566,
+   "rss_mb": 1481.7,
+   "name": "ours + Nemotron-3, 1 s timeout"
+  },
+  "scope": "ami clips, mono mic, livekit",
+  "source": "runs/e2e_final.json",
+  "path": "table > ami|mono|livekit|CN"
+ },
+ "e2e/ami/livekit/D": {
+  "value": {
+   "dead_air_ms_median": 2420,
+   "cut_ins_per_min": 0.0,
+   "missed_6s": 0.0,
+   "n_clips": 5,
+   "rtf": 0.705,
+   "rss_mb": 3560.8,
+   "name": "ours, hybrid_dyn + arm"
+  },
+  "scope": "ami clips, mono mic, livekit",
+  "source": "runs/e2e_final.json",
+  "path": "table > ami|mono|livekit|D"
+ },
+ "e2e/ami/livekit/DN": {
+  "value": {
+   "dead_air_ms_median": 2340,
+   "cut_ins_per_min": 0.0,
+   "missed_6s": 0.0,
+   "n_clips": 5,
+   "rtf": 0.558,
+   "rss_mb": 1481.8,
+   "name": "ours + Nemotron-3, hybrid_dyn + arm"
+  },
+  "scope": "ami clips, mono mic, livekit",
+  "source": "runs/e2e_final.json",
+  "path": "table > ami|mono|livekit|DN"
+ },
+ "e2e/ami/pipecat/A": {
+  "value": {
+   "dead_air_ms_median": 2548,
+   "cut_ins_per_min": 7.463,
+   "missed_6s": 0.2,
+   "n_clips": 5,
+   "rtf": null,
+   "rss_mb": null,
+   "name": "Pipecat default"
+  },
+  "scope": "ami clips, mono mic, pipecat",
+  "source": "runs/e2e_final.json",
+  "path": "table > ami|mono|pipecat|A"
+ },
+ "e2e/ami/pipecat/C": {
+  "value": {
+   "dead_air_ms_median": 1683,
+   "cut_ins_per_min": 1.357,
+   "missed_6s": 0.0,
+   "n_clips": 5,
+   "rtf": 0.697,
+   "rss_mb": 3558.1,
+   "name": "ours, 1 s timeout"
+  },
+  "scope": "ami clips, mono mic, pipecat",
+  "source": "runs/e2e_final.json",
+  "path": "table > ami|mono|pipecat|C"
+ },
+ "e2e/ami/pipecat/CN": {
+  "value": {
+   "dead_air_ms_median": 1903,
+   "cut_ins_per_min": 1.357,
+   "missed_6s": 0.0,
+   "n_clips": 5,
+   "rtf": 0.551,
+   "rss_mb": 1472.3,
+   "name": "ours + Nemotron-3, 1 s timeout"
+  },
+  "scope": "ami clips, mono mic, pipecat",
+  "source": "runs/e2e_final.json",
+  "path": "table > ami|mono|pipecat|CN"
+ },
+ "e2e/ami/pipecat/D": {
+  "value": {
+   "dead_air_ms_median": 2561,
+   "cut_ins_per_min": 0.0,
+   "missed_6s": 0.0,
+   "n_clips": 5,
+   "rtf": 0.697,
+   "rss_mb": 3563.9,
+   "name": "ours, hybrid_dyn + arm"
+  },
+  "scope": "ami clips, mono mic, pipecat",
+  "source": "runs/e2e_final.json",
+  "path": "table > ami|mono|pipecat|D"
+ },
+ "e2e/ami/pipecat/DN": {
+  "value": {
+   "dead_air_ms_median": 2322,
+   "cut_ins_per_min": 0.0,
+   "missed_6s": 0.2,
+   "n_clips": 5,
+   "rtf": 0.564,
+   "rss_mb": 1482.0,
+   "name": "ours + Nemotron-3, hybrid_dyn + arm"
+  },
+  "scope": "ami clips, mono mic, pipecat",
+  "source": "runs/e2e_final.json",
+  "path": "table > ami|mono|pipecat|DN"
+ },
+ "e2e/oto/livekit/B": {
+  "value": {
+   "dead_air_ms_median": 1310,
+   "cut_ins_per_min": 2.128,
+   "missed_6s": 0.3585,
+   "n_clips": 16,
+   "rtf": null,
+   "rss_mb": null,
+   "name": "LiveKit default"
+  },
+  "scope": "oto clips, mono mic, livekit",
+  "source": "runs/e2e_final.json",
+  "path": "table > oto|mono|livekit|B"
+ },
+ "e2e/oto/livekit/C": {
+  "value": {
+   "dead_air_ms_median": 1350,
+   "cut_ins_per_min": 3.863,
+   "missed_6s": 0.2075,
+   "n_clips": 16,
+   "rtf": 0.8,
+   "rss_mb": 3586.5,
+   "name": "ours, 1 s timeout"
+  },
+  "scope": "oto clips, mono mic, livekit",
+  "source": "runs/e2e_final.json",
+  "path": "table > oto|mono|livekit|C"
+ },
+ "e2e/oto/livekit/CN": {
+  "value": {
+   "dead_air_ms_median": 1290,
+   "cut_ins_per_min": 3.232,
+   "missed_6s": 0.1509,
+   "n_clips": 16,
+   "rtf": 0.644,
+   "rss_mb": 1469.5,
+   "name": "ours + Nemotron-3, 1 s timeout"
+  },
+  "scope": "oto clips, mono mic, livekit",
+  "source": "runs/e2e_final.json",
+  "path": "table > oto|mono|livekit|CN"
+ },
+ "e2e/oto/livekit/D": {
+  "value": {
+   "dead_air_ms_median": 2215,
+   "cut_ins_per_min": 2.365,
+   "missed_6s": 0.4717,
+   "n_clips": 16,
+   "rtf": 0.805,
+   "rss_mb": 3594.5,
+   "name": "ours, hybrid_dyn + arm"
+  },
+  "scope": "oto clips, mono mic, livekit",
+  "source": "runs/e2e_final.json",
+  "path": "table > oto|mono|livekit|D"
+ },
+ "e2e/oto/livekit/DN": {
+  "value": {
+   "dead_air_ms_median": 1960,
+   "cut_ins_per_min": 0.867,
+   "missed_6s": 0.3019,
+   "n_clips": 16,
+   "rtf": 0.677,
+   "rss_mb": 1482.8,
+   "name": "ours + Nemotron-3, hybrid_dyn + arm"
+  },
+  "scope": "oto clips, mono mic, livekit",
+  "source": "runs/e2e_final.json",
+  "path": "table > oto|mono|livekit|DN"
+ },
+ "e2e/oto/pipecat/A": {
+  "value": {
+   "dead_air_ms_median": 2072,
+   "cut_ins_per_min": 2.838,
+   "missed_6s": 0.3396,
+   "n_clips": 16,
+   "rtf": null,
+   "rss_mb": null,
+   "name": "Pipecat default"
+  },
+  "scope": "oto clips, mono mic, pipecat",
+  "source": "runs/e2e_final.json",
+  "path": "table > oto|mono|pipecat|A"
+ },
+ "e2e/oto/pipecat/C": {
+  "value": {
+   "dead_air_ms_median": 1372,
+   "cut_ins_per_min": 1.261,
+   "missed_6s": 0.3208,
+   "n_clips": 16,
+   "rtf": 0.799,
+   "rss_mb": 3557.3,
+   "name": "ours, 1 s timeout"
+  },
+  "scope": "oto clips, mono mic, pipecat",
+  "source": "runs/e2e_final.json",
+  "path": "table > oto|mono|pipecat|C"
+ },
+ "e2e/oto/pipecat/CN": {
+  "value": {
+   "dead_air_ms_median": 1302,
+   "cut_ins_per_min": 2.05,
+   "missed_6s": 0.3019,
+   "n_clips": 16,
+   "rtf": 0.637,
+   "rss_mb": 1350.3,
+   "name": "ours + Nemotron-3, 1 s timeout"
+  },
+  "scope": "oto clips, mono mic, pipecat",
+  "source": "runs/e2e_final.json",
+  "path": "table > oto|mono|pipecat|CN"
+ },
+ "e2e/oto/pipecat/D": {
+  "value": {
+   "dead_air_ms_median": 2252,
+   "cut_ins_per_min": 0.788,
+   "missed_6s": 0.4906,
+   "n_clips": 16,
+   "rtf": 0.806,
+   "rss_mb": 3558.0,
+   "name": "ours, hybrid_dyn + arm"
+  },
+  "scope": "oto clips, mono mic, pipecat",
+  "source": "runs/e2e_final.json",
+  "path": "table > oto|mono|pipecat|D"
+ },
+ "e2e/oto/pipecat/DN": {
+  "value": {
+   "dead_air_ms_median": 2162,
+   "cut_ins_per_min": 0.473,
+   "missed_6s": 0.3585,
+   "n_clips": 16,
+   "rtf": 0.643,
+   "rss_mb": 1377.8,
+   "name": "ours + Nemotron-3, hybrid_dyn + arm"
+  },
+  "scope": "oto clips, mono mic, pipecat",
+  "source": "runs/e2e_final.json",
+  "path": "table > oto|mono|pipecat|DN"
+ },
+ "e2e/turnbench/livekit/B": {
+  "value": {
+   "dead_air_ms_median": 1714,
+   "cut_ins_per_min": 1.069,
+   "missed_6s": 0.6607,
+   "n_clips": 16,
+   "rtf": null,
+   "rss_mb": null,
+   "name": "LiveKit default"
+  },
+  "scope": "turnbench clips, mono mic, livekit",
+  "source": "runs/e2e_final.json",
+  "path": "table > turnbench|mono|livekit|B"
+ },
+ "e2e/turnbench/livekit/C": {
+  "value": {
+   "dead_air_ms_median": 1312,
+   "cut_ins_per_min": 4.523,
+   "missed_6s": 0.3036,
+   "n_clips": 16,
+   "rtf": 0.798,
+   "rss_mb": 3582.9,
+   "name": "ours, 1 s timeout"
+  },
+  "scope": "turnbench clips, mono mic, livekit",
+  "source": "runs/e2e_final.json",
+  "path": "table > turnbench|mono|livekit|C"
+ },
+ "e2e/turnbench/livekit/CN": {
+  "value": {
+   "dead_air_ms_median": 1271,
+   "cut_ins_per_min": 3.618,
+   "missed_6s": 0.2857,
+   "n_clips": 16,
+   "rtf": 0.637,
+   "rss_mb": 1432.0,
+   "name": "ours + Nemotron-3, 1 s timeout"
+  },
+  "scope": "turnbench clips, mono mic, livekit",
+  "source": "runs/e2e_final.json",
+  "path": "table > turnbench|mono|livekit|CN"
+ },
+ "e2e/turnbench/livekit/D": {
+  "value": {
+   "dead_air_ms_median": 1628,
+   "cut_ins_per_min": 1.974,
+   "missed_6s": 0.4643,
+   "n_clips": 16,
+   "rtf": 0.803,
+   "rss_mb": 3580.1,
+   "name": "ours, hybrid_dyn + arm"
+  },
+  "scope": "turnbench clips, mono mic, livekit",
+  "source": "runs/e2e_final.json",
+  "path": "table > turnbench|mono|livekit|D"
+ },
+ "e2e/turnbench/livekit/DN": {
+  "value": {
+   "dead_air_ms_median": 1755,
+   "cut_ins_per_min": 0.576,
+   "missed_6s": 0.5179,
+   "n_clips": 16,
+   "rtf": 0.642,
+   "rss_mb": 1475.6,
+   "name": "ours + Nemotron-3, hybrid_dyn + arm"
+  },
+  "scope": "turnbench clips, mono mic, livekit",
+  "source": "runs/e2e_final.json",
+  "path": "table > turnbench|mono|livekit|DN"
+ },
+ "e2e/turnbench/pipecat/A": {
+  "value": {
+   "dead_air_ms_median": 1054,
+   "cut_ins_per_min": 2.96,
+   "missed_6s": 0.625,
+   "n_clips": 16,
+   "rtf": null,
+   "rss_mb": null,
+   "name": "Pipecat default"
+  },
+  "scope": "turnbench clips, mono mic, pipecat",
+  "source": "runs/e2e_final.json",
+  "path": "table > turnbench|mono|pipecat|A"
+ },
+ "e2e/turnbench/pipecat/C": {
+  "value": {
+   "dead_air_ms_median": 1346,
+   "cut_ins_per_min": 1.151,
+   "missed_6s": 0.625,
+   "n_clips": 16,
+   "rtf": 0.795,
+   "rss_mb": 3580.8,
+   "name": "ours, 1 s timeout"
+  },
+  "scope": "turnbench clips, mono mic, pipecat",
+  "source": "runs/e2e_final.json",
+  "path": "table > turnbench|mono|pipecat|C"
+ },
+ "e2e/turnbench/pipecat/CN": {
+  "value": {
+   "dead_air_ms_median": 1338,
+   "cut_ins_per_min": 1.069,
+   "missed_6s": 0.6429,
+   "n_clips": 16,
+   "rtf": 0.634,
+   "rss_mb": 1485.4,
+   "name": "ours + Nemotron-3, 1 s timeout"
+  },
+  "scope": "turnbench clips, mono mic, pipecat",
+  "source": "runs/e2e_final.json",
+  "path": "table > turnbench|mono|pipecat|CN"
+ },
+ "e2e/turnbench/pipecat/D": {
+  "value": {
+   "dead_air_ms_median": 1696,
+   "cut_ins_per_min": 0.493,
+   "missed_6s": 0.6429,
+   "n_clips": 16,
+   "rtf": 0.803,
+   "rss_mb": 3560.5,
+   "name": "ours, hybrid_dyn + arm"
+  },
+  "scope": "turnbench clips, mono mic, pipecat",
+  "source": "runs/e2e_final.json",
+  "path": "table > turnbench|mono|pipecat|D"
+ },
+ "e2e/turnbench/pipecat/DN": {
+  "value": {
+   "dead_air_ms_median": 1944,
+   "cut_ins_per_min": 0.411,
+   "missed_6s": 0.625,
+   "n_clips": 16,
+   "rtf": 0.639,
+   "rss_mb": 1480.4,
+   "name": "ours + Nemotron-3, hybrid_dyn + arm"
+  },
+  "scope": "turnbench clips, mono mic, pipecat",
+  "source": "runs/e2e_final.json",
+  "path": "table > turnbench|mono|pipecat|DN"
+ },
+ "rtf/server_nemotron_range": {
+  "value": [
+   0.551,
+   0.687
+  ],
+  "scope": "server RTF median range, ours + Nemotron-3 diarizer, all sets/frameworks, 2 CPU threads",
+  "source": "runs/e2e_final.json",
+  "path": "table > *|CN,DN > server_rtf_median"
+ },
+ "rtf/server_sortformer_range": {
+  "value": [
+   0.697,
+   0.813
+  ],
+  "scope": "server RTF median range, ours + Sortformer v2",
+  "source": "runs/e2e_final.json",
+  "path": "table > *|C,D > server_rtf_median"
+ },
+ "tsvad_turn/ami/hybrid_sortformer": {
+  "value": 61.9,
+  "scope": "% missed turn ends at 6 s, AMI n=974, <=5 % FC, 5 s voice print",
+  "source": "runs/improve_115m.json",
+  "path": "turn_bench > ami > systems > hybrid_causal_dominant > 6s > miss_rate"
+ },
+ "tsvad_turn/ami/hybrid_sortformer/ci": {
+  "value": [
+   58.6,
+   65.3
+  ],
+  "scope": "95 % CI",
+  "source": "runs/improve_115m.json",
+  "path": "turn_bench > ami > systems > hybrid_causal_dominant > 6s > miss_rate_ci"
+ },
+ "tsvad_turn/ami/hybrid_sortformer/open": {
+  "value": 45.9,
+  "scope": "% missed, floor-open ends",
+  "source": "runs/improve_115m.json",
+  "path": "turn_bench > ami > systems > hybrid_causal_dominant > 6s > strata > open > miss_rate"
+ },
+ "tsvad_turn/ami/hybrid_tsvad": {
+  "value": 39.3,
+  "scope": "% missed turn ends at 6 s, AMI n=974, <=5 % FC, 5 s voice print",
+  "source": "runs/improve_115m.json",
+  "path": "turn_bench > ami > systems > hybrid_tsvad_spk > 6s > miss_rate"
+ },
+ "tsvad_turn/ami/hybrid_tsvad/ci": {
+  "value": [
+   36.2,
+   42.8
+  ],
+  "scope": "95 % CI",
+  "source": "runs/improve_115m.json",
+  "path": "turn_bench > ami > systems > hybrid_tsvad_spk > 6s > miss_rate_ci"
+ },
+ "tsvad_turn/ami/hybrid_tsvad/open": {
+  "value": 37.9,
+  "scope": "% missed, floor-open ends",
+  "source": "runs/improve_115m.json",
+  "path": "turn_bench > ami > systems > hybrid_tsvad_spk > 6s > strata > open > miss_rate"
+ },
+ "tsvad_turn/ami/hybrid_dyn_tsvad": {
+  "value": 34.2,
+  "scope": "% missed turn ends at 6 s, AMI n=974, <=5 % FC, 5 s voice print",
+  "source": "runs/improve_115m.json",
+  "path": "turn_bench > ami > systems > hybrid_dyn_tsvad_spk > 6s > miss_rate"
+ },
+ "tsvad_turn/ami/hybrid_dyn_tsvad/ci": {
+  "value": [
+   31.1,
+   37.5
+  ],
+  "scope": "95 % CI",
+  "source": "runs/improve_115m.json",
+  "path": "turn_bench > ami > systems > hybrid_dyn_tsvad_spk > 6s > miss_rate_ci"
+ },
+ "tsvad_turn/ami/hybrid_dyn_tsvad/open": {
+  "value": 17.9,
+  "scope": "% missed, floor-open ends",
+  "source": "runs/improve_115m.json",
+  "path": "turn_bench > ami > systems > hybrid_dyn_tsvad_spk > 6s > strata > open > miss_rate"
+ },
+ "tsvad_turn/ami/hybrid_oracle": {
+  "value": 28.7,
+  "scope": "% missed turn ends at 6 s, AMI n=974, <=5 % FC, 5 s voice print",
+  "source": "runs/improve_115m.json",
+  "path": "turn_bench > ami > systems > hybrid_oracle > 6s > miss_rate"
+ },
+ "tsvad_turn/ami/hybrid_oracle/ci": {
+  "value": [
+   26.2,
+   31.1
+  ],
+  "scope": "95 % CI",
+  "source": "runs/improve_115m.json",
+  "path": "turn_bench > ami > systems > hybrid_oracle > 6s > miss_rate_ci"
+ },
+ "tsvad_turn/ami/hybrid_oracle/open": {
+  "value": 17.1,
+  "scope": "% missed, floor-open ends",
+  "source": "runs/improve_115m.json",
+  "path": "turn_bench > ami > systems > hybrid_oracle > 6s > strata > open > miss_rate"
+ },
+ "tsvad_turn/ami/silero_timeout": {
+  "value": 72.7,
+  "scope": "% missed turn ends at 6 s, AMI n=974, <=5 % FC, 5 s voice print",
+  "source": "runs/improve_115m.json",
+  "path": "turn_bench > ami > systems > silero_timeout > 6s > miss_rate"
+ },
+ "tsvad_turn/ami/silero_timeout/ci": {
+  "value": [
+   69.8,
+   75.4
+  ],
+  "scope": "95 % CI",
+  "source": "runs/improve_115m.json",
+  "path": "turn_bench > ami > systems > silero_timeout > 6s > miss_rate_ci"
+ },
+ "tsvad_turn/ami/silero_timeout/open": {
+  "value": 26.7,
+  "scope": "% missed, floor-open ends",
+  "source": "runs/improve_115m.json",
+  "path": "turn_bench > ami > systems > silero_timeout > 6s > strata > open > miss_rate"
+ },
+ "tsvad_turn/icsi/hybrid_tsvad": {
+  "value": 20.4,
+  "scope": "% missed turn ends at 6 s, ICSI n=1312, <=5 % FC, 5 s voice print",
+  "source": "runs/improve_115m.json",
+  "path": "turn_bench > icsi > systems > hybrid_tsvad_spk > 6s > miss_rate"
+ },
+ "tsvad_turn/icsi/hybrid_tsvad/ci": {
+  "value": [
+   18.2,
+   22.7
+  ],
+  "scope": "95 % CI",
+  "source": "runs/improve_115m.json",
+  "path": "turn_bench > icsi > systems > hybrid_tsvad_spk > 6s > miss_rate_ci"
+ },
+ "tsvad_turn/icsi/hybrid_tsvad/open": {
+  "value": 21.5,
+  "scope": "% missed, floor-open ends",
+  "source": "runs/improve_115m.json",
+  "path": "turn_bench > icsi > systems > hybrid_tsvad_spk > 6s > strata > open > miss_rate"
+ },
+ "tsvad_turn/icsi/hybrid_dyn_tsvad": {
+  "value": 18.7,
+  "scope": "% missed turn ends at 6 s, ICSI n=1312, <=5 % FC, 5 s voice print",
+  "source": "runs/improve_115m.json",
+  "path": "turn_bench > icsi > systems > hybrid_dyn_tsvad_spk > 6s > miss_rate"
+ },
+ "tsvad_turn/icsi/hybrid_dyn_tsvad/ci": {
+  "value": [
+   16.6,
+   21.0
+  ],
+  "scope": "95 % CI",
+  "source": "runs/improve_115m.json",
+  "path": "turn_bench > icsi > systems > hybrid_dyn_tsvad_spk > 6s > miss_rate_ci"
+ },
+ "tsvad_turn/icsi/hybrid_dyn_tsvad/open": {
+  "value": 13.2,
+  "scope": "% missed, floor-open ends",
+  "source": "runs/improve_115m.json",
+  "path": "turn_bench > icsi > systems > hybrid_dyn_tsvad_spk > 6s > strata > open > miss_rate"
+ },
+ "tsvad_turn/icsi/silero_timeout": {
+  "value": 84.4,
+  "scope": "% missed turn ends at 6 s, ICSI n=1312, <=5 % FC, 5 s voice print",
+  "source": "runs/improve_115m.json",
+  "path": "turn_bench > icsi > systems > silero_timeout > 6s > miss_rate"
+ },
+ "tsvad_turn/icsi/silero_timeout/ci": {
+  "value": [
+   82.3,
+   86.4
+  ],
+  "scope": "95 % CI",
+  "source": "runs/improve_115m.json",
+  "path": "turn_bench > icsi > systems > silero_timeout > 6s > miss_rate_ci"
+ },
+ "tsvad_turn/icsi/silero_timeout/open": {
+  "value": 37.4,
+  "scope": "% missed, floor-open ends",
+  "source": "runs/improve_115m.json",
+  "path": "turn_bench > icsi > systems > silero_timeout > 6s > strata > open > miss_rate"
+ },
+ "tsvad_turn/icsi/hybrid_sortformer": {
+  "value": 68.5,
+  "scope": "% missed at 6 s, ICSI n=1312, Sortformer causal-dominant column -> shipped hybrid, cross-fitted on ICSI",
+  "source": "runs/baselines_turn_icsi.json",
+  "path": "C_extended_windows_stream > crossfit_icsi > systems > hybrid_stream_causal_dominant > 6s > fixed_5pct_turn_fc > miss_rate"
+ },
+ "tsvad_frame_f1/ami": {
+  "value": 0.7428,
+  "scope": "target-speaker frame F1, AMI dev, 5 s print",
+  "source": "runs/improve_115m.json",
+  "path": "frame > ami > primary > tsvad_spk_vp5p0 > all > f1"
+ },
+ "tsvad_params": {
+  "value": 260000,
+  "scope": "TS-VAD head parameters (research/IMPROVE_115M.md: 260k on block 4)",
+  "source": "runs/improve_115m.json",
+  "path": "(text)"
+ },
+ "e2e_first_text_ms/pipecat_default": {
+  "value": [
+   2598,
+   3689
+  ],
+  "scope": "median first-partial latency after speech onset, ms, range over clip sets x frameworks",
+  "source": "runs/e2e_final.json",
+  "path": "table > *|A > first_text_ms_median"
+ },
+ "e2e_cut_ins_per_min/pipecat_default": {
+  "value": [
+   2.14,
+   7.46
+  ],
+  "scope": "cut-ins per minute, range over clip sets x frameworks",
+  "source": "runs/e2e_final.json",
+  "path": "table > *|A > cut_ins_per_min"
+ },
+ "e2e_first_text_ms/livekit_default": {
+  "value": [
+   3375,
+   11288
+  ],
+  "scope": "median first-partial latency after speech onset, ms, range over clip sets x frameworks",
+  "source": "runs/e2e_final.json",
+  "path": "table > *|B > first_text_ms_median"
+ },
+ "e2e_cut_ins_per_min/livekit_default": {
+  "value": [
+   0.99,
+   3.39
+  ],
+  "scope": "cut-ins per minute, range over clip sets x frameworks",
+  "source": "runs/e2e_final.json",
+  "path": "table > *|B > cut_ins_per_min"
+ },
+ "e2e_first_text_ms/ours_timeout": {
+  "value": [
+   810,
+   1187
+  ],
+  "scope": "median first-partial latency after speech onset, ms, range over clip sets x frameworks",
+  "source": "runs/e2e_final.json",
+  "path": "table > *|C > first_text_ms_median"
+ },
+ "e2e_cut_ins_per_min/ours_timeout": {
+  "value": [
+   1.15,
+   4.52
+  ],
+  "scope": "cut-ins per minute, range over clip sets x frameworks",
+  "source": "runs/e2e_final.json",
+  "path": "table > *|C > cut_ins_per_min"
+ }
+}

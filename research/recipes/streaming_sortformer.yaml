@@ -1,0 +1,40 @@
+# train_with: PYTHONPATH=. .venv/bin/python -m audioforge.streaming_diar train  (adds the streaming-simulation loss;
+#             `cli train` / run_all.sh would train offline losses only and overwrite runs/streaming_sortformer.afm)
+# NEW SOLUTION: Streaming Sortformer with an Arrival-Order Speaker Cache (AOSC, arXiv 2507.18446)
+# + live speaker-attributed ASR on the SAME causal encoder (audioforge/streaming_diar.py).
+# NVIDIA ships streaming diarization (diar_streaming_sortformer_4spk-v2.1) and multitalker ASR as
+# separate models; here one cache-aware FastConformer feeds both, and each active speaker slot is
+# re-encoded with speaker kernels steered by the streaming diarizer.
+#
+# Full training (conversations with reappearing speakers + streaming-simulation loss):
+#   python -m audioforge.streaming_diar train research/recipes/streaming_sortformer.yaml -o runs/streaming_sortformer.afm
+# `cli train` also works on this file, but trains only the offline losses on 2-speaker mixtures.
+name: streaming_sortformer_tiny
+preprocessor: {n_mels: 80, normalize: fixed}   # frame-local normalization: streaming-safe
+encoder:
+  d_model: 144
+  n_layers: 4
+  n_heads: 4
+  subsampling_channels: 64
+  causal: true
+  att_context_size: [16, 1]                    # inference: 2-frame (160 ms) encoder chunks
+  att_context_sizes: [[16, 1], [16, 3]]
+  speaker_kernel_layers: [0, 2]
+tokenizer: {kind: char}
+heads:
+  diar: {type: sortformer, num_spks: 4, d_hidden: 96, n_layers: 3, pos_emb: true, weight: 0.4}
+  asr: {type: rnnt, pred_hidden: 160, joint_hidden: 160, condition_on_speaker: true, weight: 0.6}
+decoding: {primary: asr}
+data:
+  synthetic: {kind: speaker_attributed, n_train: 3000, n_val: 64}          # used by `cli train`
+  conversations: {n_train: 3000, max_segments: 3, pool: [2, 3], p_single: 0.3}  # used by streaming_diar train
+# AOSC streaming configuration, in 80 ms frames (NeMo sortformer_modules names). Latency 640 ms.
+streaming:
+  chunk_len: 6
+  chunk_right_context: 2
+  fifo_len: 20
+  spkcache_len: 40
+  spkcache_update_period: 10
+  sil_frames: 4
+  train: {weight: 0.4, seqs_per_item: 2, chunk_lens: [2, 4, 6, 8], right_contexts: [0, 1, 2, 4]}
+trainer: {max_steps: 2500, batch_size: 16, lr: 1.5e-3, warmup_steps: 150, log_every: 100}

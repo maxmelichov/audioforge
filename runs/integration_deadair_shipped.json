@@ -1,0 +1,2998 @@
+{
+ "date": "2026-09-26",
+ "what": "research/INTEGRATION.md section 8: product-level dead air / cut-ins of the shipped rules (hybrid_dyn, hybrid_silero, --enroll after_agent_arm) vs the 1000 ms timeout on the 5 AMI windows of section 4, Pipecat then LiveKit",
+ "code_commit": "4e90fd5 (servers and demos run from a clean git worktree of this commit)",
+ "server": "python -m audioforge.serve --asr runs/stage1_served.afm --diar runs/nemo_sortformer_v2.afm --turn-input diar --threads 2 --debug-fields --enroll dominant|after_agent_arm (default --diar-config low_latency_032); CPU; one server per plan (<= 2 policy lines), load gate 1-min load < 8 at start (hard stop >= 10)",
+ "policies": {
+  "timeout": "1000 ms plain timeout on the label-free primary (control)",
+  "hybrid_dyn": "head p >= 0.998283 OR Silero any-speaker silence - clamp(75 - 55 p, 2, 75) > 4.957 frames",
+  "hybrid_silero": "head p >= 0.99828 OR Silero any-speaker silence >= 2640 ms",
+  "after_agent_arm": "server --enroll after_agent_arm; agent_end injected at the previous other speaker's turn end from the labels (enrollment.agent_end_frame), a stand-in for a TTS-end event; 0.0 s where the window has no earlier other-speaker turn (ES2011b_027, IS1008b_014)"
+ },
+ "agent_end_s": {
+  "ami_ES2011b_027": 0.0,
+  "ami_IB4002_119": 4.32,
+  "ami_IS1008b_003": 3.12,
+  "ami_IS1008b_014": 0.0,
+  "ami_TS3004b_064": 2.08
+ },
+ "pads": {
+  "pipecat_pad_s": 7.0,
+  "livekit_tail_s": 7.0,
+  "why": "the dyn wait reaches 6.4 s at p = 0; the same pad for all six policies"
+ },
+ "injection": {
+  "pipecat": "WavInputTransport pushes a BotStoppedSpeakingFrame after the 20 ms frame reaching agent_end_s; AudioforgeSTTService(enroll='after_agent_arm') sends agent_end; the frame is dropped after the STT",
+  "livekit": "AudioforgeFrontend.agent_end() once all frames before agent_end_s were pushed (stream mode and AgentSession mode)"
+ },
+ "definitions": "as research/INTEGRATION.md section 4: decision = turn_end.t - true end; dead air = arrival at the client - true end (Pipecat: UserStoppedSpeakingFrame; LiveKit: STT END_OF_SPEECH; commit = AgentSession(turn_detection='stt') user-turn commit); cut-in = a decision while the primary speaks again within 1 s",
+ "reference_rows": {
+  "section4_timeout": {
+   "pipecat": [
+    1923,
+    1761,
+    1603,
+    3402,
+    2502
+   ],
+   "livekit": [
+    1684,
+    1706,
+    1578,
+    1437,
+    2473
+   ]
+  },
+  "section4b_timeout": {
+   "pipecat": [
+    1702,
+    1701,
+    1601,
+    4281,
+    2522
+   ],
+   "livekit": [
+    1697,
+    1688,
+    1604,
+    1481,
+    2529
+   ]
+  },
+  "window_order": [
+   "ES2011b_027",
+   "IB4002_119",
+   "IS1008b_003",
+   "IS1008b_014",
+   "TS3004b_064"
+  ]
+ },
+ "sessions": {
+  "L_arm_dyn": [
+   "server L_arm_dyn (after_agent_arm) up 20:45:31 load { 2.78 4.38 4.57 }",
+   "arm_dyn exit 0 20:49:58 load { 1.76 3.65 4.31 }"
+  ],
+  "L_arm_silero": [
+   "server L_arm_silero (after_agent_arm) up 20:50:05 load { 1.70 3.60 4.29 }",
+   "arm_silero exit 0 20:54:31 load { 2.17 2.97 3.82 }"
+  ],
+  "L_arm_timeout": [
+   "server L_arm_timeout (after_agent_arm) up 20:40:58 load { 3.64 3.53 4.23 }",
+   "arm_timeout exit 0 20:45:24 load { 3.10 4.50 4.61 }"
+  ],
+  "L_dom_dyn": [
+   "server L_dom_dyn (dominant) up 20:31:52 load { 3.08 3.95 4.95 }",
+   "dom_dyn exit 0 20:36:18 load { 4.06 3.94 4.65 }"
+  ],
+  "L_dom_silero": [
+   "server L_dom_silero (dominant) up 20:36:25 load { 3.51 3.83 4.60 }",
+   "dom_silero exit 0 20:40:51 load { 3.87 3.57 4.25 }"
+  ],
+  "L_dom_timeout": [
+   "server L_dom_timeout (dominant) up 20:27:18 load { 5.00 4.13 5.32 }",
+   "dom_timeout exit 0 20:31:45 load { 3.27 4.00 4.97 }"
+  ],
+  "PA": [
+   "server PA (dominant) up 20:14:11 load { 5.67 7.99 7.66 }",
+   "dom_timeout exit 0 20:16:17 load { 4.69 7.08 7.35 }",
+   "dom_dyn exit 0 20:18:25 load { 4.06 5.83 6.80 }"
+  ],
+  "PB": [
+   "server PB (dominant) up 20:18:33 load { 4.06 5.80 6.78 }",
+   "dom_silero exit 0 20:20:39 load { 3.60 4.97 6.30 }"
+  ],
+  "PC": [
+   "server PC (after_agent_arm) up 20:20:46 load { 3.55 4.93 6.28 }",
+   "arm_timeout exit 0 20:22:52 load { 2.93 4.33 5.86 }",
+   "arm_dyn exit 0 20:24:58 load { 3.56 4.11 5.56 }"
+  ],
+  "PD": [
+   "server PD (after_agent_arm) up 20:25:05 load { 3.32 4.04 5.52 }",
+   "arm_silero exit 0 20:27:11 load { 4.30 3.98 5.28 }"
+  ]
+ },
+ "rows": [
+  {
+   "demo": "pipecat",
+   "tag": "arm_dyn",
+   "window": "ES2011b_027",
+   "policy": "hybrid_dyn",
+   "dead_air_ms": 2640,
+   "no_decision_within_ms": null,
+   "cut_ins": 0,
+   "early": 0,
+   "pre_onset": 0,
+   "decision_minus_true_end_ms": 2480,
+   "pipecat_share_ms": 0,
+   "wer": 0.2581,
+   "server_turn_ends": [
+    [
+     20.48,
+     "hybrid_dyn",
+     0.997844934463501,
+     2032
+    ]
+   ],
+   "violations": 0,
+   "warnings": 0,
+   "finished": [
+    "EndFrame"
+   ],
+   "errors": 0,
+   "agent_end_s": 0.0,
+   "agent_end_audio_t": 0.021087875007651746,
+   "enrolled_column": 0,
+   "enroll_sent": 1,
+   "final_speakers": [
+    0
+   ],
+   "rtf": 0.7464,
+   "backlog_ms_max": 280.0,
+   "chunk_ms_p95": 216.07,
+   "peak_rss_mb": 3554.8,
+   "silero_ms_mean": 0.113,
+   "enroll": "after_agent_arm",
+   "primary_column": 0,
+   "frame_lag_p50": 130.6,
+   "frame_lag_p95": 287.1
+  },
+  {
+   "demo": "pipecat",
+   "tag": "arm_dyn",
+   "window": "IB4002_119",
+   "policy": "hybrid_dyn",
+   "dead_air_ms": 2421,
+   "no_decision_within_ms": null,
+   "cut_ins": 0,
+   "early": 0,
+   "pre_onset": 0,
+   "decision_minus_true_end_ms": 2240,
+   "pipecat_share_ms": 5,
+   "wer": 0.4333,
+   "server_turn_ends": [
+    [
+     16.88,
+     "hybrid_dyn",
+     0.9922329187393188,
+     2112
+    ]
+   ],
+   "violations": 0,
+   "warnings": 0,
+   "finished": [
+    "EndFrame"
+   ],
+   "errors": 0,
+   "agent_end_s": 4.32,
+   "agent_end_audio_t": 4.321073125000112,
+   "enrolled_column": 0,
+   "enroll_sent": 1,
+   "final_speakers": [
+    0
+   ],
+   "rtf": 0.7295,
+   "backlog_ms_max": 400.0,
+   "chunk_ms_p95": 214.75,
+   "peak_rss_mb": 3554.8,
+   "silero_ms_mean": 0.113,
+   "enroll": "after_agent_arm",
+   "primary_column": 0,
+   "frame_lag_p50": 127.8,
+   "frame_lag_p95": 333.8
+  },
+  {
+   "demo": "pipecat",
+   "tag": "arm_dyn",
+   "window": "IS1008b_003",
+   "policy": "hybrid_dyn",
+   "dead_air_ms": 2341,
+   "no_decision_within_ms": null,
+   "cut_ins": 0,
+   "early": 0,
+   "pre_onset": 0,
+   "decision_minus_true_end_ms": 2160,
+   "pipecat_share_ms": 6,
+   "wer": 0.2826,
+   "server_turn_ends": [
+    [
+     15.44,
+     "hybrid_dyn",
+     0.9937232136726379,
+     2048
+    ]
+   ],
+   "violations": 0,
+   "warnings": 0,
+   "finished": [
+    "EndFrame"
+   ],
+   "errors": 0,
+   "agent_end_s": 3.12,
+   "agent_end_audio_t": 3.1210666249971837,
+   "enrolled_column": 0,
+   "enroll_sent": 1,
+   "final_speakers": [
+    1
+   ],
+   "rtf": 0.6937,
+   "backlog_ms_max": 180.0,
+   "chunk_ms_p95": 212.27,
+   "peak_rss_mb": 3554.8,
+   "silero_ms_mean": 0.111,
+   "enroll": "after_agent_arm",
+   "primary_column": 1,
+   "frame_lag_p50": 125.3,
+   "frame_lag_p95": 251.4
+  },
+  {
+   "demo": "pipecat",
+   "tag": "arm_dyn",
+   "window": "IS1008b_014",
+   "policy": "hybrid_dyn",
+   "dead_air_ms": 2563,
+   "no_decision_within_ms": null,
+   "cut_ins": 0,
+   "early": 0,
+   "pre_onset": 0,
+   "decision_minus_true_end_ms": 2240,
+   "pipecat_share_ms": 142,
+   "wer": 0.3571,
+   "server_turn_ends": [
+    [
+     20.24,
+     "hybrid_dyn",
+     0.9983371496200562,
+     0
+    ]
+   ],
+   "violations": 0,
+   "warnings": 0,
+   "finished": [
+    "EndFrame"
+   ],
+   "errors": 0,
+   "agent_end_s": 0.0,
+   "agent_end_audio_t": 0.021177417002036236,
+   "enrolled_column": 0,
+   "enroll_sent": 1,
+   "final_speakers": [
+    2
+   ],
+   "rtf": 0.7268,
+   "backlog_ms_max": 200.0,
+   "chunk_ms_p95": 216.78,
+   "peak_rss_mb": 3554.8,
+   "silero_ms_mean": 0.108,
+   "enroll": "after_agent_arm",
+   "primary_column": 2,
+   "frame_lag_p50": 127.8,
+   "frame_lag_p95": 258.9
+  },
+  {
+   "demo": "pipecat",
+   "tag": "arm_dyn",
+   "window": "TS3004b_064",
+   "policy": "hybrid_dyn",
+   "dead_air_ms": 3201,
+   "no_decision_within_ms": null,
+   "cut_ins": 0,
+   "early": 0,
+   "pre_onset": 0,
+   "decision_minus_true_end_ms": 3040,
+   "pipecat_share_ms": 7,
+   "wer": 0.5818,
+   "server_turn_ends": [
+    [
+     18.56,
+     "hybrid_dyn",
+     0.9983226656913757,
+     1200
+    ]
+   ],
+   "violations": 0,
+   "warnings": 0,
+   "finished": [
+    "EndFrame"
+   ],
+   "errors": 0,
+   "agent_end_s": 2.08,
+   "agent_end_audio_t": 2.0810979579982813,
+   "enrolled_column": 1,
+   "enroll_sent": 1,
+   "final_speakers": [
+    1
+   ],
+   "rtf": 0.7242,
+   "backlog_ms_max": 300.0,
+   "chunk_ms_p95": 212.75,
+   "peak_rss_mb": 3554.8,
+   "silero_ms_mean": 0.112,
+   "enroll": "after_agent_arm",
+   "primary_column": 1,
+   "frame_lag_p50": 126.0,
+   "frame_lag_p95": 257.1
+  },
+  {
+   "demo": "pipecat",
+   "tag": "arm_silero",
+   "window": "ES2011b_027",
+   "policy": "hybrid_silero",
+   "dead_air_ms": 2941,
+   "no_decision_within_ms": null,
+   "cut_ins": 0,
+   "early": 0,
+   "pre_onset": 0,
+   "decision_minus_true_end_ms": 2896,
+   "pipecat_share_ms": 13,
+   "wer": 0.2581,
+   "server_turn_ends": [
+    [
+     20.896,
+     "hybrid_silero",
+     0.9981548190116882,
+     2672
+    ]
+   ],
+   "violations": 0,
+   "warnings": 0,
+   "finished": [
+    "EndFrame"
+   ],
+   "errors": 0,
+   "agent_end_s": 0.0,
+   "agent_end_audio_t": 0.021093500006827526,
+   "enrolled_column": 0,
+   "enroll_sent": 1,
+   "final_speakers": [
+    0
+   ],
+   "rtf": 0.7354,
+   "backlog_ms_max": 200.0,
+   "chunk_ms_p95": 218.34,
+   "peak_rss_mb": 3577.4,
+   "silero_ms_mean": 0.108,
+   "enroll": "after_agent_arm",
+   "primary_column": 0,
+   "frame_lag_p50": 127.1,
+   "frame_lag_p95": 257.7
+  },
+  {
+   "demo": "pipecat",
+   "tag": "arm_silero",
+   "window": "IB4002_119",
+   "policy": "hybrid_silero",
+   "dead_air_ms": 2921,
+   "no_decision_within_ms": null,
+   "cut_ins": 0,
+   "early": 0,
+   "pre_onset": 0,
+   "decision_minus_true_end_ms": 2736,
+   "pipecat_share_ms": 0,
+   "wer": 0.4333,
+   "server_turn_ends": [
+    [
+     17.376,
+     "hybrid_silero",
+     0.994520366191864,
+     2672
+    ]
+   ],
+   "violations": 0,
+   "warnings": 0,
+   "finished": [
+    "EndFrame"
+   ],
+   "errors": 0,
+   "agent_end_s": 4.32,
+   "agent_end_audio_t": 4.32107916699897,
+   "enrolled_column": 0,
+   "enroll_sent": 1,
+   "final_speakers": [
+    0
+   ],
+   "rtf": 0.7054,
+   "backlog_ms_max": 180.0,
+   "chunk_ms_p95": 213.36,
+   "peak_rss_mb": 3577.4,
+   "silero_ms_mean": 0.111,
+   "enroll": "after_agent_arm",
+   "primary_column": 0,
+   "frame_lag_p50": 125.7,
+   "frame_lag_p95": 255.3
+  },
+  {
+   "demo": "pipecat",
+   "tag": "arm_silero",
+   "window": "IS1008b_003",
+   "policy": "hybrid_silero",
+   "dead_air_ms": 2840,
+   "no_decision_within_ms": null,
+   "cut_ins": 0,
+   "early": 0,
+   "pre_onset": 0,
+   "decision_minus_true_end_ms": 2720,
+   "pipecat_share_ms": 1,
+   "wer": 0.2826,
+   "server_turn_ends": [
+    [
+     16.0,
+     "hybrid_silero",
+     0.9961859583854675,
+     2688
+    ]
+   ],
+   "violations": 0,
+   "warnings": 0,
+   "finished": [
+    "EndFrame"
+   ],
+   "errors": 0,
+   "agent_end_s": 3.12,
+   "agent_end_audio_t": 3.121093584006303,
+   "enrolled_column": 0,
+   "enroll_sent": 1,
+   "final_speakers": [
+    1
+   ],
+   "rtf": 0.6957,
+   "backlog_ms_max": 200.0,
+   "chunk_ms_p95": 212.06,
+   "peak_rss_mb": 3577.4,
+   "silero_ms_mean": 0.111,
+   "enroll": "after_agent_arm",
+   "primary_column": 1,
+   "frame_lag_p50": 125.4,
+   "frame_lag_p95": 253.0
+  },
+  {
+   "demo": "pipecat",
+   "tag": "arm_silero",
+   "window": "IS1008b_014",
+   "policy": "hybrid_silero",
+   "dead_air_ms": 2562,
+   "no_decision_within_ms": null,
+   "cut_ins": 0,
+   "early": 0,
+   "pre_onset": 0,
+   "decision_minus_true_end_ms": 2240,
+   "pipecat_share_ms": 140,
+   "wer": 0.3571,
+   "server_turn_ends": [
+    [
+     20.24,
+     "hybrid_silero",
+     0.9983371496200562,
+     0
+    ]
+   ],
+   "violations": 0,
+   "warnings": 0,
+   "finished": [
+    "EndFrame"
+   ],
+   "errors": 0,
+   "agent_end_s": 0.0,
+   "agent_end_audio_t": 0.021074249991215765,
+   "enrolled_column": 0,
+   "enroll_sent": 1,
+   "final_speakers": [
+    2
+   ],
+   "rtf": 0.7479,
+   "backlog_ms_max": 320.0,
+   "chunk_ms_p95": 223.67,
+   "peak_rss_mb": 3577.4,
+   "silero_ms_mean": 0.11,
+   "enroll": "after_agent_arm",
+   "primary_column": 2,
+   "frame_lag_p50": 133.1,
+   "frame_lag_p95": 278.1
+  },
+  {
+   "demo": "pipecat",
+   "tag": "arm_silero",
+   "window": "TS3004b_064",
+   "policy": "hybrid_silero",
+   "dead_air_ms": 3201,
+   "no_decision_within_ms": null,
+   "cut_ins": 0,
+   "early": 0,
+   "pre_onset": 0,
+   "decision_minus_true_end_ms": 3040,
+   "pipecat_share_ms": 6,
+   "wer": 0.5818,
+   "server_turn_ends": [
+    [
+     18.56,
+     "hybrid_silero",
+     0.9983226656913757,
+     1200
+    ]
+   ],
+   "violations": 0,
+   "warnings": 0,
+   "finished": [
+    "EndFrame"
+   ],
+   "errors": 0,
+   "agent_end_s": 2.08,
+   "agent_end_audio_t": 2.081101750009111,
+   "enrolled_column": 1,
+   "enroll_sent": 1,
+   "final_speakers": [
+    1
+   ],
+   "rtf": 0.7132,
+   "backlog_ms_max": 180.0,
+   "chunk_ms_p95": 213.15,
+   "peak_rss_mb": 3577.4,
+   "silero_ms_mean": 0.11,
+   "enroll": "after_agent_arm",
+   "primary_column": 1,
+   "frame_lag_p50": 126.8,
+   "frame_lag_p95": 253.2
+  },
+  {
+   "demo": "pipecat",
+   "tag": "arm_timeout",
+   "window": "ES2011b_027",
+   "policy": "timeout",
+   "dead_air_ms": 1681,
+   "no_decision_within_ms": null,
+   "cut_ins": 0,
+   "early": 0,
+   "pre_onset": 0,
+   "decision_minus_true_end_ms": 1520,
+   "pipecat_share_ms": 6,
+   "wer": 0.2581,
+   "server_turn_ends": [
+    [
+     16.64,
+     "timeout",
+     null,
+     1040
+    ],
+    [
+     19.52,
+     "timeout",
+     null,
+     1040
+    ]
+   ],
+   "violations": 0,
+   "warnings": 0,
+   "finished": [
+    "EndFrame"
+   ],
+   "errors": 0,
+   "agent_end_s": 0.0,
+   "agent_end_audio_t": 0.021083125000586733,
+   "enrolled_column": 0,
+   "enroll_sent": 1,
+   "final_speakers": [
+    0,
+    0
+   ],
+   "rtf": 0.7413,
+   "backlog_ms_max": 220.0,
+   "chunk_ms_p95": 217.91,
+   "peak_rss_mb": 3554.8,
+   "silero_ms_mean": null,
+   "enroll": "after_agent_arm",
+   "primary_column": 0,
+   "frame_lag_p50": 129.8,
+   "frame_lag_p95": 261.0
+  },
+  {
+   "demo": "pipecat",
+   "tag": "arm_timeout",
+   "window": "IB4002_119",
+   "policy": "timeout",
+   "dead_air_ms": 1682,
+   "no_decision_within_ms": null,
+   "cut_ins": 1,
+   "early": 0,
+   "pre_onset": 0,
+   "decision_minus_true_end_ms": 1520,
+   "pipecat_share_ms": 12,
+   "wer": 0.4333,
+   "server_turn_ends": [
+    [
+     2.96,
+     "timeout",
+     null,
+     1040
+    ],
+    [
+     16.16,
+     "timeout",
+     null,
+     1040
+    ]
+   ],
+   "violations": 0,
+   "warnings": 0,
+   "finished": [
+    "EndFrame"
+   ],
+   "errors": 0,
+   "agent_end_s": 4.32,
+   "agent_end_audio_t": 4.3210917499964125,
+   "enrolled_column": 0,
+   "enroll_sent": 1,
+   "final_speakers": [
+    0,
+    0
+   ],
+   "rtf": 0.7638,
+   "backlog_ms_max": 400.0,
+   "chunk_ms_p95": 211.74,
+   "peak_rss_mb": 3554.8,
+   "silero_ms_mean": null,
+   "enroll": "after_agent_arm",
+   "primary_column": 0,
+   "frame_lag_p50": 150.8,
+   "frame_lag_p95": 514.8
+  },
+  {
+   "demo": "pipecat",
+   "tag": "arm_timeout",
+   "window": "IS1008b_003",
+   "policy": "timeout",
+   "dead_air_ms": 1602,
+   "no_decision_within_ms": null,
+   "cut_ins": 0,
+   "early": 0,
+   "pre_onset": 0,
+   "decision_minus_true_end_ms": 1440,
+   "pipecat_share_ms": 20,
+   "wer": 0.2826,
+   "server_turn_ends": [
+    [
+     4.64,
+     "timeout",
+     null,
+     1040
+    ],
+    [
+     14.72,
+     "timeout",
+     null,
+     1040
+    ]
+   ],
+   "violations": 0,
+   "warnings": 0,
+   "finished": [
+    "EndFrame"
+   ],
+   "errors": 0,
+   "agent_end_s": 3.12,
+   "agent_end_audio_t": 3.1210716250061523,
+   "enrolled_column": 0,
+   "enroll_sent": 1,
+   "final_speakers": [
+    0,
+    1
+   ],
+   "rtf": 0.6933,
+   "backlog_ms_max": 180.0,
+   "chunk_ms_p95": 214.01,
+   "peak_rss_mb": 3554.8,
+   "silero_ms_mean": null,
+   "enroll": "after_agent_arm",
+   "primary_column": 1,
+   "frame_lag_p50": 125.1,
+   "frame_lag_p95": 252.0
+  },
+  {
+   "demo": "pipecat",
+   "tag": "arm_timeout",
+   "window": "IS1008b_014",
+   "policy": "timeout",
+   "dead_air_ms": 3401,
+   "no_decision_within_ms": null,
+   "cut_ins": 1,
+   "early": 0,
+   "pre_onset": 0,
+   "decision_minus_true_end_ms": 3200,
+   "pipecat_share_ms": 16,
+   "wer": 0.3571,
+   "server_turn_ends": [
+    [
+     7.76,
+     "timeout",
+     null,
+     1040
+    ],
+    [
+     19.28,
+     "timeout",
+     null,
+     1040
+    ],
+    [
+     21.2,
+     "timeout",
+     null,
+     1040
+    ]
+   ],
+   "violations": 0,
+   "warnings": 0,
+   "finished": [
+    "EndFrame"
+   ],
+   "errors": 0,
+   "agent_end_s": 0.0,
+   "agent_end_audio_t": 0.021074999996926636,
+   "enrolled_column": 0,
+   "enroll_sent": 1,
+   "final_speakers": [
+    0,
+    0,
+    2
+   ],
+   "rtf": 0.7392,
+   "backlog_ms_max": 200.0,
+   "chunk_ms_p95": 222.35,
+   "peak_rss_mb": 3554.8,
+   "silero_ms_mean": null,
+   "enroll": "after_agent_arm",
+   "primary_column": 2,
+   "frame_lag_p50": 130.5,
+   "frame_lag_p95": 264.4
+  },
+  {
+   "demo": "pipecat",
+   "tag": "arm_timeout",
+   "window": "TS3004b_064",
+   "policy": "timeout",
+   "dead_air_ms": 2501,
+   "no_decision_within_ms": null,
+   "cut_ins": 1,
+   "early": 0,
+   "pre_onset": 0,
+   "decision_minus_true_end_ms": 2320,
+   "pipecat_share_ms": 4,
+   "wer": 0.5818,
+   "server_turn_ends": [
+    [
+     14.0,
+     "timeout",
+     null,
+     1040
+    ],
+    [
+     17.84,
+     "timeout",
+     null,
+     1040
+    ]
+   ],
+   "violations": 0,
+   "warnings": 0,
+   "finished": [
+    "EndFrame"
+   ],
+   "errors": 0,
+   "agent_end_s": 2.08,
+   "agent_end_audio_t": 2.080613041005563,
+   "enrolled_column": 1,
+   "enroll_sent": 1,
+   "final_speakers": [
+    1,
+    1
+   ],
+   "rtf": 0.7283,
+   "backlog_ms_max": 360.0,
+   "chunk_ms_p95": 213.36,
+   "peak_rss_mb": 3554.8,
+   "silero_ms_mean": null,
+   "enroll": "after_agent_arm",
+   "primary_column": 1,
+   "frame_lag_p50": 127.0,
+   "frame_lag_p95": 265.6
+  },
+  {
+   "demo": "pipecat",
+   "tag": "dom_dyn",
+   "window": "ES2011b_027",
+   "policy": "hybrid_dyn",
+   "dead_air_ms": 2662,
+   "no_decision_within_ms": null,
+   "cut_ins": 0,
+   "early": 0,
+   "pre_onset": 0,
+   "decision_minus_true_end_ms": 2480,
+   "pipecat_share_ms": 19,
+   "wer": 0.2581,
+   "server_turn_ends": [
+    [
+     20.48,
+     "hybrid_dyn",
+     0.997844934463501,
+     2032
+    ]
+   ],
+   "violations": 0,
+   "warnings": 0,
+   "finished": [
+    "EndFrame"
+   ],
+   "errors": 0,
+   "agent_end_s": null,
+   "agent_end_audio_t": null,
+   "enrolled_column": null,
+   "enroll_sent": 0,
+   "final_speakers": [
+    0
+   ],
+   "rtf": 0.7457,
+   "backlog_ms_max": 340.0,
+   "chunk_ms_p95": 224.94,
+   "peak_rss_mb": 3554.3,
+   "silero_ms_mean": 0.11,
+   "enroll": null,
+   "primary_column": null,
+   "frame_lag_p50": 133.6,
+   "frame_lag_p95": 345.8
+  },
+  {
+   "demo": "pipecat",
+   "tag": "dom_dyn",
+   "window": "IB4002_119",
+   "policy": "hybrid_dyn",
+   "dead_air_ms": 2421,
+   "no_decision_within_ms": null,
+   "cut_ins": 0,
+   "early": 0,
+   "pre_onset": 0,
+   "decision_minus_true_end_ms": 2240,
+   "pipecat_share_ms": 5,
+   "wer": 0.4333,
+   "server_turn_ends": [
+    [
+     16.88,
+     "hybrid_dyn",
+     0.9922329187393188,
+     2112
+    ]
+   ],
+   "violations": 0,
+   "warnings": 0,
+   "finished": [
+    "EndFrame"
+   ],
+   "errors": 0,
+   "agent_end_s": null,
+   "agent_end_audio_t": null,
+   "enrolled_column": null,
+   "enroll_sent": 0,
+   "final_speakers": [
+    0
+   ],
+   "rtf": 0.7112,
+   "backlog_ms_max": 200.0,
+   "chunk_ms_p95": 214.69,
+   "peak_rss_mb": 3554.3,
+   "silero_ms_mean": 0.113,
+   "enroll": null,
+   "primary_column": null,
+   "frame_lag_p50": 125.5,
+   "frame_lag_p95": 256.6
+  },
+  {
+   "demo": "pipecat",
+   "tag": "dom_dyn",
+   "window": "IS1008b_003",
+   "policy": "hybrid_dyn",
+   "dead_air_ms": 2341,
+   "no_decision_within_ms": null,
+   "cut_ins": 0,
+   "early": 0,
+   "pre_onset": 0,
+   "decision_minus_true_end_ms": 2160,
+   "pipecat_share_ms": 1,
+   "wer": 0.2826,
+   "server_turn_ends": [
+    [
+     15.44,
+     "hybrid_dyn",
+     0.9921648502349854,
+     2048
+    ]
+   ],
+   "violations": 0,
+   "warnings": 0,
+   "finished": [
+    "EndFrame"
+   ],
+   "errors": 0,
+   "agent_end_s": null,
+   "agent_end_audio_t": null,
+   "enrolled_column": null,
+   "enroll_sent": 0,
+   "final_speakers": [
+    1
+   ],
+   "rtf": 0.7214,
+   "backlog_ms_max": 280.0,
+   "chunk_ms_p95": 215.69,
+   "peak_rss_mb": 3554.3,
+   "silero_ms_mean": 0.115,
+   "enroll": null,
+   "primary_column": null,
+   "frame_lag_p50": 126.1,
+   "frame_lag_p95": 400.4
+  },
+  {
+   "demo": "pipecat",
+   "tag": "dom_dyn",
+   "window": "IS1008b_014",
+   "policy": "hybrid_dyn",
+   "dead_air_ms": 3682,
+   "no_decision_within_ms": null,
+   "cut_ins": 0,
+   "early": 0,
+   "pre_onset": 0,
+   "decision_minus_true_end_ms": 2240,
+   "pipecat_share_ms": 155,
+   "wer": 0.3571,
+   "server_turn_ends": [
+    [
+     20.24,
+     "hybrid_dyn",
+     0.9983412027359009,
+     0
+    ]
+   ],
+   "violations": 0,
+   "warnings": 0,
+   "finished": [
+    "EndFrame"
+   ],
+   "errors": 0,
+   "agent_end_s": null,
+   "agent_end_audio_t": null,
+   "enrolled_column": null,
+   "enroll_sent": 0,
+   "final_speakers": [
+    0
+   ],
+   "rtf": 0.9913,
+   "backlog_ms_max": 1740.0,
+   "chunk_ms_p95": 244.33,
+   "peak_rss_mb": 3554.3,
+   "silero_ms_mean": 0.113,
+   "enroll": null,
+   "primary_column": null,
+   "frame_lag_p50": 469.2,
+   "frame_lag_p95": 2099.2
+  },
+  {
+   "demo": "pipecat",
+   "tag": "dom_dyn",
+   "window": "TS3004b_064",
+   "policy": "hybrid_dyn",
+   "dead_air_ms": 2981,
+   "no_decision_within_ms": null,
+   "cut_ins": 0,
+   "early": 0,
+   "pre_onset": 0,
+   "decision_minus_true_end_ms": 2800,
+   "pipecat_share_ms": 0,
+   "wer": 0.5818,
+   "server_turn_ends": [
+    [
+     18.32,
+     "hybrid_dyn",
+     0.9983567595481873,
+     1040
+    ]
+   ],
+   "violations": 0,
+   "warnings": 0,
+   "finished": [
+    "EndFrame"
+   ],
+   "errors": 0,
+   "agent_end_s": null,
+   "agent_end_audio_t": null,
+   "enrolled_column": null,
+   "enroll_sent": 0,
+   "final_speakers": [
+    1
+   ],
+   "rtf": 0.7558,
+   "backlog_ms_max": 240.0,
+   "chunk_ms_p95": 220.85,
+   "peak_rss_mb": 3554.3,
+   "silero_ms_mean": 0.128,
+   "enroll": null,
+   "primary_column": null,
+   "frame_lag_p50": 129.9,
+   "frame_lag_p95": 265.5
+  },
+  {
+   "demo": "pipecat",
+   "tag": "dom_silero",
+   "window": "ES2011b_027",
+   "policy": "hybrid_silero",
+   "dead_air_ms": 2941,
+   "no_decision_within_ms": null,
+   "cut_ins": 0,
+   "early": 0,
+   "pre_onset": 0,
+   "decision_minus_true_end_ms": 2896,
+   "pipecat_share_ms": 12,
+   "wer": 0.2581,
+   "server_turn_ends": [
+    [
+     20.896,
+     "hybrid_silero",
+     0.9981548190116882,
+     2672
+    ]
+   ],
+   "violations": 0,
+   "warnings": 0,
+   "finished": [
+    "EndFrame"
+   ],
+   "errors": 0,
+   "agent_end_s": null,
+   "agent_end_audio_t": null,
+   "enrolled_column": null,
+   "enroll_sent": 0,
+   "final_speakers": [
+    0
+   ],
+   "rtf": 0.7533,
+   "backlog_ms_max": 220.0,
+   "chunk_ms_p95": 223.7,
+   "peak_rss_mb": 3578.9,
+   "silero_ms_mean": 0.115,
+   "enroll": null,
+   "primary_column": null,
+   "frame_lag_p50": 133.2,
+   "frame_lag_p95": 265.3
+  },
+  {
+   "demo": "pipecat",
+   "tag": "dom_silero",
+   "window": "IB4002_119",
+   "policy": "hybrid_silero",
+   "dead_air_ms": 2941,
+   "no_decision_within_ms": null,
+   "cut_ins": 0,
+   "early": 0,
+   "pre_onset": 0,
+   "decision_minus_true_end_ms": 2736,
+   "pipecat_share_ms": 19,
+   "wer": 0.4333,
+   "server_turn_ends": [
+    [
+     17.376,
+     "hybrid_silero",
+     0.994520366191864,
+     2672
+    ]
+   ],
+   "violations": 0,
+   "warnings": 0,
+   "finished": [
+    "EndFrame"
+   ],
+   "errors": 0,
+   "agent_end_s": null,
+   "agent_end_audio_t": null,
+   "enrolled_column": null,
+   "enroll_sent": 0,
+   "final_speakers": [
+    0
+   ],
+   "rtf": 0.7106,
+   "backlog_ms_max": 180.0,
+   "chunk_ms_p95": 212.78,
+   "peak_rss_mb": 3578.9,
+   "silero_ms_mean": 0.117,
+   "enroll": null,
+   "primary_column": null,
+   "frame_lag_p50": 125.9,
+   "frame_lag_p95": 256.0
+  },
+  {
+   "demo": "pipecat",
+   "tag": "dom_silero",
+   "window": "IS1008b_003",
+   "policy": "hybrid_silero",
+   "dead_air_ms": 2861,
+   "no_decision_within_ms": null,
+   "cut_ins": 0,
+   "early": 0,
+   "pre_onset": 0,
+   "decision_minus_true_end_ms": 2720,
+   "pipecat_share_ms": 16,
+   "wer": 0.2826,
+   "server_turn_ends": [
+    [
+     16.0,
+     "hybrid_silero",
+     0.995559573173523,
+     2688
+    ]
+   ],
+   "violations": 0,
+   "warnings": 0,
+   "finished": [
+    "EndFrame"
+   ],
+   "errors": 0,
+   "agent_end_s": null,
+   "agent_end_audio_t": null,
+   "enrolled_column": null,
+   "enroll_sent": 0,
+   "final_speakers": [
+    1
+   ],
+   "rtf": 0.7389,
+   "backlog_ms_max": 360.0,
+   "chunk_ms_p95": 216.2,
+   "peak_rss_mb": 3578.9,
+   "silero_ms_mean": 0.117,
+   "enroll": null,
+   "primary_column": null,
+   "frame_lag_p50": 127.6,
+   "frame_lag_p95": 284.8
+  },
+  {
+   "demo": "pipecat",
+   "tag": "dom_silero",
+   "window": "IS1008b_014",
+   "policy": "hybrid_silero",
+   "dead_air_ms": 2562,
+   "no_decision_within_ms": null,
+   "cut_ins": 0,
+   "early": 0,
+   "pre_onset": 0,
+   "decision_minus_true_end_ms": 2240,
+   "pipecat_share_ms": 139,
+   "wer": 0.3571,
+   "server_turn_ends": [
+    [
+     20.24,
+     "hybrid_silero",
+     0.9983412027359009,
+     0
+    ]
+   ],
+   "violations": 0,
+   "warnings": 0,
+   "finished": [
+    "EndFrame"
+   ],
+   "errors": 0,
+   "agent_end_s": null,
+   "agent_end_audio_t": null,
+   "enrolled_column": null,
+   "enroll_sent": 0,
+   "final_speakers": [
+    0
+   ],
+   "rtf": 0.7343,
+   "backlog_ms_max": 200.0,
+   "chunk_ms_p95": 216.14,
+   "peak_rss_mb": 3578.9,
+   "silero_ms_mean": 0.112,
+   "enroll": null,
+   "primary_column": null,
+   "frame_lag_p50": 128.3,
+   "frame_lag_p95": 261.8
+  },
+  {
+   "demo": "pipecat",
+   "tag": "dom_silero",
+   "window": "TS3004b_064",
+   "policy": "hybrid_silero",
+   "dead_air_ms": 3001,
+   "no_decision_within_ms": null,
+   "cut_ins": 0,
+   "early": 0,
+   "pre_onset": 0,
+   "decision_minus_true_end_ms": 2800,
+   "pipecat_share_ms": 19,
+   "wer": 0.5818,
+   "server_turn_ends": [
+    [
+     18.32,
+     "hybrid_silero",
+     0.9983567595481873,
+     1040
+    ]
+   ],
+   "violations": 0,
+   "warnings": 0,
+   "finished": [
+    "EndFrame"
+   ],
+   "errors": 0,
+   "agent_end_s": null,
+   "agent_end_audio_t": null,
+   "enrolled_column": null,
+   "enroll_sent": 0,
+   "final_speakers": [
+    1
+   ],
+   "rtf": 0.7118,
+   "backlog_ms_max": 220.0,
+   "chunk_ms_p95": 213.99,
+   "peak_rss_mb": 3578.9,
+   "silero_ms_mean": 0.114,
+   "enroll": null,
+   "primary_column": null,
+   "frame_lag_p50": 126.1,
+   "frame_lag_p95": 256.5
+  },
+  {
+   "demo": "pipecat",
+   "tag": "dom_timeout",
+   "window": "ES2011b_027",
+   "policy": "timeout",
+   "dead_air_ms": 1701,
+   "no_decision_within_ms": null,
+   "cut_ins": 0,
+   "early": 0,
+   "pre_onset": 0,
+   "decision_minus_true_end_ms": 1520,
+   "pipecat_share_ms": 10,
+   "wer": 0.2581,
+   "server_turn_ends": [
+    [
+     16.64,
+     "timeout",
+     null,
+     1040
+    ],
+    [
+     19.52,
+     "timeout",
+     null,
+     1040
+    ]
+   ],
+   "violations": 0,
+   "warnings": 0,
+   "finished": [
+    "EndFrame"
+   ],
+   "errors": 0,
+   "agent_end_s": null,
+   "agent_end_audio_t": null,
+   "enrolled_column": null,
+   "enroll_sent": 0,
+   "final_speakers": [
+    0,
+    0
+   ],
+   "rtf": 0.7907,
+   "backlog_ms_max": 320.0,
+   "chunk_ms_p95": 236.7,
+   "peak_rss_mb": 3554.3,
+   "silero_ms_mean": null,
+   "enroll": null,
+   "primary_column": null,
+   "frame_lag_p50": 148.3,
+   "frame_lag_p95": 438.2
+  },
+  {
+   "demo": "pipecat",
+   "tag": "dom_timeout",
+   "window": "IB4002_119",
+   "policy": "timeout",
+   "dead_air_ms": 1702,
+   "no_decision_within_ms": null,
+   "cut_ins": 1,
+   "early": 0,
+   "pre_onset": 0,
+   "decision_minus_true_end_ms": 1520,
+   "pipecat_share_ms": 16,
+   "wer": 0.4333,
+   "server_turn_ends": [
+    [
+     2.96,
+     "timeout",
+     null,
+     1040
+    ],
+    [
+     16.16,
+     "timeout",
+     null,
+     1040
+    ]
+   ],
+   "violations": 0,
+   "warnings": 0,
+   "finished": [
+    "EndFrame"
+   ],
+   "errors": 0,
+   "agent_end_s": null,
+   "agent_end_audio_t": null,
+   "enrolled_column": null,
+   "enroll_sent": 0,
+   "final_speakers": [
+    0,
+    0
+   ],
+   "rtf": 0.7542,
+   "backlog_ms_max": 200.0,
+   "chunk_ms_p95": 230.04,
+   "peak_rss_mb": 3554.3,
+   "silero_ms_mean": null,
+   "enroll": null,
+   "primary_column": null,
+   "frame_lag_p50": 133.0,
+   "frame_lag_p95": 265.9
+  },
+  {
+   "demo": "pipecat",
+   "tag": "dom_timeout",
+   "window": "IS1008b_003",
+   "policy": "timeout",
+   "dead_air_ms": 1602,
+   "no_decision_within_ms": null,
+   "cut_ins": 0,
+   "early": 0,
+   "pre_onset": 0,
+   "decision_minus_true_end_ms": 1440,
+   "pipecat_share_ms": 18,
+   "wer": 0.2826,
+   "server_turn_ends": [
+    [
+     4.64,
+     "timeout",
+     null,
+     1040
+    ],
+    [
+     14.72,
+     "timeout",
+     null,
+     1040
+    ]
+   ],
+   "violations": 0,
+   "warnings": 0,
+   "finished": [
+    "EndFrame"
+   ],
+   "errors": 0,
+   "agent_end_s": null,
+   "agent_end_audio_t": null,
+   "enrolled_column": null,
+   "enroll_sent": 0,
+   "final_speakers": [
+    0,
+    1
+   ],
+   "rtf": 0.7016,
+   "backlog_ms_max": 180.0,
+   "chunk_ms_p95": 212.17,
+   "peak_rss_mb": 3554.3,
+   "silero_ms_mean": null,
+   "enroll": null,
+   "primary_column": null,
+   "frame_lag_p50": 125.9,
+   "frame_lag_p95": 254.9
+  },
+  {
+   "demo": "pipecat",
+   "tag": "dom_timeout",
+   "window": "IS1008b_014",
+   "policy": "timeout",
+   "dead_air_ms": 3402,
+   "no_decision_within_ms": null,
+   "cut_ins": 1,
+   "early": 0,
+   "pre_onset": 0,
+   "decision_minus_true_end_ms": 3200,
+   "pipecat_share_ms": 18,
+   "wer": 0.3571,
+   "server_turn_ends": [
+    [
+     7.76,
+     "timeout",
+     null,
+     1040
+    ],
+    [
+     19.28,
+     "timeout",
+     null,
+     1040
+    ],
+    [
+     21.2,
+     "timeout",
+     null,
+     1040
+    ]
+   ],
+   "violations": 0,
+   "warnings": 0,
+   "finished": [
+    "EndFrame"
+   ],
+   "errors": 0,
+   "agent_end_s": null,
+   "agent_end_audio_t": null,
+   "enrolled_column": null,
+   "enroll_sent": 0,
+   "final_speakers": [
+    0,
+    0,
+    2
+   ],
+   "rtf": 0.7439,
+   "backlog_ms_max": 300.0,
+   "chunk_ms_p95": 224.44,
+   "peak_rss_mb": 3554.3,
+   "silero_ms_mean": null,
+   "enroll": null,
+   "primary_column": null,
+   "frame_lag_p50": 129.4,
+   "frame_lag_p95": 264.5
+  },
+  {
+   "demo": "pipecat",
+   "tag": "dom_timeout",
+   "window": "TS3004b_064",
+   "policy": "timeout",
+   "dead_air_ms": 2501,
+   "no_decision_within_ms": null,
+   "cut_ins": 1,
+   "early": 0,
+   "pre_onset": 0,
+   "decision_minus_true_end_ms": 2320,
+   "pipecat_share_ms": 4,
+   "wer": 0.5818,
+   "server_turn_ends": [
+    [
+     3.44,
+     "timeout",
+     null,
+     1040
+    ],
+    [
+     14.0,
+     "timeout",
+     null,
+     1040
+    ],
+    [
+     17.84,
+     "timeout",
+     null,
+     1040
+    ]
+   ],
+   "violations": 0,
+   "warnings": 0,
+   "finished": [
+    "EndFrame"
+   ],
+   "errors": 0,
+   "agent_end_s": null,
+   "agent_end_audio_t": null,
+   "enrolled_column": null,
+   "enroll_sent": 0,
+   "final_speakers": [
+    0,
+    1,
+    1
+   ],
+   "rtf": 0.6996,
+   "backlog_ms_max": 180.0,
+   "chunk_ms_p95": 210.0,
+   "peak_rss_mb": 3554.3,
+   "silero_ms_mean": null,
+   "enroll": null,
+   "primary_column": null,
+   "frame_lag_p50": 125.2,
+   "frame_lag_p95": 253.0
+  },
+  {
+   "demo": "livekit",
+   "tag": "arm_dyn",
+   "window": "ES2011b_027",
+   "policy": "hybrid_dyn",
+   "dead_air_ms": 2636,
+   "decision_minus_true_end_ms": 2480,
+   "delivery_lag_ms": 156,
+   "cut_ins": 0,
+   "early_cuts": 0,
+   "agent_commit_ms": 2637,
+   "agent_early_commits": 0,
+   "agent_share_ms": 2,
+   "wer": 0.2581,
+   "n_decisions": 1,
+   "n_eos": 1,
+   "sessions": 1,
+   "eos_after_final": true,
+   "sanity_ok": true,
+   "decisions_t": [
+    20.48
+   ],
+   "agent_end_t": 0.0,
+   "controls": [
+    [
+     "agent_end",
+     0.0
+    ]
+   ],
+   "agent_session_agent_end_t": 0.0,
+   "rtf": 0.7382,
+   "backlog_ms_max": 440.0,
+   "peak_rss_mb": 3579.3,
+   "chunk_ms_p95": 214.74,
+   "silero_ms_mean": 0.107,
+   "enroll": "after_agent_arm",
+   "primary_column": 0,
+   "agent_rtf": 0.7263,
+   "agent_backlog_ms_max": 1800.0,
+   "final_speakers": [
+    "S0"
+   ],
+   "frame_lag_p50": 129
+  },
+  {
+   "demo": "livekit",
+   "tag": "arm_dyn",
+   "window": "IB4002_119",
+   "policy": "hybrid_dyn",
+   "dead_air_ms": 2412,
+   "decision_minus_true_end_ms": 2240,
+   "delivery_lag_ms": 173,
+   "cut_ins": 0,
+   "early_cuts": 0,
+   "agent_commit_ms": 2413,
+   "agent_early_commits": 0,
+   "agent_share_ms": 1,
+   "wer": 0.4333,
+   "n_decisions": 1,
+   "n_eos": 1,
+   "sessions": 1,
+   "eos_after_final": true,
+   "sanity_ok": true,
+   "decisions_t": [
+    16.88
+   ],
+   "agent_end_t": 4.32,
+   "controls": [
+    [
+     "agent_end",
+     4.26
+    ]
+   ],
+   "agent_session_agent_end_t": 4.32,
+   "rtf": 0.6985,
+   "backlog_ms_max": 200.0,
+   "peak_rss_mb": 3579.3,
+   "chunk_ms_p95": 208.66,
+   "silero_ms_mean": 0.108,
+   "enroll": "after_agent_arm",
+   "primary_column": 0,
+   "agent_rtf": 0.7098,
+   "agent_backlog_ms_max": 1800.0,
+   "final_speakers": [
+    "S0"
+   ],
+   "frame_lag_p50": 125
+  },
+  {
+   "demo": "livekit",
+   "tag": "arm_dyn",
+   "window": "IS1008b_003",
+   "policy": "hybrid_dyn",
+   "dead_air_ms": 2295,
+   "decision_minus_true_end_ms": 2160,
+   "delivery_lag_ms": 170,
+   "cut_ins": 0,
+   "early_cuts": 0,
+   "agent_commit_ms": 2330,
+   "agent_early_commits": 0,
+   "agent_share_ms": 1,
+   "wer": 0.2826,
+   "n_decisions": 1,
+   "n_eos": 1,
+   "sessions": 1,
+   "eos_after_final": true,
+   "sanity_ok": true,
+   "decisions_t": [
+    15.44
+   ],
+   "agent_end_t": 3.12,
+   "controls": [
+    [
+     "agent_end",
+     3.12
+    ]
+   ],
+   "agent_session_agent_end_t": 3.12,
+   "rtf": 0.6953,
+   "backlog_ms_max": 240.0,
+   "peak_rss_mb": 3579.3,
+   "chunk_ms_p95": 211.35,
+   "silero_ms_mean": 0.107,
+   "enroll": "after_agent_arm",
+   "primary_column": 1,
+   "agent_rtf": 0.6942,
+   "agent_backlog_ms_max": 1800.0,
+   "final_speakers": [
+    "S1"
+   ],
+   "frame_lag_p50": 125
+  },
+  {
+   "demo": "livekit",
+   "tag": "arm_dyn",
+   "window": "IS1008b_014",
+   "policy": "hybrid_dyn",
+   "dead_air_ms": 2419,
+   "decision_minus_true_end_ms": 2240,
+   "delivery_lag_ms": 179,
+   "cut_ins": 0,
+   "early_cuts": 0,
+   "agent_commit_ms": 2431,
+   "agent_early_commits": 0,
+   "agent_share_ms": 1,
+   "wer": 0.3571,
+   "n_decisions": 1,
+   "n_eos": 2,
+   "sessions": 1,
+   "eos_after_final": false,
+   "sanity_ok": false,
+   "decisions_t": [
+    20.24
+   ],
+   "agent_end_t": 0.0,
+   "controls": [
+    [
+     "agent_end",
+     0.0
+    ]
+   ],
+   "agent_session_agent_end_t": 0.0,
+   "rtf": 0.721,
+   "backlog_ms_max": 320.0,
+   "peak_rss_mb": 3579.3,
+   "chunk_ms_p95": 212.42,
+   "silero_ms_mean": 0.106,
+   "enroll": "after_agent_arm",
+   "primary_column": 2,
+   "agent_rtf": 0.73,
+   "agent_backlog_ms_max": 1800.0,
+   "final_speakers": [
+    "S2"
+   ],
+   "frame_lag_p50": 127
+  },
+  {
+   "demo": "livekit",
+   "tag": "arm_dyn",
+   "window": "TS3004b_064",
+   "policy": "hybrid_dyn",
+   "dead_air_ms": 3192,
+   "decision_minus_true_end_ms": 3040,
+   "delivery_lag_ms": 152,
+   "cut_ins": 0,
+   "early_cuts": 0,
+   "agent_commit_ms": 3193,
+   "agent_early_commits": 0,
+   "agent_share_ms": 1,
+   "wer": 0.5818,
+   "n_decisions": 1,
+   "n_eos": 1,
+   "sessions": 1,
+   "eos_after_final": true,
+   "sanity_ok": true,
+   "decisions_t": [
+    18.56
+   ],
+   "agent_end_t": 2.08,
+   "controls": [
+    [
+     "agent_end",
+     2.08
+    ]
+   ],
+   "agent_session_agent_end_t": 2.08,
+   "rtf": 0.6948,
+   "backlog_ms_max": 200.0,
+   "peak_rss_mb": 3579.3,
+   "chunk_ms_p95": 211.59,
+   "silero_ms_mean": 0.109,
+   "enroll": "after_agent_arm",
+   "primary_column": 1,
+   "agent_rtf": 0.7153,
+   "agent_backlog_ms_max": 1800.0,
+   "final_speakers": [
+    "S1"
+   ],
+   "frame_lag_p50": 125
+  },
+  {
+   "demo": "livekit",
+   "tag": "arm_silero",
+   "window": "ES2011b_027",
+   "policy": "hybrid_silero",
+   "dead_air_ms": 2924,
+   "decision_minus_true_end_ms": 2896,
+   "delivery_lag_ms": 24,
+   "cut_ins": 0,
+   "early_cuts": 0,
+   "agent_commit_ms": 2925,
+   "agent_early_commits": 0,
+   "agent_share_ms": 1,
+   "wer": 0.2581,
+   "n_decisions": 1,
+   "n_eos": 1,
+   "sessions": 1,
+   "eos_after_final": true,
+   "sanity_ok": true,
+   "decisions_t": [
+    20.896
+   ],
+   "agent_end_t": 0.0,
+   "controls": [
+    [
+     "agent_end",
+     0.0
+    ]
+   ],
+   "agent_session_agent_end_t": 0.0,
+   "rtf": 0.7297,
+   "backlog_ms_max": 200.0,
+   "peak_rss_mb": 3576.9,
+   "chunk_ms_p95": 216.6,
+   "silero_ms_mean": 0.106,
+   "enroll": "after_agent_arm",
+   "primary_column": 0,
+   "agent_rtf": 0.739,
+   "agent_backlog_ms_max": 1800.0,
+   "final_speakers": [
+    "S0"
+   ],
+   "frame_lag_p50": 128
+  },
+  {
+   "demo": "livekit",
+   "tag": "arm_silero",
+   "window": "IB4002_119",
+   "policy": "hybrid_silero",
+   "dead_air_ms": 2918,
+   "decision_minus_true_end_ms": 2736,
+   "delivery_lag_ms": 178,
+   "cut_ins": 0,
+   "early_cuts": 0,
+   "agent_commit_ms": 2915,
+   "agent_early_commits": 0,
+   "agent_share_ms": 1,
+   "wer": 0.4333,
+   "n_decisions": 1,
+   "n_eos": 1,
+   "sessions": 1,
+   "eos_after_final": true,
+   "sanity_ok": true,
+   "decisions_t": [
+    17.376
+   ],
+   "agent_end_t": 4.32,
+   "controls": [
+    [
+     "agent_end",
+     4.32
+    ]
+   ],
+   "agent_session_agent_end_t": 4.32,
+   "rtf": 0.7031,
+   "backlog_ms_max": 200.0,
+   "peak_rss_mb": 3576.9,
+   "chunk_ms_p95": 211.11,
+   "silero_ms_mean": 0.106,
+   "enroll": "after_agent_arm",
+   "primary_column": 0,
+   "agent_rtf": 0.7183,
+   "agent_backlog_ms_max": 1800.0,
+   "final_speakers": [
+    "S0"
+   ],
+   "frame_lag_p50": 125
+  },
+  {
+   "demo": "livekit",
+   "tag": "arm_silero",
+   "window": "IS1008b_003",
+   "policy": "hybrid_silero",
+   "dead_air_ms": 2835,
+   "decision_minus_true_end_ms": 2720,
+   "delivery_lag_ms": 115,
+   "cut_ins": 0,
+   "early_cuts": 0,
+   "agent_commit_ms": 2835,
+   "agent_early_commits": 0,
+   "agent_share_ms": 1,
+   "wer": 0.2826,
+   "n_decisions": 1,
+   "n_eos": 1,
+   "sessions": 1,
+   "eos_after_final": true,
+   "sanity_ok": true,
+   "decisions_t": [
+    16.0
+   ],
+   "agent_end_t": 3.12,
+   "controls": [
+    [
+     "agent_end",
+     3.12
+    ]
+   ],
+   "agent_session_agent_end_t": 3.12,
+   "rtf": 0.6795,
+   "backlog_ms_max": 180.0,
+   "peak_rss_mb": 3576.9,
+   "chunk_ms_p95": 208.07,
+   "silero_ms_mean": 0.106,
+   "enroll": "after_agent_arm",
+   "primary_column": 1,
+   "agent_rtf": 0.7179,
+   "agent_backlog_ms_max": 1800.0,
+   "final_speakers": [
+    "S1"
+   ],
+   "frame_lag_p50": 124
+  },
+  {
+   "demo": "livekit",
+   "tag": "arm_silero",
+   "window": "IS1008b_014",
+   "policy": "hybrid_silero",
+   "dead_air_ms": 2417,
+   "decision_minus_true_end_ms": 2240,
+   "delivery_lag_ms": 177,
+   "cut_ins": 0,
+   "early_cuts": 0,
+   "agent_commit_ms": 2423,
+   "agent_early_commits": 0,
+   "agent_share_ms": 4,
+   "wer": 0.3571,
+   "n_decisions": 1,
+   "n_eos": 2,
+   "sessions": 1,
+   "eos_after_final": false,
+   "sanity_ok": false,
+   "decisions_t": [
+    20.24
+   ],
+   "agent_end_t": 0.0,
+   "controls": [
+    [
+     "agent_end",
+     0.0
+    ]
+   ],
+   "agent_session_agent_end_t": 0.0,
+   "rtf": 0.7139,
+   "backlog_ms_max": 180.0,
+   "peak_rss_mb": 3576.9,
+   "chunk_ms_p95": 217.5,
+   "silero_ms_mean": 0.106,
+   "enroll": "after_agent_arm",
+   "primary_column": 2,
+   "agent_rtf": 0.7402,
+   "agent_backlog_ms_max": 1800.0,
+   "final_speakers": [
+    "S2"
+   ],
+   "frame_lag_p50": 125
+  },
+  {
+   "demo": "livekit",
+   "tag": "arm_silero",
+   "window": "TS3004b_064",
+   "policy": "hybrid_silero",
+   "dead_air_ms": 3194,
+   "decision_minus_true_end_ms": 3040,
+   "delivery_lag_ms": 154,
+   "cut_ins": 0,
+   "early_cuts": 0,
+   "agent_commit_ms": 3193,
+   "agent_early_commits": 0,
+   "agent_share_ms": 1,
+   "wer": 0.5818,
+   "n_decisions": 1,
+   "n_eos": 1,
+   "sessions": 1,
+   "eos_after_final": true,
+   "sanity_ok": true,
+   "decisions_t": [
+    18.56
+   ],
+   "agent_end_t": 2.08,
+   "controls": [
+    [
+     "agent_end",
+     2.08
+    ]
+   ],
+   "agent_session_agent_end_t": 2.08,
+   "rtf": 0.7021,
+   "backlog_ms_max": 180.0,
+   "peak_rss_mb": 3576.9,
+   "chunk_ms_p95": 209.71,
+   "silero_ms_mean": 0.106,
+   "enroll": "after_agent_arm",
+   "primary_column": 1,
+   "agent_rtf": 0.7175,
+   "agent_backlog_ms_max": 1800.0,
+   "final_speakers": [
+    "S1"
+   ],
+   "frame_lag_p50": 125
+  },
+  {
+   "demo": "livekit",
+   "tag": "arm_timeout",
+   "window": "ES2011b_027",
+   "policy": "timeout",
+   "dead_air_ms": 1681,
+   "decision_minus_true_end_ms": 1520,
+   "delivery_lag_ms": 161,
+   "cut_ins": 1,
+   "early_cuts": 1,
+   "agent_commit_ms": 1675,
+   "agent_early_commits": 1,
+   "agent_share_ms": 1,
+   "wer": 0.2581,
+   "n_decisions": 2,
+   "n_eos": 2,
+   "sessions": 1,
+   "eos_after_final": true,
+   "sanity_ok": true,
+   "decisions_t": [
+    16.64,
+    19.52
+   ],
+   "agent_end_t": 0.0,
+   "controls": [
+    [
+     "agent_end",
+     0.0
+    ]
+   ],
+   "agent_session_agent_end_t": 0.0,
+   "rtf": 0.7498,
+   "backlog_ms_max": 740.0,
+   "peak_rss_mb": 3558.6,
+   "chunk_ms_p95": 211.79,
+   "silero_ms_mean": null,
+   "enroll": "after_agent_arm",
+   "primary_column": 0,
+   "agent_rtf": 0.7385,
+   "agent_backlog_ms_max": 1800.0,
+   "final_speakers": [
+    "S0",
+    "S0"
+   ],
+   "frame_lag_p50": 143
+  },
+  {
+   "demo": "livekit",
+   "tag": "arm_timeout",
+   "window": "IB4002_119",
+   "policy": "timeout",
+   "dead_air_ms": 1667,
+   "decision_minus_true_end_ms": 1520,
+   "delivery_lag_ms": 148,
+   "cut_ins": 0,
+   "early_cuts": 0,
+   "agent_commit_ms": 1671,
+   "agent_early_commits": 0,
+   "agent_share_ms": 1,
+   "wer": 0.4333,
+   "n_decisions": 2,
+   "n_eos": 2,
+   "sessions": 1,
+   "eos_after_final": true,
+   "sanity_ok": true,
+   "decisions_t": [
+    2.96,
+    16.16
+   ],
+   "agent_end_t": 4.32,
+   "controls": [
+    [
+     "agent_end",
+     4.32
+    ]
+   ],
+   "agent_session_agent_end_t": 4.32,
+   "rtf": 0.694,
+   "backlog_ms_max": 200.0,
+   "peak_rss_mb": 3558.6,
+   "chunk_ms_p95": 210.65,
+   "silero_ms_mean": null,
+   "enroll": "after_agent_arm",
+   "primary_column": 0,
+   "agent_rtf": 0.7218,
+   "agent_backlog_ms_max": 1800.0,
+   "final_speakers": [
+    "S0",
+    "S0"
+   ],
+   "frame_lag_p50": 125
+  },
+  {
+   "demo": "livekit",
+   "tag": "arm_timeout",
+   "window": "IS1008b_003",
+   "policy": "timeout",
+   "dead_air_ms": 1582,
+   "decision_minus_true_end_ms": 1440,
+   "delivery_lag_ms": 142,
+   "cut_ins": 1,
+   "early_cuts": 1,
+   "agent_commit_ms": 1595,
+   "agent_early_commits": 1,
+   "agent_share_ms": 1,
+   "wer": 0.2826,
+   "n_decisions": 2,
+   "n_eos": 2,
+   "sessions": 1,
+   "eos_after_final": true,
+   "sanity_ok": true,
+   "decisions_t": [
+    4.64,
+    14.72
+   ],
+   "agent_end_t": 3.12,
+   "controls": [
+    [
+     "agent_end",
+     3.12
+    ]
+   ],
+   "agent_session_agent_end_t": 3.12,
+   "rtf": 0.6794,
+   "backlog_ms_max": 180.0,
+   "peak_rss_mb": 3558.6,
+   "chunk_ms_p95": 210.49,
+   "silero_ms_mean": null,
+   "enroll": "after_agent_arm",
+   "primary_column": 1,
+   "agent_rtf": 0.7085,
+   "agent_backlog_ms_max": 1800.0,
+   "final_speakers": [
+    "S0",
+    "S1"
+   ],
+   "frame_lag_p50": 124
+  },
+  {
+   "demo": "livekit",
+   "tag": "arm_timeout",
+   "window": "IS1008b_014",
+   "policy": "timeout",
+   "dead_air_ms": 1457,
+   "decision_minus_true_end_ms": 1280,
+   "delivery_lag_ms": 177,
+   "cut_ins": 1,
+   "early_cuts": 1,
+   "agent_commit_ms": 1458,
+   "agent_early_commits": 1,
+   "agent_share_ms": 1,
+   "wer": 0.3571,
+   "n_decisions": 3,
+   "n_eos": 3,
+   "sessions": 1,
+   "eos_after_final": true,
+   "sanity_ok": true,
+   "decisions_t": [
+    7.76,
+    19.28,
+    21.2
+   ],
+   "agent_end_t": 0.0,
+   "controls": [
+    [
+     "agent_end",
+     0.0
+    ]
+   ],
+   "agent_session_agent_end_t": 0.0,
+   "rtf": 0.7144,
+   "backlog_ms_max": 180.0,
+   "peak_rss_mb": 3558.6,
+   "chunk_ms_p95": 213.8,
+   "silero_ms_mean": null,
+   "enroll": "after_agent_arm",
+   "primary_column": 2,
+   "agent_rtf": 0.7264,
+   "agent_backlog_ms_max": 1800.0,
+   "final_speakers": [
+    "S0",
+    "S0",
+    "S2"
+   ],
+   "frame_lag_p50": 126
+  },
+  {
+   "demo": "livekit",
+   "tag": "arm_timeout",
+   "window": "TS3004b_064",
+   "policy": "timeout",
+   "dead_air_ms": 2493,
+   "decision_minus_true_end_ms": 2320,
+   "delivery_lag_ms": 173,
+   "cut_ins": 1,
+   "early_cuts": 1,
+   "agent_commit_ms": 2493,
+   "agent_early_commits": 1,
+   "agent_share_ms": 1,
+   "wer": 0.5818,
+   "n_decisions": 2,
+   "n_eos": 2,
+   "sessions": 1,
+   "eos_after_final": true,
+   "sanity_ok": true,
+   "decisions_t": [
+    14.0,
+    17.84
+   ],
+   "agent_end_t": 2.08,
+   "controls": [
+    [
+     "agent_end",
+     2.08
+    ]
+   ],
+   "agent_session_agent_end_t": 2.08,
+   "rtf": 0.6969,
+   "backlog_ms_max": 220.0,
+   "peak_rss_mb": 3558.6,
+   "chunk_ms_p95": 209.99,
+   "silero_ms_mean": null,
+   "enroll": "after_agent_arm",
+   "primary_column": 1,
+   "agent_rtf": 0.7041,
+   "agent_backlog_ms_max": 1800.0,
+   "final_speakers": [
+    "S1",
+    "S1"
+   ],
+   "frame_lag_p50": 124
+  },
+  {
+   "demo": "livekit",
+   "tag": "dom_dyn",
+   "window": "ES2011b_027",
+   "policy": "hybrid_dyn",
+   "dead_air_ms": 2636,
+   "decision_minus_true_end_ms": 2480,
+   "delivery_lag_ms": 156,
+   "cut_ins": 0,
+   "early_cuts": 0,
+   "agent_commit_ms": 2641,
+   "agent_early_commits": 0,
+   "agent_share_ms": 1,
+   "wer": 0.2581,
+   "n_decisions": 1,
+   "n_eos": 1,
+   "sessions": 1,
+   "eos_after_final": true,
+   "sanity_ok": true,
+   "decisions_t": [
+    20.48
+   ],
+   "agent_end_t": null,
+   "controls": [],
+   "agent_session_agent_end_t": null,
+   "rtf": 0.7334,
+   "backlog_ms_max": 200.0,
+   "peak_rss_mb": 3578.4,
+   "chunk_ms_p95": 221.65,
+   "silero_ms_mean": 0.11,
+   "enroll": null,
+   "primary_column": null,
+   "agent_rtf": 0.7493,
+   "agent_backlog_ms_max": 1800.0,
+   "final_speakers": [
+    "S0"
+   ],
+   "frame_lag_p50": 128
+  },
+  {
+   "demo": "livekit",
+   "tag": "dom_dyn",
+   "window": "IB4002_119",
+   "policy": "hybrid_dyn",
+   "dead_air_ms": 2414,
+   "decision_minus_true_end_ms": 2240,
+   "delivery_lag_ms": 174,
+   "cut_ins": 0,
+   "early_cuts": 0,
+   "agent_commit_ms": 2414,
+   "agent_early_commits": 0,
+   "agent_share_ms": 1,
+   "wer": 0.4333,
+   "n_decisions": 1,
+   "n_eos": 1,
+   "sessions": 1,
+   "eos_after_final": true,
+   "sanity_ok": true,
+   "decisions_t": [
+    16.88
+   ],
+   "agent_end_t": null,
+   "controls": [],
+   "agent_session_agent_end_t": null,
+   "rtf": 0.7048,
+   "backlog_ms_max": 200.0,
+   "peak_rss_mb": 3578.4,
+   "chunk_ms_p95": 214.21,
+   "silero_ms_mean": 0.108,
+   "enroll": null,
+   "primary_column": null,
+   "agent_rtf": 0.7306,
+   "agent_backlog_ms_max": 1800.0,
+   "final_speakers": [
+    "S0"
+   ],
+   "frame_lag_p50": 125
+  },
+  {
+   "demo": "livekit",
+   "tag": "dom_dyn",
+   "window": "IS1008b_003",
+   "policy": "hybrid_dyn",
+   "dead_air_ms": 2333,
+   "decision_minus_true_end_ms": 2160,
+   "delivery_lag_ms": 173,
+   "cut_ins": 0,
+   "early_cuts": 0,
+   "agent_commit_ms": 2332,
+   "agent_early_commits": 0,
+   "agent_share_ms": 1,
+   "wer": 0.2826,
+   "n_decisions": 1,
+   "n_eos": 1,
+   "sessions": 1,
+   "eos_after_final": true,
+   "sanity_ok": true,
+   "decisions_t": [
+    15.44
+   ],
+   "agent_end_t": null,
+   "controls": [],
+   "agent_session_agent_end_t": null,
+   "rtf": 0.6909,
+   "backlog_ms_max": 180.0,
+   "peak_rss_mb": 3578.4,
+   "chunk_ms_p95": 211.33,
+   "silero_ms_mean": 0.109,
+   "enroll": null,
+   "primary_column": null,
+   "agent_rtf": 0.711,
+   "agent_backlog_ms_max": 1800.0,
+   "final_speakers": [
+    "S1"
+   ],
+   "frame_lag_p50": 125
+  },
+  {
+   "demo": "livekit",
+   "tag": "dom_dyn",
+   "window": "IS1008b_014",
+   "policy": "hybrid_dyn",
+   "dead_air_ms": 2425,
+   "decision_minus_true_end_ms": 2240,
+   "delivery_lag_ms": 185,
+   "cut_ins": 0,
+   "early_cuts": 0,
+   "agent_commit_ms": 2422,
+   "agent_early_commits": 0,
+   "agent_share_ms": 1,
+   "wer": 0.3571,
+   "n_decisions": 1,
+   "n_eos": 2,
+   "sessions": 1,
+   "eos_after_final": false,
+   "sanity_ok": false,
+   "decisions_t": [
+    20.24
+   ],
+   "agent_end_t": null,
+   "controls": [],
+   "agent_session_agent_end_t": null,
+   "rtf": 0.7643,
+   "backlog_ms_max": 260.0,
+   "peak_rss_mb": 3578.4,
+   "chunk_ms_p95": 224.88,
+   "silero_ms_mean": 0.116,
+   "enroll": null,
+   "primary_column": null,
+   "agent_rtf": 0.7436,
+   "agent_backlog_ms_max": 1800.0,
+   "final_speakers": [
+    "S0"
+   ],
+   "frame_lag_p50": 137
+  },
+  {
+   "demo": "livekit",
+   "tag": "dom_dyn",
+   "window": "TS3004b_064",
+   "policy": "hybrid_dyn",
+   "dead_air_ms": 2988,
+   "decision_minus_true_end_ms": 2800,
+   "delivery_lag_ms": 188,
+   "cut_ins": 0,
+   "early_cuts": 0,
+   "agent_commit_ms": 2978,
+   "agent_early_commits": 0,
+   "agent_share_ms": 1,
+   "wer": 0.5818,
+   "n_decisions": 1,
+   "n_eos": 1,
+   "sessions": 1,
+   "eos_after_final": true,
+   "sanity_ok": true,
+   "decisions_t": [
+    18.32
+   ],
+   "agent_end_t": null,
+   "controls": [],
+   "agent_session_agent_end_t": null,
+   "rtf": 0.736,
+   "backlog_ms_max": 340.0,
+   "peak_rss_mb": 3578.4,
+   "chunk_ms_p95": 216.04,
+   "silero_ms_mean": 0.116,
+   "enroll": null,
+   "primary_column": null,
+   "agent_rtf": 0.7127,
+   "agent_backlog_ms_max": 1800.0,
+   "final_speakers": [
+    "S1"
+   ],
+   "frame_lag_p50": 129
+  },
+  {
+   "demo": "livekit",
+   "tag": "dom_silero",
+   "window": "ES2011b_027",
+   "policy": "hybrid_silero",
+   "dead_air_ms": 2925,
+   "decision_minus_true_end_ms": 2896,
+   "delivery_lag_ms": 25,
+   "cut_ins": 0,
+   "early_cuts": 0,
+   "agent_commit_ms": 2926,
+   "agent_early_commits": 0,
+   "agent_share_ms": 1,
+   "wer": 0.2581,
+   "n_decisions": 1,
+   "n_eos": 1,
+   "sessions": 1,
+   "eos_after_final": true,
+   "sanity_ok": true,
+   "decisions_t": [
+    20.896
+   ],
+   "agent_end_t": null,
+   "controls": [],
+   "agent_session_agent_end_t": null,
+   "rtf": 0.7653,
+   "backlog_ms_max": 760.0,
+   "peak_rss_mb": 3579.1,
+   "chunk_ms_p95": 221.98,
+   "silero_ms_mean": 0.109,
+   "enroll": null,
+   "primary_column": null,
+   "agent_rtf": 0.732,
+   "agent_backlog_ms_max": 1800.0,
+   "final_speakers": [
+    "S0"
+   ],
+   "frame_lag_p50": 133
+  },
+  {
+   "demo": "livekit",
+   "tag": "dom_silero",
+   "window": "IB4002_119",
+   "policy": "hybrid_silero",
+   "dead_air_ms": 2921,
+   "decision_minus_true_end_ms": 2736,
+   "delivery_lag_ms": 181,
+   "cut_ins": 0,
+   "early_cuts": 0,
+   "agent_commit_ms": 2920,
+   "agent_early_commits": 0,
+   "agent_share_ms": 1,
+   "wer": 0.4333,
+   "n_decisions": 1,
+   "n_eos": 1,
+   "sessions": 1,
+   "eos_after_final": true,
+   "sanity_ok": true,
+   "decisions_t": [
+    17.376
+   ],
+   "agent_end_t": null,
+   "controls": [],
+   "agent_session_agent_end_t": null,
+   "rtf": 0.7179,
+   "backlog_ms_max": 320.0,
+   "peak_rss_mb": 3579.1,
+   "chunk_ms_p95": 214.98,
+   "silero_ms_mean": 0.111,
+   "enroll": null,
+   "primary_column": null,
+   "agent_rtf": 0.7204,
+   "agent_backlog_ms_max": 1800.0,
+   "final_speakers": [
+    "S0"
+   ],
+   "frame_lag_p50": 126
+  },
+  {
+   "demo": "livekit",
+   "tag": "dom_silero",
+   "window": "IS1008b_003",
+   "policy": "hybrid_silero",
+   "dead_air_ms": 2835,
+   "decision_minus_true_end_ms": 2720,
+   "delivery_lag_ms": 115,
+   "cut_ins": 0,
+   "early_cuts": 0,
+   "agent_commit_ms": 2836,
+   "agent_early_commits": 0,
+   "agent_share_ms": 1,
+   "wer": 0.2826,
+   "n_decisions": 1,
+   "n_eos": 1,
+   "sessions": 1,
+   "eos_after_final": true,
+   "sanity_ok": true,
+   "decisions_t": [
+    16.0
+   ],
+   "agent_end_t": null,
+   "controls": [],
+   "agent_session_agent_end_t": null,
+   "rtf": 0.7343,
+   "backlog_ms_max": 260.0,
+   "peak_rss_mb": 3579.1,
+   "chunk_ms_p95": 214.82,
+   "silero_ms_mean": 0.121,
+   "enroll": null,
+   "primary_column": null,
+   "agent_rtf": 0.708,
+   "agent_backlog_ms_max": 1800.0,
+   "final_speakers": [
+    "S1"
+   ],
+   "frame_lag_p50": 130
+  },
+  {
+   "demo": "livekit",
+   "tag": "dom_silero",
+   "window": "IS1008b_014",
+   "policy": "hybrid_silero",
+   "dead_air_ms": 2453,
+   "decision_minus_true_end_ms": 2240,
+   "delivery_lag_ms": 213,
+   "cut_ins": 0,
+   "early_cuts": 0,
+   "agent_commit_ms": 2429,
+   "agent_early_commits": 0,
+   "agent_share_ms": 4,
+   "wer": 0.3571,
+   "n_decisions": 1,
+   "n_eos": 2,
+   "sessions": 1,
+   "eos_after_final": false,
+   "sanity_ok": false,
+   "decisions_t": [
+    20.24
+   ],
+   "agent_end_t": null,
+   "controls": [],
+   "agent_session_agent_end_t": null,
+   "rtf": 0.7425,
+   "backlog_ms_max": 220.0,
+   "peak_rss_mb": 3579.1,
+   "chunk_ms_p95": 225.13,
+   "silero_ms_mean": 0.112,
+   "enroll": null,
+   "primary_column": null,
+   "agent_rtf": 0.756,
+   "agent_backlog_ms_max": 1800.0,
+   "final_speakers": [
+    "S0"
+   ],
+   "frame_lag_p50": 132
+  },
+  {
+   "demo": "livekit",
+   "tag": "dom_silero",
+   "window": "TS3004b_064",
+   "policy": "hybrid_silero",
+   "dead_air_ms": 2975,
+   "decision_minus_true_end_ms": 2800,
+   "delivery_lag_ms": 175,
+   "cut_ins": 0,
+   "early_cuts": 0,
+   "agent_commit_ms": 2975,
+   "agent_early_commits": 0,
+   "agent_share_ms": 1,
+   "wer": 0.5818,
+   "n_decisions": 1,
+   "n_eos": 1,
+   "sessions": 1,
+   "eos_after_final": true,
+   "sanity_ok": true,
+   "decisions_t": [
+    18.32
+   ],
+   "agent_end_t": null,
+   "controls": [],
+   "agent_session_agent_end_t": null,
+   "rtf": 0.6919,
+   "backlog_ms_max": 180.0,
+   "peak_rss_mb": 3579.1,
+   "chunk_ms_p95": 209.32,
+   "silero_ms_mean": 0.107,
+   "enroll": null,
+   "primary_column": null,
+   "agent_rtf": 0.7317,
+   "agent_backlog_ms_max": 1800.0,
+   "final_speakers": [
+    "S1"
+   ],
+   "frame_lag_p50": 125
+  },
+  {
+   "demo": "livekit",
+   "tag": "dom_timeout",
+   "window": "ES2011b_027",
+   "policy": "timeout",
+   "dead_air_ms": 1676,
+   "decision_minus_true_end_ms": 1520,
+   "delivery_lag_ms": 154,
+   "cut_ins": 1,
+   "early_cuts": 1,
+   "agent_commit_ms": 1683,
+   "agent_early_commits": 1,
+   "agent_share_ms": 1,
+   "wer": 0.2581,
+   "n_decisions": 2,
+   "n_eos": 2,
+   "sessions": 1,
+   "eos_after_final": true,
+   "sanity_ok": true,
+   "decisions_t": [
+    16.64,
+    19.52
+   ],
+   "agent_end_t": null,
+   "controls": [],
+   "agent_session_agent_end_t": null,
+   "rtf": 0.7409,
+   "backlog_ms_max": 280.0,
+   "peak_rss_mb": 3557.4,
+   "chunk_ms_p95": 220.67,
+   "silero_ms_mean": null,
+   "enroll": null,
+   "primary_column": null,
+   "agent_rtf": 0.7822,
+   "agent_backlog_ms_max": 1800.0,
+   "final_speakers": [
+    "S0",
+    "S0"
+   ],
+   "frame_lag_p50": 130
+  },
+  {
+   "demo": "livekit",
+   "tag": "dom_timeout",
+   "window": "IB4002_119",
+   "policy": "timeout",
+   "dead_air_ms": 1707,
+   "decision_minus_true_end_ms": 1520,
+   "delivery_lag_ms": 188,
+   "cut_ins": 0,
+   "early_cuts": 0,
+   "agent_commit_ms": 1671,
+   "agent_early_commits": 0,
+   "agent_share_ms": 1,
+   "wer": 0.4333,
+   "n_decisions": 2,
+   "n_eos": 2,
+   "sessions": 1,
+   "eos_after_final": true,
+   "sanity_ok": true,
+   "decisions_t": [
+    2.96,
+    16.16
+   ],
+   "agent_end_t": null,
+   "controls": [],
+   "agent_session_agent_end_t": null,
+   "rtf": 0.7232,
+   "backlog_ms_max": 260.0,
+   "peak_rss_mb": 3557.4,
+   "chunk_ms_p95": 213.91,
+   "silero_ms_mean": null,
+   "enroll": null,
+   "primary_column": null,
+   "agent_rtf": 0.7265,
+   "agent_backlog_ms_max": 2000.0,
+   "final_speakers": [
+    "S0",
+    "S0"
+   ],
+   "frame_lag_p50": 130
+  },
+  {
+   "demo": "livekit",
+   "tag": "dom_timeout",
+   "window": "IS1008b_003",
+   "policy": "timeout",
+   "dead_air_ms": 1581,
+   "decision_minus_true_end_ms": 1440,
+   "delivery_lag_ms": 141,
+   "cut_ins": 1,
+   "early_cuts": 1,
+   "agent_commit_ms": 1582,
+   "agent_early_commits": 1,
+   "agent_share_ms": 1,
+   "wer": 0.2826,
+   "n_decisions": 2,
+   "n_eos": 2,
+   "sessions": 1,
+   "eos_after_final": true,
+   "sanity_ok": true,
+   "decisions_t": [
+    4.64,
+    14.72
+   ],
+   "agent_end_t": null,
+   "controls": [],
+   "agent_session_agent_end_t": null,
+   "rtf": 0.6948,
+   "backlog_ms_max": 200.0,
+   "peak_rss_mb": 3557.4,
+   "chunk_ms_p95": 212.39,
+   "silero_ms_mean": null,
+   "enroll": null,
+   "primary_column": null,
+   "agent_rtf": 0.7292,
+   "agent_backlog_ms_max": 1800.0,
+   "final_speakers": [
+    "S0",
+    "S1"
+   ],
+   "frame_lag_p50": 125
+  },
+  {
+   "demo": "livekit",
+   "tag": "dom_timeout",
+   "window": "IS1008b_014",
+   "policy": "timeout",
+   "dead_air_ms": 1459,
+   "decision_minus_true_end_ms": 1280,
+   "delivery_lag_ms": 179,
+   "cut_ins": 1,
+   "early_cuts": 1,
+   "agent_commit_ms": 1462,
+   "agent_early_commits": 1,
+   "agent_share_ms": 1,
+   "wer": 0.3571,
+   "n_decisions": 3,
+   "n_eos": 3,
+   "sessions": 1,
+   "eos_after_final": true,
+   "sanity_ok": true,
+   "decisions_t": [
+    7.76,
+    19.28,
+    21.2
+   ],
+   "agent_end_t": null,
+   "controls": [],
+   "agent_session_agent_end_t": null,
+   "rtf": 0.7358,
+   "backlog_ms_max": 240.0,
+   "peak_rss_mb": 3557.4,
+   "chunk_ms_p95": 223.73,
+   "silero_ms_mean": null,
+   "enroll": null,
+   "primary_column": null,
+   "agent_rtf": 0.7476,
+   "agent_backlog_ms_max": 1800.0,
+   "final_speakers": [
+    "S0",
+    "S0",
+    "S2"
+   ],
+   "frame_lag_p50": 130
+  },
+  {
+   "demo": "livekit",
+   "tag": "dom_timeout",
+   "window": "TS3004b_064",
+   "policy": "timeout",
+   "dead_air_ms": 2496,
+   "decision_minus_true_end_ms": 2320,
+   "delivery_lag_ms": 176,
+   "cut_ins": 2,
+   "early_cuts": 2,
+   "agent_commit_ms": 2497,
+   "agent_early_commits": 2,
+   "agent_share_ms": 1,
+   "wer": 0.5818,
+   "n_decisions": 3,
+   "n_eos": 3,
+   "sessions": 1,
+   "eos_after_final": true,
+   "sanity_ok": true,
+   "decisions_t": [
+    3.44,
+    14.0,
+    17.84
+   ],
+   "agent_end_t": null,
+   "controls": [],
+   "agent_session_agent_end_t": null,
+   "rtf": 0.7109,
+   "backlog_ms_max": 200.0,
+   "peak_rss_mb": 3557.4,
+   "chunk_ms_p95": 216.19,
+   "silero_ms_mean": null,
+   "enroll": null,
+   "primary_column": null,
+   "agent_rtf": 0.7366,
+   "agent_backlog_ms_max": 1800.0,
+   "final_speakers": [
+    "S0",
+    "S1",
+    "S1"
+   ],
+   "frame_lag_p50": 126
+  }
+ ],
+ "summary": {
+  "pipecat:arm_dyn": {
+   "n": 5,
+   "dead_air_median": 2563,
+   "decision_median": 2240,
+   "n_no_decision": 0,
+   "cut_ins": 0,
+   "agent_commit_median": null,
+   "rtf": [
+    0.6937,
+    0.7464
+   ],
+   "backlog_max": 400.0,
+   "rss_max": 3554.8,
+   "wer_median": 0.3571,
+   "clean": true
+  },
+  "pipecat:arm_silero": {
+   "n": 5,
+   "dead_air_median": 2921,
+   "decision_median": 2736,
+   "n_no_decision": 0,
+   "cut_ins": 0,
+   "agent_commit_median": null,
+   "rtf": [
+    0.6957,
+    0.7479
+   ],
+   "backlog_max": 320.0,
+   "rss_max": 3577.4,
+   "wer_median": 0.3571,
+   "clean": true
+  },
+  "pipecat:arm_timeout": {
+   "n": 5,
+   "dead_air_median": 1682,
+   "decision_median": 1520,
+   "n_no_decision": 0,
+   "cut_ins": 3,
+   "agent_commit_median": null,
+   "rtf": [
+    0.6933,
+    0.7638
+   ],
+   "backlog_max": 400.0,
+   "rss_max": 3554.8,
+   "wer_median": 0.3571,
+   "clean": true
+  },
+  "pipecat:dom_dyn": {
+   "n": 5,
+   "dead_air_median": 2662,
+   "decision_median": 2240,
+   "n_no_decision": 0,
+   "cut_ins": 0,
+   "agent_commit_median": null,
+   "rtf": [
+    0.7112,
+    0.9913
+   ],
+   "backlog_max": 1740.0,
+   "rss_max": 3554.3,
+   "wer_median": 0.3571,
+   "clean": true
+  },
+  "pipecat:dom_silero": {
+   "n": 5,
+   "dead_air_median": 2941,
+   "decision_median": 2736,
+   "n_no_decision": 0,
+   "cut_ins": 0,
+   "agent_commit_median": null,
+   "rtf": [
+    0.7106,
+    0.7533
+   ],
+   "backlog_max": 360.0,
+   "rss_max": 3578.9,
+   "wer_median": 0.3571,
+   "clean": true
+  },
+  "pipecat:dom_timeout": {
+   "n": 5,
+   "dead_air_median": 1702,
+   "decision_median": 1520,
+   "n_no_decision": 0,
+   "cut_ins": 3,
+   "agent_commit_median": null,
+   "rtf": [
+    0.6996,
+    0.7907
+   ],
+   "backlog_max": 320.0,
+   "rss_max": 3554.3,
+   "wer_median": 0.3571,
+   "clean": true
+  },
+  "livekit:arm_dyn": {
+   "n": 5,
+   "dead_air_median": 2419,
+   "decision_median": 2240,
+   "n_no_decision": 0,
+   "cut_ins": 0,
+   "agent_commit_median": 2431,
+   "rtf": [
+    0.6942,
+    0.7382
+   ],
+   "backlog_max": 1800.0,
+   "rss_max": 3579.3,
+   "wer_median": 0.3571,
+   "clean": false
+  },
+  "livekit:arm_silero": {
+   "n": 5,
+   "dead_air_median": 2918,
+   "decision_median": 2736,
+   "n_no_decision": 0,
+   "cut_ins": 0,
+   "agent_commit_median": 2915,
+   "rtf": [
+    0.6795,
+    0.7402
+   ],
+   "backlog_max": 1800.0,
+   "rss_max": 3576.9,
+   "wer_median": 0.3571,
+   "clean": false
+  },
+  "livekit:arm_timeout": {
+   "n": 5,
+   "dead_air_median": 1667,
+   "decision_median": 1520,
+   "n_no_decision": 0,
+   "cut_ins": 4,
+   "agent_commit_median": 1671,
+   "rtf": [
+    0.6794,
+    0.7498
+   ],
+   "backlog_max": 1800.0,
+   "rss_max": 3558.6,
+   "wer_median": 0.3571,
+   "clean": true
+  },
+  "livekit:dom_dyn": {
+   "n": 5,
+   "dead_air_median": 2425,
+   "decision_median": 2240,
+   "n_no_decision": 0,
+   "cut_ins": 0,
+   "agent_commit_median": 2422,
+   "rtf": [
+    0.6909,
+    0.7643
+   ],
+   "backlog_max": 1800.0,
+   "rss_max": 3578.4,
+   "wer_median": 0.3571,
+   "clean": false
+  },
+  "livekit:dom_silero": {
+   "n": 5,
+   "dead_air_median": 2921,
+   "decision_median": 2736,
+   "n_no_decision": 0,
+   "cut_ins": 0,
+   "agent_commit_median": 2920,
+   "rtf": [
+    0.6919,
+    0.7653
+   ],
+   "backlog_max": 1800.0,
+   "rss_max": 3579.1,
+   "wer_median": 0.3571,
+   "clean": false
+  },
+  "livekit:dom_timeout": {
+   "n": 5,
+   "dead_air_median": 1676,
+   "decision_median": 1520,
+   "n_no_decision": 0,
+   "cut_ins": 5,
+   "agent_commit_median": 1671,
+   "rtf": [
+    0.6948,
+    0.7822
+   ],
+   "backlog_max": 2000.0,
+   "rss_max": 3557.4,
+   "wer_median": 0.3571,
+   "clean": true
+  }
+ },
+ "sanity_notes": [
+  "all 30 Pipecat runs: EndFrame, 0 violations, 0 warnings, 0 pipeline errors",
+  "LiveKit: 1 server session per run, every END_OF_SPEECH after a FINAL; IS1008b_014 under the four hybrid runs has one more END_OF_SPEECH than cutting turn_ends: the end-of-stream flush final at 27.0 s (another speaker talks after the decision), as in section 4b",
+  "LiveKit AgentSession-mode server backlog_ms_max 1800-2000 = LiveKit pushing 2 s of silence into the STT on close (known quirk, section 5)",
+  "no session had RTF > 1; the Pipecat hybrid_dyn IS1008b_014 run had RTF 0.99 and a 1.74 s backlog: its dead air (3682) is load-inflated (decision 2240, same as its rerun under arm: 2563)"
+ ]
+}

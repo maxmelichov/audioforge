@@ -1,0 +1,434 @@
+{
+ "protocol": "ASR on real meeting audio for the final report (research/FINAL_REPORT.md): WER + CPU RTF, same sets and normalisation.\n\nSets\n  ami   AMI dev single-speaker segments, the 200-segment set of scripts/bench_yield_tokens.py `wer` stage\n        (AMI(subset({\"dev\": 4})[\"dev\"]).asr(1.0, 15.0), random.Random(0).sample(..., 200), sorted)\n  libri LibriSpeech test-clean, first 200 utterances (data/librispeech/test-clean-first200.jsonl)\n\nSystems (each run in its own process; torch/ctranslate2 at 2 CPU threads)\n  served          runs/stage1_served.afm, RNNT head, encoder att_context [70, 1] = 160 ms chunks. m.transcribe uses the\n                  masked offline forward, which equals chunk-by-chunk cache-aware streaming (tests/test_streaming.py).\n  parakeet        runs/nemo_parakeet_ctc_0.6b.afm (NVIDIA parakeet-ctc-0.6b imported, offline, full context). ALONE.\n  whisper_small   OpenAI Whisper small (244M) via faster-whisper / CTranslate2 (Systran/faster-whisper-small), int8,\n                  greedy (beam 1), language en, no timestamps, no VAD filter.\n  whisper_turbo   Whisper large-v3-turbo (809M) via faster-whisper (mobiuslabsgmbh/faster-whisper-large-v3-turbo), same.\n\nScoring: audioforge.teachers.normalize_text on ref and hyp (primary). Two diagnostics: `nofill` also drops filler words\n(um, uh, mm, hmm, ...) from both sides; `whisper_norm` applies Whisper's EnglishTextNormalizer to both sides.\nRTF = decode wall time / audio seconds (model load excluded), CPU, 2 threads.",
+ "threads": 2,
+ "results": {
+  "served/ami": {
+   "n": 200,
+   "audio_sec": 1173.2,
+   "decode_sec": 26.2,
+   "rtf_cpu2": 0.0223,
+   "params": "114.6M encoder + heads (shared)",
+   "wer_normalize_text": {
+    "wer": 0.2443,
+    "ci95": [
+     0.2204,
+     0.2722
+    ],
+    "errors": 799,
+    "ref_words": 3271
+   },
+   "wer_nofill": {
+    "wer": 0.214,
+    "ci95": [
+     0.1903,
+     0.2412
+    ],
+    "errors": 655,
+    "ref_words": 3061
+   },
+   "wer_whisper_norm": {
+    "wer": 0.2063,
+    "ci95": [
+     0.1833,
+     0.2327
+    ],
+    "errors": 649,
+    "ref_words": 3146
+   },
+   "examples": [
+    {
+     "ref": "i hope uh you have a fresh head and a fresh time",
+     "hyp": "i hope uh you have a fresh head and the fresh time"
+    },
+    {
+     "ref": "yeah uh the agenda of the meeting is opening",
+     "hyp": "ya uh the agent of the meeting is opening"
+    },
+    {
+     "ref": "then uh i'm going to talk about uh the project management what i'm going to do and uh of course i'm doing the project management and secretary both okay to take the minutes of the meeting",
+     "hyp": "then uh i'm going to talk about uh the project management what i'm going to do and uh of course i'm doing the project management and secretary both okay to take the minutes of the meeting"
+    }
+   ]
+  },
+  "parakeet/ami": {
+   "n": 200,
+   "audio_sec": 1173.2,
+   "decode_sec": 57.5,
+   "rtf_cpu2": 0.049,
+   "params": "~600M",
+   "wer_normalize_text": {
+    "wer": 0.1932,
+    "ci95": [
+     0.1737,
+     0.2157
+    ],
+    "errors": 632,
+    "ref_words": 3271
+   },
+   "wer_nofill": {
+    "wer": 0.1496,
+    "ci95": [
+     0.1299,
+     0.1724
+    ],
+    "errors": 458,
+    "ref_words": 3061
+   },
+   "wer_whisper_norm": {
+    "wer": 0.1414,
+    "ci95": [
+     0.1228,
+     0.1632
+    ],
+    "errors": 445,
+    "ref_words": 3146
+   },
+   "examples": [
+    {
+     "ref": "i hope uh you have a fresh head and a fresh time",
+     "hyp": "i hope you have a fresh hair and fresh time"
+    },
+    {
+     "ref": "yeah uh the agenda of the meeting is opening",
+     "hyp": "y uh the agenda of the meeting is opening"
+    },
+    {
+     "ref": "then uh i'm going to talk about uh the project management what i'm going to do and uh of course i'm doing the project management and secretary both okay to take the minutes of the meeting",
+     "hyp": "then i'm going to talk about the project management what i'm going to do and of course i'm doing the project management and secretary both ok to take the minutes of the meeting"
+    }
+   ]
+  },
+  "whisper_small/ami": {
+   "n": 200,
+   "audio_sec": 1173.2,
+   "decode_sec": 328.6,
+   "rtf_cpu2": 0.2801,
+   "params": "244M",
+   "wer_normalize_text": {
+    "wer": 0.2116,
+    "ci95": [
+     0.1893,
+     0.2371
+    ],
+    "errors": 692,
+    "ref_words": 3271
+   },
+   "wer_nofill": {
+    "wer": 0.1624,
+    "ci95": [
+     0.1404,
+     0.1873
+    ],
+    "errors": 497,
+    "ref_words": 3061
+   },
+   "wer_whisper_norm": {
+    "wer": 0.1443,
+    "ci95": [
+     0.1248,
+     0.1692
+    ],
+    "errors": 454,
+    "ref_words": 3146
+   },
+   "examples": [
+    {
+     "ref": "i hope uh you have a fresh head and a fresh time",
+     "hyp": "I hope you have fresh air in the fresh time."
+    },
+    {
+     "ref": "yeah uh the agenda of the meeting is opening",
+     "hyp": "The agenda of the meeting is opening."
+    },
+    {
+     "ref": "then uh i'm going to talk about uh the project management what i'm going to do and uh of course i'm doing the project management and secretary both okay to take the minutes of the meeting",
+     "hyp": "Then I am going to talk about the project management, what I am going to do and of course I am doing the project management and secretary both to take the minutes of the meeting."
+    }
+   ]
+  },
+  "whisper_turbo/ami": {
+   "n": 200,
+   "audio_sec": 1173.2,
+   "decode_sec": 1723.9,
+   "rtf_cpu2": 1.4694,
+   "params": "809M",
+   "wer_normalize_text": {
+    "wer": 0.1963,
+    "ci95": [
+     0.1745,
+     0.2189
+    ],
+    "errors": 642,
+    "ref_words": 3271
+   },
+   "wer_nofill": {
+    "wer": 0.1454,
+    "ci95": [
+     0.1256,
+     0.1678
+    ],
+    "errors": 445,
+    "ref_words": 3061
+   },
+   "wer_whisper_norm": {
+    "wer": 0.1294,
+    "ci95": [
+     0.1103,
+     0.1516
+    ],
+    "errors": 407,
+    "ref_words": 3146
+   },
+   "examples": [
+    {
+     "ref": "i hope uh you have a fresh head and a fresh time",
+     "hyp": "I hope you have fresh hair and fresh time."
+    },
+    {
+     "ref": "yeah uh the agenda of the meeting is opening",
+     "hyp": "yeah the agent of the meeting is opening"
+    },
+    {
+     "ref": "then uh i'm going to talk about uh the project management what i'm going to do and uh of course i'm doing the project management and secretary both okay to take the minutes of the meeting",
+     "hyp": "then I'm going to talk about the project management what I'm going to do and of course I'm doing the project management and secretary both okay to take the minutes of the meeting"
+    }
+   ]
+  },
+  "served/libri": {
+   "n": 200,
+   "audio_sec": 1818.5,
+   "decode_sec": 27.9,
+   "rtf_cpu2": 0.0154,
+   "params": "114.6M encoder + heads (shared)",
+   "wer_normalize_text": {
+    "wer": 0.0229,
+    "ci95": [
+     0.0178,
+     0.0287
+    ],
+    "errors": 106,
+    "ref_words": 4634
+   },
+   "wer_nofill": {
+    "wer": 0.0229,
+    "ci95": [
+     0.0178,
+     0.0287
+    ],
+    "errors": 106,
+    "ref_words": 4631
+   },
+   "wer_whisper_norm": {
+    "wer": 0.0227,
+    "ci95": [
+     0.0174,
+     0.0292
+    ],
+    "errors": 106,
+    "ref_words": 4675
+   },
+   "examples": [
+    {
+     "ref": "he hoped there would be stew for dinner turnips and carrots and bruised potatoes and fat mutton pieces to be ladled out in thick peppered flour fattened sauce",
+     "hyp": "he hoped there would be stew for dinner turnips and carrots and bruised potatoes and fat mutton pieces to be ladled out in thick peppered flower fattened sauce"
+    },
+    {
+     "ref": "stuff it into you his belly counselled him",
+     "hyp": "stuff it into you his belly counselled him"
+    },
+    {
+     "ref": "after early nightfall the yellow lamps would light up here and there the squalid quarter of the brothels",
+     "hyp": "after early nightfall the yellow lamps would light up here and there the squalid quarter of the brothels"
+    }
+   ]
+  },
+  "parakeet/libri": {
+   "n": 200,
+   "audio_sec": 1818.5,
+   "decode_sec": 73.1,
+   "rtf_cpu2": 0.0402,
+   "params": "~600M",
+   "wer_normalize_text": {
+    "wer": 0.0168,
+    "ci95": [
+     0.0121,
+     0.0216
+    ],
+    "errors": 78,
+    "ref_words": 4634
+   },
+   "wer_nofill": {
+    "wer": 0.0168,
+    "ci95": [
+     0.0121,
+     0.0216
+    ],
+    "errors": 78,
+    "ref_words": 4631
+   },
+   "wer_whisper_norm": {
+    "wer": 0.0163,
+    "ci95": [
+     0.0111,
+     0.0214
+    ],
+    "errors": 76,
+    "ref_words": 4675
+   },
+   "examples": [
+    {
+     "ref": "he hoped there would be stew for dinner turnips and carrots and bruised potatoes and fat mutton pieces to be ladled out in thick peppered flour fattened sauce",
+     "hyp": "he hoped there would be stew for dinner turnips and carrots and bruised potatoes and fat mutton pieces to be ladled out in thick peppered flour fattened sauce"
+    },
+    {
+     "ref": "stuff it into you his belly counselled him",
+     "hyp": "stuff it into you his belly counselled him"
+    },
+    {
+     "ref": "after early nightfall the yellow lamps would light up here and there the squalid quarter of the brothels",
+     "hyp": "after early nightfall the yellow lamps would light up here and there the squalid quarter of the brothels"
+    }
+   ]
+  },
+  "whisper_small/libri": {
+   "n": 200,
+   "audio_sec": 1818.5,
+   "decode_sec": 333.5,
+   "rtf_cpu2": 0.1834,
+   "params": "244M",
+   "wer_normalize_text": {
+    "wer": 0.0242,
+    "ci95": [
+     0.0188,
+     0.0296
+    ],
+    "errors": 112,
+    "ref_words": 4634
+   },
+   "wer_nofill": {
+    "wer": 0.0242,
+    "ci95": [
+     0.0188,
+     0.0296
+    ],
+    "errors": 112,
+    "ref_words": 4631
+   },
+   "wer_whisper_norm": {
+    "wer": 0.0229,
+    "ci95": [
+     0.0167,
+     0.0292
+    ],
+    "errors": 107,
+    "ref_words": 4675
+   },
+   "examples": [
+    {
+     "ref": "he hoped there would be stew for dinner turnips and carrots and bruised potatoes and fat mutton pieces to be ladled out in thick peppered flour fattened sauce",
+     "hyp": "He hoped there would be stew for dinner, turnips and carrots and bruised potatoes and fat mutton pieces to be ladled out in thick, peppered, flour-fattened sauce."
+    },
+    {
+     "ref": "stuff it into you his belly counselled him",
+     "hyp": "Stuff it into you, his belly counseled him."
+    },
+    {
+     "ref": "after early nightfall the yellow lamps would light up here and there the squalid quarter of the brothels",
+     "hyp": "After early nightfall the yellow lamps would light up here and there the squalid quarter of the brothels."
+    }
+   ]
+  },
+  "whisper_turbo/libri": {
+   "n": 200,
+   "audio_sec": 1818.5,
+   "decode_sec": 1603.7,
+   "rtf_cpu2": 0.8819,
+   "params": "809M",
+   "wer_normalize_text": {
+    "wer": 0.0147,
+    "ci95": [
+     0.0103,
+     0.0196
+    ],
+    "errors": 68,
+    "ref_words": 4634
+   },
+   "wer_nofill": {
+    "wer": 0.0147,
+    "ci95": [
+     0.0103,
+     0.0196
+    ],
+    "errors": 68,
+    "ref_words": 4631
+   },
+   "wer_whisper_norm": {
+    "wer": 0.0137,
+    "ci95": [
+     0.0091,
+     0.019
+    ],
+    "errors": 64,
+    "ref_words": 4675
+   },
+   "examples": [
+    {
+     "ref": "he hoped there would be stew for dinner turnips and carrots and bruised potatoes and fat mutton pieces to be ladled out in thick peppered flour fattened sauce",
+     "hyp": "He hoped there would be stew for dinner, turnips and carrots and bruised potatoes, and fat mutton pieces to be ladled out in thick, peppered, flour-fattened sauce."
+    },
+    {
+     "ref": "stuff it into you his belly counselled him",
+     "hyp": "\"'Stuff it into you,' his belly counselled him."
+    },
+    {
+     "ref": "after early nightfall the yellow lamps would light up here and there the squalid quarter of the brothels",
+     "hyp": "after early nightfall the yellow lamps would light up here and there the squalid quarter of the brothels"
+    }
+   ]
+  }
+ },
+ "paired_served_minus": {
+  "parakeet/ami": {
+   "delta": 0.0511,
+   "ci95": [
+    0.0338,
+    0.0714
+   ]
+  },
+  "whisper_small/ami": {
+   "delta": 0.0327,
+   "ci95": [
+    0.0122,
+    0.0585
+   ]
+  },
+  "whisper_turbo/ami": {
+   "delta": 0.048,
+   "ci95": [
+    0.0253,
+    0.0741
+   ]
+  },
+  "parakeet/libri": {
+   "delta": 0.006,
+   "ci95": [
+    0.0024,
+    0.0103
+   ]
+  },
+  "whisper_small/libri": {
+   "delta": -0.0013,
+   "ci95": [
+    -0.0056,
+    0.003
+   ]
+  },
+  "whisper_turbo/libri": {
+   "delta": 0.0082,
+   "ci95": [
+    0.0042,
+    0.0125
+   ]
+  }
+ }
+}

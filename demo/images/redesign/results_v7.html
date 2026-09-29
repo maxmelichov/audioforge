@@ -1,0 +1,144 @@
+<!doctype html><html><head><meta charset="utf-8"><link rel="stylesheet" href="style.css">
+<style>
+.gh { position: absolute; font-size: 22px; font-weight: 700; letter-spacing: 0.08em; color: var(--ink2); white-space: nowrap; }
+.card { position: absolute; }
+.ct { position: absolute; left: 0; top: 0; font-size: 26px; font-weight: 700; color: var(--ink); white-space: nowrap; line-height: 1.1; }
+.hero { position: absolute; left: 0; white-space: nowrap; line-height: 1; color: var(--ink); }
+.hero .v { font-size: 50px; font-weight: 700; letter-spacing: -0.02em; }
+.hero .u { font-size: 30px; font-weight: 700; margin-left: 2px; }
+.hero .w { font-size: 26px; font-weight: 700; margin-left: 10px; }
+.hero .ar { font-size: 30px; font-weight: 700; margin-left: 8px; color: var(--ink); }
+.sec { position: absolute; left: 0; font-size: 24px; color: var(--ink); white-space: nowrap; line-height: 1.15; }
+.lab { position: absolute; font-size: 22px; color: var(--ink2); white-space: nowrap; line-height: 1.1; }
+.lab.us { color: var(--ink); font-weight: 700; }
+.lab.grp { color: var(--ink); font-weight: 700; }
+.val { position: absolute; font-size: 22px; color: var(--ink2); white-space: nowrap; line-height: 1; }
+.val.us { color: var(--ink); font-weight: 700; }
+.tick { position: absolute; font-size: 22px; color: var(--ink2); white-space: nowrap; line-height: 1; }
+.cue { position: absolute; font-size: 22px; font-weight: 700; letter-spacing: 0.06em; color: var(--ink2); white-space: nowrap; line-height: 1; }
+.meth { position: absolute; font-size: 22px; color: var(--ink2); white-space: nowrap; line-height: 1.1; }
+</style></head><body><div id="stage"></div><script src="numbers_single.js"></script><script>
+// results_v7: a story in three groups (understands you / knows when to respond / feels fast). Every card: a title, a
+// hero line with the value, unit, metric words and the arrow for "good", an optional secondary delta line, then
+// zero-based horizontal bars, every bar with its value at the end (audioforge bold), lighter
+// baseline rows with their values, and a subtle BETTER cue at the good end of the axis. Numbers: numbers_single.json
+// (export_single.py); every number element carries data-key="ns:<key>" and render.py checks it.
+const st = document.getElementById("stage"); let svg = [];
+const css = k => getComputedStyle(document.documentElement).getPropertyValue(k).trim();
+const E = k => { const e = NS[k]; if (!e) throw new Error("numbers_single has no " + k); return e; };
+const s = k => E(k).shown ?? String(E(k).value), v = k => E(k).value;
+const N = k => `<span data-key="ns:${k}">${s(k)}</span>`;
+function el(cls, html, x, y, parent = st) { const e = document.createElement("div"); e.className = cls; e.innerHTML = html;
+  Object.assign(e.style, { left: x + "px", top: y + "px" }); parent.appendChild(e); return e; }
+function place(e, x, y, ax = 0, ay = 0) { e.style.left = (x - ax * e.offsetWidth) + "px"; e.style.top = (y - ay * e.offsetHeight) + "px"; return e; }
+const G = "#C8CDD4";
+function line(x1, y1, x2, y2, c, w) { svg.push(`<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="${c}" stroke-width="${w}" stroke-linecap="round"/>`); }
+function bar(x, y, w, h, c) { svg.push(`<rect x="${x}" y="${y}" width="${Math.max(3, w)}" height="${h}" rx="4" fill="${c}"/>`); }
+
+// rows: [label, key|null, kind] kind: "us" | "base" | "grp" (a group label row, no bar)
+function bars(c, W, y0, y1, rows, max, lower, ticks, unit, lw) {
+  const lx = lw, x1 = W - (lower ? 70 : 160), X = t => lx + (x1 - lx) * t / max;
+  const ay = y1 - 28, n = rows.length, pt = Math.max(W < 500 ? 24 : 27, Math.min(38, (ay - 8 - y0) / n));
+  let y = y0;
+  rows.forEach(([lab, k, kind]) => {
+    if (kind === "grp") { place(el("lab grp", lab, 0, 0, c), 0, y + pt / 2, 0, 0.5); y += pt; return; }
+    const us = kind === "us", bh = Math.round(pt * (us ? 0.62 : 0.5));
+    place(el("lab" + (us ? " us" : ""), lab, 0, 0, c), kind === "sub" ? 18 : 0, y + pt / 2, 0, 0.5);
+    bar(lx, y + (pt - bh) / 2, X(v(k)) - lx, bh, us ? css("--ours") : G); window.BARCOUNT.bars++;
+    const vl = el("val" + (us ? " us" : ""), N(k), 0, 0, c); vl.dataset.barval = "1"; window.BARCOUNT.labels++;
+    place(vl, X(v(k)) + 10, y + pt / 2, 0, 0.5);
+    y += pt; });
+  // axis at the bottom: zero line, ticks (unit on the last), the BETTER cue at the good end, above the axis
+  line(lx, y0, lx, ay, "#AEB6C0", 1.5); line(lx, ay, x1, ay, "#AEB6C0", 1.5);
+  ticks.forEach((t, i) => { line(X(t), ay, X(t), ay + 6, "#AEB6C0", 1.5); place(el("tick", t + (i === ticks.length - 1 ? unit : ""), 0, 0, c), X(t), ay + 8, 0.5, 0); });
+  // the BETTER cue on the tick row, at the good end: left of zero (lower is better) or right of the maximum (higher)
+  const cue = el("cue", lower ? "BETTER ←" : "→ BETTER", 0, 0, c);
+  if (lower) place(cue, lx - 16, ay + 8, 1, 0); else place(cue, X(max) + 34, ay + 8, 0, 0);
+}
+const CARDS = {
+  find: { title: "Finds your voice", hero: () => [N("find/icsi/ours"), "", "F1", "↑"], sec: () => `ICSI · ${N("find/ami/ours")} on AMI`,
+    meth: "grey: NVIDIA Nemotron-3, same 5 s sample",
+    draw: (c, W, y0, y1, sq) => sq ? bars(c, W, y0, y1, [["ICSI audioforge", "find/icsi/ours", "us"], ["ICSI Nemotron-3", "find/icsi/nemotron3", "base"],
+      ["AMI audioforge", "find/ami/ours", "us"], ["AMI Nemotron-3", "find/ami/nemotron3", "base"]], 1, false, [0, 1], "", 176)
+      : bars(c, W, y0, y1, [["ICSI", null, "grp"], ["audioforge", "find/icsi/ours", "us"], ["Nemotron-3", "find/icsi/nemotron3", "base"],
+      ["AMI", null, "grp"], ["audioforge", "find/ami/ours", "us"], ["Nemotron-3", "find/ami/nemotron3", "base"]], 1, false, [0, 0.5, 1], "", 150) },
+  vad: { title: "Hears speech", hero: () => [N("vad2/ours/miss"), "%", "speech missed", "↓"], sec: () => `${N("vad2/rel")} % less missed than NVIDIA MarbleNet`,
+    secSq: () => `${N("vad2/rel")} % less than MarbleNet · 7.5 % false alarms`, meth: "same false-alarm rate (7.5 %) · AMI meetings",
+    draw: (c, W, y0, y1) => bars(c, W, y0, y1, [["audioforge", "vad2/ours/miss", "us"], ["NVIDIA MarbleNet", "vad2/marblenet/miss", "base"], ["Silero", "vad2/silero/miss", "base"]], 20, true, [0, 10, 20], " %", 190) },
+  missed: { title: "Missed turn ends", hero: () => [N("ext/ami/ours"), "%", "missed", "↓"], sec: () => `${N("v7/missed_rel")} % fewer missed than NVIDIA Parakeet-Realtime-EOU`,
+    secSq: () => `${N("v7/missed_rel")} % fewer than NVIDIA Parakeet-EOU`, meth: "AMI meetings · all at ≈ 5 % false cut-offs",
+    draw: (c, W, y0, y1, sq) => bars(c, W, y0, y1, [["audioforge", "ext/ami/ours", "us"], [sq ? "NVIDIA Parakeet-EOU" : "NVIDIA Parakeet-Realtime-EOU", "ext/ami/eou", "base"],
+      [sq ? "Pipecat smart-turn" : "Pipecat smart-turn + Silero", "ext/ami/smartturn", "base"], ["Silero timeout", "ext/ami/silero", "base"], ["LiveKit turn detector", "ext/ami/livekit", "base"]],
+      100, true, [0, 50, 100], " %", sq ? 236 : 336) },
+  answer: { title: "Responds after your turn", hero: () => [N("s69/ours/missed3s"), "%", "unanswered after 3 s", "↓"],
+    sec: () => `vs ${N("s69/livekit/missed3s")} % LiveKit · ${N("s69/pipecat/missed3s")} % Pipecat`, secSq: () => "", meth: "live, 69 calls",
+    draw: (c, W, y0, y1) => bars(c, W, y0, y1, [["audioforge", "s69/ours/missed3s", "us"], ["LiveKit default", "s69/livekit/missed3s", "base"], ["Pipecat default", "s69/pipecat/missed3s", "base"]], 100, true, [0, 50, 100], " %", 170) },
+  cut: { title: "Talks over you less", hero: () => [N("s69/ours/cutins"), "", "interruptions / call", "↓"], sec: () => `${N("v7/cut_rel")} % fewer than LiveKit default`,
+    meth: "live, the same 69 calls",
+    draw: (c, W, y0, y1) => bars(c, W, y0, y1, [["audioforge", "s69/ours/cutins", "us"], ["LiveKit default", "s69/livekit/cutins", "base"], ["Pipecat default", "s69/pipecat/cutins", "base"]], 2, true, [0, 1, 2], "", 170) },
+  first: { title: "Words on screen sooner", hero: () => [N("first/ours"), " s", "to first words", "↓"], sec: () => `${N("v7/first_x")}× faster than Pipecat default`, secSq: () => `${N("v7/first_x")}× faster than Pipecat · one Mac, no GPU`,
+    meth: "live, median after you start speaking · all on one Mac, no GPU",
+    draw: (c, W, y0, y1) => bars(c, W, y0, y1, [["audioforge", "first/ours", "us"], ["Pipecat default", "first/pipecat", "base"], ["LiveKit default", "first/livekit", "base"]], 6, true, [0, 3, 6], " s", 170) },
+};
+const GROUPS = [["UNDERSTANDS YOU", ["find", "vad"]], ["KNOWS WHEN TO RESPOND", ["missed", "answer", "cut"]], ["FEELS FAST", ["first"]]];
+const FOOT_SQ = "AMI + ICSI · 69 live calls · 5 s enrollment, Nemotron-3 too · turns at ≈ 5 % false cut-offs · Pipecat 1.12 / LiveKit 1.8 defaults · AMI is in Nemotron-3’s training data";
+const FOOT = "AMI + ICSI meetings · 69 live calls · 5 s voice enrollment · Pipecat 1.12 / LiveKit Agents 1.8 defaults · AMI is in Nemotron-3’s training data";
+
+function card(k, x, y, w, h, sq) {
+  const C = CARDS[k], c = el("card", "", x, y); Object.assign(c.style, { width: w + "px", height: h + "px" }); c.dataset.panel = k;
+  const t = el("ct", C.title, 0, 0, c); if (sq) t.style.fontSize = "24px";
+  const [val, unit, words, arrow] = C.hero();
+  const hz = sq ? 0.84 : 1, he = el("hero", `<span class="v">${val}</span><span class="u">${unit}</span><span class="w">${words}</span><span class="ar">${arrow}</span>`, 0, 0, c);
+  if (!sq && w < 460) { he.querySelector(".v").style.fontSize = "44px"; he.querySelector(".w").style.fontSize = "24px"; }
+  if (sq) { he.querySelector(".v").style.fontSize = "36px"; he.querySelector(".u").style.fontSize = "24px"; he.querySelector(".w").style.fontSize = "22px"; he.querySelector(".ar").style.fontSize = "24px"; }
+  place(he, 0, t.offsetHeight + (sq ? 4 : 12));
+  let top = he.offsetTop + he.offsetHeight + (sq ? 4 : 10);
+  if (sq && t.offsetWidth + 20 + he.offsetWidth <= w) {   // square: title and hero share one line when they fit
+    place(he, w, t.offsetTop + t.offsetHeight, 1, 1); top = Math.max(t.offsetTop + t.offsetHeight, he.offsetTop + he.offsetHeight) + 6; }
+  const secHtml = (sq && C.secSq ? C.secSq : C.sec)();
+  if (secHtml) { const se = el("sec", secHtml, 0, top, c); if (sq) se.style.fontSize = "22px"; top += se.offsetHeight + (sq ? 2 : 10); }
+  let mh = 0; if (!sq) { const me = el("meth", C.meth, 0, 0, c); Object.assign(me.style, { whiteSpace: "normal", width: w + "px" }); place(me, 0, h, 0, 1); mh = me.offsetHeight + 6; }
+  C.draw(c, w, top + 2, h - mh, sq);
+  const sv = document.createElementNS("http://www.w3.org/2000/svg", "svg"); sv.setAttribute("width", w); sv.setAttribute("height", h);
+  Object.assign(sv.style, { position: "absolute", left: 0, top: 0, overflow: "visible" }); sv.innerHTML = svg.join(""); svg = []; c.prepend(sv);
+}
+function group(label, x, y, w, tight) { const g = el("gh", label, x, y); line(x, y + g.offsetHeight + (tight ? 4 : 8), x + w, y + g.offsetHeight + (tight ? 4 : 8), "#DDE1E6", 1.5);
+  const sv = document.createElementNS("http://www.w3.org/2000/svg", "svg"); sv.setAttribute("class", "wires"); sv.setAttribute("width", innerWidth); sv.setAttribute("height", innerHeight);
+  sv.innerHTML = svg.join(""); svg = []; st.appendChild(sv); return y + g.offsetHeight + (tight ? 12 : 24); }
+
+function build(W, H) {
+  Object.assign(st.style, { width: W + "px", height: H + "px" }); st.innerHTML = ""; svg = []; window.BARCOUNT = { bars: 0, labels: 0 };
+  const M = 64, sq = H / W > 0.9;
+  const h1 = el("h1 abs", "audioforge single-model results", M, M + 4); if (sq) h1.style.fontSize = "34px";
+  const sub = el("sub abs", "One model for voice tracking, turn-taking and streaming speech", M, 0); place(sub, M, h1.offsetTop + h1.offsetHeight + 6); if (sq) sub.style.fontSize = "24px";
+  const f = el("foot abs", sq ? FOOT_SQ : FOOT, M, 0); f.style.width = (W - 2 * M) + "px"; f.style.top = (H - M - f.offsetHeight - 2) + "px";
+  const top = sub.offsetTop + sub.offsetHeight + (sq ? 16 : 40), bot = f.offsetTop - (sq ? 14 : 36);
+  if (!sq) {
+    // three columns in story order: UNDERSTANDS YOU (2 stacked) | KNOWS WHEN TO RESPOND (missed on top, the two live cards
+    // side by side below) | FEELS FAST (1)
+    const gx = 46, c1 = 450, c3 = 380, c2 = W - 2 * M - c1 - c3 - 2 * gx, gap = 30;
+    let y0 = group(GROUPS[0][0], M, top, c1); const avail = bot - y0;
+    card("find", M, y0, c1, Math.round(avail * 0.555) - gap / 2, false); card("vad", M, y0 + Math.round(avail * 0.555) + gap / 2, c1, avail - Math.round(avail * 0.555) - gap / 2, false);
+    const x2 = M + c1 + gx; y0 = group(GROUPS[1][0], x2, top, c2);
+    const hm = Math.round(avail * 0.53); card("missed", x2, y0, c2, hm - gap / 2, false);
+    const hw = (c2 - 40) / 2; card("answer", x2, y0 + hm + gap / 2, hw, avail - hm - gap / 2, false); card("cut", x2 + hw + 40, y0 + hm + gap / 2, hw, avail - hm - gap / 2, false);
+    const x3 = x2 + c2 + gx; y0 = group(GROUPS[2][0], x3, top, c3);
+    card("first", x3, y0, c3, Math.round(avail * 0.5), false);
+  } else {
+    // 2 x 3 grid in story order: UNDERSTANDS YOU (find, vad) / KNOWS WHEN TO RESPOND (missed, answer, then cut) / FEELS FAST (first)
+    const gw = W - 2 * M, cx = (gw - 40) / 2, gp = 6;
+    let y = group(GROUPS[0][0], M, top, gw, true); const hdr = y - top, avail = bot - top - 3 * hdr - 2 * gp;
+    const r1 = Math.round(avail * 0.325), r2 = Math.round(avail * 0.35), r3 = avail - r1 - r2;
+    card("find", M, y, cx, r1, true); card("vad", M + cx + 40, y, cx, r1, true); y += r1 + gp;
+    y = group(GROUPS[1][0], M, y, gw, true);
+    card("missed", M, y, cx, r2, true); card("answer", M + cx + 40, y, cx, r2, true); y += r2 + gp;
+    group("", M, y, cx, true); group(GROUPS[2][0], M + cx + 40, y, cx, true); y += hdr;
+    card("cut", M, y, cx, r3, true); card("first", M + cx + 40, y, cx, r3, true);
+  }
+  if (new URLSearchParams(location.search).get("notext")) notext();
+}
+// removal test: hide the secondary lines, methodology, cues and footer; titles, hero values and bar values stay
+function notext() { const s_ = document.createElement("style"); s_.textContent = "#stage .sec, #stage .meth, #stage .cue, #stage .foot { color: transparent !important; } /* transparent !important */"; document.head.appendChild(s_); }
+window.build = build; window.notext = notext;
+const q = new URLSearchParams(location.search); if (q.get("w")) build(+q.get("w"), +q.get("h"));
+</script></body></html>

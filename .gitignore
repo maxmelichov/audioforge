@@ -1,0 +1,52 @@
+# environment
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.DS_Store
+
+# datasets (LibriSpeech etc.) and HF caches — reproducible via scripts/
+data/
+
+# trained artifacts (reproducible via scripts/research/run_all.sh); samples are kept, new training logs are not
+# (the logs committed before 2026-09-28 stay tracked)
+runs/*.afm
+runs/*.pt
+runs/*.onnx
+runs/*.log
+*.onnx
+*.log
+*.afm
+!assets/*.pt
+
+# demo renders and intermediate clips / event logs (demo/*.py rebuilds them)
+demo/*.mp4
+demo/*.mov
+demo/*.gif
+demo/frames/
+demo/clips/
+demo/events/
+demo/audio/
+
+# large raw dump of all 943 NVIDIA repos (the audio subset is kept in research/raw/audio_models.json)
+research/raw/all_full.json
+
+# models written by audioforge-download (default <repo>/models; see audioforge/hub.py)
+models/
+
+# packaging / tooling caches
+build/
+dist/
+*.egg-info/
+.ruff_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+.ipynb_checkpoints/
+
+# scratch
+*.part
+*.tmp
+scratch/
+.venv*/
+venv*/

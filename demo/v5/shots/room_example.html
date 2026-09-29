@@ -1,0 +1,138 @@
+<!doctype html><html><head><meta charset="utf-8"><link rel="stylesheet" href="common.css">
+<style>
+/* The room (REFERENCE_DEMOS.md shot 10): a real AMI meeting, four people, one microphone, on one time axis with one
+   playhead. Top: the default stacks, ONE grey lane ("one voice"; they output no speaker labels). Bottom: audioforge,
+   four speaker lanes that fill in from the recorded Nemotron-3 column activity (> 0.5) of the live session, and a
+   people-found counter. One subtitle line: the reference words of the current speaker, labelled "Person N:" with the
+   live diarizer's column at that word. Everything is read from the clip record (t0/t1, frames, subs, env). */
+.ax { position: absolute; font-size: 28px; color: var(--fg2); white-space: nowrap; }
+.axl { position: absolute; width: 2px; background: var(--rule); }
+.hdr { position: absolute; display: flex; align-items: center; gap: 20px; white-space: nowrap; }
+.hdr .nm { font-size: 44px; font-weight: 700; color: var(--fg); display: flex; align-items: center; gap: 16px; }
+.hdr .nm i { width: 24px; height: 24px; border-radius: 50%; display: inline-block; flex: none; }
+.hdr .nm i + i { margin-left: -8px; }
+.who { position: absolute; font-size: 36px; color: var(--fg2); white-space: nowrap; }
+.who b { color: var(--fg); }
+.role { position: absolute; font-size: 30px; font-weight: 700; white-space: nowrap; }
+.rule { position: absolute; height: 2px; background: var(--rule); }
+.wb { position: absolute; border-radius: 3px; background: var(--pipecat); }
+.seg { position: absolute; border-radius: 8px; }
+.play { position: absolute; z-index: 1; width: 3px; background: var(--fg); }
+.cnt { position: absolute; text-align: right; white-space: nowrap; }
+.cnt .v { font-size: 96px; font-weight: 700; line-height: 1; font-variant-numeric: tabular-nums; }
+.cnt .l { font-size: 30px; color: var(--fg2); margin-top: 4px; }
+#subs { justify-content: flex-start !important; }
+#subs .who2 { font-size: 30px; color: var(--bg); padding: 3px 16px; border-radius: 999px; flex: none; margin-right: 4px !important; }
+#subs .sw { font-size: 46px; display: inline-block; margin-right: 0 !important; }
+.sq .hdr .nm { font-size: 38px; }
+.sq .who { font-size: 32px; }
+.sq .role, .sq .cnt .l { font-size: 28px; }
+.sq .cnt .v { font-size: 64px; }
+.sq #subs .who2 { font-size: 28px; }
+.sq #subs .sw { font-size: 44px; }
+</style></head><body><script src="common.js"></script><script>
+const SPK = ["#FFFFFF", "#A1A1A6", "#FFD60A", "#30D158"];   // four distinct tones; never orange (= audioforge), no blue, no glow
+let D, P, R, SPAN, G = {}, E = {};
+const T0 = () => SPAN[0], TL = () => SPAN[1] - SPAN[0];
+function clipState(ctx, t) {
+  const sg = (ctx.segs || []).filter(s => s.kind === "clip")[0];
+  if (!sg) return { at: T0() + t, phase: "during" };
+  if (t < sg.start) return { at: T0(), phase: "before", sg };
+  if (t <= sg.end) return { at: Math.min(SPAN[1], T0() + (t - sg.start)), phase: "during", sg };
+  return { at: SPAN[1], phase: "after", sg };
+}
+// the live diarizer's column for a reference word: the most active of columns 0-3 over the word (+ the 160 ms column
+// lag); if none is above 0.3, the recorded primary at that time
+function colAt(w) {
+  const sum = [0, 0, 0, 0]; let n = 0, prim = null;
+  for (const f of R.frames) { if (f[0] < w[0]) { prim = f[4]; continue; } if (f[0] > w[1] + 0.24) break; f[1].slice(0, 4).forEach((v, i) => sum[i] += v); n++; if (f[4] != null) prim = f[4]; }
+  const best = sum.indexOf(Math.max(...sum));
+  return n && sum[best] / n > 0.3 ? best : Math.min(3, Math.max(0, prim == null ? best : prim));
+}
+function init(data, params, W, H) {
+  D = data; P = params; R = D.clips[P.clip];
+  const ct = stage(W, H); document.body.classList.toggle("sq", S.sq);
+  const segs = (P.segs || []).filter(s => s.kind === "clip");
+  SPAN = [R.t0 != null ? R.t0 : (segs[0] || {}).t0 || 0, R.t1 != null ? R.t1 : (segs[0] || {}).t1 || 5];
+  window.SPAN_MISMATCH = segs.filter(s => Math.abs(s.t0 - SPAN[0]) > 1e-3 || Math.abs(s.t1 - SPAN[1]) > 1e-3).map(s => [s.key, s.t0, s.t1]);
+  const sq = S.sq, M = S.M, roleW = sq ? 140 : 200, cntW = sq ? 150 : 250;
+  const x0 = M + roleW, x1 = W - M - cntW, X = tt => x0 + (x1 - x0) * (tt - T0()) / TL();
+  Object.assign(G, { x0, x1, X });
+  const pr = U.el("div", null, ct); pr.setAttribute("data-primary", ""); U.css(pr, { position: "absolute", left: M, top: M, width: W - 2 * M, height: S.bottom - M });
+  // time axis
+  for (let s = 0; s <= Math.floor(TL() + 1e-6); s += sq ? 2 : 1) {
+    const lab = U.el("div", "ax", ct, `${s} s`); const l = X(T0() + s) - 2; if (l + lab.offsetWidth > x1 + 6) { lab.remove(); continue; }
+    U.css(lab, { left: l, top: M }); const ln = U.el("div", "axl", ct); U.css(ln, { left: X(T0() + s) - 1, top: M + 36, height: 8 }); }
+  // vertical plan
+  const axH = 48, hdrH = sq ? 52 : 58, whoH = sq ? 46 : 0, gapB = sq ? 24 : 30, avail = S.bottom - M - axH;
+  const defLane = sq ? 80 : 90, laneGap = sq ? 10 : 14;
+  const laneH = Math.max(36, Math.min(sq ? 64 : 70, (avail - hdrH - whoH - 10 - defLane - gapB - hdrH - 10 - 3 * laneGap) / 4));
+  let y = M + axH;
+  // default: one grey lane
+  E.dh = U.el("div", "hdr", ct, `<div class="nm"><i style="background:var(--pipecat)"></i><i style="background:var(--livekit)"></i>Pipecat / LiveKit default</div>`); U.css(E.dh, { left: M, top: y });
+  E.who = U.el("div", "who", ct, `who is speaking? <b>unknown</b>`);
+  if (sq) U.css(E.who, { left: M, top: y + hdrH }); else U.css(E.who, { left: M + E.dh.offsetWidth + 28, top: y + 8 });
+  y += hdrH + whoH + 10;
+  G.dy = y; G.dh = defLane;
+  E.dr = U.el("div", "role", ct, "one voice"); U.css(E.dr, { left: M, top: y + defLane / 2 - 20, color: "var(--fg)" });
+  const nb = Math.round((x1 - x0) / (sq ? 9 : 10)), bw = (x1 - x0) / nb, env = [];
+  for (let i = 0; i < nb; i++) { const a = T0() + TL() * i / nb, b = T0() + TL() * (i + 1) / nb; let m = 0; for (let tt = a; tt < b; tt += R.hop) m = Math.max(m, U.env(R, tt)); env.push(m); }
+  const mx = Math.max(1e-6, ...env);
+  E.bars = env.map((v, i) => { const h = Math.max(4, Math.pow(v / mx, 0.8) * defLane * 0.95), b = U.el("div", "wb", ct); U.css(b, { left: x0 + i * bw + bw * 0.2, width: bw * 0.6, top: y + defLane / 2 - h / 2, height: h }); return [b, T0() + TL() * (i + 0.5) / nb]; });
+  y += defLane + gapB;
+  // audioforge: four speaker lanes
+  E.oh = U.el("div", "hdr", ct, `<div class="nm"><i style="background:var(--ours)"></i>audioforge</div>`); U.css(E.oh, { left: M, top: y });
+  y += hdrH + 10; G.ly = y; G.lh = laneH; G.lg = laneGap;
+  // activity segments per column inside the span (recorded frames, > 0.5), merged
+  const fr = R.frames.filter(f => f[0] >= T0() - 1e-3 && f[0] <= SPAN[1] + 1e-3), dt = 0.08;
+  G.segs = [0, 1, 2, 3].map(i => { const out = []; for (const f of fr) { if ((f[1][i] || 0) > 0.5) { const a = f[0] - dt, b = f[0]; if (out.length && a - out[out.length - 1][1] < 0.17) out[out.length - 1][1] = b; else out.push([Math.max(T0(), a), b]); } } return out; });
+  G.first = G.segs.map(sg => sg.length ? sg[0][0] + 0.08 : null);   // found when the column's first active frame arrives
+  E.lanes = [0, 1, 2, 3].map(i => {
+    const ly = y + i * (laneH + laneGap);
+    const role = U.el("div", "role", ct, `Person ${i + 1}`); U.css(role, { left: M, top: ly + laneH / 2 - 20, color: SPK[i] });
+    const rl = U.el("div", "rule", ct); U.css(rl, { left: x0, top: ly + laneH / 2 - 1, width: x1 - x0 });
+    const els = G.segs[i].map(([a, b]) => { const e = U.el("div", "seg", ct); U.css(e, { left: X(a), top: ly + laneH * 0.14, height: laneH * 0.72, background: SPK[i] }); return [e, a, b]; });
+    return { role, els };
+  });
+  const lastB = y + 3 * (laneH + laneGap) + laneH;
+  E.cnt = U.el("div", "cnt", ct, `<div class="v">0 / 4</div><div class="l">people</div>`); E.v = E.cnt.querySelector(".v"); E.cnt.dataset.sys = "R";
+  U.css(E.cnt, { right: M, top: y + (lastB - y) / 2 - (sq ? 50 : 66) });
+  E.play = U.el("div", "play", ct); U.css(E.play, { top: G.dy - 6, height: lastB - G.dy + 12 });
+  const sb = document.getElementById("subs"); if (sb) sb.dataset.clipok = "";
+}
+// one subtitle line: the reference words of the current speaker run, "Person N:" from the live diarizer's column
+function subs(t, ctx) {
+  const el = document.getElementById("subs"); if (!el) return;
+  const cur = (ctx.segs || []).find(s => s.kind === "clip" && t >= s.start && t <= s.end);
+  if (!cur || !R.subs) { el.style.opacity = 0; el.innerHTML = ""; return; }
+  const at = T0() + (t - cur.start);
+  const ws = R.subs.filter(w => w[0] <= at && w[0] >= at - 4.0).map(w => [w, colAt(w)]);
+  if (!ws.length) { el.style.opacity = 0; el.innerHTML = ""; return; }
+  const k = ws[ws.length - 1][1]; let run = [];
+  for (let i = ws.length - 1; i >= 0 && ws[i][1] === k; i--) run.unshift(ws[i][0]);
+  // a clean line: the words of the run's main (reference) speaker only; overlapping backchannels and cut-off
+  // fragments ("w") are left out
+  const cnt = {}; run.forEach(w => cnt[w[3]] = (cnt[w[3]] || 0) + 1);
+  const main = Object.keys(cnt).sort((a, b) => cnt[b] - cnt[a])[0];
+  run = run.filter(w => w[3] === main && !/^[b-hj-z]$/i.test(w[2]));
+  if (!run.length) { el.style.opacity = 0; el.innerHTML = ""; return; }
+  const draw = () => { el.innerHTML = `<span class="who2" style="background:${SPK[k]}">Person ${k + 1}:</span>` + run.map(w => `<span class="sw" style="color:${at < w[1] + 0.12 ? "var(--fg)" : "#D1D1D6"}">${w[2]}</span>`).join(""); };
+  draw();
+  while (el.scrollWidth > el.clientWidth + 1 && run.length > 1) { run.shift(); draw(); }
+  el.style.opacity = 1;
+}
+function render(t, ctx) {
+  // the content sits 64 px from the edge: push-in plus the idle breathing stay under 1.6 % so it keeps >= 48 px
+  chrome(t, ctx.breathe ? Object.assign({}, ctx, { push: Math.min(ctx.push == null ? 0.015 : ctx.push, 0.008) }) : ctx);
+  subs(t, ctx);
+  const st = clipState(ctx, t), at = st.at, live = st.phase !== "before", X = G.X;
+  E.play.style.left = (X(at) - 1.5) + "px"; E.play.style.opacity = st.phase === "during" ? 1 : 0;
+  E.bars.forEach(([b, tt]) => b.style.opacity = live && tt <= at ? 1 : 0.28);
+  E.lanes.forEach(ln => ln.els.forEach(([e, a, b]) => { const on = live && at > a; e.style.opacity = on ? 1 : 0; e.style.width = Math.max(0, X(Math.min(b, at)) - X(a)) + "px"; }));
+  const found = live ? G.first.filter(f => f != null && f <= at).length : 0;
+  E.lanes.forEach((ln, i) => ln.role.style.opacity = live && G.first[i] != null && G.first[i] <= at ? 1 : 0.45);
+  E.v.textContent = `${found} / 4`; E.v.style.color = found ? "var(--ours)" : "var(--fg2)";
+  E.v.dataset.final = found; E.v.dataset.done = "0";
+}
+window.init = init; window.render = render;
+</script></body></html>
