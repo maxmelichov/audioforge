@@ -157,7 +157,7 @@ def load(diarizer: str | None = None, models_dir: str | Path | None = None, *, a
         if bad:
             raise ValueError(f"mode='single' loads one model; drop {bad}")
         opts = {**MODES["single"], **engine_options}
-        if "lid" not in engine_options and opts.get("lid") == "head" and find_head(LID_FILE, models_dir) is None:
+        if "lid" not in engine_options and opts.get("lid") == "head" and find_head(LID_FILE, None if models_dir is None else str(models_dir)) is None:
             log.warning(f"{LID_FILE} not found, language ID is off (as audioforge-serve)")
             opts["lid"] = None
         if opts.get("tsvad") is None:
