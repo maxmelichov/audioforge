@@ -524,6 +524,10 @@ class Engine:
         # (research/GPU_RUN_2026-09-29.md). Anything else (mps, cuda without a visible GPU) degrades to cpu.
         if str(device).startswith("cuda") and torch.cuda.is_available():
             kw["fast"] = False  # fast-conv is the CPU path for the conformer convolutions
+            # full fp32: cuDNN's TF32 convolutions (PyTorch's default) moved the encoder output 1.5 % (relative) away
+            # from cpu, enough to flip greedy RNNT decodes live (process-wide flags, set for this server process)
+            torch.backends.cudnn.allow_tf32 = False
+            torch.backends.cuda.matmul.allow_tf32 = False
         elif device != "cpu":
             fallback = device
             log.warning(f"[serve] warning: --device {device} is not supported by this server; falling back to cpu")
