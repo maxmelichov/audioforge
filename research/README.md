@@ -30,6 +30,7 @@ Dates come from the doc header or git history (first commit → last change wher
 | [DATA_PLAN.md](DATA_PLAN.md) | which data would close each task gap, in what order, with gates | - (writing note, no model run) | 2026-09-26 |
 | [IMPROVEMENTS.md](IMPROVEMENTS.md) | ranked improvement candidates (user-channel predictive turn head first) | - (results, where they exist, are in IMPROVE_115M.md / HYBRID_ASR.md, drafts) | 2026-09-28 |
 | [SINGLE_MODEL.md](SINGLE_MODEL.md) | can one 115M checkpoint run the whole front end for a known user (`--mode single`)? voice-print quality (A2); GPU plan for target-speaker + turn heads (part B) | meetings: best turn detector measured with a stored 5 s print (AMI 34.2 %, ICSI 18.7 % missed); two-party calls live: see A1; live prints lose 16-55 points | 2026-09-29 |
+| [GPU_RUN_2026-09-29.md](GPU_RUN_2026-09-29.md) | does audioforge work on the two-RTX-5090 box (Linux, sm_120), what does a GPU buy, and do the Pipecat / LiveKit results reproduce there? | works after 4 fresh-clone fixes; `--device cuda` 77 -> 20 ms per 160 ms block, 4 live sessions per GPU server vs 1 per 2 CPU threads; TF32 must be off (it changed live transcripts); single S live 37.7 % 3 s misses = published; room mode not real time on 2 x86 threads (RTF 1.04); distillation not run (AMI / ICSI host too slow) | 2026-09-29 |
 
 ## ASR and model import
 

@@ -1,0 +1,949 @@
+{
+ "generated": "2026-09-29 22:41",
+ "note": "research/GPU_RUN_2026-09-29.md",
+ "probe_single_mode": {
+  "what": "cuda_stream_probe.py: bundled 16 s two-party clip, single mode, hybrid_dyn, best of 3 after warm-up",
+  "idle_gpu0_19h55": {
+   "cpu_fastconv_2threads": {
+    "dev": "cpu",
+    "rtf_all": [
+     0.489,
+     0.487,
+     0.486
+    ],
+    "rtf": 0.486,
+    "block_compute_ms": {
+     "p50": 77.4,
+     "p95": 83.9,
+     "max": 137.2
+    },
+    "turn_ends": [
+     {
+      "t": 12.166,
+      "policy": "hybrid_dyn",
+      "p": 0.9053694009780884,
+      "silence_ms": 1360
+     }
+    ],
+    "finals": [
+     {
+      "t": 12.166,
+      "speaker": 0,
+      "text": "so um what value guides your life bled what values do you live by"
+     },
+     {
+      "t": 16.0,
+      "speaker": 0,
+      "text": "value guys my life"
+     }
+    ]
+   },
+   "cuda_tf32_default": {
+    "dev": "cuda",
+    "rtf_all": [
+     0.131,
+     0.13,
+     0.13
+    ],
+    "rtf": 0.13,
+    "block_compute_ms": {
+     "p50": 19.9,
+     "p95": 22.2,
+     "max": 38.0
+    },
+    "turn_ends": [
+     {
+      "t": 12.166,
+      "policy": "hybrid_dyn",
+      "p": 0.9052480459213257,
+      "silence_ms": 1360
+     }
+    ],
+    "finals": [
+     {
+      "t": 12.166,
+      "speaker": 0,
+      "text": "so um what value guides your life bled what values do you live by"
+     },
+     {
+      "t": 16.0,
+      "speaker": 0,
+      "text": "value guys my life"
+     }
+    ]
+   }
+  },
+  "gpu1_shared_22h17": {
+   "cuda_tf32_off_1": {
+    "dev": "cuda",
+    "rtf_all": [
+     0.153,
+     0.153,
+     0.154
+    ],
+    "rtf": 0.153,
+    "block_compute_ms": {
+     "p50": 24.3,
+     "p95": 27.2,
+     "max": 47.9
+    },
+    "turn_ends": [
+     {
+      "t": 12.166,
+      "policy": "hybrid_dyn",
+      "p": 0.9053701758384705,
+      "silence_ms": 1360
+     }
+    ],
+    "finals": [
+     {
+      "t": 12.166,
+      "speaker": 0,
+      "text": "so um what value guides your life bled what values do you live by"
+     },
+     {
+      "t": 16.0,
+      "speaker": 0,
+      "text": "value guys my life"
+     }
+    ]
+   },
+   "cuda_tf32_off_2": {
+    "dev": "cuda",
+    "rtf_all": [
+     0.146,
+     0.135,
+     0.141
+    ],
+    "rtf": 0.135,
+    "block_compute_ms": {
+     "p50": 21.5,
+     "p95": 25.0,
+     "max": 40.9
+    },
+    "turn_ends": [
+     {
+      "t": 12.166,
+      "policy": "hybrid_dyn",
+      "p": 0.9053701758384705,
+      "silence_ms": 1360
+     }
+    ],
+    "finals": [
+     {
+      "t": 12.166,
+      "speaker": 0,
+      "text": "so um what value guides your life bled what values do you live by"
+     },
+     {
+      "t": 16.0,
+      "speaker": 0,
+      "text": "value guys my life"
+     }
+    ]
+   },
+   "cuda_tf32_on_1": {
+    "dev": "cuda",
+    "rtf_all": [
+     0.156,
+     0.154,
+     0.152
+    ],
+    "rtf": 0.152,
+    "block_compute_ms": {
+     "p50": 23.9,
+     "p95": 27.4,
+     "max": 44.1
+    },
+    "turn_ends": [
+     {
+      "t": 12.166,
+      "policy": "hybrid_dyn",
+      "p": 0.9052480459213257,
+      "silence_ms": 1360
+     }
+    ],
+    "finals": [
+     {
+      "t": 12.166,
+      "speaker": 0,
+      "text": "so um what value guides your life bled what values do you live by"
+     },
+     {
+      "t": 16.0,
+      "speaker": 0,
+      "text": "value guys my life"
+     }
+    ]
+   },
+   "cuda_tf32_on_2": {
+    "dev": "cuda",
+    "rtf_all": [
+     0.156,
+     0.16,
+     0.152
+    ],
+    "rtf": 0.152,
+    "block_compute_ms": {
+     "p50": 23.6,
+     "p95": 26.7,
+     "max": 45.6
+    },
+    "turn_ends": [
+     {
+      "t": 12.166,
+      "policy": "hybrid_dyn",
+      "p": 0.9052480459213257,
+      "silence_ms": 1360
+     }
+    ],
+    "finals": [
+     {
+      "t": 12.166,
+      "speaker": 0,
+      "text": "so um what value guides your life bled what values do you live by"
+     },
+     {
+      "t": 16.0,
+      "speaker": 0,
+      "text": "value guys my life"
+     }
+    ]
+   },
+   "cpu_1": {
+    "dev": "cpu",
+    "rtf_all": [
+     0.601,
+     0.589,
+     0.593
+    ],
+    "rtf": 0.589,
+    "block_compute_ms": {
+     "p50": 93.4,
+     "p95": 106.2,
+     "max": 152.0
+    },
+    "turn_ends": [
+     {
+      "t": 12.166,
+      "policy": "hybrid_dyn",
+      "p": 0.9053694009780884,
+      "silence_ms": 1360
+     }
+    ],
+    "finals": [
+     {
+      "t": 12.166,
+      "speaker": 0,
+      "text": "so um what value guides your life bled what values do you live by"
+     },
+     {
+      "t": 16.0,
+      "speaker": 0,
+      "text": "value guys my life"
+     }
+    ]
+   },
+   "cpu_2": {
+    "dev": "cpu",
+    "rtf_all": [
+     0.602,
+     0.618,
+     0.585
+    ],
+    "rtf": 0.585,
+    "block_compute_ms": {
+     "p50": 91.5,
+     "p95": 103.9,
+     "max": 163.8
+    },
+    "turn_ends": [
+     {
+      "t": 12.166,
+      "policy": "hybrid_dyn",
+      "p": 0.9053694009780884,
+      "silence_ms": 1360
+     }
+    ],
+    "finals": [
+     {
+      "t": 12.166,
+      "speaker": 0,
+      "text": "so um what value guides your life bled what values do you live by"
+     },
+     {
+      "t": 16.0,
+      "speaker": 0,
+      "text": "value guys my life"
+     }
+    ]
+   }
+  }
+ },
+ "bench": {
+  "what": "audioforge-bench --repeat 3 --policy hybrid_dyn --threads 2 on the bundled clip",
+  "single_cpu": {
+   "device": "cpu",
+   "threads": 2,
+   "policy": "hybrid_dyn",
+   "load_s": 2.6,
+   "peak_rss_mb": 1444.6,
+   "rtf_all": [
+    0.591,
+    0.581,
+    0.537
+   ],
+   "rtf": 0.537,
+   "block_compute_ms": {
+    "p50": 84.8,
+    "p95": 94.4,
+    "max": 148.0
+   },
+   "turn_ends": [
+    {
+     "t": 12.166,
+     "policy": "hybrid_dyn",
+     "p": 0.9053694009780884,
+     "silence_ms": 1360
+    }
+   ],
+   "finals": [
+    {
+     "t": 12.166,
+     "speaker": 0,
+     "text": "so um what value guides your life bled what values do you live by"
+    },
+    {
+     "t": 16.0,
+     "speaker": 0,
+     "text": "value guys my life"
+    }
+   ]
+  },
+  "single_cuda": {
+   "device": "cuda",
+   "threads": 2,
+   "policy": "hybrid_dyn",
+   "load_s": 2.5,
+   "peak_rss_mb": 1673.9,
+   "rtf_all": [
+    0.162,
+    0.166,
+    0.166
+   ],
+   "rtf": 0.162,
+   "block_compute_ms": {
+    "p50": 25.3,
+    "p95": 28.1,
+    "max": 48.5
+   },
+   "turn_ends": [
+    {
+     "t": 12.166,
+     "policy": "hybrid_dyn",
+     "p": 0.9053701758384705,
+     "silence_ms": 1360
+    }
+   ],
+   "finals": [
+    {
+     "t": 12.166,
+     "speaker": 0,
+     "text": "so um what value guides your life bled what values do you live by"
+    },
+    {
+     "t": 16.0,
+     "speaker": 0,
+     "text": "value guys my life"
+    }
+   ]
+  },
+  "room_cpu": {
+   "device": "cpu",
+   "threads": 2,
+   "policy": "hybrid_dyn",
+   "load_s": 28.6,
+   "peak_rss_mb": 1745.3,
+   "rtf_all": [
+    1.07,
+    1.127,
+    1.209
+   ],
+   "rtf": 1.07,
+   "block_compute_ms": {
+    "p50": 193.7,
+    "p95": 308.0,
+    "max": 365.9
+   },
+   "turn_ends": [
+    {
+     "t": 13.04,
+     "policy": "hybrid_dyn",
+     "p": 0.995036780834198,
+     "silence_ms": 2080
+    }
+   ],
+   "finals": [
+    {
+     "t": 13.04,
+     "speaker": 0,
+     "text": "so um what value guides your life bled what values do you live by"
+    },
+    {
+     "t": 16.0,
+     "speaker": 1,
+     "text": "value guys my life"
+    }
+   ]
+  },
+  "room_cuda": {
+   "device": "cuda",
+   "threads": 2,
+   "policy": "hybrid_dyn",
+   "load_s": 6.4,
+   "peak_rss_mb": 1641.5,
+   "rtf_all": [
+    0.195,
+    0.191,
+    0.191
+   ],
+   "rtf": 0.191,
+   "block_compute_ms": {
+    "p50": 33.3,
+    "p95": 47.0,
+    "max": 51.5
+   },
+   "turn_ends": [
+    {
+     "t": 13.04,
+     "policy": "hybrid_dyn",
+     "p": 0.995036780834198,
+     "silence_ms": 2080
+    }
+   ],
+   "finals": [
+    {
+     "t": 13.04,
+     "speaker": 0,
+     "text": "so um what value guides your life bled what values do you live by"
+    },
+    {
+     "t": 16.0,
+     "speaker": 1,
+     "text": "value guys my life"
+    }
+   ]
+  },
+  "room_cpu_idle_19h58": {
+   "device": "cpu",
+   "threads": 2,
+   "policy": "hybrid_dyn",
+   "load_s": 6.0,
+   "peak_rss_mb": 1746.6,
+   "rtf_all": [
+    1.022,
+    1.026,
+    1.028
+   ],
+   "rtf": 1.022,
+   "block_compute_ms": {
+    "p50": 180.9,
+    "p95": 304.7,
+    "max": 345.6
+   },
+   "turn_ends": [
+    {
+     "t": 13.04,
+     "policy": "hybrid_dyn",
+     "p": 0.995036780834198,
+     "silence_ms": 2080
+    }
+   ],
+   "finals": [
+    {
+     "t": 13.04,
+     "speaker": 0,
+     "text": "so um what value guides your life bled what values do you live by"
+    },
+    {
+     "t": 16.0,
+     "speaker": 1,
+     "text": "value guys my life"
+    }
+   ]
+  },
+  "room_cuda_idle_19h58": {
+   "device": "cuda",
+   "threads": 2,
+   "policy": "hybrid_dyn",
+   "load_s": 6.4,
+   "peak_rss_mb": 1616.5,
+   "rtf_all": [
+    0.163,
+    0.164,
+    0.162
+   ],
+   "rtf": 0.162,
+   "block_compute_ms": {
+    "p50": 27.8,
+    "p95": 39.4,
+    "max": 48.3
+   },
+   "turn_ends": [
+    {
+     "t": 13.04,
+     "policy": "hybrid_dyn",
+     "p": 0.9950344562530518,
+     "silence_ms": 2080
+    }
+   ],
+   "finals": [
+    {
+     "t": 13.04,
+     "speaker": 0,
+     "text": "so um what value guides your life bled what values do you live by"
+    },
+    {
+     "t": 16.0,
+     "speaker": 1,
+     "text": "value guys my life"
+    }
+   ]
+  }
+ },
+ "concurrency": {
+  "what": "concurrency.py: N live clients at 1x against one audioforge-serve (single mode)",
+  "cpu": {
+   "1": {
+    "n": 1,
+    "lat_ms_p95_max": 185.7,
+    "lat_ms_p50_median": 147.4,
+    "lat_growth_ms_max": -16.7,
+    "server_rtf_max": 0.5811,
+    "server_chunk_ms_p95_max": 109.46,
+    "same_finals_text": true,
+    "lat_offset_fixed": "latency = arrival - t (t = frame end); +80 ms applied to the first computation"
+   },
+   "2": {
+    "n": 2,
+    "lat_ms_p95_max": 2151.2,
+    "lat_ms_p50_median": 1361.0,
+    "lat_growth_ms_max": 1569.6,
+    "server_rtf_max": 0.5564,
+    "server_chunk_ms_p95_max": 129.62,
+    "same_finals_text": true,
+    "lat_offset_fixed": "latency = arrival - t (t = frame end); +80 ms applied to the first computation"
+   },
+   "3": {
+    "n": 3,
+    "lat_ms_p95_max": 10763.3,
+    "lat_ms_p50_median": 6478.3,
+    "lat_growth_ms_max": 8388.1,
+    "server_rtf_max": 0.5672,
+    "server_chunk_ms_p95_max": 130.19,
+    "same_finals_text": true,
+    "lat_offset_fixed": "latency = arrival - t (t = frame end); +80 ms applied to the first computation"
+   }
+  },
+  "cuda": {
+   "1": {
+    "n": 1,
+    "lat_ms_p95_max": 107.3,
+    "lat_ms_p50_median": 47.0,
+    "lat_growth_ms_max": -4.6,
+    "server_rtf_max": 0.1914,
+    "server_chunk_ms_p95_max": 33.47,
+    "same_finals_text": true,
+    "lat_offset_fixed": "latency = arrival - t (t = frame end); +80 ms applied to the first computation"
+   },
+   "2": {
+    "n": 2,
+    "lat_ms_p95_max": 120.0,
+    "lat_ms_p50_median": 62.4,
+    "lat_growth_ms_max": -1.9,
+    "server_rtf_max": 0.1871,
+    "server_chunk_ms_p95_max": 32.4,
+    "same_finals_text": true,
+    "lat_offset_fixed": "latency = arrival - t (t = frame end); +80 ms applied to the first computation"
+   },
+   "4": {
+    "n": 4,
+    "lat_ms_p95_max": 159.4,
+    "lat_ms_p50_median": 87.0,
+    "lat_growth_ms_max": -0.4,
+    "server_rtf_max": 0.1639,
+    "server_chunk_ms_p95_max": 29.38,
+    "same_finals_text": true,
+    "lat_offset_fixed": "latency = arrival - t (t = frame end); +80 ms applied to the first computation"
+   },
+   "8": {
+    "n": 8,
+    "lat_ms_p95_max": 2189.2,
+    "lat_ms_p50_median": 1036.0,
+    "lat_growth_ms_max": 1675.3,
+    "server_rtf_max": 0.1442,
+    "server_chunk_ms_p95_max": 34.59,
+    "same_finals_text": true,
+    "lat_offset_fixed": "latency = arrival - t (t = frame end); +80 ms applied to the first computation"
+   },
+   "12": {
+    "n": 12,
+    "lat_ms_p95_max": 10582.0,
+    "lat_ms_p50_median": 6880.6,
+    "lat_growth_ms_max": 8009.7,
+    "server_rtf_max": 0.1427,
+    "server_chunk_ms_p95_max": 34.49,
+    "same_finals_text": true,
+    "lat_offset_fixed": "latency = arrival - t (t = frame end); +80 ms applied to the first computation"
+   },
+   "16": {
+    "n": 16,
+    "lat_ms_p95_max": 19148.0,
+    "lat_ms_p50_median": 11877.1,
+    "lat_growth_ms_max": 14721.3,
+    "server_rtf_max": 0.1475,
+    "server_chunk_ms_p95_max": 34.03,
+    "same_finals_text": true,
+    "lat_offset_fixed": "latency = arrival - t (t = frame end); +80 ms applied to the first computation"
+   }
+  }
+ },
+ "livekit_room": {
+  "what": "livekit-server --dev (docker, v1.13.7) + examples/livekit_agent_worker.py + livekit_publish_wav.py, bundled two-party clip, audioforge-serve single mode",
+  "cpu": [
+   [
+    {
+     "audio_t": 12.814,
+     "from": "caller",
+     "text": "so um what value guides your life what values you live by"
+    },
+    {
+     "audio_t": 14.396,
+     "from": "agent",
+     "text": "You said: so um what value guides your life what values you live by"
+    }
+   ],
+   [
+    {
+     "audio_t": 12.934,
+     "from": "caller",
+     "text": "so um what value guides your life what values you live by"
+    },
+    {
+     "audio_t": 14.529,
+     "from": "agent",
+     "text": "You said: so um what value guides your life what values you live by"
+    }
+   ],
+   [
+    {
+     "audio_t": 12.947,
+     "from": "caller",
+     "text": "so um what value guides your life what values you live by"
+    },
+    {
+     "audio_t": 14.546,
+     "from": "agent",
+     "text": "You said: so um what value guides your life what values you live by"
+    }
+   ]
+  ],
+  "cuda_tf32_default": [
+   [
+    {
+     "audio_t": 12.816,
+     "from": "caller",
+     "text": "so an overvalued guide your life overvalues you need by"
+    },
+    {
+     "audio_t": 14.41,
+     "from": "agent",
+     "text": "You said: so an overvalued guide your life overvalues you need by"
+    }
+   ],
+   [
+    {
+     "audio_t": 12.63,
+     "from": "caller",
+     "text": "so um what value guides your life what values you live by"
+    },
+    {
+     "audio_t": 14.225,
+     "from": "agent",
+     "text": "You said: so um what value guides your life what values you live by"
+    }
+   ],
+   [
+    {
+     "audio_t": 12.741,
+     "from": "caller",
+     "text": "so an overvalued guide your life overvalues you need by"
+    },
+    {
+     "audio_t": 14.332,
+     "from": "agent",
+     "text": "You said: so an overvalued guide your life overvalues you need by"
+    }
+   ]
+  ],
+  "cuda_tf32_off": [
+   [
+    {
+     "audio_t": 12.785,
+     "from": "caller",
+     "text": "so um what value guides your life what values you live by"
+    },
+    {
+     "audio_t": 14.379,
+     "from": "agent",
+     "text": "You said: so um what value guides your life what values you live by"
+    }
+   ],
+   [
+    {
+     "audio_t": 12.95,
+     "from": "caller",
+     "text": "so um what value guides your life what values you live by"
+    },
+    {
+     "audio_t": 14.544,
+     "from": "agent",
+     "text": "You said: so um what value guides your life what values you live by"
+    }
+   ],
+   [
+    {
+     "audio_t": 12.88,
+     "from": "caller",
+     "text": "so um what value guides your life what values you live by"
+    },
+    {
+     "audio_t": 14.474,
+     "from": "agent",
+     "text": "You said: so um what value guides your life what values you live by"
+    }
+   ]
+  ]
+ },
+ "room_final_asr_log": [
+  "=== cpu cpu",
+  "[serve] Silero VAD loaded from /mnt/data/audioforge/models/silero_vad_v5.onnx in 0.035s",
+  "two_speakers_10s turn_end 6.32 None None 'hybrid_dyn' ",
+  "two_speakers_10s final 6.32 0 stream 'a cold lucid indifference reigned in his soul' ",
+  "two_speakers_10s final 6.32 0 tdt_v3 'A cold, lucid indifference reigned in his soul.' ",
+  "two_speakers_10s turn_end 7.526 None None 'hybrid_dyn' ",
+  "two_speakers_10s final 7.526 0 stream 'heaven' ",
+  "two_speakers_10s final 7.526 0 tdt_v3 'Heaven' ",
+  "two_speakers_10s final 10.195 1 stream 'a good place to be raised to' ",
+  "two_speakers_10s final 10.195 1 tdt_v3 'A good place to be raised to' ",
+  "two_speakers_10s stats {'rtf': 0.9609, 'chunk_ms_p50': 171.29, 'chunk_ms_p95': 248.52, 'peak_rss_mb': 1746.6} {'final_asr': 'tdt_v3', 'final_latency_ms': {'tdt_v3': {'p50': 483.24, 'p95': 670.69, 'max': 691.5, 'n': 2}}, 'final_asr_rss_mb': 5326.8}",
+  "two_party_call_16s turn_end 13.04 None None 'hybrid_dyn' ",
+  "two_party_call_16s final 13.04 0 stream 'so um what value guides your life bled what values do you live by' ",
+  "two_party_call_16s final 13.04 0 tdt_v3 'So, um, what value guides your life with? What values do you live by?' ",
+  "two_party_call_16s final 16.0 1 stream 'value guys my life' ",
+  "two_party_call_16s final 16.0 1 tdt_v3 'Value guys, my life.' ",
+  "two_party_call_16s stats {'rtf': 1.0657, 'chunk_ms_p50': 184.32, 'chunk_ms_p95': 313.24, 'peak_rss_mb': 1746.6} {'final_asr': 'tdt_v3', 'final_latency_ms': {'tdt_v3': {'p50': 1090.82, 'p95': 1090.82, 'max': 1090.8, 'n': 1}}, 'final_asr_rss_mb': 5326.8}",
+  "=== cpu cuda",
+  "[serve] Silero VAD loaded from /mnt/data/audioforge/models/silero_vad_v5.onnx in 0.035s",
+  "two_speakers_10s turn_end 6.32 None None 'hybrid_dyn' ",
+  "two_speakers_10s final 6.32 0 stream 'a cold lucid indifference reigned in his soul' ",
+  "two_speakers_10s final 6.32 0 tdt_v3 'A cold, lucid indifference reigned in his soul.' ",
+  "two_speakers_10s turn_end 7.526 None None 'hybrid_dyn' ",
+  "two_speakers_10s final 7.526 0 stream 'heaven' ",
+  "two_speakers_10s final 7.526 0 tdt_v3 'Heaven' ",
+  "two_speakers_10s final 10.195 1 stream 'a good place to be raised to' ",
+  "two_speakers_10s final 10.195 1 tdt_v3 'A good place to be raised to' ",
+  "two_speakers_10s stats {'rtf': 0.9764, 'chunk_ms_p50': 170.74, 'chunk_ms_p95': 255.55, 'peak_rss_mb': 1747.6} {'final_asr': 'tdt_v3', 'final_latency_ms': {'tdt_v3': {'p50': 144.75, 'p95': 249.12, 'max': 260.7, 'n': 2}}, 'final_asr_rss_mb': 5327.4}",
+  "two_party_call_16s turn_end 13.04 None None 'hybrid_dyn' ",
+  "two_party_call_16s final 13.04 0 stream 'so um what value guides your life bled what values do you live by' ",
+  "two_party_call_16s final 13.04 0 tdt_v3 'So, um, what value guides your life with? What values do you live by?' ",
+  "two_party_call_16s final 16.0 1 stream 'value guys my life' ",
+  "two_party_call_16s final 16.0 1 tdt_v3 'Value guys, my life.' ",
+  "two_party_call_16s stats {'rtf': 1.0221, 'chunk_ms_p50': 184.39, 'chunk_ms_p95': 291.11, 'peak_rss_mb': 1747.6} {'final_asr': 'tdt_v3', 'final_latency_ms': {'tdt_v3': {'p50': 282.64, 'p95': 282.64, 'max': 282.6, 'n': 1}}, 'final_asr_rss_mb': 5327.4}",
+  "=== cuda cuda",
+  "Terminated"
+ ],
+ "live_69": {
+  "single_S (A1 rule, --mode single, live)": {
+   "published_m5_cpu": {
+    "n_clips": 69,
+    "missed_3s": 0.3767,
+    "missed_6s": 0.3094,
+    "cut_ins_per_session": 0.667,
+    "dead_air_ms_median": 1388,
+    "first_text_ms_median": 1081,
+    "wer": 0.2321,
+    "server_rtf_median": 0.328,
+    "rss_mb_server_peak": 1156.4
+   },
+   "5090box_cpu": {
+    "n_clips": 69,
+    "missed_3s": 0.3767,
+    "missed_6s": 0.3139,
+    "cut_ins_per_session": 0.681,
+    "dead_air_ms_median": 1442,
+    "first_text_ms_median": 1135,
+    "wer": 0.2321,
+    "server_rtf_median": 0.617,
+    "server_rtf_max": 0.728,
+    "rss_mb_server_peak": 1200.0,
+    "n_flagged_rtf_gt_1": 0,
+    "load1_start_range": [
+     5.02,
+     10.4
+    ],
+    "n_sessions": 69,
+    "complete": true
+   },
+   "5090box_cuda": {
+    "n_clips": 69,
+    "missed_3s": 0.3722,
+    "missed_6s": 0.3049,
+    "cut_ins_per_session": 0.652,
+    "dead_air_ms_median": 1408,
+    "first_text_ms_median": 1078,
+    "wer": 0.2321,
+    "server_rtf_median": 0.389,
+    "server_rtf_max": 0.406,
+    "rss_mb_server_peak": 1705.8,
+    "n_flagged_rtf_gt_1": 0,
+    "load1_start_range": [
+     3.95,
+     14.2
+    ],
+    "n_sessions": 69,
+    "complete": true
+   }
+  },
+  "default_CN (Nemotron-3, timeout)": {
+   "published_m5_cpu": {
+    "n_clips": 69,
+    "missed_3s": 0.3408,
+    "missed_6s": 0.2825,
+    "cut_ins_per_session": 1.072,
+    "dead_air_ms_median": 1292,
+    "first_text_ms_median": 1075,
+    "wer": 0.2406,
+    "server_rtf_median": 0.635,
+    "rss_mb_server_peak": 1485.4
+   },
+   "5090box_cpu": {
+    "n_clips": 48,
+    "missed_3s": 0.7818,
+    "missed_6s": 0.5273,
+    "cut_ins_per_session": 0.875,
+    "dead_air_ms_median": 3088,
+    "first_text_ms_median": 1120,
+    "wer": 0.2298,
+    "server_rtf_median": 1.042,
+    "server_rtf_max": 1.076,
+    "rss_mb_server_peak": 1577.0,
+    "n_flagged_rtf_gt_1": 48,
+    "load1_start_range": [
+     4.24,
+     9.8
+    ],
+    "n_sessions": 48,
+    "complete": false
+   },
+   "5090box_cuda": {
+    "n_clips": 5,
+    "missed_3s": 0.4,
+    "missed_6s": 0.0,
+    "cut_ins_per_session": 0.4,
+    "dead_air_ms_median": 1801,
+    "first_text_ms_median": null,
+    "wer": null,
+    "server_rtf_median": 0.247,
+    "server_rtf_max": 0.255,
+    "rss_mb_server_peak": 1698.4,
+    "n_flagged_rtf_gt_1": 1,
+    "load1_start_range": [
+     9.74,
+     13.93
+    ],
+    "n_sessions": 5,
+    "complete": false
+   }
+  },
+  "pipecat_default_A": {
+   "published_m5_cpu": {
+    "n_clips": 69,
+    "missed_3s": 0.5874,
+    "missed_6s": 0.3543,
+    "cut_ins_per_session": 1.986,
+    "dead_air_ms_median": 1830,
+    "first_text_ms_median": 2812,
+    "wer": 0.235,
+    "server_rtf_median": null,
+    "rss_mb_server_peak": null
+   },
+   "5090box_cpu": {
+    "n_clips": 7,
+    "missed_3s": 0.8462,
+    "missed_6s": 0.6154,
+    "cut_ins_per_session": 1.286,
+    "dead_air_ms_median": 4341,
+    "first_text_ms_median": 3461,
+    "wer": 0.562,
+    "server_rtf_median": null,
+    "server_rtf_max": null,
+    "rss_mb_server_peak": null,
+    "n_flagged_rtf_gt_1": 3,
+    "load1_start_range": [
+     6.53,
+     8.03
+    ],
+    "n_sessions": 7,
+    "complete": false
+   }
+  },
+  "livekit_default_B": {
+   "published_m5_cpu": {
+    "n_clips": 69,
+    "missed_3s": 0.4126,
+    "missed_6s": 0.3408,
+    "cut_ins_per_session": 1.116,
+    "dead_air_ms_median": 1350,
+    "first_text_ms_median": 5120,
+    "wer": 0.1927,
+    "server_rtf_median": null,
+    "rss_mb_server_peak": null
+   },
+   "5090box_cpu": null
+  },
+  "default_CN_livekit": {
+   "published_m5_cpu": {
+    "n_clips": 69,
+    "missed_3s": 0.1749,
+    "missed_6s": 0.1659,
+    "cut_ins_per_session": 1.754,
+    "dead_air_ms_median": 1262,
+    "first_text_ms_median": 1070,
+    "wer": 0.2406,
+    "server_rtf_median": 0.637,
+    "rss_mb_server_peak": 1481.7
+   },
+   "5090box_cpu": {
+    "n_clips": 48,
+    "missed_3s": 0.7152,
+    "missed_6s": 0.4424,
+    "cut_ins_per_session": 1.229,
+    "dead_air_ms_median": 2963,
+    "first_text_ms_median": 1100,
+    "wer": 0.2298,
+    "server_rtf_median": 1.042,
+    "server_rtf_max": 1.072,
+    "rss_mb_server_peak": 1590.2,
+    "n_flagged_rtf_gt_1": 48,
+    "load1_start_range": [
+     4.65,
+     9.91
+    ],
+    "n_sessions": 48,
+    "complete": false
+   },
+   "5090box_cuda": null
+  }
+ }
+}

@@ -6,6 +6,23 @@ versions follow [Semantic Versioning](https://semver.org/). Every measured numbe
 
 ## [Unreleased]
 
+### Added (2026-09-29): `--device cuda` for the streaming server (research/GPU_RUN_2026-09-29.md)
+- `audioforge-serve --device cuda`, `audioforge-bench --device cuda` and `audioforge.load(device="cuda")` run the
+  streaming engine with the models on an NVIDIA GPU (opt-in; cpu stays the default, other devices still fall back
+  to cpu). The events equal cpu's on the bundled clips and on 69 live Pipecat sessions. On an RTX 5090 the 160 ms
+  block compute went from 77 to 20 ms (single mode), room mode from RTF 1.02 to 0.16, and one server process held 4
+  live sessions (2 CPU threads: 1).
+- TF32 is off in that mode (full fp32). PyTorch's default cuDNN TF32 moved the encoder output 1.5 % from cpu and
+  changed live transcripts (2 of 3 runs in a real LiveKit room).
+
+### Fixed (2026-09-29, fresh Linux clone)
+- `audioforge.load()` / `audioforge-bench` found the downloaded Silero only under `$AUDIOFORGE_DATA/silero`, so
+  hybrid_dyn fell back to hybrid; the engine now also looks in the models directory.
+- `audioforge.load()` / `audioforge-bench` raised without `lid_distill.pt` (not in `assets/`, and the release asset
+  is missing); they now turn language ID off, as `audioforge-serve` does.
+- `scripts/dev/gate.sh` works on Linux (it read macOS-only `sysctl` / `df -g` and never passed).
+- `--final-asr` (process worker): a child that dies while loading now raises instead of hanging the server.
+
 ### Changed (2026-09-29): the shipped model's VAD head reads block 4
 - `audioforge-download` now builds **`stage1_served_v2.afm`** from `assets/served_heads_v0.2.pt` (104 tensors,
   19,629,563 bytes, sha256 `cb5aa069…`; pinned in `hub.HEADS`). Its VAD head reads encoder block 4 only (the speaker
