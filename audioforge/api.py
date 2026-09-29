@@ -16,6 +16,7 @@ per 80 ms) are left out unless ``frames=True``.
 """
 from __future__ import annotations
 
+import logging
 import os
 from pathlib import Path
 from typing import Any
@@ -23,6 +24,8 @@ from typing import Any
 import numpy as np
 
 __all__ = ["Frontend", "Session", "load", "voiceprint"]
+
+log = logging.getLogger(__name__)
 
 
 class Session:
@@ -147,12 +150,15 @@ def load(diarizer: str | None = None, models_dir: str | Path | None = None, *, a
     if mode is None:
         mode = "room" if (diarizer or diar or engine_options.get("final_asr")) else "single"
     if mode == "single":
-        from .launch import TSVAD_FILE, find_head
+        from .launch import LID_FILE, TSVAD_FILE, find_head
         from .server.cli import MODES, SINGLE_CONFLICTS
         bad = [k for k, _ in SINGLE_CONFLICTS if engine_options.get(k) not in (None, False, "spk")] + (["diar"] if diar else [])
         if bad:
             raise ValueError(f"mode='single' loads one model; drop {bad}")
         opts = {**MODES["single"], **engine_options}
+        if "lid" not in engine_options and opts.get("lid") == "head" and find_head(LID_FILE, models_dir) is None:
+            log.warning(f"{LID_FILE} not found, language ID is off (as audioforge-serve)")
+            opts["lid"] = None
         if opts.get("tsvad") is None:
             p = find_head(TSVAD_FILE, models_dir)
             if p is None:

@@ -352,6 +352,9 @@ class Engine:
                                                                  self.diar_cfg["chunk_right_context"])
         # Silero VAD v5 for hybrid_silero / hybrid_dyn: loaded at the first session that asks for such a policy
         # (or at start with preload_silero); ``silero_model`` may be injected (tests)
+        if silero is None and not Path(DEFAULT_SILERO).exists():  # then where audioforge-download put it (models dir)
+            from . import hub
+            silero = hub.find_model("silero")
         self.silero_path = str(silero or DEFAULT_SILERO)
         self.silero_timeout_ms = int(silero_timeout_ms)
         self.silero_model = None

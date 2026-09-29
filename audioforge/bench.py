@@ -86,9 +86,12 @@ def main(argv=None):
     asr = a.asr or need("asr")
     mode = a.mode or ("room" if a.diarizer or a.diar else "single")
     if mode == "single":  # the one model: TS-VAD columns, no diarizer loaded, LID head (as audioforge-serve)
-        from .launch import TSVAD_FILE, find_head
+        from .launch import LID_FILE, TSVAD_FILE, find_head
         from .server.cli import MODES
         diar, product = None, {**MODES["single"], "tsvad": str(find_head(TSVAD_FILE, a.models_dir))}
+        if product.get("lid") == "head" and find_head(LID_FILE, a.models_dir) is None:  # as audioforge-serve (launch.py)
+            print(f"audioforge-bench: {LID_FILE} not found, language ID is off", file=sys.stderr)
+            product["lid"] = None
     else:
         dz = a.diarizer or ("nemotron3" if hub.find_model("nemotron3", a.models_dir)
                             or not hub.find_model("sortformer", a.models_dir) else "sortformer")
