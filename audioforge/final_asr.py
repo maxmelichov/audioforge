@@ -119,7 +119,11 @@ class FinalASRWorker:
             self._conn, child = ctx.Pipe()
             self._proc = ctx.Process(target=_child, args=(child, spec, threads, device), daemon=True)
             self._proc.start()
-            tag, rss = self._conn.recv()  # blocks until the child has loaded the model
+            while not self._conn.poll(0.5):  # until the child has loaded the model, or has died trying
+                if not self._proc.is_alive():  # e.g. CUDA out of memory: fail instead of waiting forever
+                    raise RuntimeError(f"final-ASR worker exited (code {self._proc.exitcode}) while loading {spec} on "
+                                       f"{device}; its traceback is on stderr")
+            tag, rss = self._conn.recv()
             assert tag == "ready", tag
             self.rss_mb = rss
             self._lock = threading.Lock()
