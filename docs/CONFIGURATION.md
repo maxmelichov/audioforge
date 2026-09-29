@@ -186,7 +186,7 @@ linked in the last column explain each group and what was measured about it.
 | flag | default | meaning | more |
 |---|---|---|---|
 | `--perf SPEC` | `default` | CPU inference fast paths of `audioforge.perf`: `default` = the exact set (same outputs), `none`, `all` (adds float-rounding ones), or a list such as `default,-linear_t` (research/PERFORMANCE.md) (advanced) | [§3](#3-models-threads-and-speed) |
-| `--device DEV` | `cpu` | only cpu is supported (others fall back to cpu) (advanced) | [§3](#3-models-threads-and-speed) |
+| `--device DEV` | `cpu` | cpu, or cuda / cuda:N (opt-in; others fall back to cpu) (advanced) | [§3](#3-models-threads-and-speed) |
 | `--no-fast-conv` | off | keep PyTorch's Conv1d path in the conformer convolutions (slower) (advanced) | [§3](#3-models-threads-and-speed) |
 | `--no-warmup` | off | skip the 2 s warm-up session at start (advanced) | [§3](#3-models-threads-and-speed) |
 
@@ -245,8 +245,13 @@ path is what lets the server keep up: RTF 0.45-0.52 with it, 1.13-1.21 without i
 2.5x end to end, verified, 2 threads, 1x
 ([INTEGRATION.md §1](../research/INTEGRATION.md#1-executive-summary)). Use the flag only for debugging.
 
-**`--device`.** The streaming server is CPU-only (fast-conv and per-frame decoding). `--final-asr-device` can
-put the offline final-ASR model on `mps` or `cuda`.
+**`--device`.** `cpu` (the default, and what every number in `research/` was measured on). `cuda` / `cuda:N`
+(opt-in) runs the same streaming code with the models on an NVIDIA GPU: fast-conv (a CPU path) is off, and the
+per-frame decoding stays in Python. On the bundled clips it emits the same turn_ends and finals as `cpu`, in single
+and room mode. On an RTX 5090 it cut the 160 ms block compute from 77 to 20 ms (p50) in single mode and the RTF from
+1.02 to 0.16 in room mode ([GPU_RUN_2026-09-29.md](../research/GPU_RUN_2026-09-29.md)). Other devices (`mps`, or
+`cuda` without a visible GPU) fall back to `cpu`. `--final-asr-device` can put the offline final-ASR model on `mps`
+or `cuda`.
 
 **`--no-warmup`.** By default one throwaway session runs 2 s of low-level noise through both models at start, so
 the first real session does not pay one-time initialization. The effect of skipping it was not measured.

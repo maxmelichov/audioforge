@@ -121,14 +121,15 @@ class Frontend:
 
 def load(diarizer: str | None = None, models_dir: str | Path | None = None, *, asr: str | None = None,
          diar: str | None = None, threads: int = 2, warmup: bool = True, mode: str | None = None,
-         **engine_options: Any) -> Frontend:
+         device: str = "cpu", **engine_options: Any) -> Frontend:
     """Load the served models (as ``audioforge-serve`` does) and return a ``Frontend``.
 
     ``mode``: ``single`` (the default, as ``audioforge-serve``) or ``room``; without ``mode``, a ``diarizer``, ``diar``
     or ``final_asr`` selects room. ``diarizer`` (room): ``nemotron3`` (default if downloaded) or ``sortformer``;
     ``models_dir``: where
     ``audioforge-download`` put them (default ``$AUDIOFORGE_HOME``, else ``<repo>/models``, else
-    ``~/.cache/audioforge``); ``asr`` / ``diar`` override the paths. ``engine_options`` are
+    ``~/.cache/audioforge``); ``asr`` / ``diar`` override the paths. ``device``: ``cpu`` (default) or ``cuda`` /
+    ``cuda:N`` (as ``audioforge-serve --device``). ``engine_options`` are
     ``audioforge.serve.Engine.load`` keyword arguments (the server flags with underscores, e.g. ``enroll``,
     ``final_asr``, ``diar_labels``). ``mode="single"`` is ``audioforge-serve --mode single``: the one 115M model
     for a known user (TS-VAD turn input, no diarizer loaded, the distilled LID head, no final ASR); pass the user's
@@ -164,7 +165,7 @@ def load(diarizer: str | None = None, models_dir: str | Path | None = None, *, a
             if p is None:
                 raise FileNotFoundError(f"mode='single' needs the TS-VAD head {TSVAD_FILE}; run: audioforge-download")
             opts["tsvad"] = str(p)
-        engine = Engine.load(asr or need("asr"), None, "cpu", threads=threads, **opts)
+        engine = Engine.load(asr or need("asr"), None, device, threads=threads, **opts)
         if warmup:
             engine.warmup()
         return Frontend(engine)
@@ -179,7 +180,7 @@ def load(diarizer: str | None = None, models_dir: str | Path | None = None, *, a
         p = hub.find_model("tdt_v3", models_dir)
         if p is not None:
             os.environ["AUDIOFORGE_TDT_V3"] = str(p)
-    engine = Engine.load(asr or need("asr"), diar or need(diarizer), "cpu", threads=threads, **opts)
+    engine = Engine.load(asr or need("asr"), diar or need(diarizer), device, threads=threads, **opts)
     if warmup:
         engine.warmup()
     return Frontend(engine)

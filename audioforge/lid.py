@@ -125,7 +125,8 @@ class LIDStream:
         import time
         t0 = time.perf_counter()
         x = self.m.head_input(self.name, enc, hid)
-        keep = torch.tensor([[v > self.vad_gate for v in vad]]) if self.vad_gate is not None else None
+        keep = (torch.tensor([[v > self.vad_gate for v in vad]], device=x.device) if self.vad_gate is not None
+                else None)
         z = self.head.step(x, self.state, keep=keep, decay=self.decay).softmax(-1)[0]
         out = []
         for j in range(z.shape[0]):

@@ -228,7 +228,7 @@ FLAGS: tuple[Flag, ...] = (
          {"default": "default", "metavar": "SPEC"}, advanced=True,
          doc="CPU inference fast paths of `audioforge.perf`: `default` = the exact set (same outputs), `none`, `all` "
          "(adds float-rounding ones), or a list such as `default,-linear_t` (research/PERFORMANCE.md)", section=S3),
-    Flag(("--device",), "speed", "only cpu is supported (others fall back to cpu)", {"default": "cpu", "metavar": "DEV"},
+    Flag(("--device",), "speed", "cpu, or cuda / cuda:N (opt-in; others fall back to cpu)", {"default": "cpu", "metavar": "DEV"},
          advanced=True, section=S3),
     Flag(("--no-fast-conv",), "speed", "keep PyTorch's Conv1d path in the conformer convolutions (slower)",
          {"action": "store_true"}, advanced=True, section=S3),

@@ -92,11 +92,12 @@ class ColumnEmbedder:
     @torch.no_grad()
     def __call__(self, x, valid) -> np.ndarray:
         """x (N, L, D), valid (N, L) bool -> (N, E) float32 unit vectors."""
-        x = torch.as_tensor(np.asarray(x, np.float32))
-        valid = torch.as_tensor(np.asarray(valid, bool))
+        dev = next(self.head.parameters()).device  # cpu, or the GPU of an --device cuda engine
+        x = torch.as_tensor(np.asarray(x, np.float32), device=dev)
+        valid = torch.as_tensor(np.asarray(valid, bool), device=dev)
         if x.shape[0] == 0:
             return np.zeros((0, self.head.emb[0].out_features), np.float32)
-        return F.normalize(self.head.emb(self.head.pool(x, valid)), dim=-1).numpy().astype(np.float32)
+        return F.normalize(self.head.emb(self.head.pool(x, valid)), dim=-1).cpu().numpy().astype(np.float32)
 
 
 def recent_embeddings(feats, p, embed, win: int = 25, min_frames: int = 8, thr: float = 0.5, chunk: int = 256):

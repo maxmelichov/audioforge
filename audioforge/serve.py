@@ -312,6 +312,7 @@ class Engine:
             from .tsvad_stream import load_tsvad
             self.tsvad = tsvad if isinstance(tsvad, torch.nn.Module) else load_tsvad(str(tsvad or DEFAULT_TSVAD),
                                                                                          asr_model.encoder.d_model)
+            self.tsvad = self.tsvad.to(next(asr_model.parameters()).device)
             self.dyn_offset = TSVAD_DYN[1]
         # --diar-labels / --shed-diar (research/DIARIZATION_FIX.md): stable voice-keyed ids on the finals and the
         # last-stable-column rule under load shedding; defaults keep the legacy behaviour
@@ -518,7 +519,12 @@ class Engine:
         from .nemo_import import load_any
         from .train import load_model
         fallback = None
-        if device != "cpu":  # the server's streaming path is CPU-only (fast-conv, per-frame decoding): degrade, not die
+        # cpu is the measured default. cuda[:N] (opt-in, --device cuda) runs the same streaming code with the models on
+        # the GPU: same events on the bundled clips, ~3.7x less compute per 160 ms block on an RTX 5090
+        # (research/GPU_RUN_2026-09-29.md). Anything else (mps, cuda without a visible GPU) degrades to cpu.
+        if str(device).startswith("cuda") and torch.cuda.is_available():
+            kw["fast"] = False  # fast-conv is the CPU path for the conformer convolutions
+        elif device != "cpu":
             fallback = device
             log.warning(f"[serve] warning: --device {device} is not supported by this server; falling back to cpu")
             device = "cpu"

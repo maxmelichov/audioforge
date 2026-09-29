@@ -79,10 +79,10 @@ class ASRStream(StreamingSession):
         h = self.turn
         kw = {}
         if getattr(h, "needs_act", getattr(h, "concat", False)):
-            kw["spk_act"] = torch.tensor([[float(act or 0.0)]])
+            kw["spk_act"] = torch.tensor([[float(act or 0.0)]], device=self.dev)
         if getattr(h, "needs_cols", False):
-            kw["cols"] = torch.as_tensor(np.asarray(cols, np.float32))[None, None]
-            kw["prim"] = torch.tensor([int(prim or 0)])
+            kw["cols"] = torch.as_tensor(np.asarray(cols, np.float32), device=self.dev)[None, None]
+            kw["prim"] = torch.tensor([int(prim or 0)], device=self.dev)
         return float(h.step(e, (g, None) if g is not None else None, [toks], state=self.turn_state, **kw)[0, 0])
 
     @torch.no_grad()
@@ -168,7 +168,7 @@ class ASRStream(StreamingSession):
             t0 = time.perf_counter()
             info = [act_fn(v) for v in range(c["v0"], c["v0"] + c["n"])]
             if self.kernel:
-                act = torch.tensor([[a for a, _, _ in info]], dtype=torch.float32)
+                act = torch.tensor([[a for a, _, _ in info]], dtype=torch.float32, device=self.dev)
                 e, self.cstate = self.m.encoder.stream_step(c["mel"], self.cstate, self.att, spk_act=act,
                                                             final=c["last"])
             else:

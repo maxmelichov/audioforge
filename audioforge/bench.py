@@ -69,6 +69,7 @@ def main(argv=None):
     ap.add_argument("--diar-config", default=None, help="low_latency_032 (default) | low_latency")
     ap.add_argument("--repeat", type=int, default=1, help="runs after the warm-up; the best RTF is reported")
     ap.add_argument("--no-fast-conv", action="store_true")
+    ap.add_argument("--device", default="cpu", help="cpu (default) | cuda / cuda:N (as audioforge-serve --device)")
     ap.add_argument("--json", default=None, help="write the report here")
     a = ap.parse_args(argv)
 
@@ -98,14 +99,14 @@ def main(argv=None):
         diar = a.diar or need(dz)
         product = hub.diarizer_defaults(dz) if a.diar is None else {}  # as audioforge-serve applies them
     t0 = time.perf_counter()
-    eng = Engine.load(asr, diar, "cpu", threads=a.threads, fast=not a.no_fast_conv,
+    eng = Engine.load(asr, diar, a.device, threads=a.threads, fast=not a.no_fast_conv,
                       diar_config=a.diar_config or DEFAULT_DIAR_CONFIG, **product)
     load_s = time.perf_counter() - t0
     audio = load_wav(a.audio, 16000).astype(np.float32)
     eng.warmup()
     runs = [run_once(eng, audio, a.policy) for _ in range(max(1, a.repeat))]
     best = min(runs, key=lambda r: r["rtf"])
-    rep = {"audio": str(a.audio), "asr": asr, "diar": diar, "threads": a.threads, "policy": a.policy,
+    rep = {"audio": str(a.audio), "asr": asr, "diar": diar, "device": a.device, "threads": a.threads, "policy": a.policy,
            "diar_config": eng.diar_config, "load_s": round(load_s, 1), "peak_rss_mb": peak_rss_mb(),
            "rtf_all": [r["rtf"] for r in runs], **best}
     print(f"audio {rep['audio_s']} s | load {rep['load_s']} s | RTF {rep['rtf']} (runs {rep['rtf_all']}) | "

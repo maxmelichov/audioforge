@@ -119,16 +119,16 @@ class TSVADTrack:
         n = block4.shape[1]
         for j in range(n):
             f = block4[:, j: j + 1].float()
-            p = self.head.step(f, self.state)[0, 0].numpy()  # the frame is scored with the print known before it
+            p = self.head.step(f, self.state)[0, 0].cpu().numpy()  # the frame is scored with the print known before it
             v = self.n
             if self.armed_at is not None and v >= self.armed_at and float(vad[j]) > self.vad_thr:
-                self.buf.append(f[0].numpy())
+                self.buf.append(f[0].cpu().numpy())
                 if len(self.buf) >= self.need:
                     self._take_print(self.buf[: self.need], "arm", v)
                     self.armed_at, self.buf = None, []
             elif self.refresh and self.print is not None and self.armed_at is None:
                 if p[0] > 0.5 and p[1] < 0.5:  # confidently the target alone
-                    self.buf.append(f[0].numpy())
+                    self.buf.append(f[0].cpu().numpy())
                     self.buf = self.buf[-self.need:]
                     self.since_refresh += 1
                     if self.since_refresh >= self.refresh and len(self.buf) >= self.min_need:
