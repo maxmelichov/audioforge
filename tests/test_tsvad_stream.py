@@ -1,4 +1,4 @@
-"""serve --turn-input tsvad (audioforge/tsvad_stream.py; research/IMPROVEMENTS.md section 1): the live TS-VAD track,
+"""serve --turn-input tsvad (audioforge/tsvad_stream.py; research/archive/IMPROVEMENTS.md section 1): the live TS-VAD track,
 its voice-print arming, and the server path that feeds it to the speaker-conditioned turn head."""
 import importlib.util
 from pathlib import Path
@@ -9,7 +9,7 @@ import torch
 
 from audioforge.heads.tsvad import TSVADHead
 from audioforge.serve import TSVAD_DYN, Session, SessionConfig, validate
-from audioforge.tsvad_stream import TSVADTrack, embed_frames
+from audioforge.tsvad_stream import ADAPT_BLEND, TSVADTrack, embed_frames, track_probs
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -67,7 +67,7 @@ def test_arm_collects_speech_frames_then_swaps_the_print():
     spk = SpeakerHead(32, num_speakers=3, emb_dim=8).eval()
     x = torch.randn(1, 30, 32)
     vad = np.array([0.1] * 5 + [0.9] * 25)
-    tr = TSVADTrack(h, spk, print_s=10 * 0.08)
+    tr = TSVADTrack(h, spk, print_s=10 * 0.08, adapt_s=0)
     tr.arm(3)
     out = tr.feed(x, vad)
     # frames 5..14 are the first 10 speech frames at or after frame 3: the print is taken at the end of frame 14
@@ -90,6 +90,70 @@ def test_refresh_reembeds_confident_target_speech():
     tr.set_print(np.ones(8, np.float32))
     tr.feed(torch.randn(1, 25, 32), np.ones(25))
     assert [ev["source"] for ev in tr.events] == ["explicit", "refresh", "refresh"]  # frames 9 and 19
+
+
+def _accepting_head(other: float = -20.0):
+    h = _tsvad()
+    with torch.no_grad():
+        h.out.bias.copy_(torch.tensor([20.0, other]))  # P(target) ~ 1 on every frame; P(other) ~ sigmoid(other)
+    return h
+
+
+def test_adaptation_blends_the_enrolled_print_with_accepted_speech():
+    from audioforge.heads.audio import SpeakerHead
+    h = _accepting_head()
+    torch.manual_seed(2)
+    spk = SpeakerHead(32, num_speakers=3, emb_dim=8).eval()
+    x = torch.randn(1, 30, 32)
+    e0 = np.ones(8, np.float32) / np.sqrt(8)
+    tr = TSVADTrack(h, spk, print_s=10 * 0.08, adapt_s=12 * 0.08, adapt_min_s=0.08)
+    tr.set_print(e0)
+    tr.feed(x[:, :12], np.ones(12))
+    # 12 accepted frames -> one adaptation over the most recent 10 (print_s) of them, anchored to the enrolled print
+    want = ADAPT_BLEND * e0 + (1 - ADAPT_BLEND) * embed_frames(spk, x[0, 2:12].numpy())
+    assert tr.n_adapt == 1 and np.allclose(tr.print, want / np.linalg.norm(want), atol=1e-6)
+    assert np.allclose(tr.anchor, e0) and [ev["source"] for ev in tr.events] == ["explicit"]  # silent
+    tr.feed(x[:, 12:], np.ones(18))
+    want = ADAPT_BLEND * e0 + (1 - ADAPT_BLEND) * embed_frames(spk, x[0, 14:24].numpy())
+    assert tr.n_adapt == 2 and np.allclose(tr.print, want / np.linalg.norm(want), atol=1e-6)  # never compounds
+    # a new enrolment is the new anchor and restarts the collection
+    tr.set_print(-e0)
+    assert np.allclose(tr.anchor, -e0) and tr.buf == [] and tr.since_refresh == 0
+
+
+def test_adaptation_needs_the_target_alone_and_yields_to_refresh():
+    from audioforge.heads.audio import SpeakerHead
+    spk = SpeakerHead(32, num_speakers=3, emb_dim=8).eval()
+    e0 = np.ones(8, np.float32) / np.sqrt(8)
+    tr = TSVADTrack(_accepting_head(other=20.0), spk, adapt_s=0.08, adapt_min_s=0.08)  # P(other) ~ 1: overlap
+    tr.set_print(e0)
+    tr.feed(torch.randn(1, 20, 32), np.ones(20))
+    assert tr.n_adapt == 0 and np.allclose(tr.print, e0)
+    tr = TSVADTrack(_accepting_head(), spk, print_s=0.8, refresh_s=0.8, adapt_s=0.08)
+    assert tr.adapt == 0  # --tsvad-refresh-s replaces the adaptation
+    assert TSVADTrack(_accepting_head(), None).adapt == 0  # no speaker head: nothing to embed with
+
+
+def test_track_probs_without_adaptation_is_the_offline_decode():
+    from audioforge.heads.audio import SpeakerHead
+    h = _tsvad()
+    spk = SpeakerHead(32, num_speakers=3, emb_dim=8).eval()
+    x = torch.randn(1, 40, 32)
+    e = np.random.default_rng(1).standard_normal(8).astype(np.float32)
+    ref = h.decode(x, None, torch.as_tensor(e)[None])[0].numpy()
+    assert np.allclose(track_probs(h, spk, x[0].numpy(), e, adapt_s=0), ref, atol=1e-6)
+    assert track_probs(h, spk, x[0].numpy(), e).shape == (40, 2)
+
+
+def test_print_is_clean():
+    from audioforge.enrollment import print_is_clean
+    speech = np.r_[np.full(55, 0.9), np.full(5, 0.1)]
+    assert print_is_clean(speech) == (True, {"speech": 0.917})
+    assert not print_is_clean(np.full(60, 0.3))[0]  # the user is not speaking
+    ok, q = print_is_clean(speech, np.r_[np.full(37, 0.8), np.full(23, 0.0)])  # the other party talks over it (tb_160)
+    assert not ok and q == {"speech": 0.917, "other": 0.617}
+    assert print_is_clean(speech, np.full(60, 0.05))[0]
+    assert not print_is_clean([])[0]
 
 
 def _engine(**kw):

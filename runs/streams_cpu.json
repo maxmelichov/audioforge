@@ -1,0 +1,31 @@
+{
+ "setup": "Apple M5 laptop CPU, 2 threads, audioforge.load() (--mode single), 160 ms blocks, 60 s AMI windows",
+ "criterion": "real time if p95 of the summed per-block compute of all K streams < 160 ms",
+ "k": {
+  "1": {
+   "agg_block_ms_p50": 41.1,
+   "agg_block_ms_p95": 44.9,
+   "per_stream_block_ms_p50": 41.1,
+   "real_time": true
+  },
+  "2": {
+   "agg_block_ms_p50": 85.4,
+   "agg_block_ms_p95": 92.0,
+   "per_stream_block_ms_p50": 42.7,
+   "real_time": true
+  },
+  "3": {
+   "agg_block_ms_p50": 126.6,
+   "agg_block_ms_p95": 133.6,
+   "per_stream_block_ms_p50": 42.2,
+   "real_time": true
+  },
+  "4": {
+   "agg_block_ms_p50": 170.9,
+   "agg_block_ms_p95": 186.9,
+   "per_stream_block_ms_p50": 42.7,
+   "real_time": false
+  }
+ },
+ "streams_real_time": 3
+}

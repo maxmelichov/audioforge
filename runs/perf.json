@@ -14,7 +14,7 @@
   "long": "ES2011b 600-720 s (120 s; speaker cache + FIFO full after ~30 s)",
   "streams": "K sessions over 60 s AMI windows at different offsets, interleaved on one worker"
  },
- "audit_reconciliation": "research/PERFORMANCE.md section 1",
+ "audit_reconciliation": "research/archive/PERFORMANCE.md section 1",
  "baseline_none": {
   "e2e5": {
    "load_s": 5.63,

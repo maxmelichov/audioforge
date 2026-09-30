@@ -90,7 +90,7 @@ class AOSCConfig:
         return cls.from_dict(SORTFORMER_PRESETS[name])
 
 
-# NVIDIA streaming Sortformer v2 card configurations (research/raw/cards/diar_streaming_sortformer_4spk-v2.md, table
+# NVIDIA streaming Sortformer v2 card configurations (research/archive/raw/cards/diar_streaming_sortformer_4spk-v2.md, table
 # "Configuration"), in 80 ms frames. Input buffer latency = (chunk_len + chunk_right_context) * 80 ms. The card lists
 # the same FIFO / update period / cache for both low-latency rows. Used with StreamingDiarizer(mode="window",
 # enc_left_context=188, **SORTFORMER_PRESETS[name]) (scripts/make_sortformer_tracks.py, scripts/eval_stage1.py).

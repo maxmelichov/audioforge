@@ -1,7 +1,7 @@
-"""research/IMPROVEMENTS.md section 3: the block-4 speaker head, crop-level ("frame-level") TitaNet distillation with
+"""research/archive/IMPROVEMENTS.md section 3: the block-4 speaker head, crop-level ("frame-level") TitaNet distillation with
 every LibriSpeech train-clean-100 speaker + the relational loss, trained on cached block-4 features.
 
-What changes vs research/SPK_HEAD.md's shipped relational head (batch 6 whole segments, 5000 LibriSpeech utterances):
+What changes vs research/archive/SPK_HEAD.md's shipped relational head (batch 6 whole segments, 5000 LibriSpeech utterances):
 * the student embeds random 1.5-4 s crops of each segment (3 per segment, fixed seeds) and whole segments, each
   against TitaNet-L's embedding of exactly that audio (the teacher at the crop level: short, partial speech is what
   the live binder and the TS-VAD prints see);
@@ -41,7 +41,7 @@ OUT = ROOT / "runs" / "spk_frame.json"
 SERVED = ROOT / "runs" / "stage1_served.afm"
 RECIPE = ROOT / "research" / "recipes" / "spk_relational_titanet.yaml"
 SOURCES = {"ami_asr": {}, "icsi_asr": {}, "librispeech": {"n_train": 7727}}
-# research/IMPROVEMENTS.md section 6: the same recipe on the 0.6B core (its best untrained speaker block, ENC_0P6B.md:
+# research/archive/IMPROVEMENTS.md section 6: the same recipe on the 0.6B core (its best untrained speaker block, ENC_0P6B.md:
 # block 11 of 24 within-meeting on AMI / ICSI) vs the 115M core's block 4 (SPK_HEAD.md sweep)
 CORES = {"115m": (ROOT / "runs" / "stage1_served.afm", 3, 512),
          "0p6b": (Path("/Volumes/ExternalSSD/nvidia-audio-models/runs/nemo_nemotron_speech_streaming_en_0.6b.afm"), 10, 1024)}

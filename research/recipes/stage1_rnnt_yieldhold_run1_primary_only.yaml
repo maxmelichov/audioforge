@@ -1,4 +1,4 @@
-# Conversational action tokens in the ASR vocabulary (research/YIELD_TOKENS.md): <HOLD> (within-turn pause >= 0.3 s
+# Conversational action tokens in the ASR vocabulary (research/archive/YIELD_TOKENS.md): <HOLD> (within-turn pause >= 0.3 s
 # of the primary speaker = the AMI hesitation label) and <YIELD> (the labelled turn end) appended to NVIDIA's
 # 1024-piece BPE vocabulary (audioforge/vocab.py: ids 1024 / 1025, blank moves 1024 -> 1026, every other id and row
 # unchanged; runs/stage1_rnnt_yieldhold_init.afm = runs/stage1_heads_pretrained.afm + the two rows). The frozen

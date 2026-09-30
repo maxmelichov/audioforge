@@ -1,6 +1,6 @@
 # Distil nemotron-speech-streaming-en-0.6b into the 115M streaming core
 
-research/IMPROVEMENTS.md section 7. The served 115M cache-aware FastConformer transcribes AMI at 24.4 % WER in
+research/archive/IMPROVEMENTS.md section 7. The served 115M cache-aware FastConformer transcribes AMI at 24.4 % WER in
 streaming ([70,1], 160 ms chunks); the 0.6B streaming model of the same family reaches 11.2 % at the same latency
 (section 6) but costs 3x the compute. This job trains the 115M encoder + RNNT towards the 0.6B, keeping the 115M's
 cost and every other head of the served model.
@@ -105,7 +105,7 @@ CUDA_VISIBLE_DEVICES=0 $PY $D eval --work $W --tag kd && CUDA_VISIBLE_DEVICES=0 
 | eval (3 models x 3 sets x 2 contexts) + VAD head check + eot-bench turn check | ~40 min | GPU 0 (GPU 1 free) |
 | **total** | **~5.5-6 h wall (~9 GPU-hours)** | one working day with room for a second KD run (e.g. an lr or w_enc sweep on GPU 1 while GPU 0 evaluates) |
 
-## Smoke test (done on the laptop, research/IMPROVEMENTS.md section 7)
+## Smoke test (done on the laptop, research/archive/IMPROVEMENTS.md section 7)
 
 ~1 h of AMI / ICSI / LibriSpeech (`manifest --n-ami 12 --n-icsi 12 --max-hours 1`), teacher on MPS, a short KD
 run, and the gate check with a deliberately high learning rate (`--lr 1e-2`), which must print `GATE FIRED` and

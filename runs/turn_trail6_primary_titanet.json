@@ -1,7 +1,7 @@
 {
  "ckpt": "runs/stage1_turn_v3_trail6.afm",
  "turn_v2": {
-  "protocol": "eot-bench v2 (research/EOT_BENCH_V2.md)",
+  "protocol": "eot-bench v2 (research/archive/EOT_BENCH_V2.md)",
   "enroll_params": {
    "k_frames": 25,
    "s_frames": 25

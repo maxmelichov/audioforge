@@ -28,12 +28,12 @@ class ASRStream(StreamingSession):
     (as ``heads.turn.decoded_text_state``). turn_input "diar": chunks wait in ``pending`` for the diarizer."""
 
     def __init__(self, model, vad: str | None = "vad", turn: str | None = "turn", turn_input: str = "session",
-                 lid=None, vad_gate: float | None = None, vad_hangover_frames: int = 15):
-        super().__init__(model)
+                 lid=None, vad_gate: float | None = None, vad_hangover_frames: int = 15, att_context_size=None):
+        super().__init__(model, att_context_size=att_context_size)
         self.lid = lid  # audioforge.lid.LIDStream (--lid) or None
         # --asr-vad-gate: the transducer is not decoded on a frame whose VAD <= vad_gate once vad_hangover_frames
         # such frames have passed since the last speech frame (the encoder and the heads still run every frame);
-        # bounds the text emitted on long non-speech (research/BULLETPROOF.md section 1)
+        # bounds the text emitted on long non-speech (research/archive/BULLETPROOF.md section 1)
         self.vad_gate = None if vad_gate is None else float(vad_gate)
         self.hangover = int(vad_hangover_frames)
         self.since_speech = 10 ** 9  # non-speech frames since the last speech frame (starts gated)
@@ -49,7 +49,7 @@ class ASRStream(StreamingSession):
         self.kernel = bool(self.turn_name and model.head_cfg[self.turn_name].get("condition_on_speaker"))
         if self.kernel and (self.turn_name in model.layer_tap or self.turn_name in model.layer_mix):
             # the kernel path streams the conditioned encoder's TOP layer (run_turn_on_diar); a from_layers tap on a
-            # speaker-conditioned turn head (research/LAYER_ROUTING.md) is not wired here and would be read wrongly
+            # speaker-conditioned turn head (research/archive/LAYER_ROUTING.md) is not wired here and would be read wrongly
             raise NotImplementedError(f"serve: turn head {self.turn_name!r} is speaker-conditioned with from_layers "
                                       f"{model.head_cfg[self.turn_name].get('from_layers')!r}; not supported")
         self.k = getattr(self.turn, "k_tokens", 4)
@@ -79,10 +79,10 @@ class ASRStream(StreamingSession):
         h = self.turn
         kw = {}
         if getattr(h, "needs_act", getattr(h, "concat", False)):
-            kw["spk_act"] = torch.tensor([[float(act or 0.0)]])
+            kw["spk_act"] = torch.tensor([[float(act or 0.0)]], device=self.dev)
         if getattr(h, "needs_cols", False):
-            kw["cols"] = torch.as_tensor(np.asarray(cols, np.float32))[None, None]
-            kw["prim"] = torch.tensor([int(prim or 0)])
+            kw["cols"] = torch.as_tensor(np.asarray(cols, np.float32), device=self.dev)[None, None]
+            kw["prim"] = torch.tensor([int(prim or 0)], device=self.dev)
         return float(h.step(e, (g, None) if g is not None else None, [toks], state=self.turn_state, **kw)[0, 0])
 
     @torch.no_grad()
@@ -109,9 +109,11 @@ class ASRStream(StreamingSession):
             self.sig_start = keep
         mel = torch.cat(self.mel_buf, -1) if self.mel_buf else torch.zeros(1, 1, 0, device=self.dev)
         out = []
-        while mel.shape[-1] >= self.chunk_mel or (final and mel.shape[-1]):
-            last = bool(final) and mel.shape[-1] <= self.chunk_mel
-            chunk, mel = mel[..., : self.chunk_mel], mel[..., self.chunk_mel:]
+        while mel.shape[-1] >= self._next_chunk_mels() or (final and mel.shape[-1]):
+            k = self._next_chunk_mels()  # a chunk runs as soon as its frames' mel input is complete (chunk_lead)
+            last = bool(final) and mel.shape[-1] <= k
+            chunk, mel = mel[..., :k], mel[..., k:]
+            self.mel_fed += chunk.shape[-1]
             enc, hid, self.enc_state = self.m.encoder.stream_step(chunk, self.enc_state, self.att, final=last,
                                                                   return_hidden=True)
             n = enc.shape[1]
@@ -168,7 +170,7 @@ class ASRStream(StreamingSession):
             t0 = time.perf_counter()
             info = [act_fn(v) for v in range(c["v0"], c["v0"] + c["n"])]
             if self.kernel:
-                act = torch.tensor([[a for a, _, _ in info]], dtype=torch.float32)
+                act = torch.tensor([[a for a, _, _ in info]], dtype=torch.float32, device=self.dev)
                 e, self.cstate = self.m.encoder.stream_step(c["mel"], self.cstate, self.att, spk_act=act,
                                                             final=c["last"])
             else:
@@ -202,7 +204,7 @@ class LookaheadStream(StreamingSession):
 
     def ready_t(self, v: int) -> float:
         """Audio time (s) by which the lookahead pass can decode frame ``v`` (its chunk and lookahead have arrived)."""
-        return (((v // self.cs + 1) * self.chunk_mel - 1) * self.hop + self.half) / SR
+        return self.frame_ready_samples(v) / SR
 
 
 # --------------------------------------------------------------------------- CPU fast path

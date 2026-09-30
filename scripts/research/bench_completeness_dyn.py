@@ -1,4 +1,4 @@
-"""Dynamic-timeout policies on eot-bench v2 (scripts/research/bench_completeness.py --stage dyntimeout; research/COMPLETENESS.md §2.4).
+"""Dynamic-timeout policies on eot-bench v2 (scripts/research/bench_completeness.py --stage dyntimeout; research/archive/COMPLETENESS.md §2.4).
 
 Policy: fire at frame t when  silence(t) >= required(t),  required(t) = clamp(T0 - a * s(t), Tmin, Tmax)  (frames),
   silence = the Silero/Pipecat any-speaker silence run ("silero") or our Sortformer-primary silence run ("primary");

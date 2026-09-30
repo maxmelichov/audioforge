@@ -1,4 +1,4 @@
-# Completeness head (research/COMPLETENESS.md): smart-turn's task ("is what the user said so far a complete
+# Completeness head (research/archive/COMPLETENESS.md): smart-turn's task ("is what the user said so far a complete
 # utterance?") as a head on OUR frozen 115M streaming encoder, trained head-only on pipecat-ai/human_5_all (the one
 # smart-turn dataset with a licence: BSD-2-Clause; 3 862 English clips, balanced). Eval split = the human_5 clips of
 # smart-turn-data-v3.2-test (neither smart-turn v3.2 nor this head trained on them; datasets/smartturn.py).

@@ -1,4 +1,4 @@
-"""Layer routing for the diar / turn heads (research/LAYER_ROUTING.md): init.from with a re-sized layer mix, weight-0
+"""Layer routing for the diar / turn heads (research/archive/LAYER_ROUTING.md): init.from with a re-sized layer mix, weight-0
 speaker-conditioned heads skip the conditioned pass, from_layers on a condition_on_speaker head reads the CONDITIONED
 encoder pass (training, turn_scores, eval_stage1.turn_scores_given_act), and the driver's diarization scoring."""
 import importlib.util

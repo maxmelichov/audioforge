@@ -698,6 +698,30 @@
   "source": "runs/vad_single.json + runs/baselines_sd.json",
   "path": "1 - vad2/ours/miss / vad2/marblenet/miss"
  },
+ "firstms/ours": {
+  "value": 1081,
+  "shown": "1081",
+  "dec": 0,
+  "scope": "ms from the user's first onset to the first words on screen (median), ours",
+  "source": "runs/single_model.json",
+  "path": "table > live_69 > systems > single_S (A1 rule, --mode single, live) > first_text_ms_median"
+ },
+ "firstms/pipecat": {
+  "value": 2812,
+  "shown": "2812",
+  "dec": 0,
+  "scope": "ms from the user's first onset to the first words on screen (median), pipecat",
+  "source": "runs/single_model.json",
+  "path": "table > live_69 > systems > pipecat_default_A > first_text_ms_median"
+ },
+ "firstms/livekit": {
+  "value": 5120,
+  "shown": "5120",
+  "dec": 0,
+  "scope": "ms from the user's first onset to the first words on screen (median), livekit",
+  "source": "runs/single_model.json",
+  "path": "table > live_69 > systems > livekit_default_B > first_text_ms_median"
+ },
  "v7/missed_rel": {
   "value": 51.134579706008275,
   "shown": "51",
@@ -761,5 +785,419 @@
   "scope": "percentage points fewer word errors (absolute)",
   "source": "runs/hybrid_asr.json + runs/final_asr.json",
   "path": "wer/whisper_small - wer/ours"
+ },
+ "v8/calls/ours/eot": {
+  "value": 956,
+  "shown": "956",
+  "dec": 0,
+  "scope": "end-of-turn latency p50, ms, two_party_user, (g) head theta 0.99: ourVAD<0.4 sil>=160ms & p>=0.99 | fallback 640ms | others",
+  "source": "runs/eot_latency.json",
+  "path": "table > two_party_user > (g) head theta 0.99: ourVAD<0.4 sil>=160ms & p>=0.99 | fallback 640ms | others > eot_total_ms_p50"
+ },
+ "v8/calls/ours/fi": {
+  "value": 20.2,
+  "shown": "20",
+  "dec": 0,
+  "scope": "false-interruption rate, % of user turns, two_party_user, (g) head theta 0.99: ourVAD<0.4 sil>=160ms & p>=0.99 | fallback 640ms | others",
+  "source": "runs/eot_latency.json",
+  "path": "table > two_party_user > (g) head theta 0.99: ourVAD<0.4 sil>=160ms & p>=0.99 | fallback 640ms | others > false_interruption_pct"
+ },
+ "v8/calls/ours/miss": {
+  "value": 7.3,
+  "shown": "7",
+  "dec": 0,
+  "scope": "missed turn ends, % of turn ends, two_party_user, (g) head theta 0.99: ourVAD<0.4 sil>=160ms & p>=0.99 | fallback 640ms | others",
+  "source": "runs/eot_latency.json",
+  "path": "table > two_party_user > (g) head theta 0.99: ourVAD<0.4 sil>=160ms & p>=0.99 | fallback 640ms | others > missed_pct"
+ },
+ "v8/calls/livekit/eot": {
+  "value": 567,
+  "shown": "567",
+  "dec": 0,
+  "scope": "end-of-turn latency p50, ms, two_party_user, LiveKit EnglishModel + Silero (defaults)",
+  "source": "runs/eot_latency.json",
+  "path": "table > two_party_user > LiveKit EnglishModel + Silero (defaults) > eot_total_ms_p50"
+ },
+ "v8/calls/livekit/fi": {
+  "value": 26.6,
+  "shown": "27",
+  "dec": 0,
+  "scope": "false-interruption rate, % of user turns, two_party_user, LiveKit EnglishModel + Silero (defaults)",
+  "source": "runs/eot_latency.json",
+  "path": "table > two_party_user > LiveKit EnglishModel + Silero (defaults) > false_interruption_pct"
+ },
+ "v8/calls/livekit/miss": {
+  "value": 22.9,
+  "shown": "23",
+  "dec": 0,
+  "scope": "missed turn ends, % of turn ends, two_party_user, LiveKit EnglishModel + Silero (defaults)",
+  "source": "runs/eot_latency.json",
+  "path": "table > two_party_user > LiveKit EnglishModel + Silero (defaults) > missed_pct"
+ },
+ "v8/calls/pipecat/eot": {
+  "value": 2268,
+  "shown": "2268",
+  "dec": 0,
+  "scope": "end-of-turn latency p50, ms, two_party_user, Pipecat smart-turn v3.2 + Silero (defaults)",
+  "source": "runs/eot_latency.json",
+  "path": "table > two_party_user > Pipecat smart-turn v3.2 + Silero (defaults) > eot_total_ms_p50"
+ },
+ "v8/calls/pipecat/fi": {
+  "value": 37.6,
+  "shown": "38",
+  "dec": 0,
+  "scope": "false-interruption rate, % of user turns, two_party_user, Pipecat smart-turn v3.2 + Silero (defaults)",
+  "source": "runs/eot_latency.json",
+  "path": "table > two_party_user > Pipecat smart-turn v3.2 + Silero (defaults) > false_interruption_pct"
+ },
+ "v8/calls/pipecat/miss": {
+  "value": 24.8,
+  "shown": "25",
+  "dec": 0,
+  "scope": "missed turn ends, % of turn ends, two_party_user, Pipecat smart-turn v3.2 + Silero (defaults)",
+  "source": "runs/eot_latency.json",
+  "path": "table > two_party_user > Pipecat smart-turn v3.2 + Silero (defaults) > missed_pct"
+ },
+ "v8/calls/n": {
+  "value": 109,
+  "shown": "109",
+  "dec": 0,
+  "scope": "reference turn ends scored, two_party_user",
+  "source": "runs/eot_latency.json",
+  "path": "table > two_party_user > <rule> > n_turns"
+ },
+ "v8/calls/sessions": {
+  "value": 32,
+  "shown": "32",
+  "dec": 0,
+  "scope": "sessions / windows, two_party_user",
+  "source": "runs/eot_latency.json",
+  "path": "n_sessions > two_party_user"
+ },
+ "v8/ami/ours/eot": {
+  "value": 1326,
+  "shown": "1326",
+  "dec": 0,
+  "scope": "end-of-turn latency p50, ms, ami, (g) head theta 0.99: ourVAD<0.4 sil>=160ms & p>=0.99 | fallback 640ms | others",
+  "source": "runs/eot_latency.json",
+  "path": "table > ami > (g) head theta 0.99: ourVAD<0.4 sil>=160ms & p>=0.99 | fallback 640ms | others > eot_total_ms_p50"
+ },
+ "v8/ami/ours/fi": {
+  "value": 10.5,
+  "shown": "11",
+  "dec": 0,
+  "scope": "false-interruption rate, % of user turns, ami, (g) head theta 0.99: ourVAD<0.4 sil>=160ms & p>=0.99 | fallback 640ms | others",
+  "source": "runs/eot_latency.json",
+  "path": "table > ami > (g) head theta 0.99: ourVAD<0.4 sil>=160ms & p>=0.99 | fallback 640ms | others > false_interruption_pct"
+ },
+ "v8/ami/ours/miss": {
+  "value": 33.5,
+  "shown": "34",
+  "dec": 0,
+  "scope": "missed turn ends, % of turn ends, ami, (g) head theta 0.99: ourVAD<0.4 sil>=160ms & p>=0.99 | fallback 640ms | others",
+  "source": "runs/eot_latency.json",
+  "path": "table > ami > (g) head theta 0.99: ourVAD<0.4 sil>=160ms & p>=0.99 | fallback 640ms | others > missed_pct"
+ },
+ "v8/ami/livekit/eot": {
+  "value": 1890,
+  "shown": "1890",
+  "dec": 0,
+  "scope": "end-of-turn latency p50, ms, ami, LiveKit EnglishModel + Silero (defaults)",
+  "source": "runs/eot_latency.json",
+  "path": "table > ami > LiveKit EnglishModel + Silero (defaults) > eot_total_ms_p50"
+ },
+ "v8/ami/livekit/fi": {
+  "value": 12.5,
+  "shown": "13",
+  "dec": 0,
+  "scope": "false-interruption rate, % of user turns, ami, LiveKit EnglishModel + Silero (defaults)",
+  "source": "runs/eot_latency.json",
+  "path": "table > ami > LiveKit EnglishModel + Silero (defaults) > false_interruption_pct"
+ },
+ "v8/ami/livekit/miss": {
+  "value": 67.5,
+  "shown": "68",
+  "dec": 0,
+  "scope": "missed turn ends, % of turn ends, ami, LiveKit EnglishModel + Silero (defaults)",
+  "source": "runs/eot_latency.json",
+  "path": "table > ami > LiveKit EnglishModel + Silero (defaults) > missed_pct"
+ },
+ "v8/ami/pipecat/eot": {
+  "value": 384,
+  "shown": "384",
+  "dec": 0,
+  "scope": "end-of-turn latency p50, ms, ami, Pipecat smart-turn v3.2 + Silero (defaults)",
+  "source": "runs/eot_latency.json",
+  "path": "table > ami > Pipecat smart-turn v3.2 + Silero (defaults) > eot_total_ms_p50"
+ },
+ "v8/ami/pipecat/fi": {
+  "value": 28.0,
+  "shown": "28",
+  "dec": 0,
+  "scope": "false-interruption rate, % of user turns, ami, Pipecat smart-turn v3.2 + Silero (defaults)",
+  "source": "runs/eot_latency.json",
+  "path": "table > ami > Pipecat smart-turn v3.2 + Silero (defaults) > false_interruption_pct"
+ },
+ "v8/ami/pipecat/miss": {
+  "value": 44.5,
+  "shown": "45",
+  "dec": 0,
+  "scope": "missed turn ends, % of turn ends, ami, Pipecat smart-turn v3.2 + Silero (defaults)",
+  "source": "runs/eot_latency.json",
+  "path": "table > ami > Pipecat smart-turn v3.2 + Silero (defaults) > missed_pct"
+ },
+ "v8/ami/n": {
+  "value": 200,
+  "shown": "200",
+  "dec": 0,
+  "scope": "reference turn ends scored, ami",
+  "source": "runs/eot_latency.json",
+  "path": "table > ami > <rule> > n_turns"
+ },
+ "v8/ami/sessions": {
+  "value": 200,
+  "shown": "200",
+  "dec": 0,
+  "scope": "sessions / windows, ami",
+  "source": "runs/eot_latency.json",
+  "path": "n_sessions > ami"
+ },
+ "v8/twer/calls/none": {
+  "value": 62.72,
+  "shown": "63",
+  "dec": 0,
+  "scope": "tWER %, the 16 two-party mono-mix sessions (both voices in one channel), arm none",
+  "source": "runs/tswer_live.json @ fe28a9e (committed)",
+  "path": "results > mono > none > wer"
+ },
+ "v8/twer/calls/ours": {
+  "value": 40.24,
+  "shown": "40",
+  "dec": 0,
+  "scope": "tWER %, the 16 two-party mono-mix sessions (both voices in one channel), arm tsvad_d2",
+  "source": "runs/tswer_live.json @ fe28a9e (committed)",
+  "path": "results > mono > tsvad_d2 > wer"
+ },
+ "v8/twer/calls/oracle": {
+  "value": 36.46,
+  "shown": "36",
+  "dec": 0,
+  "scope": "tWER %, the 16 two-party mono-mix sessions (both voices in one channel), arm oracle_d2",
+  "source": "runs/tswer_live.json @ fe28a9e (committed)",
+  "path": "results > mono > oracle_d2 > wer"
+ },
+ "v8/twer/calls/n": {
+  "value": 16,
+  "shown": "16",
+  "dec": 0,
+  "scope": "mono-mix sessions scored",
+  "source": "runs/tswer_live.json @ fe28a9e (committed)",
+  "path": "results > mono > n_sessions"
+ },
+ "v8/twer/icsi/ours": {
+  "value": 37.14,
+  "shown": "37",
+  "dec": 0,
+  "scope": "tWER %, ICSI held-out, primary speaker, audioforge TS-VAD filter (5 s print)",
+  "source": "runs/tswer.json @ fe28a9e (committed)",
+  "path": "results > icsi > primary > arms > tsvad_d2 > twer"
+ },
+ "v8/twer/icsi/none": {
+  "value": 100.77,
+  "shown": "101",
+  "dec": 0,
+  "scope": "tWER %, ICSI held-out, primary speaker, no filter (every word)",
+  "source": "runs/tswer.json @ fe28a9e (committed)",
+  "path": "results > icsi > primary > arms > none > twer"
+ },
+ "v8/twer/icsi/nemotron3": {
+  "value": 65.09,
+  "shown": "65",
+  "dec": 0,
+  "scope": "tWER %, ICSI, NVIDIA Nemotron-3-Diarization column bound by the same 5 s print (better binder: tn; spk 66.77, TitaNet 65.09)",
+  "source": "runs/tswer.json @ fe28a9e (committed)",
+  "path": "min(results > icsi > primary > arms > n3_spk_d2 / n3_tn_d2 > twer)"
+ },
+ "v8/vad/ours/f1": {
+  "value": 0.9511,
+  "shown": "0.951",
+  "dec": 3,
+  "scope": "VAD F1 at threshold 0.5, AMI dev, audioforge_block4_head",
+  "source": "runs/vad_auc.json",
+  "path": "audioforge_block4_head > f1_at_0.5"
+ },
+ "v8/vad/silero/f1": {
+  "value": 0.9147,
+  "shown": "0.915",
+  "dec": 3,
+  "scope": "VAD F1 at threshold 0.5, AMI dev, silero_v5.1.2",
+  "source": "runs/vad_auc.json",
+  "path": "silero_v5.1.2 > f1_at_0.5"
+ },
+ "v8/vad/marblenet/f1": {
+  "value": 0.9367,
+  "shown": "0.937",
+  "dec": 3,
+  "scope": "VAD F1 at threshold 0.5, AMI dev, marblenet_frame_vad_v2",
+  "source": "runs/vad_auc.json",
+  "path": "marblenet_frame_vad_v2 > f1_at_0.5"
+ },
+ "v8/vad/ours/miss": {
+  "value": 10.620000000000001,
+  "shown": "10.6",
+  "dec": 1,
+  "scope": "% speech frames missed at FPR 0.0749, shipped block-4 VAD head (L3)",
+  "source": "runs/vad_single.json",
+  "path": "eval > ami_dev > L3 > at_fpr0.075 > miss"
+ },
+ "v8/vad/silero/miss": {
+  "value": 13.819999999999999,
+  "shown": "13.8",
+  "dec": 1,
+  "scope": "% speech frames missed at FPR 0.0751 (sweep threshold 0.5), silero_v5.1.2",
+  "source": "runs/baselines_sd.json",
+  "path": "vad > silero_v5.1.2 > sweep > 0.5 > miss"
+ },
+ "v8/vad/marblenet/miss": {
+  "value": 12.280000000000001,
+  "shown": "12.3",
+  "dec": 1,
+  "scope": "% speech frames missed at FPR 0.0757 (sweep threshold 0.9), marblenet_frame_vad_v2",
+  "source": "runs/baselines_sd.json",
+  "path": "vad > marblenet_frame_vad_v2 > sweep > 0.9 > miss"
+ },
+ "v8/vad/fpr": {
+  "value": 7.489999999999999,
+  "shown": "7.5",
+  "dec": 1,
+  "scope": "false-alarm rate of the fixed operating point, %",
+  "source": "runs/vad_single.json",
+  "path": "eval > ami_dev > L3 > at_fpr0.075 > fpr"
+ },
+ "v8/vad/n": {
+  "value": 64,
+  "shown": "64",
+  "dec": 0,
+  "scope": "AMI dev windows (20 s)",
+  "source": "runs/baselines_sd.json",
+  "path": "vad > n"
+ },
+ "v8/cost/cpu": {
+  "value": 29.84,
+  "shown": "29.8",
+  "dec": 1,
+  "scope": "ms of compute per 160 ms chunk, p50, full --mode single engine on the bundled clip, Apple M5 CPU, 2 threads",
+  "source": "runs/mps_115m.json",
+  "path": "engine > cpu > chunk_ms_p50"
+ },
+ "v8/cost/mps": {
+  "value": 28.71,
+  "shown": "28.7",
+  "dec": 1,
+  "scope": "ms of compute per 160 ms chunk, p50, full --mode single engine on the bundled clip, Apple M5 GPU (MPS)",
+  "source": "runs/mps_115m.json",
+  "path": "engine > mps > chunk_ms_p50"
+ },
+ "v8/cost/gpu": {
+  "value": 20,
+  "shown": "20",
+  "dec": 0,
+  "scope": "ms per 160 ms chunk on an RTX 5090, measured in PR #1 (research/GPU_RUN_2026-09-29.md on that branch; no GPU run file in runs/ locally)",
+  "source": "runs/stt_latency.json",
+  "path": "gpu_estimate > note (cites PR #1)"
+ },
+ "v8/wer/libri/ours": {
+  "value": 2.29,
+  "shown": "2.3",
+  "dec": 1,
+  "scope": "WER %, LibriSpeech test-clean 200 utterances, served",
+  "source": "runs/hybrid_asr.json",
+  "path": "english > results > served/libri > wer_normalize_text > wer"
+ },
+ "v8/wer/libri/whisper_small": {
+  "value": 2.42,
+  "shown": "2.4",
+  "dec": 1,
+  "scope": "WER %, LibriSpeech test-clean 200 utterances, whisper_small",
+  "source": "runs/hybrid_asr.json",
+  "path": "english > results > whisper_small/libri > wer_normalize_text > wer"
+ },
+ "v8/wer/live/ours": {
+  "value": 23.21,
+  "shown": "23.2",
+  "dec": 1,
+  "scope": "WER %, live sessions (the 32 with transcripts), single_S (A1 rule, --mode single, live)",
+  "source": "runs/single_model.json",
+  "path": "table > live_69 > systems > single_S (A1 rule, --mode single, live) > wer"
+ },
+ "v8/wer/live/livekit": {
+  "value": 19.27,
+  "shown": "19.3",
+  "dec": 1,
+  "scope": "WER %, live sessions (the 32 with transcripts), livekit_default_B",
+  "source": "runs/single_model.json",
+  "path": "table > live_69 > systems > livekit_default_B > wer"
+ },
+ "v8/wer/live/pipecat": {
+  "value": 23.5,
+  "shown": "23.5",
+  "dec": 1,
+  "scope": "WER %, live sessions (the 32 with transcripts), pipecat_default_A",
+  "source": "runs/single_model.json",
+  "path": "table > live_69 > systems > pipecat_default_A > wer"
+ },
+ "v9/calls/fi_rel": {
+  "value": 25.92592592592593,
+  "shown": "26",
+  "dec": 0,
+  "scope": "% relative reduction, false interruptions on calls, audioforge vs LiveKit: 1 - 20 / 27 (bar labels); raw values 1 - 20.2 / 26.6 = 24.06",
+  "source": "runs/eot_latency.json",
+  "path": "1 - v8/calls/ours/fi.shown / v8/calls/livekit/fi.shown",
+  "raw": 24.06015037593986
+ },
+ "v9/calls/miss_rel": {
+  "value": 69.56521739130434,
+  "shown": "70",
+  "dec": 0,
+  "scope": "% relative reduction, missed turn ends on calls, audioforge vs LiveKit: 1 - 7 / 23 (bar labels); raw values 1 - 7.3 / 22.9 = 68.12",
+  "source": "runs/eot_latency.json",
+  "path": "1 - v8/calls/ours/miss.shown / v8/calls/livekit/miss.shown",
+  "raw": 68.12227074235808
+ },
+ "v9/ami/fi_rel": {
+  "value": 60.71428571428572,
+  "shown": "61",
+  "dec": 0,
+  "scope": "% relative reduction, false interruptions in AMI meetings, audioforge vs Pipecat: 1 - 11 / 28 (bar labels); raw values 1 - 10.5 / 28.0 = 62.50",
+  "source": "runs/eot_latency.json",
+  "path": "1 - v8/ami/ours/fi.shown / v8/ami/pipecat/fi.shown",
+  "raw": 62.5
+ },
+ "v9/ami/miss_rel": {
+  "value": 24.444444444444446,
+  "shown": "24",
+  "dec": 0,
+  "scope": "% relative reduction, missed turn ends in AMI meetings, audioforge vs Pipecat: 1 - 34 / 45 (bar labels); raw values 1 - 33.5 / 44.5 = 24.72",
+  "source": "runs/eot_latency.json",
+  "path": "1 - v8/ami/ours/miss.shown / v8/ami/pipecat/miss.shown",
+  "raw": 24.71910112359551
+ },
+ "v9/twer/rel": {
+  "value": 36.50793650793651,
+  "shown": "37",
+  "dec": 0,
+  "scope": "% relative reduction, target-speaker WER on mono-mix calls, audioforge vs our own STT with no speaker filter: 1 - 40 / 63 (bar labels); raw values 1 - 40.24 / 62.72 = 35.84",
+  "source": "runs/tswer_live.json @ fe28a9e (committed)",
+  "path": "1 - v8/twer/calls/ours.shown / v8/twer/calls/none.shown",
+  "raw": 35.84183673469388
+ },
+ "v9/vad/rel": {
+  "value": 1.4941302027748016,
+  "shown": "1.5",
+  "dec": 1,
+  "scope": "% relative increase in VAD F1 at 0.5, audioforge vs NVIDIA MarbleNet: 0.951 / 0.937 - 1 (bar labels); raw 0.9511 / 0.9367 - 1 = 1.54",
+  "source": "runs/vad_auc.json (+ runs/vad_single.json, runs/baselines_sd.json agree)",
+  "path": "v8/vad/ours/f1.shown / v8/vad/marblenet/f1.shown - 1",
+  "raw": 1.5373118394363061
  }
 }

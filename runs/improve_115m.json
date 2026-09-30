@@ -5651,7 +5651,7 @@
     693
    ]
   },
-  "protocol": "eot-bench v2 (research/EOT_BENCH_V2.md): 6 s-extended windows, cross-fitted <= 5 % per-turn FC (leave-meetings-out halves), 1000-resample bootstrap CIs; the turn head is the served trail6 head; the TS-VAD track feeds it [P(target), P(other)] from the 5 s voice print (speech elsewhere in the meeting), emission on the 160 ms encoder chunk"
+  "protocol": "eot-bench v2 (research/archive/EOT_BENCH_V2.md): 6 s-extended windows, cross-fitted <= 5 % per-turn FC (leave-meetings-out halves), 1000-resample bootstrap CIs; the turn head is the served trail6 head; the TS-VAD track feeds it [P(target), P(other)] from the 5 s voice print (speech elsewhere in the meeting), emission on the 160 ms encoder chunk"
  },
  "frame_nemotron3_protocol": {
   "date": "2026-09-29",

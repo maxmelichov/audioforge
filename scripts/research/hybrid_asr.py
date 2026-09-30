@@ -1,4 +1,4 @@
-"""Hybrid front end, offline part (research/HYBRID_ASR.md): NVIDIA Parakeet-TDT 0.6B v3 as the per-turn final ASR.
+"""Hybrid front end, offline part (research/archive/HYBRID_ASR.md): NVIDIA Parakeet-TDT 0.6B v3 as the per-turn final ASR.
 
 Model: data/nemo/parakeet-tdt-0.6b-v3.nemo imported with audioforge.nemo_import (TDT head, greedy decoding), loaded
 straight from the .nemo (memory-mapped; no .afm copy). Never loaded in the same process as parakeet-ctc-0.6b or the
@@ -7,7 +7,7 @@ nemotron streaming 0.6B (machine rules); the nemotron stage runs alone.
 Sets (the scripts/research/final_asr.py protocol; its prepared audio and the other systems' hypotheses are reused)
   ami      AMI dev single-speaker segments, 200 (final_asr `prep`)
   libri    LibriSpeech test-clean, first 200 utterances
-  fleurs   FLEURS test, the 17 languages x 150 utterances of research/LID.md (scripts/research/lid_data.py), full utterances;
+  fleurs   FLEURS test, the 17 languages x 150 utterances of research/archive/LID.md (scripts/research/lid_data.py), full utterances;
            per language WER (Whisper BasicTextNormalizer; EnglishTextNormalizer for en) and CER (zh, ja: no spaces)
   fleurs2s the same utterances, 2 s from the Silero speech onset (lid.clip), for language ID at 2 s
 Every item is transcribed alone (batch 1), CPU, 2 threads, fp32, greedy TDT. For fleurs / fleurs2s the mean-pooled
@@ -45,7 +45,7 @@ OUT = ROOT / "runs" / "hybrid_asr.json"
 TDT_NEMO = ROOT / "data/nemo/parakeet-tdt-0.6b-v3.nemo"
 NEMOTRON = ROOT / "runs/nemo_nemotron_speech_streaming_en_0.6b.afm"
 SR = 16000
-# the card's 25 languages (research/raw/cards/parakeet-tdt-0.6b-v3.md "Supported Languages")
+# the card's 25 languages (research/archive/raw/cards/parakeet-tdt-0.6b-v3.md "Supported Languages")
 V3_LANGS = ["bg", "hr", "cs", "da", "nl", "en", "et", "fi", "fr", "de", "el", "hu", "it", "lv", "lt", "mt", "pl", "pt",
             "ro", "sk", "sl", "es", "sv", "ru", "uk"]
 # the card's FLEURS WER (full test sets, PnC removed), for the languages of our FLEURS-17 subset
@@ -518,7 +518,7 @@ def report_lid(n_lang: int = 0) -> dict:
             res[cond]["tag_readout_n"] = tag_n
             res[cond]["tag_prob_mass_max_per_utt_median"] = float(np.median(pm))
             res[cond]["tag_prob_mass_max_overall"] = float(np.max(pm))
-    # AmberNet (research/LID.md, data/lid/preds/ambernet) on the same utterances, restricted to the 10 languages
+    # AmberNet (research/archive/LID.md, data/lid/preds/ambernet) on the same utterances, restricted to the 10 languages
     codes = list(LANGS)
     idx = [codes.index(lg) for lg in sup]
     amb = {}
@@ -591,7 +591,7 @@ def stage_lidfeat(a):
 
 
 def stage_lidprobe(a):
-    """Per-block standardise + multinomial logistic regression (C=0.1, as research/LID.md section 1) fitted on train
+    """Per-block standardise + multinomial logistic regression (C=0.1, as research/archive/LID.md section 1) fitted on train
     5 s (and 2 s) clip features, scored on test 2 s clips and full utterances; 17 languages."""
     from lid_data import LANGS
     from sklearn.linear_model import LogisticRegression
@@ -840,7 +840,7 @@ def stage_nemotron(a):
     rec = {"device": dev, "att_context": att, "chunk_ms": 160, "stream_ms_per_chunk_p50": round(float(np.percentile(ts, 50)), 1),
            "stream_ms_per_chunk_p95": round(float(np.percentile(ts, 95)), 1), "stream_rtf": round(sum(ts) / 1000 / 60, 3),
            "peak_rss_mb": peak_rss_mb(), "note": "MPS as a proxy for a CUDA GPU" if dev == "mps" else "CPU 2 threads",
-           "wer_protocol": "masked offline forward at [70,1] = cache-aware streaming (research/ENC_0P6B.md)"}
+           "wer_protocol": "masked offline forward at [70,1] = cache-aware streaming (research/archive/ENC_0P6B.md)"}
     res = _json().get("nemotron_stream", {})
     res[dev] = rec
     _merge("nemotron_stream", res)

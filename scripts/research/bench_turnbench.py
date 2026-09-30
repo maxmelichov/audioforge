@@ -1,4 +1,4 @@
-"""TurnBench dev (research/OUTSIDE.md 2.3, research/DYADIC.md) scored with the OFFICIAL MIT scorer (vendored unchanged in
+"""TurnBench dev (research/archive/OUTSIDE.md 2.3, research/archive/DYADIC.md) scored with the OFFICIAL MIT scorer (vendored unchanged in
 integrations/turnbench_scorer): our systems run CAUSALLY on the 38 two-channel conversations and commit discrete EOT
 events per speaker; the scorer does the rest (consensus gold, [t - 0.25, min(t + 3, next)] windows, one FP per
 negative span). Timestamps are commit times: the end of the 32 ms Silero chunk / 20 ms RMS window / 160 ms encoder
@@ -17,7 +17,7 @@ Inputs, per speaker k (both channels are given to every TurnBench baseline; ours
   eou                Parakeet-Realtime-EOU on channel k: posterior log P(<EOU>) with theta (+ refractory), and the
                      native "<EOU> emitted" point
 Not run: the streaming Sortformer track cascade (window mode costs 39 s of CPU per 20 s of audio on this machine:
-7.3 h x 2 speakers is >= 28 CPU-hours; research/DYADIC.md).
+7.3 h x 2 speakers is >= 28 CPU-hours; research/archive/DYADIC.md).
 
 Stages (each one process <= 10 min, resumable; CPU, 2 threads; long audio is processed in 60 s segments with 8 s of
 left overlap, the recurrent head / decoder state restarting per segment):
@@ -64,7 +64,7 @@ K_GRID = (0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.2, 1.5, 2.0, 2.5, 3.0)
 Q_GRID = tuple(np.round(np.concatenate([np.linspace(0.50, 0.95, 10), [0.97, 0.98, 0.99, 0.995, 0.998, 0.999]]), 4))
 HYB_Q = (0.90, 0.95, 0.98, 0.99, 0.995, 0.999)
 HYB_K = (0.5, 0.7, 1.0, 1.5, 2.0, 3.0)
-PUBLISHED_TEST = {  # research/OUTSIDE.md 2.2 (test split; leaderboard-test.json holds the rest)
+PUBLISHED_TEST = {  # research/archive/OUTSIDE.md 2.2 (test split; leaderboard-test.json holds the rest)
     "vap": (0.845, 0.055, 368), "smart_turn_v3": (0.752, 0.047, None), "kyutai_semantic_vad": (0.773, 0.059, 1007)}
 DEV_BASELINES = ("vap", "smart_turn_v3", "kyutai_semantic_vad", "rms_vad", "espnet_turntaking",
                  "espnet_turntaking_perchannel", "wavlm_large_causal", "mimi_endpointer", "openai_server_vad",
@@ -168,7 +168,7 @@ def stage_head(a, ds, work):
                     scores[f0 + fk: f0 + fk + n] = sc[fk: fk + n]
                     if has_mh:
                         mh[f0 + fk: f0 + fk + n] = ax[0][fk: fk + n]
-        if has_mh:  # multi-horizon user-activity bins (research/DYADIC.md section 8's predictive trigger)
+        if has_mh:  # multi-horizon user-activity bins (research/archive/DYADIC.md section 8's predictive trigger)
             q = out.parent.parent / (out.parent.name + "__mhbins") / out.name
             q.parent.mkdir(parents=True, exist_ok=True)
             np.save(q.with_suffix(".tmp.npy"), mh)

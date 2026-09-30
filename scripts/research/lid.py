@@ -1,4 +1,4 @@
-"""Spoken language identification on the single-model front end vs dedicated LID models (research/LID.md).
+"""Spoken language identification on the single-model front end vs dedicated LID models (research/archive/LID.md).
 
 Data: scripts/research/lid_data.py (FLEURS subset, 17 languages, speaker-disjoint train / dev / test). Every system sees the
 same clips: for each test utterance, the first 1 / 2 / 3 / 5 s from the speech onset (Silero VAD v5 onset - 0.1 s)

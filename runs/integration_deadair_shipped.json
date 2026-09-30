@@ -1,6 +1,6 @@
 {
  "date": "2026-09-26",
- "what": "research/INTEGRATION.md section 8: product-level dead air / cut-ins of the shipped rules (hybrid_dyn, hybrid_silero, --enroll after_agent_arm) vs the 1000 ms timeout on the 5 AMI windows of section 4, Pipecat then LiveKit",
+ "what": "research/archive/INTEGRATION.md section 8: product-level dead air / cut-ins of the shipped rules (hybrid_dyn, hybrid_silero, --enroll after_agent_arm) vs the 1000 ms timeout on the 5 AMI windows of section 4, Pipecat then LiveKit",
  "code_commit": "4e90fd5 (servers and demos run from a clean git worktree of this commit)",
  "server": "python -m audioforge.serve --asr runs/stage1_served.afm --diar runs/nemo_sortformer_v2.afm --turn-input diar --threads 2 --debug-fields --enroll dominant|after_agent_arm (default --diar-config low_latency_032); CPU; one server per plan (<= 2 policy lines), load gate 1-min load < 8 at start (hard stop >= 10)",
  "policies": {
@@ -25,7 +25,7 @@
   "pipecat": "WavInputTransport pushes a BotStoppedSpeakingFrame after the 20 ms frame reaching agent_end_s; AudioforgeSTTService(enroll='after_agent_arm') sends agent_end; the frame is dropped after the STT",
   "livekit": "AudioforgeFrontend.agent_end() once all frames before agent_end_s were pushed (stream mode and AgentSession mode)"
  },
- "definitions": "as research/INTEGRATION.md section 4: decision = turn_end.t - true end; dead air = arrival at the client - true end (Pipecat: UserStoppedSpeakingFrame; LiveKit: STT END_OF_SPEECH; commit = AgentSession(turn_detection='stt') user-turn commit); cut-in = a decision while the primary speaks again within 1 s",
+ "definitions": "as research/archive/INTEGRATION.md section 4: decision = turn_end.t - true end; dead air = arrival at the client - true end (Pipecat: UserStoppedSpeakingFrame; LiveKit: STT END_OF_SPEECH; commit = AgentSession(turn_detection='stt') user-turn commit); cut-in = a decision while the primary speaks again within 1 s",
  "reference_rows": {
   "section4_timeout": {
    "pipecat": [

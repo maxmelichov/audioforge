@@ -1,4 +1,4 @@
-"""train.py fixes (research/VERIFICATION.md §6 items 1-4), mixed data sources (data.mix) and the
+"""train.py fixes (research/archive/VERIFICATION.md §6 items 1-4), mixed data sources (data.mix) and the
 stage-1/stage-2 pretrained recipes' config plumbing (tiny stand-in .afm, never the real one)."""
 import json
 from pathlib import Path

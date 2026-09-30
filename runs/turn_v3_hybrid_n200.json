@@ -779,7 +779,7 @@
  },
  "turn_enroll_causal_dominant": {
   "external_diar": {
-   "column_choice": "causal_dominant (label-free, eot-bench v2; research/EOT_BENCH_V2.md)",
+   "column_choice": "causal_dominant (label-free, eot-bench v2; research/archive/EOT_BENCH_V2.md)",
    "enroll_agree_oracle_at_turn_end_offline": 0.725,
    "column_hist_offline": {
     "0": 200,

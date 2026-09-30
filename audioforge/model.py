@@ -26,7 +26,7 @@ log = logging.getLogger(__name__)
 TEXT_HEADS = {"ctc", "rnnt", "tdt", "aed"}
 
 
-# Train-time activity conditioning (research/TURN_ABLATION.md, A): the speaker-conditioned pass is trained on the
+# Train-time activity conditioning (research/archive/TURN_ABLATION.md, A): the speaker-conditioned pass is trained on the
 # clean oracle primary activity but runs on diarization output at inference. ``conditioning:`` (top level, or
 # ``training.activity_conditioning``) replaces the conditioning track per item: with probability p_diar by the diar
 # head's own detached sigmoid primary column (arrival-rank rule, heads/turn.py primary_column; offline pass, or the
@@ -38,7 +38,7 @@ TEXT_HEADS = {"ctc", "rnnt", "tdt", "aed"}
 # oracle / noisy oracle / own-diar track. ``spk_act_oracle`` always keeps the clean labels.
 # Location: top-level ``conditioning:``, ``training.activity_conditioning``, or ``trainer.conditioning`` (the only one
 # that survives train.init_from_afm, which copies ``trainer`` but not the top-level key from the recipe).
-# ext_noise (TurnHead v3, research/STAGE1.md n=200): corrupt the external track of the items that use it, aimed at the
+# ext_noise (TurnHead v3, research/archive/STAGE1.md n=200): corrupt the external track of the items that use it, aimed at the
 # failure "the next speaker lands in my slot" - with probability p per item, the primary's column is swapped with the
 # most active other column for <= swap_max frames around a speaker change (the oracle turn end with probability
 # at_turn_end, else a frame where the track's active set changes), plus, with probability drop, one short dropout
@@ -48,12 +48,12 @@ TEXT_HEADS = {"ctc", "rnnt", "tdt", "aed"}
 # enrollment column (spk_prim_ext) for ext items, the own diar head's columns for p_diar items, else the oracle
 # spk_targets with the (noisy) primary track in its column and the columns randomly permuted (the column index
 # carries no information, as with a real diarizer).
-# Head-only conditioning (TurnHead v5, research/TURN_ERRORS.md: "drop kernel conditioning so the track reaches only
+# Head-only conditioning (TurnHead v5, research/archive/TURN_ERRORS.md: "drop kernel conditioning so the track reaches only
 # the head"): the conditioning above also runs when no head is speaker-conditioned but a head READS the activity
 # itself (TurnHead mode concat, duration_feats or act_columns > 1: head.needs_act / needs_cols). Then the noisy /
 # external track reaches that head only (batch spk_act / spk_cols / spk_prim), spk_act_oracle keeps the clean labels,
 # and the encoder runs once, unconditioned. Recipes with a condition_on_speaker head behave exactly as before.
-# rebind (research/CONTAMINATION.md section 9, research/DYADIC.md section 8): corrupted-then-CORRECTED windows. With
+# rebind (research/archive/CONTAMINATION.md section 9, research/archive/DYADIC.md section 8): corrupted-then-CORRECTED windows. With
 # probability p per item the final conditioning track (whatever its source) binds the WRONG party for W ~ U{w_min ..
 # w_max} frames ending at a uniform frame between the primary's onset and its turn end, then is correct again: the
 # primary column is swapped with the most active other column over the window (the real failure, a follower rebind,
@@ -217,7 +217,7 @@ def build_head(cfg: dict, d_model: int, tokenizer=None) -> nn.Module:
         return SortformerHead(d_model, **cfg)
     if t == "speaker":
         return SpeakerHead(d_model, **cfg)
-    if t == "language":  # spoken language ID, running posterior (research/LID.md)
+    if t == "language":  # spoken language ID, running posterior (research/archive/LID.md)
         return LanguageHead(d_model, **cfg)
     if t == "frame":
         return FrameHead(d_model, **cfg)
@@ -260,7 +260,7 @@ class SpeechModel(nn.Module):
             k: nn.Parameter(torch.zeros(len(self.encoder.layers)))
             for k, v in self.head_cfg.items() if v.get("from_layers") == "all"})
         # from_layers: k | [k, ...] -> the head reads exactly encoder layer k (0-based block index, as
-        # speaker_kernel_layers), or a learned softmax mix restricted to the listed layers (research/SPK_HEAD.md)
+        # speaker_kernel_layers), or a learned softmax mix restricted to the listed layers (research/archive/SPK_HEAD.md)
         self.layer_tap: dict[str, list[int]] = {}
         for k, v in self.head_cfg.items():
             fl = v.get("from_layers")
@@ -575,6 +575,16 @@ class StreamingSession:
         self.head = model.heads[self.head_name]
         self.att = list(att_context_size or model.encoder.att_context_size)
         self.chunk_mel = model.encoder.stream_chunk_frames(self.att)
+        # mel frames the FIRST chunk needs. A NeMo-aligned causal encoder (pre_encode.nemo_causal) ends encoder frame v
+        # at mel frame 8v, so the chunk of frames [v0, v0 + R] is complete once mel frame 8 (v0 + R) exists: chunk j
+        # runs after chunk_lead + j * chunk_mel mel frames (8R + 1, then every (R + 1) * 8), not after a whole
+        # (R + 1) * 8 window, which held every frame back by 7 mel frames = 70 ms (research/LATENCY_BUDGET.md). The
+        # encoder's outputs are the same (``_stream_step_aligned`` carries the 7 frames over). Other encoders need the
+        # full window.
+        f = model.encoder.subsampling_factor
+        self.chunk_lead = (f * self.att[1] + 1 if getattr(getattr(model.encoder, "pre_encode", None), "nemo_causal",
+                                                          False) else self.chunk_mel)
+        self.mel_fed = 0  # mel frames handed to the encoder so far
         pp = model.preprocessor
         self.hop, self.half = pp.hop, pp.n_fft // 2
         dev = next(model.parameters()).device
@@ -591,6 +601,22 @@ class StreamingSession:
         self.skip = 0
         self._pg = None  # (g, joint.pred(g)) of the last decoded frame (cache_joint_pred)
         self.frame_events: dict[str, list] = {k: [] for k, v in model.head_cfg.items() if v["type"] == "frame"}
+
+    def _next_chunk_mels(self) -> int:
+        """Mel frames the next encoder chunk takes (``chunk_lead`` for the first, then ``chunk_mel``)."""
+        return self.chunk_lead if self.mel_fed == 0 else self.chunk_mel
+
+    def frame_ready_samples(self, v: int) -> int:
+        """Samples of audio after which encoder frame ``v`` is computed (its chunk's last mel frame is complete:
+        mel frame k needs samples up to k * hop + n_fft / 2)."""
+        cs = self.att[1] + 1
+        return (self.chunk_lead + (v // cs) * self.chunk_mel - 1) * self.hop + self.half
+
+    def frames_ready(self, samples: int) -> int:
+        """Encoder frames computed once ``samples`` of audio have arrived (inverse of ``frame_ready_samples``)."""
+        mels = max((int(samples) - self.half) // self.hop + 1, 0)
+        chunks = 0 if mels < self.chunk_lead else (mels - self.chunk_lead) // self.chunk_mel + 1
+        return chunks * (self.att[1] + 1)
 
     def _mel(self, a: int, b: int) -> torch.Tensor:
         pp = self.m.preprocessor
@@ -622,9 +648,11 @@ class StreamingSession:
         mel = torch.cat(self.mel_buf, -1) if self.mel_buf else torch.zeros(1, 1, 0, device=self.dev)
         # final: run the partial last chunk as is (stream_step supports it) instead of padding it,
         # so no frames past the end of the audio are decoded and the frame count equals offline
-        while mel.shape[-1] >= self.chunk_mel or (final and mel.shape[-1]):
-            last = bool(final) and mel.shape[-1] <= self.chunk_mel  # NeMo-aligned encoders emit their trailing frame
-            chunk, mel = mel[..., : self.chunk_mel], mel[..., self.chunk_mel:]
+        while mel.shape[-1] >= self._next_chunk_mels() or (final and mel.shape[-1]):
+            n = self._next_chunk_mels()
+            last = bool(final) and mel.shape[-1] <= n  # NeMo-aligned encoders emit their trailing frame
+            chunk, mel = mel[..., :n], mel[..., n:]
+            self.mel_fed += chunk.shape[-1]
             enc, hid, self.enc_state = self.m.encoder.stream_step(chunk, self.enc_state, self.att, final=last,
                                                                   return_hidden=True)
             # heads with from_layers: all read their layer mix of this chunk's per-layer outputs (= analyze())

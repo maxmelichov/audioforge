@@ -1,4 +1,4 @@
-# Stage 1b: retrain ONLY the speaker-aware turn head on REAL diarizer tracks (research/STAGE1.md, last two
+# Stage 1b: retrain ONLY the speaker-aware turn head on REAL diarizer tracks (research/archive/STAGE1.md, last two
 # sections: at 160 ms the head trained on clean oracle activity loses to a silence timeout on NVIDIA's
 # Sortformer track; its failure - the next speaker landing in the user's slot after the turn end - was never
 # in its training data).

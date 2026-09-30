@@ -1,4 +1,4 @@
-# research/DIARIZATION_FIX.md section 5: distil NVIDIA's diarizer into our head on the frozen served encoder.
+# research/archive/DIARIZATION_FIX.md section 5: distil NVIDIA's diarizer into our head on the frozen served encoder.
 # Teacher: Nemotron-3-Diarization (max pool, all 8 columns) offline posteriors on the AMI + ICSI train diar windows
 # (16 s), cached once by scripts/research/diar_distill.py teacher -> data/cache/diar_teacher/{ami,icsi}_train.npz
 # (symlinked to the SSD). Student: the stage-1 Sortformer head (4 columns, 1.9 M) on one encoder tap; the loss is

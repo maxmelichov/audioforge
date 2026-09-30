@@ -1,4 +1,4 @@
-"""Overlap robustness of speaker representations on AMI dev turn windows (research/SPK_HEAD.md, "Overlap robustness").
+"""Overlap robustness of speaker representations on AMI dev turn windows (research/archive/SPK_HEAD.md, "Overlap robustness").
 
 Question: does a frame-level lower-layer embedding average to garbage in overlap, follow the louder speaker, or keep
 the primary (turn owner)? Frames of the eval_stage1 AMI dev turn windows are labelled per speaker NAME with the

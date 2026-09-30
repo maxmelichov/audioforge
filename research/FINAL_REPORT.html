@@ -51,7 +51,7 @@ nav.toc ul{margin:.3em 0;padding-left:1.1em}
 <li><a href="#3-speaker-verification-ami-dev-single-speaker-segments-15-speakers-runsspk_headjson-runsbaselines_sdjson">3. Speaker verification (AMI dev single-speaker segments, 15 speakers; runs/spk_head.json, runs/baselines_sd.json)</a></li>
 <li><a href="#4-diarization-ami-dev-64-20-s-windows-runsbaselines_sdjson-runslayer_routingjson">4. Diarization (AMI dev, 64 × 20 s windows; runs/baselines_sd.json, runs/layer_routing.json)</a></li>
 <li><a href="#5-end-of-turn">5. End of turn</a></li>
-<li><a href="#6-language-id-fleurs-test-17-languages-n-2550-runslidjson-researchlidmd">6. Language ID (FLEURS test, 17 languages, n = 2550; runs/lid.json, research/LID.md)</a></li>
+<li><a href="#6-language-id-fleurs-test-17-languages-n-2550-runslidjson-researchlidmd">6. Language ID (FLEURS test, 17 languages, n = 2550; runs/lid.json, research/archive/LID.md)</a></li>
 <li><a href="#7-product-pipecat-and-livekit-end-to-end-researche2e_finalmd-runse2e_finaljson">7. Product: Pipecat and LiveKit end to end (research/E2E_FINAL.md, runs/e2e_final.json)</a></li>
 <li><a href="#8-recommended-strongest-lightweight-stack">8. Recommended strongest lightweight stack</a></li>
 <li><a href="#9-cost-of-what-was-measured">9. Cost of what was measured</a></li>
@@ -66,6 +66,16 @@ nav.toc ul{margin:.3em 0;padding-left:1.1em}
 </ul>
 </div>
 </nav>
+<blockquote>
+<p><strong>Status (2026-09-29): historical.</strong> This report describes the room-mode product of 2026-09-28 (115M model +
+NVIDIA diarizer). The shipped product is now single-model mode, and the numbers to quote are the standard
+scorecard in <a href="METRICS.md"><code>research/METRICS.md</code></a>. Terms below map as follows: "dead air" = end-of-turn latency,
+"cut-ins" = false interruptions, "missed within 3 s" = no response within 3 s (pooled over mono-mix sessions,
+which no system can answer in time). "First partial transcript ... after speech onset" counted from the start of
+speech, so it included the time it takes to say the first word; it is not STT latency (partial latency, word end
+to word shown, is 441 ms median). Language ID row 11 is an older 0.40 M head; the shipped distilled head scores
+91.0 % / 97.8 % (<code>runs/lid.json</code>).</p>
+</blockquote>
 <p>2026-09-28 (first version 2026-09-27; this refresh adds the work of 2026-09-28 and re-reads its numbers from their JSON, see
 <code>research/VERIFICATION_2026-09-28.md</code>). Repository <code>nvidia-audio-models</code>. Written for a technical reader who did not
 follow the project. Every number comes from a <code>runs/*.json</code> file (Appendix A lists them) or, for three tables of
@@ -104,7 +114,8 @@ AmberNet for language ID.</p>
 <li><strong>In the product</strong> (37 recorded conversations through the real Pipecat 1.12 and LiveKit Agents 1.8 pipelines): vs
   <strong>Pipecat's default local stack</strong> our default cuts users off 1.6-5.5x less often and misses fewer ends, with
   similar dead air; vs <strong>LiveKit's default</strong> dead air is comparable and we miss fewer ends but cut in more on mono
-  mixes. First partial transcript 0.8-1.2 s after speech onset vs 2.6-3.7 s (Pipecat) and 3.4-11.3 s (LiveKit).</li>
+  mixes. (A "first partial transcript after speech onset" comparison stood here; it counted from the start of speech
+  and was removed as misleading. See the status note above.)</li>
 <li><strong>Added on 2026-09-28</strong> (scorecard rows 15-26):</li>
 <li><em>Rooms.</em> The served server cut Nemotron-3 to 4 of its 8 columns (speakers 5-8 were invisible) and labelled every
     turn speaker 0 under load shedding. Fixed: all 8 columns and hold-on-shed are the launcher defaults, a voice-keyed
@@ -323,7 +334,7 @@ still mid-turn); miss = the end is not detected within the horizon; "open" = flo
 <tr>
 <td>17</td>
 <td>robustness of the server</td>
-<td><code>tests/test_bulletproof.py</code>, <code>research/BULLETPROOF.md</code></td>
+<td><code>tests/test_bulletproof.py</code>, <code>research/archive/BULLETPROOF.md</code></td>
 <td>48 tests over 36 failure modes (audio, protocol, models, load shedding, clients); 3 defects in shipped code found and fixed; no default policy's measured behaviour changed</td>
 <td>–</td>
 <td>–</td>
@@ -499,7 +510,7 @@ Whisper-norm deltas for the TDT rows).</p>
 <li>The served model streams at 160 ms chunks (att context [70, 1]); the others see the whole utterance. The 0.6-0.8
   point gap to parakeet-ctc-0.6b and Whisper turbo is significant and is the price of streaming with 80 ms
   lookahead: the same imported encoder at 1.04 s lookahead ([70, 13]) scores 1.92 % on these utterances
-  (<code>research/NEMO_IMPORT.md</code>, no JSON), and 2.26 % on the first 100 (<code>runs/served_model_build.json</code>).</li>
+  (<code>research/archive/NEMO_IMPORT.md</code>, no JSON), and 2.26 % on the first 100 (<code>runs/served_model_build.json</code>).</li>
 <li>Parakeet-TDT v3 per turn is statistically equal to the streaming model here (+0.26 [−0.20, +0.71]); its value is on
   meetings.</li>
 <li>Published (P, full test-clean, model cards): parakeet-ctc-0.6b 1.87 %, parakeet-ctc-1.1b 1.83 %, parakeet-tdt-0.6b-v3
@@ -589,7 +600,7 @@ Whisper-norm deltas for the TDT rows).</p>
 <li>Cost is the streaming model's advantage: 2.2x cheaper than parakeet-ctc-0.6b, 3x than TDT v3, 13-66x than
   Whisper small / turbo, and it is the only system in the table that gives partials while the user speaks.</li>
 <li>Published AMI numbers (P, full AMI-IHM test, Open ASR Leaderboard protocol): parakeet-tdt-0.6b-v3 11.31 % (its
-  card, as stored in <code>hybrid_asr.json</code>; <code>research/DATA_PLAN.md</code> quotes 11.39), nemotron-speech-streaming-0.6b
+  card, as stored in <code>hybrid_asr.json</code>; <code>research/archive/DATA_PLAN.md</code> quotes 11.39), nemotron-speech-streaming-0.6b
   14.71 % at 160 ms, Parakeet-Realtime-EOU-120M 15.62 %, Whisper small 19.0 % (Whisper paper). Our dev subset and
   normaliser are not that protocol.</li>
 </ul>
@@ -765,7 +776,7 @@ bit-identical to the served model), so no live decision can change.</p>
 <li><strong>Verdict: better than every streaming VAD, worse than offline pyannote.</strong> Caveat: the head was trained on AMI train
   with exactly this word-level label; the dedicated VADs detect acoustic speech, so part of the margin is label
   convention (pauses under ~0.5 s are hidden in AMI word times). No CI. On ICSI dev the head's F1 is 0.900.</li>
-<li><code>research/VAD_LAYERS.md</code>: a probe on block 4 alone matches the served head (F1 0.9476 vs 0.9485; best block 9
+<li><code>research/archive/VAD_LAYERS.md</code>: a probe on block 4 alone matches the served head (F1 0.9476 vs 0.9485; best block 9
   0.9496), so the head is at the ceiling of what one encoder block gives.</li>
 </ul>
 <h2 id="3-speaker-verification-ami-dev-single-speaker-segments-15-speakers-runsspk_headjson-runsbaselines_sdjson">3. Speaker verification (AMI dev single-speaker segments, 15 speakers; <code>runs/spk_head.json</code>, <code>runs/baselines_sd.json</code>)</h2>
@@ -965,7 +976,7 @@ train-clean-100 speakers, cosine + relational (within-batch similarity matrix) l
 <li>Nemotron-3 scores above Sortformer v2 here mainly through a label-convention miss (VAD-level miss 16-19 % vs 10 %),
   yet in the product it gives lower dead air (§7). Its card claims DIHARD3 13.55 % and CALLHOME 11.32 % (P).</li>
 </ul>
-<h3 id="41-many-speakers-in-the-served-system-2026-09-28-researchdiarization_fixmd-scratch-diar">4.1 Many speakers in the served system (2026-09-28; <code>research/DIARIZATION_FIX.md</code>, scratch <code>diar/</code>)</h3>
+<h3 id="41-many-speakers-in-the-served-system-2026-09-28-researchdiarization_fixmd-scratch-diar">4.1 Many speakers in the served system (2026-09-28; <code>research/archive/DIARIZATION_FIX.md</code>, scratch <code>diar/</code>)</h3>
 <p>User report: "diarization, and many speakers in the room, doesn't work". Reproduced live through the quickstart
 server. Three causes at once: <code>final.speaker</code> was the 5 s dominant column, not the turn's speaker, and a turn only
 ended when that column fell silent (other people's turns were glued on); the launcher cut Nemotron-3 to its first 4
@@ -1130,7 +1141,7 @@ ICSI-64, count error no worse; kill after two runs if the gap stays above 0.10.<
   dev in its training data, so its AMI-dev DER is also not a clean target.</li>
 </ul>
 <h2 id="5-end-of-turn">5. End of turn</h2>
-<p>Benchmark: <strong>eot-bench v2</strong> (<code>research/EOT_BENCH_V2.md</code>): AMI dev, 974 turns (236 floor-open, 738 floor-taken),
+<p>Benchmark: <strong>eot-bench v2</strong> (<code>research/archive/EOT_BENCH_V2.md</code>): AMI dev, 974 turns (236 floor-open, 738 floor-taken),
 label-free causal enrollment of the primary speaker on streaming Sortformer tracks, every system's threshold
 cross-fitted over leave-meetings-out folds to ≤ 5 % false cutoffs per turn (realised held-out FC 4.8-6.5 %; up to
 12 % within the open stratum), horizons 6 s and 2 s, 1000 paired bootstraps over turns. <strong>Floor-open</strong> ends (nobody
@@ -1349,7 +1360,7 @@ from AMI.</p>
 Head OR dyn − head OR Silero, open: −11.7 [−17.0, −7.0]; head OR Silero − hybrid, open: −9.3 [−14.7, −4.1].</p>
 <ul>
 <li><strong>Verdict (ICSI): the direction replicates.</strong> Better on all ends, equal on open ends; absolute misses are much
-  higher on ICSI (hesitations are 2-3x as frequent as in AMI, <code>research/ICSI.md</code>) and the frozen thresholds land at
+  higher on ICSI (hesitations are 2-3x as frequent as in AMI, <code>research/archive/ICSI.md</code>) and the frozen thresholds land at
   1-4 % FC, under budget. Cross-fitting the dynamic rule on ICSI itself gives 62.0 % but at 14.8 % FC, so it is not a
   shippable operating point. Parakeet-EOU, smart-turn and LiveKit were <strong>not run on ICSI</strong>; "better than every
   dedicated detector" is an AMI-dev statement.</li>
@@ -1686,7 +1697,7 @@ chosen on the evaluation set): it shows the trade-off, the cross-fitted rows abo
   −80 ms on AMI (3280 → 3200) and 0 on ICSI, for +0.4 to +2.6 points of FC; no point beats <code>hybrid_dyn</code> by ≥ 300 ms
   at matched FC, so nothing was pinned. The head is not confident 200 ms into a pause.</li>
 </ul>
-<h2 id="6-language-id-fleurs-test-17-languages-n-2550-runslidjson-researchlidmd">6. Language ID (FLEURS test, 17 languages, n = 2550; <code>runs/lid.json</code>, <code>research/LID.md</code>)</h2>
+<h2 id="6-language-id-fleurs-test-17-languages-n-2550-runslidjson-researchlidmd">6. Language ID (FLEURS test, 17 languages, n = 2550; <code>runs/lid.json</code>, <code>research/archive/LID.md</code>)</h2>
 <div class="tw"><table>
 <thead>
 <tr>
@@ -2281,7 +2292,7 @@ misses more can show a lower median.</p>
   CPU s per audio s). Ours is 1.7-3.6x the CPU of the default stacks and keeps up at 1x with backlog ≤ 0.7 s in all
   but two sessions.</li>
 </ul>
-<h3 id="71-server-performance-pass-2026-09-28-runsperfjson-researchperformancemd">7.1 Server performance pass (2026-09-28; <code>runs/perf.json</code>, <code>research/PERFORMANCE.md</code>)</h3>
+<h3 id="71-server-performance-pass-2026-09-28-runsperfjson-researchperformancemd">7.1 Server performance pass (2026-09-28; <code>runs/perf.json</code>, <code>research/archive/PERFORMANCE.md</code>)</h3>
 <p>Four exact CPU fast paths, on by default (<code>--perf default</code>; <code>--perf none</code> restores the old path): column-major
 <code>nn.Linear</code> weights (Accelerate's NN GEMM path), a cached relative-position projection, one shared subsampling for
 the ASR and turn passes, and a cached RNNT joint projection. Acceptance rule: identical protocol decisions on the 5
@@ -2336,7 +2347,7 @@ clip, so both see the same load).</p>
   <code>fast_subsample</code> (not exact, 2.6 % gain; opt-in <code>--perf all</code>), <code>torch.compile</code> (slower), int8 in torch (no engine on
   this wheel), <code>inference_mode</code> (no gain).</li>
 </ul>
-<h3 id="72-which-rtf-to-quote-researchperformancemd-1">7.2 Which RTF to quote (<code>research/PERFORMANCE.md</code> §1)</h3>
+<h3 id="72-which-rtf-to-quote-researchperformancemd-1">7.2 Which RTF to quote (<code>research/archive/PERFORMANCE.md</code> §1)</h3>
 <p>RTF = compute time / audio time, and the same model has several correct values depending on what is timed.</p>
 <div class="tw"><table>
 <thead>
@@ -2393,7 +2404,7 @@ clip, so both see the same load).</p>
 <tr>
 <td>0.16</td>
 <td>the on-device runtime study: 1 thread, random weights, no diarizer, no turn pass</td>
-<td><code>research/ONDEVICE.md</code> (no JSON)</td>
+<td><code>research/archive/ONDEVICE.md</code> (no JSON)</td>
 <td>"can the encoder + heads run on one core" only</td>
 </tr>
 <tr>
@@ -2407,7 +2418,7 @@ clip, so both see the same load).</p>
 <p><strong>Rule:</strong> quote the whole-server live figure with its thread count, diarizer and machine load for "what does a
 session cost", the offline batch figure only next to other models' offline figures, and chunk-time p95 plus backlog
 (not RTF) for "does it keep up". Never quote the 0.16 or the quickstart's loaded-machine 0.85 / 1.0 for the server.</p>
-<h3 id="73-robustness-researchbulletproofmd-teststest_bulletproofpy">7.3 Robustness (<code>research/BULLETPROOF.md</code>, <code>tests/test_bulletproof.py</code>)</h3>
+<h3 id="73-robustness-researchbulletproofmd-teststest_bulletproofpy">7.3 Robustness (<code>research/archive/BULLETPROOF.md</code>, <code>tests/test_bulletproof.py</code>)</h3>
 <p>36 failure modes a deployment can hit (bad audio: NaN / Inf, extreme amplitudes, odd block sizes, minutes of silence,
 wrong sample rates; malformed or late protocol messages, floods, disconnects, 12 concurrent sessions; model failures:
 NaN head outputs, missing Silero, a dead / failing / hanging final-ASR worker; load shedding; the three clients),
@@ -2740,7 +2751,7 @@ not yet confirmed by the maintainer (<code>docs/RELEASE_CHECKLIST.md</code>).</p
   systems (2026-09-27) were lost with the scratch in a reboot; <code>scripts/research/tsvad_chain.sh</code> rebuilds the tracks
   and scores (resumable; stopped at 62 / 974 AMI windows), <strong>about 5 h of CPU</strong>. The same rebuild gives the
   Sortformer-input rows of the latency frontier (§5.7) and of <code>hybrid_fast</code> (§5.8).</li>
-<li><strong>Improvement experiments 4 and 5</strong> (pre-registered in <code>research/IMPROVEMENTS.md</code>): enrolment quality (print length
+<li><strong>Improvement experiments 4 and 5</strong> (pre-registered in <code>research/archive/IMPROVEMENTS.md</code>): enrolment quality (print length
   1.5-10 s, live after_agent_arm prints, refresh; driver <code>tsvad_enroll.py</code> prepared) and meeting-ASR partials from the
   decoder-adapted head combined with the lookahead pass. Not run (deprioritised for the 0.6B and distillation work).</li>
 <li><strong>TurnBench for the 0.6B core.</strong> Not measured; the AMI turn row already fixed the verdict, but the table has no
@@ -2995,7 +3006,7 @@ resumable (each call bounded by <code>--budget</code> seconds, repeat until "don
 <tr>
 <td>frontier pilots</td>
 <td><code>runs/frontier_sa_captions.json</code>, <code>runs/frontier_codec_probe.json</code></td>
-<td><code>research/FRONTIER.md</code> Part 2</td>
+<td><code>research/archive/FRONTIER.md</code> Part 2</td>
 </tr>
 <tr>
 <td>verification</td>
@@ -3054,7 +3065,7 @@ resumable (each call bounded by <code>--budget</code> seconds, repeat until "don
     positive wall-time savings (8-17 %).</li>
 <li><code>README.md</code>'s "One model vs the dedicated models" table still shows the original speaker head (32.2 % EER) and
     "hybrid rule adds nothing yet" for the product; both are superseded (14.4 %; §7 here).</li>
-<li>Code references to <code>research/HYBRID_ASR.md</code> (serve.py, hybrid_asr.py, NEMO_IMPORT.md) and <code>research/
+<li>Code references to <code>research/archive/HYBRID_ASR.md</code> (serve.py, hybrid_asr.py, NEMO_IMPORT.md) and <code>research/
     IMPROVE_115M.md</code> (tsvad.py) pointed to documents that were not in the committed tree when this report was
     assembled (an untracked HYBRID_ASR.md draft and <code>runs/improve_115m.json</code> appeared during finalisation); §1.2 and
     §11 are the write-up used here.</li>
@@ -3075,7 +3086,7 @@ resumable (each call bounded by <code>--budget</code> seconds, repeat until "don
     0.721, miss 0.229, FA 0.189); <code>improve_115m.json</code> has F1 0.743, precision 0.750, miss 0.265, FA 0.155 (used here).</li>
 <li>The experiment-3 speaker head is quoted elsewhere as "17.2 % / 4.2 %"; the JSON has two heads, 17.1 / 4.4 (warm
     start) and 17.4 / 4.0 (fresh init). This report gives the range.</li>
-<li>Item 12 is resolved: <code>research/HYBRID_ASR.md</code>, <code>research/IMPROVE_115M.md</code> and <code>runs/improve_115m.json</code> are now
+<li>Item 12 is resolved: <code>research/archive/HYBRID_ASR.md</code>, <code>research/IMPROVE_115M.md</code> and <code>runs/improve_115m.json</code> are now
     committed and agree with the JSON used here.</li>
 </ol>
 </main>

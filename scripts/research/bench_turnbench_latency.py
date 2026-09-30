@@ -1,4 +1,4 @@
-"""Latency of the TurnBench decision policy fitted on DYADIC data (research/DYADIC.md section 7): the per-channel
+"""Latency of the TurnBench decision policy fitted on DYADIC data (research/archive/DYADIC.md section 7): the per-channel
 inputs of DYADIC.md section 4 (user-channel Silero v5 + Pipecat state machine; trail6 head on the mixed mono with the
 user's channel as the party track) under four policy families, fitted on otoSpeech or on one half of TurnBench dev and
 scored on TurnBench dev with the OFFICIAL scorer's gold and matching (integrations/turnbench_scorer, unchanged).

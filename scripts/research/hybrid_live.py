@@ -1,7 +1,7 @@
-"""Hybrid front end, live part (research/HYBRID_ASR.md): Pipecat / LiveKit sessions through the committed adapters
+"""Hybrid front end, live part (research/archive/HYBRID_ASR.md): Pipecat / LiveKit sessions through the committed adapters
 against audioforge.serve with a second transcript source, on the clips of the final end-to-end comparison.
 
-Clips: scratchpad/e2e_final/clips.json (scripts/research/e2e_final.py `prepare`): the 5 AMI windows of research/INTEGRATION.md
+Clips: scratchpad/e2e_final/clips.json (scripts/research/e2e_final.py `prepare`): the 5 AMI windows of research/archive/INTEGRATION.md
 sections 4 / 8 and the 16 TurnBench two-party clips, mono condition (the 16 oto clips have no reference text).
 Server: the e2e product default (system C: runs/stage1_served.afm + Sortformer v2 0.32 s, turn policy timeout 1000,
 --enroll dominant, 2 threads, --debug-fields) plus

@@ -1,4 +1,4 @@
-# Conversational action tokens, run 1a (research/YIELD_TOKENS.md): the SINGLE-SPEAKER fallback. Targets are AMI train
+# Conversational action tokens, run 1a (research/archive/YIELD_TOKENS.md): the SINGLE-SPEAKER fallback. Targets are AMI train
 # asr-mode segments (datasets/ami.py AMI.asr: one speaker's run, no other speaker's word within 0.2 s, <= 15 s; 930
 # segments in the 12 train meetings) with <HOLD> at >= 0.3 s pauses inside the segment and an END token: <YIELD> if the
 # last word ends a floor-definition turn of that speaker (410), <HOLD> if the run ends but the turn continues (317: a

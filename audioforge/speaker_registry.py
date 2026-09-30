@@ -1,4 +1,4 @@
-"""Stable speaker ids for the served finals (research/DIARIZATION_FIX.md).
+"""Stable speaker ids for the served finals (research/archive/DIARIZATION_FIX.md).
 
 The diarizer's columns are arrival-order *slots*, not identities: the AOSC cache can permute them, a speaker who
 re-enters after the cache dropped them gets a new slot, and a 4-column head cannot hold a fifth person. The
@@ -16,13 +16,13 @@ diarizer by the served VAD in column 0, so every turn becomes speaker 0. This mo
   primary's silence timeout keeps working); nothing is relabelled to column 0.
 
 Thresholds: cosine on unit vectors. ``DEFAULT_THR`` per embedder was set on the 6-speaker LibriSpeech mix of
-research/DIARIZATION_FIX.md section 3 (same-speaker vs different-speaker turn cosines).
+research/archive/DIARIZATION_FIX.md section 3 (same-speaker vs different-speaker turn cosines).
 """
 from __future__ import annotations
 
 import numpy as np
 
-DEFAULT_THR = {"spk": 0.55, "titanet": 0.40}  # research/DIARIZATION_FIX.md section 3.2: same-speaker p10 0.66 / 0.56,
+DEFAULT_THR = {"spk": 0.55, "titanet": 0.40}  # research/archive/DIARIZATION_FIX.md section 3.2: same-speaker p10 0.66 / 0.56,
 # different-speaker p90 0.45 / 0.15 on the 6-speaker mix's reference turns
 MIN_FRAMES = 8  # 0.64 s of a speaker's own frames before a turn is embedded (else: last id of its column / null)
 

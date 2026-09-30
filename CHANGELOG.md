@@ -6,6 +6,80 @@ versions follow [Semantic Versioning](https://semver.org/). Every measured numbe
 
 ## [Unreleased]
 
+### Results (2026-09-30): where single mode stands after today's changes
+- **Turn rule:** single mode's default is `vad_head` (VAD head < 0.4 for ≥ 160 ms and turn head p ≥ 0.99, or 640 ms
+  of silence). Calls: EOT p50 956 ms, 20 % false interruptions, 7 % missed; AMI: 1326 ms, 11 %, 34 %
+  (research/EOT_LATENCY.md, `runs/eot_latency.json`).
+- **Silero dropped** from single mode: not downloaded by default, not loaded; `hybrid_dyn` still works with `--silero`.
+- **70 ms chunk-trigger fix** (d832fca): each ASR chunk runs once its mels are complete, so every frame, token and
+  head output is ready 70 ms earlier, with identical outputs (research/LATENCY_BUDGET.md).
+- **Voice-print check + anchored adaptation** (fe28a9e): clean prints and a working print kept at 0.8 × the enrolled
+  one. Target-speaker WER on mixed calls 44.6 → 40.2 %, user channel 24.4 → 18.1 % (research/TSWER.md).
+- **`--device mps`** (2bdf3e9): same events and decodes as CPU; 28.7 vs 29.8 ms per 160 ms chunk, 5 vs 4 real-time
+  streams per process (research/MPS_115M.md).
+- **README rewritten** around single mode: one results table with every number linked to its source.
+
+### Changed (2026-09-30): `vad_head` waits for a surer head; the quickstart clip is no longer cut (research/EOT_LATENCY.md)
+- **Why:** after the TS-VAD print fix (fe28a9e), the rule below cut the bundled quickstart clip mid-question at
+  9.06 s when streamed with `examples/quickstart_client.py`. In the user's half-second pause the turn head reads
+  0.94-0.98 and the served VAD dips in and out of 0.4, so the client's int16 truncation decided the cut.
+- **The rule's defaults now:** VAD below 0.4 for ≥ 160 ms and turn head p ≥ 0.99, or 640 ms of that silence
+  (`--vad-wait-ms 160,640`, `POLICY_THETA["vad_head"]` 0.99). The others path is unchanged. No code path changed.
+- **Measured offline** on the post-fix dump, against the fe28a9e rule:
+  - Two-party calls: EOT p50 / p95 956 / 1919 vs 916 / 2020 ms, false interruptions 20.2 vs 22.9 %, missed 7.3 vs
+    7.3 %.
+  - AMI: 1326 / 3758 vs 1327 / 4162 ms, false interruptions 10.5 vs 10.0 %, missed 33.5 vs 34.0 %.
+  - The quickstart clip is not cut under any of six deliveries (float, int16 truncated / rounded, -6 / +6 dB,
+    dither), in process and over the websocket (3 runs at 1x). VAD hysteresis, the head path at 400 ms and a
+    minimum-speech guard were tried and each still cut it or missed more AMI ends.
+  - Source: `runs/eot_latency.json` (`selection.fastest_print_fix_goal_no_clip_cut`, `demo_clip`, `served_check`).
+
+### Changed (2026-09-30): single mode's turn rule is `vad_head`, no Silero (research/EOT_LATENCY.md)
+- **`--mode single` adds `--turn-policy vad_head`.** This is the new server default for a session whose `config` names
+  no `turn_policy`; a client's `config` still wins. Room mode keeps `timeout`.
+- **The rule:** the served VAD head below 0.4 for ≥ 320 ms and turn head p ≥ 0.95, or 800 ms of that silence. With an
+  enrolled TS-VAD track there is also the others path: the user's own silence reaching 960 ms while P(other) ≥ 0.9
+  has held for 640 ms.
+  - New flag `--others-wait-ms USER_SIL,HOLD`.
+  - `--vad-wait-ms` now defaults to `320,800`.
+- **Measured offline** on the served clock after the chunk-trigger fix, against `hybrid_dyn 2000,960`:
+  - Two-party calls: EOT p50 / p95 881 / 1789 vs 1287 / 1923 ms, false interruptions 22.9 vs 22.9 %, missed 7.3 vs
+    7.3 %.
+  - AMI: 1330 / 4160 vs 1794 / 4285 ms, false interruptions 10.0 vs 8.5 %, missed 33.5 vs 37.5 %.
+  - Source: `runs/eot_latency.json`.
+- **Silero is no longer part of single mode.**
+  - `audioforge-download`'s default set is `asr + tsvad` (+ `lid`).
+  - `audioforge-serve --mode single` no longer passes `--silero`.
+  - `hybrid_dyn` still works with `--silero` or `--with silero`.
+- **`audioforge.load()` sessions** default to the engine's policy (`Frontend.session(turn_policy=None)`).
+- **`scripts/research/eot_latency.py`:**
+  - Re-dumped on `stage1_served_v2.afm` after d832fca: every frame is ready 70 ms earlier.
+  - "Decision" latency is now total − compute; it no longer subtracts a 240 ms constant.
+  - LiveKit's transcript lookup follows the new ASR clock.
+  - New room-aware family `sim_room`.
+
+### Changed (2026-09-29): one standard scorecard (research/METRICS.md)
+- **New `research/METRICS.md`:** every published number in standard voice-agent metrics, one definition each. STT:
+  WER on the full LibriSpeech test-clean / test-other (Whisper normalizer) and AMI, RTFx, partial latency (word end
+  to word shown) and final latency. Turn detection: end-of-turn latency p50 / p95, false-interruption rate, response
+  rate, TurnBench precision / recall / F1. VAD: ROC-AUC and F1. Speaker: target-speaker DER. Efficiency: compute per
+  160 ms chunk, real-time streams per process, CPU seconds per audio second. The README's Results table and
+  `research/SINGLE_MODEL.md` now use it.
+- **Measured for it:**
+  - Partial latency: 441 / 732 ms p50 / p95 on CPU (`scripts/research/stt_latency.py`, `runs/stt_latency.json`).
+  - Full-LibriSpeech WER: 2.48 / 6.13 % (`scripts/research/asr_leaderboard.py`, `runs/asr_leaderboard.json`).
+  - VAD AUC: 0.972 vs Silero 0.956 and MarbleNet 0.959 (`scripts/research/vad_auc.py`, `runs/vad_auc.json`).
+  - 3 real-time sessions per process on 2 CPU threads (`scripts/research/streams_cpu.py`, `runs/streams_cpu.json`).
+  - The live records re-scored per condition, with the target-speaker DER and TurnBench F1 derived from stored
+    counts (`scripts/research/metrics_table.py`, `runs/metrics.json`).
+- **Removed:**
+  - The "first words" metric (1081 ms): it counted from the start of speech.
+  - The pooled "missed within 3 s" headline: 32 of its 69 sessions were mono mixes, where the recorded partner
+    answers in the same audio and no system can respond in time.
+  - The name "dead air" (now end-of-turn latency) and "cut-ins" (now false interruptions).
+- `research/FINAL_REPORT.md` is marked historical (room-mode era).
+
+
 ### Changed (2026-09-29): the shipped model's VAD head reads block 4
 - `audioforge-download` now builds **`stage1_served_v2.afm`** from `assets/served_heads_v0.2.pt` (104 tensors,
   19,629,563 bytes, sha256 `cb5aa069…`; pinned in `hub.HEADS`). Its VAD head reads encoder block 4 only (the speaker

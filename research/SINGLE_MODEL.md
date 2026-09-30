@@ -16,6 +16,10 @@ under 10 minutes, and scratch on the SSD.
 diarization with Nemotron-3). `audioforge-download` fetches the two head files by default. The `voiceprint` message
 returns the print for storage.
 
+**Update (2026-09-30).** Single mode's turn rule is now `vad_head` (`--turn-policy vad_head`, research/EOT_LATENCY.md).
+It uses the served VAD head, the turn head and the TS-VAD track's P(other), and no Silero. The `hybrid_dyn` numbers
+below describe the earlier rule. Silero is no longer downloaded or loaded in single mode.
+
 One finding from the new quickstart output: on the bundled clean LibriSpeech clip, with speaker A's 10 s stored print,
 the TS-VAD head also takes speaker B for the user (P(user) 0.8-1.0 on B's words), so both finals read `speaker=0`.
 The head was trained on 24 meetings and has not seen clean read speech of different speakers. Part B's LibriSpeech
@@ -57,36 +61,27 @@ Code changes, all behind the preset or the flag; the default mode is unchanged:
 
 ## The table
 
-"Single" is `--mode single`. "Default" is the product default: Nemotron-3-Diarization + the 115M streaming model,
-`timeout` 1000 ms (E2E system CN), optionally `--final-asr tdt_v3`. "Pipecat" / "LiveKit" are their default local
-stacks as measured in E2E_FINAL: A = Silero + smart-turn v3 + Whisper small; B = Silero + LiveKit EOU + Whisper small.
-Lower is better except F1 and accuracy.
+**Moved (2026-09-29).** The headline table that stood here mixed offline and live numbers, pooled mono-mix sessions
+into the live rows, and used our own names ("dead air", "cut-ins", "first words"). It is replaced by one scorecard
+in standard voice-agent metrics, with one definition per metric: [`research/METRICS.md`](METRICS.md), copied in the
+README's Results. In those terms, on the live two-party calls fed on the user's channel (32 sessions, 109 turn ends;
+`runs/metrics.json`):
 
-| row (data, n) | single (`--mode single`) | product default (Nemotron-3 + TDT v3) | Pipecat default | LiveKit default | source |
-|---|---|---|---|---|---|
-| turn-end misses, AMI dev offline (974 ends, 6 s, ≤ 5 % per-turn false cut-offs, cross-fitted) | **34.2 %** [31.1, 37.5] (hybrid_dyn; FC 5.5 %); 39.3 % hybrid; 40.0 % head alone. Needs a 5 s stored print | 74.8 % timeout / 61.9 % shipped hybrid, on the Sortformer v2 column (Nemotron-3 not scored offline) | 72.6 % (smart-turn + Silero timeout) | 74.2 % (EOU + timeout) | `runs/improve_115m.json`, `runs/baselines_turn.json` |
-| turn-end misses, held-out ICSI offline (1312 ends, same protocol) | **18.7 %** [16.6, 21.0] (FC 6.2 %); 20.4 % hybrid | 85.3 % timeout / 68.5 % hybrid (Sortformer v2 column) | 84.4 % (Silero timeout; smart-turn not run on ICSI) | not measured | `runs/improve_115m.json`, `runs/baselines_turn_icsi.json` |
-| live, 37 clips / 69 sessions (Pipecat): missed within 3 s / 6 s | **S (A1 rule): 37.7 % / 30.9 %**; T (served hybrid_dyn point): 45.3 % / 38.6 % | 34.1 % / 28.3 % (CN) | 58.7 % / 35.4 % | 41.3 % / 34.1 % | `scratch/e2e_tsvad/runs`, `runs/e2e_final.json` |
-| live cut-ins (false cut-offs) per session | **S: 0.67**; T: 0.52 | 1.07 | 1.99 | 1.12 | same |
-| live median dead air (answered ends) | S: 1388 ms; T: 2001 ms | 1292 ms | 1830 ms | 1350 ms | same |
-| first words (first text after the user's first onset, median; the 64 two-party sessions) | S: 1081 ms; T: 1076 ms | 1075 ms | 2812 ms | 5120 ms | same |
-| streaming WER, AMI-200 / LibriSpeech-200 | 24.4 % / 2.29 % (the same model: identical transcript) | the same streaming; final per turn with TDT v3: **9.7 % / 2.03 %** | Whisper small 21.2 % / 2.42 % | Whisper small 21.2 % / 2.42 % | `runs/final_asr.json`, `runs/hybrid_asr.json` |
-| WER on the live clips (TurnBench + AMI refs) | S: 23.2 %; T: 23.2 % | 24.1 % streaming (TDT v3 finals not run live) | 23.5 % | 19.3 % | `runs/e2e_final.json`, stored records |
-| LID, FLEURS-17 test (2550): 2 s / full utterance | **91.0 % / 97.8 %** (head, VAD-gated, the served path) | off by default; opt-in AmberNet 95.1 % / 99.5 % | not part of the stack (Whisper small forced to en) | same | `runs/lid.json` |
-| speaker tracking F1 of the user's track (primary = target, 5 s print, all frames): AMI / ICSI | **0.743 / 0.882** | Sortformer v2 column bound by the same print: 0.629 / 0.690 (TitaNet binding 0.657 / 0.685); oracle column 0.799 / 0.794; Nemotron-3 not scored this way | no speaker tracking | no speaker tracking | `runs/improve_115m.json` frame (IMPROVE_115M A.1) |
-| server RTF, CPU 2 threads, live (median over sessions) | **0.33 (max 0.34)** | 0.635 (+ TDT v3 worker: RTF 0.065 per turn in its own process) | 0.43 CPU s per audio s | 0.28 | live records, `runs/e2e_final.json` |
-| server peak RSS | **1156 MB** | 1485 MB (+ ~2.5 GB TDT v3 worker) | 2372 MB (driver) | 2802 MB (driver) | same |
+| metric | single (`--mode single`) | room mode (Nemotron-3, timeout 1 s) | LiveKit default | Pipecat default |
+|---|---|---|---|---|
+| end-of-turn latency p50 / p95 (lower is better) | 1382 / 3400 ms | 1272 / 1631 ms | 1350 / 3096 ms | 1675 / 3197 ms |
+| false interruptions, % of user turns (lower) | 17.4 % | 26.6 % | 23.9 % | 30.3 % |
+| response rate, % of user turns answered (higher) | 88.1 % | 89.9 % | 82.6 % | 78.9 % |
 
-Reading the table:
-- **In meetings, with a stored print, single mode is the best turn detector measured.** It is 34 vs 62-75 % missed on
-  AMI and 19 vs 68-85 % on ICSI at the same false-cut budget. The reason is that it tracks the user, not "the most
-  active column". The tracking F1 row says the same thing: 0.74 / 0.88 against 0.63-0.69 for a diarizer column bound
-  by the same print.
-- **On two-party calls it answers later than the default.** That was T's result (45 vs 34 % missed within 3 s), and
-  A1 below narrows it.
-- **It is cheaper.** No diarizer pass and no diarizer in memory (see the RTF and RSS rows).
-- **The transcript is the streaming one.** 24.4 % WER on AMI, against 9.7 % with the default's per-turn TDT v3 pass.
-- **LID** is 3.9 points behind AmberNet at 2 s. It runs off the same encoder pass at 1/100 of AmberNet's cost.
+audioforge and room mode ran through Pipecat. LiveKit's default ran through LiveKit and Pipecat's through Pipecat.
+Streaming WER, partial latency, VAD, target-speaker DER and compute are in METRICS.md. The offline turn-end
+benchmark on meetings (AMI 34.2 %, ICSI 18.7 % missed at ≤ 5 % early cut-offs, with a stored print) and the tracking
+F1 (0.743 / 0.882) are research metrics. They stay in the sections below and in the METRICS.md appendix.
+
+Names in the experiments below: **dead air** = end-of-turn latency (median over ends answered within 6 s);
+**cut-ins** = false interruptions (counted per session, a 20-60 s clip); **missed within 3 s** = no response within
+3 s of a turn end. The pooled 69-session rows include 32 mono-mix sessions, where no system can answer in time
+(METRICS.md, "Why the old 'missed within 3 s' number was dropped").
 
 **What single mode cannot do:**
 - It cannot label everyone in a room. It knows "the user" and "someone else", not who spoke when among other people,
@@ -148,8 +143,10 @@ the same pads and scorer as T / C / CN):
 | AMI meeting windows (5) | 20 % / 0 % | 0.20 | 1682 ms | 40 % / 0 %, 0.40, 1903 ms | −20 [−60, 0] / −0.2 [−0.6, 0] / −221 ms | 0 / +0.2 / −539 ms |
 
 Server (69 sessions, CPU 2 threads, no diarizer loaded): RTF median 0.33 (max 0.34) against 0.635 for CN, and peak
-RSS 1156 MB against 1485 MB (CN) or 1616 MB (T, which still loaded Sortformer). First words 1081 ms (CN 1075). WER on
-the live clips 23.2 % (CN 24.1 %: the same streaming model; the difference is segmentation).
+RSS 1156 MB against 1485 MB (CN) or 1616 MB (T, which still loaded Sortformer). WER on the live clips 23.2 % (CN
+24.1 %: the same streaming model; the difference is segmentation). (A "first words" time, 1081 ms from the start of
+speech, was reported here before; it counted the time it takes to say the first word and was removed. Partial
+latency, word end to word shown, is 441 ms median: METRICS.md.)
 
 **Verdict.** The pre-registered aim was to match the default's 3 s misses without more cut-ins. It is **almost met
 live**: +3.6 points of 3 s misses with the CI reaching 0 (+0.0 to +7.6). Cut-ins are **38 % fewer** (−0.41 per

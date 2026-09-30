@@ -74,7 +74,8 @@ def test_preset_resolves_to_the_single_model_flags(tmp_path, monkeypatch):
     argv = launch.resolve_models([], str(d), mode="single")
     assert _value(argv, "--turn-input") == "tsvad" and "--diar-off" in argv
     assert _value(argv, "--lid") == "head" and _value(argv, "--enroll") == "after_agent_arm"
-    assert _value(argv, "--dyn-wait-ms") == "2000,960"
+    assert _value(argv, "--dyn-wait-ms") == "2000,960" and _value(argv, "--turn-policy") == "vad_head"
+    assert "--silero" not in argv  # the default turn rule reads the model's own heads (research/EOT_LATENCY.md)
     assert _value(argv, "--asr") == str(d / hub_served()) and _value(argv, "--tsvad") == str(d / launch.TSVAD_FILE)
     for flag in ("--diar", "--final-asr", "--titanet", "--shed-diar", "--diar-pool"):
         assert flag not in argv, flag
@@ -130,9 +131,9 @@ def test_download_default_set_is_single_model(tmp_path, monkeypatch):
         return {key: directory / hub.COMPONENTS[key].output for key in keys}
     monkeypatch.setattr(hub, "install", fake_install)
     hub.main(["--dir", str(tmp_path), "--yes"])
-    assert seen["keys"] == ["asr", "tsvad", "silero"]  # the LID head is optional (--with lid)
+    assert seen["keys"] == ["asr", "tsvad"]  # the LID head is optional (--with lid); Silero only --with silero
     hub.main(["--dir", str(tmp_path), "--yes", "--diarizer", "nemotron3"])
-    assert seen["keys"] == ["asr", "tsvad", "silero", "nemotron3"]
+    assert seen["keys"] == ["asr", "tsvad", "nemotron3"]
     for ver, (name, size, sha, _out) in hub.HEADS.items():  # heads assets: v0.2 ships, v0.1 kept (measured build)
         p = ROOT / "assets" / name
         assert p.stat().st_size == size and hub.sha256_file(p) == sha and hub.heads_path(None, tmp_path, ver) == p
@@ -193,6 +194,10 @@ def test_single_engine_loads_no_second_model(tmp_path, monkeypatch):
     assert eng.diar is None and eng.diar_mode == "off" and eng.num_spks == 4
     assert eng.embedder is None and eng.final_asr is None and eng.lid_model is None
     assert eng.dyn_t0 == 25.0 and eng.dyn_a == 13.0  # --dyn-wait-ms 2000,960 (research/SINGLE_MODEL.md A1)
+    # the default turn rule: vad_head with the others path (research/EOT_LATENCY.md), no Silero at start or per session
+    assert eng.turn_policy == "vad_head" and (eng.vad_head_k, eng.vad_head_fb, eng.vad_head_others) == (2, 8, (12, 8))
+    from audioforge.serve import Session, SessionConfig
+    assert Session(eng, SessionConfig(turn_policy=eng.turn_policy)).sil is None and eng.silero_model is None
     assert eng.registry_embedder is None and eng.lid_name == "lid" and eng.tsvad is not None
     assert eng.name == Path(hub_served()).stem and eng.turn_input == "tsvad" and eng.diar_off
     r = eng.ready_msg()

@@ -1,5 +1,5 @@
 {
- "protocol": "eot-bench v2 (research/EOT_BENCH_V2.md); yield/hold tokens on the same windows / scorer as runs/baselines_turn.json",
+ "protocol": "eot-bench v2 (research/archive/EOT_BENCH_V2.md); yield/hold tokens on the same windows / scorer as runs/baselines_turn.json",
  "ckpt": "runs/stage1_rnnt_yieldhold_1a.afm",
  "n_boot": 1000,
  "C_extended_windows_stream": {

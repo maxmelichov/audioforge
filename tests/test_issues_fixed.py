@@ -1,4 +1,4 @@
-"""research/ISSUES_FIXED.md part A: the CLEANUP_TODO "suspicious" spots, each pinned by a test."""
+"""research/archive/ISSUES_FIXED.md part A: the CLEANUP_TODO "suspicious" spots, each pinned by a test."""
 import io
 import json
 import sys

@@ -1,4 +1,4 @@
-"""Speaker head: architecture vs supervision (research/SPK_HEAD.md). Train / evaluate / report stages.
+"""Speaker head: architecture vs supervision (research/archive/SPK_HEAD.md). Train / evaluate / report stages.
 
   train   run a recipe (GPU, one job on the machine), then assert that every tensor outside heads.spk / layer_mix.spk
           is bit-identical to the init checkpoint (the ASR is untouched, so no WER gate is needed).

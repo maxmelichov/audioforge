@@ -1,4 +1,4 @@
-# research/SPK_HEAD.md - distillation: the same speaker head (learned mix over all 17 encoder layers, as stage 1), supervised by cosine
+# research/archive/SPK_HEAD.md - distillation: the same speaker head (learned mix over all 17 encoder layers, as stage 1), supervised by cosine
 # distillation onto frozen NVIDIA TitaNet-Large embeddings (CC-BY-4.0; 192-d, cached per single-speaker segment
 # by scripts/research/cache_titanet.py) instead of AAM over the 190 AMI ids. Data: AMI train + ICSI train single-speaker
 # segments and 5k LibriSpeech train-clean-100 utterances. Head only (init.train_only); the ASR is untouched.

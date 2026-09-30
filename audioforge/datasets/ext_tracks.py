@@ -1,4 +1,4 @@
-"""External diarizer activity tracks for AMI / ICSI turn examples (research/STAGE1.md, "Turn head with an external
+"""External diarizer activity tracks for AMI / ICSI turn examples (research/archive/STAGE1.md, "Turn head with an external
 diarizer" -> fix (1): train the turn head's ``spk_act`` conditioning on real diarizer tracks).
 
 Cache layout (written by scripts/research/make_sortformer_tracks.py --dataset ami|icsi; <root> = data/ami or data/icsi,

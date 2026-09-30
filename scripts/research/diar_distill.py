@@ -1,4 +1,4 @@
-"""research/DIARIZATION_FIX.md section 5: distil NVIDIA's diarizer into our own head on the frozen served encoder.
+"""research/archive/DIARIZATION_FIX.md section 5: distil NVIDIA's diarizer into our own head on the frozen served encoder.
 
   teacher --corpus ami|icsi [--split train --budget 540]   cache Nemotron-3 (max pool, 8 columns) posteriors per
                                                           16 s diar window -> data/cache/diar_teacher/<corpus>_<split>.npz

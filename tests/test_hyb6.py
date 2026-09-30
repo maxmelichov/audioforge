@@ -1,4 +1,4 @@
-"""Hybrid (head OR timeout) under eot-bench v2 and the 0.32 s streaming Sortformer preset (research/EOT_BENCH_V2.md §7).
+"""Hybrid (head OR timeout) under eot-bench v2 and the 0.32 s streaming Sortformer preset (research/archive/EOT_BENCH_V2.md §7).
 
 Under test:
   - conversation.or_outcomes / eot_outcomes_or: the OR of two detectors' per-conversation outcomes (hand-made and

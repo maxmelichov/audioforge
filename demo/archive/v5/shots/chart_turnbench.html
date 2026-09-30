@@ -1,0 +1,16 @@
+<!doctype html><html><head><meta charset="utf-8"><link rel="stylesheet" href="common.css">
+<style>svg text { font-family: var(--font); }</style></head><body><script src="common.js"></script><script src="../../../v5/shots/numbers_b.js"></script><script src="charts_b.js"></script><script>
+// TurnBench dev, official scorer, FP <= 0.10: turn ends detected by audioforge (held out) vs the detectors voice-agent
+// frameworks ship (runs/turnbench_latency.json, turnbench_dev.json, dyadic_bench.json via numbers_b.js). No research-only models.
+const n = B.n, s = B.s, r = B.row;
+panelChart({
+  title: "Catches more turn ends",
+  sub: () => "than the detectors in voice-agent frameworks · two-person calls, same false-alarm limit",
+  subSq: () => "than the detectors in voice-agent frameworks",
+  mode: "left",
+  panels: () => [{ unit: " %",
+    rows: [r("audioforge", "tb/ours", { ours: true }), r("Silero silence timeout", "tb/silero"), r("NVIDIA Parakeet-EOU", "tb/eou"), r("smart-turn (Pipecat)", "tb/smartturn")] }],
+  fine: () => `TurnBench dev, ${n("tb/conversations")} calls, ${n("tb/ends")} turn ends, official scorer; recall at FP ≤ ${s("tb/fp_budget")}: audioforge threshold held out (fitted on half the calls, scored on the other half, FP ${s("tb/ours/fp")}); baselines at their best dev point (FP ${s("tb/silero/fp")}, ${s("tb/eou/fp")}, ${s("tb/smartturn/fp")}) · runs/turnbench_latency.json, turnbench_dev.json, dyadic_bench.json`,
+  fineSq: () => `TurnBench dev, ${n("tb/conversations")} calls, ${n("tb/ends")} turn ends, official scorer, recall at FP ≤ ${s("tb/fp_budget")}; audioforge threshold held out, baselines at their best dev point · runs/turnbench_latency.json, turnbench_dev.json, dyadic_bench.json`,
+});
+</script></body></html>

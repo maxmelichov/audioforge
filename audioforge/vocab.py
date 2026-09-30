@@ -1,6 +1,6 @@
 """Add tokens to a trained model's SentencePiece vocabulary without disturbing the existing ids.
 
-Used for the conversational action tokens <HOLD> / <YIELD> (research/YIELD_TOKENS.md): the pretrained RNNT / CTC heads
+Used for the conversational action tokens <HOLD> / <YIELD> (research/archive/YIELD_TOKENS.md): the pretrained RNNT / CTC heads
 of runs/stage1_heads_pretrained.afm use NVIDIA's 1024-piece BPE model, in which the blank is id 1024 (= vocab_size,
 heads/asr.py). New pieces are APPENDED to the SentencePiece proto as user-defined symbols (ids 1024, 1025, ...), so
 every existing piece keeps its id and its rows; the blank moves to the new vocab_size and its rows move with it.

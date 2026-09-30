@@ -1,10 +1,10 @@
-"""Distil nemotron-speech-streaming-en-0.6b into the served 115M streaming core (research/IMPROVEMENTS.md section 7).
+"""Distil nemotron-speech-streaming-en-0.6b into the served 115M streaming core (research/archive/IMPROVEMENTS.md section 7).
 
 Stages (each resumable; see README.md in this directory for the exact order, paths and GPU-hour estimates):
 
   manifest   the training item list: every single-speaker 1-15 s segment of the AMI / ICSI train meetings (the
              library's asr mode) + a LibriSpeech train-clean-100 anchor subset -> <work>/manifest.jsonl
-  evalsets   AMI-200 / ICSI-200 / LibriSpeech-200 exactly as research/HYBRID_ASR.md (seeded 200-segment samples of
+  evalsets   AMI-200 / ICSI-200 / LibriSpeech-200 exactly as research/archive/HYBRID_ASR.md (seeded 200-segment samples of
              the AMI dev (4) / ICSI dev (2) meetings; the first 200 test-clean utterances) -> <work>/eval/*.npz
   teacher    the 0.6B at [70,1] (and [70,13] with --contexts 1,13) over every manifest item: greedy RNNT transcript
              (normalize_text'ed, the student's text target) + top encoder layer (T, 1024) fp16 -> <work>/teacher/

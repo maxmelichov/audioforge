@@ -1,8 +1,8 @@
-"""Held-out confirmation of the turn-detection rules on ICSI (research/BASELINES.md, "Turn detection: ICSI held-out
+"""Held-out confirmation of the turn-detection rules on ICSI (research/archive/BASELINES.md, "Turn detection: ICSI held-out
 confirmation").
 
-research/BASELINES.md picked "our trail6 head OR the Silero VAD timeout" after seeing the AMI dev table. This script
-rebuilds eot-bench v2 (scripts/research/eval_stage1.py --bench v2, research/EOT_BENCH_V2.md) on the ICSI meetings that no
+research/archive/BASELINES.md picked "our trail6 head OR the Silero VAD timeout" after seeing the AMI dev table. This script
+rebuilds eot-bench v2 (scripts/research/eval_stage1.py --bench v2, research/archive/EOT_BENCH_V2.md) on the ICSI meetings that no
 fitting ever touched (the Kaldi dev + eval meetings: Bmr021 Bns001 + Bmr013 Bmr018 Bro021; 5 of the 17 meetings with
 audio, the other 12 are the train subset) with the same window / horizon rules (block C: 6 s-extended windows,
 horizons 25 / 75 post-end emission frames; block A: the default 2 s-trail windows; causal_dominant enrollment on the
@@ -320,7 +320,7 @@ def stage_report(a, work: Path) -> dict:
     print(f"  loading ICSI ({time.time() - t0:.0f}s)", flush=True)
     icsi = icsi_systems(work)
     convs = icsi["C_extended_windows_stream"][0]
-    out = {"protocol": "eot-bench v2 (research/EOT_BENCH_V2.md) on held-out ICSI meetings; frozen = operating points "
+    out = {"protocol": "eot-bench v2 (research/archive/EOT_BENCH_V2.md) on held-out ICSI meetings; frozen = operating points "
                        "fitted on all 974 AMI dev turns (in-sample, <= 5 % per-turn FC), crossfit = the AMI "
                        "leave-meetings-out protocol re-run on ICSI",
            "meetings": list(ICSI_MEETINGS), "folds": [list(f) for f in ICSI_FOLDS], "subsets": {k: list(v) for k, v in SUBSETS.items()},

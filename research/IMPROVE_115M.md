@@ -4,11 +4,11 @@
 cache-aware streaming FastConformer, our VAD / speaker / turn heads, Sortformer v2 as the diarizer), each measured
 against the shipped configuration on the same benches. Part A: a target-speaker VAD head as the turn head's
 speaker-activity input (replacing the diarizer track). Part B: meeting-ASR decoder adaptation, head only (section B).
-Part C-lite: the dual-lookahead second ASR pass (`research/HYBRID_ASR.md`, summarised in section C).
+Part C-lite: the dual-lookahead second ASR pass (`research/archive/HYBRID_ASR.md`, summarised in section C).
 
 ## Part A. TS-VAD head on block 4 as the turn head's primary-activity input
 
-**Why.** The speaker-aware turn head (`research/EOT_BENCH_V2.md`) is fed the *primary speaker's* activity. In the
+**Why.** The speaker-aware turn head (`research/archive/EOT_BENCH_V2.md`) is fed the *primary speaker's* activity. In the
 served product that activity is a Sortformer v2 column bound to the user (causal-dominant rule, or a voice print via
 `--enroll`), and the label-free binding is where most of the gap to oracle enrollment is lost (61.9 % vs 28.7 % missed
 turn ends at 6 s). A personal-VAD head that reads the encoder the ASR pass already runs, conditioned on a voice print,
@@ -16,7 +16,7 @@ would give the turn head the user's activity directly: no diarizer column to cho
 all when the product only needs "is the user talking".
 
 **Head** (`audioforge/heads/tsvad.py`, 260k parameters): reads block 4 of the served encoder (the relational speaker
-head's tap, `research/SPK_HEAD.md`), per-frame projection to 128, FiLM from the 192-d enrollment embedding, a
+head's tap, `research/archive/SPK_HEAD.md`), per-frame projection to 128, FiLM from the 192-d enrollment embedding, a
 frame-level cosine pre-net, a causal GRU, two sigmoid outputs [P(target), P(other)] so overlap is represented; a
 learned null vector makes it a plain VAD without enrollment (PVAD 2.0's enrollment-less training). Streaming `step`
 is bit-equal to the offline forward (`tests/test_tsvad.py`, 7 tests).
@@ -168,7 +168,7 @@ fallback for the TS-VAD track is still the open idea from A.1, whichever diarize
 `scripts/research/tsvad.py bind / scores / report`. Every window's primary gets its 5 s voice print (single-speaker speech
 elsewhere in the meeting, as in A.1; ICSI: 2 % of primaries have none and get the enrollment-less head), the head's
 [P(target), P(other)] is fed to the **served trail6 turn head** as the primary-activity track (columns 0/1, the other
-two zero), the timeout arm runs on P(target), and the systems are scored exactly as `research/EOT_BENCH_V2.md` /
+two zero), the timeout arm runs on P(target), and the systems are scored exactly as `research/archive/EOT_BENCH_V2.md` /
 `BASELINES.md`: cross-fitted <= 5 % per-turn false cut (leave-meetings-out halves), 1000-resample CIs, open / taken
 strata (`runs/improve_115m.json["turn_bench"]`). Emission for the TS-VAD rows is the 160 ms encoder chunk (no
 Sortformer C + R buffer). The Sortformer-column rows are the ones already in the file from the 2026-09-27 run (AMI) and
@@ -229,7 +229,7 @@ anchor reads the existing `train-clean-100.1-12s` cache on the SSD, 3.8 GB; the 
 there), one gated process, 6.5 min. Verified after training: **748 of 759 tensors bit-identical** to
 `runs/stage1_served.afm`, the 11 changed ones all under `heads.rnnt.pred` / `heads.rnnt.joint`.
 
-**Result** (the section-2 protocol of `research/HYBRID_ASR.md`: `hybrid_asr.py lookahead --model ... --tag _adapt`,
+**Result** (the section-2 protocol of `research/archive/HYBRID_ASR.md`: `hybrid_asr.py lookahead --model ... --tag _adapt`,
 [70,1], batch 4; `adapt_report`; `runs/hybrid_asr.json["adapt"]["_adapt"]`). WER % `normalize_text` (Whisper
 `EnglishTextNormalizer` in brackets), paired 1000-resample deltas.
 
@@ -255,7 +255,7 @@ encoder block (which would change the live heads and was out of scope by design)
 
 ## Part C-lite. Dual lookahead: a second text-only pass of the same encoder at [70,13]
 
-Measured in the issues pass (`research/HYBRID_ASR.md` section 3, `runs/hybrid_asr.json["english"]`): the served
+Measured in the issues pass (`research/archive/HYBRID_ASR.md` section 3, `runs/hybrid_asr.json["english"]`): the served
 model's WER at att_context [70,0] / **[70,1] (served)** / [70,13] (`serve --asr-lookahead 13`, 1.04 s lookahead) on
 AMI-200 / ICSI-200 / LibriSpeech-200 is 25.7 / **24.4** / 23.0, 29.9 / **27.3** / 24.8 and 2.48 / **2.29** / 1.92 %;
 paired [70,13] - [70,1] = **-1.41 [-2.48, -0.32]**, **-2.50 [-3.80, -1.32]**, **-0.37 [-0.64, -0.11]** WER points.

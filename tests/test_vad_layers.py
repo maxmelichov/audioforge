@@ -1,4 +1,4 @@
-"""scripts/research/vad_layers.py: encoder truncation, gated streaming with re-prime, ROC helpers (research/VAD_LAYERS.md)."""
+"""scripts/research/vad_layers.py: encoder truncation, gated streaming with re-prime, ROC helpers (research/archive/VAD_LAYERS.md)."""
 from __future__ import annotations
 
 import sys

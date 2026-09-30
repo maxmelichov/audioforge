@@ -1,4 +1,4 @@
-"""Conversational action tokens <YIELD> / <HOLD> in the RNNT vocabulary, scored on eot-bench v2 (research/YIELD_TOKENS.md).
+"""Conversational action tokens <YIELD> / <HOLD> in the RNNT vocabulary, scored on eot-bench v2 (research/archive/YIELD_TOKENS.md).
 
 Model: runs/stage1_rnnt_yieldhold.afm (research/recipes/stage1_rnnt_yieldhold.yaml: frozen NVIDIA encoder, RNNT decoder + joint
 trained on AMI train action transcripts). Same 974 AMI dev turn windows, folds, strata, cross-fitted <= 5 % per-turn FC
@@ -304,7 +304,7 @@ def stage_report(a, base, ext, meta, meta_base, work, ds=None):
     for d, y in zip(tr, ys):
         d.update(y)
     ref = json.loads(BT.REF_JSON.read_text())["turn_v2"]
-    out = {"protocol": "eot-bench v2 (research/EOT_BENCH_V2.md); yield/hold tokens on the same windows / scorer as "
+    out = {"protocol": "eot-bench v2 (research/archive/EOT_BENCH_V2.md); yield/hold tokens on the same windows / scorer as "
                        "runs/baselines_turn.json", "ckpt": str(CKPT.relative_to(ROOT)), "n_boot": a.n_boot}
     for blk, convs, mt, hz, two in (("C_extended_windows_stream", ext, meta, {"2s": 25, "6s": 75}, False),
                                     ("A_default_windows_all", base, meta_base, {"2s": None}, True)):

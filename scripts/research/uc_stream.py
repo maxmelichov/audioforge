@@ -1,4 +1,4 @@
-"""Live two-channel predictive end-of-turn for one session (research/IMPROVEMENTS.md section 1).
+"""Live two-channel predictive end-of-turn for one session (research/archive/IMPROVEMENTS.md section 1).
 
 ``UCTurnStream`` combines, on the session's audio clock:
 
@@ -13,7 +13,7 @@
 Frame v is run through ``uc_turn_head.UCTurnHead`` once its encoder frame, its Silero chunks and its audio are all
 in. Decisions (``poll`` returns them in time order):
 
-* ``predictive``: rising edge of P(user active in bin 1) < t1 AND P(bin 2) < t2 (research/DYADIC.md section 8), or
+* ``predictive``: rising edge of P(user active in bin 1) < t1 AND P(bin 2) < t2 (research/archive/DYADIC.md section 8), or
   with ``rule="quiet"`` the rising edge of P(user quiet for 2 s) > theta; committed at the end of the 160 ms encoder
   chunk holding the frame (``emit``);
 * ``silence`` (optional, ``k_s``): the first 32 ms chunk of a silence run whose silence since the last Pipecat speech

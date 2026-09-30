@@ -52,7 +52,7 @@ for m in stage1_turn_v3_dur stage1_turn_v3_cols stage1_turn_v3_both stage1_turn_
 done
 ```
 
-Bars to beat on the same 200 dev turns (research/STAGE1.md; streaming rows include the 1040 ms diarizer buffer):
+Bars to beat on the same 200 dev turns (research/archive/STAGE1.md; streaming rows include the 1040 ms diarizer buffer):
 
 | system | P50 @ <= 5 % FC | miss @ <= 5 % FC |
 |---|---|---|

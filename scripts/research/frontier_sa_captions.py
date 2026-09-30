@@ -1,4 +1,4 @@
-"""FRONTIER pilot 1: speaker-attributed live captions from pieces we already serve (research/FRONTIER.md, Part 2).
+"""FRONTIER pilot 1: speaker-attributed live captions from pieces we already serve (research/archive/FRONTIER.md, Part 2).
 
 Cascade: the served streaming RNNT (runs/stage1_served.afm, fed 160 ms blocks) emits words with emission times; an
 NVIDIA streaming diarizer at the served setting (card "ultra low latency", chunk 3 + rc 1 = 0.32 s) gives per-slot
@@ -49,7 +49,7 @@ def unit_asr(m, audio):
     from audioforge.model import StreamingSession
     from audioforge.train import load_model
     asr = load_model(str(ROOT / "runs/stage1_served.afm"), "cpu").eval()
-    from audioforge import perf  # exact CPU fast paths (bit-identical outputs, research/PERFORMANCE.md section 3)
+    from audioforge import perf  # exact CPU fast paths (bit-identical outputs, research/archive/PERFORMANCE.md section 3)
     perf.linear_t(asr.encoder); perf.pos_cache(asr.encoder)
     StreamingSession.cache_joint_pred = True
     rt = StreamingSession(asr, head="rnnt")

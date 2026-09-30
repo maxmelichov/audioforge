@@ -4,7 +4,7 @@ end-of-turn on real conversation.
 Source: headset-mix audio (``<meeting>.Mix-Headset.wav``, 16 kHz mono) + AMI manual annotations v1.6.2
 (``words/<meeting>.<agent>.words.xml``: per-speaker word timings from forced alignment of the manual
 transcript). Splits: the Full-corpus-ASR partition as distributed by the BUT/pyannote AMI diarization
-setup (``lists/{train,dev,test}.meetings.txt``; we call ``test`` "eval"). See research/AMI.md.
+setup (``lists/{train,dev,test}.meetings.txt``; we call ``test`` "eval"). See research/archive/AMI.md.
 
 Labels are built from WORD TIMINGS ONLY (no energy VAD, no vocal sounds - as the BUT "only_words"
 diarization reference). Times are in seconds; an interval [s, e) covers 80 ms frames
@@ -325,7 +325,7 @@ ACTION_DEFAULTS = dict(hes_gap=LABEL_DEFAULTS["hes_gap"], hold="<HOLD>", yield_=
 
 
 def action_transcript(words, hes_gap: float = 0.3, hold: str = "<HOLD>", yield_: str = "<YIELD>") -> str:
-    """Transcript of one speaker's turn with conversational action tokens (research/YIELD_TOKENS.md).
+    """Transcript of one speaker's turn with conversational action tokens (research/archive/YIELD_TOKENS.md).
 
     ``words`` = the turn's [(start, end, text)] (in window order; text may be "" for a dropped token). Rules, the same
     labels eot-bench uses (``_turn`` / ``turn_examples``):
@@ -350,7 +350,7 @@ def action_transcript(words, hes_gap: float = 0.3, hold: str = "<HOLD>", yield_:
 
 def window_action_transcript(turns: list[dict], a: float, b: float, hes_gap: float = 0.3, hold: str = "<HOLD>",
                              yield_: str = "<YIELD>") -> str:
-    """Speaker-UNAWARE action transcript of a window [a, b) of a meeting (research/YIELD_TOKENS.md, run 2; mirrors what
+    """Speaker-UNAWARE action transcript of a window [a, b) of a meeting (research/archive/YIELD_TOKENS.md, run 2; mirrors what
     a single-channel EOU model is trained on). ``turns`` = the meeting's turns (speaker_turns: every speaker, floor
     definition, backchannels included). Rules:
       words    every speaker's words with start < b and end > a, in time order by start (ties: by end, then speaker);
@@ -568,7 +568,7 @@ class AMI:
         return out
 
     def asr(self, min_sec=1.0, max_sec=15.0, guard=0.2, meetings=None, action_tokens: dict | bool | None = None) -> list[dict]:
-        """``action_tokens`` (research/YIELD_TOKENS.md, run 1a): ``text`` gets <HOLD> at >= hes_gap pauses inside the
+        """``action_tokens`` (research/archive/YIELD_TOKENS.md, run 1a): ``text`` gets <HOLD> at >= hes_gap pauses inside the
         segment and, at the segment end, <YIELD> if the segment's last word ends a floor-definition turn of its speaker
         (self.turns) or <HOLD> if the run ends but the turn continues (a >= turn_gap pause with nobody taking the floor);
         a chunk cut by max_sec gets no end token. The audio still stops 0.1 s after the last word, so the end token

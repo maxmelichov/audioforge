@@ -10,7 +10,7 @@ import numpy as np
 
 from .constants import ACT_THRESHOLD, FRAME_MS, FRAME_SAMPLES, PRIMARY_WINDOW_S, SR
 
-__all__ = ["AnySpeakerTimeout", "HeadPolicy", "SileroSilence", "TimeoutPolicy"]
+__all__ = ["AnySpeakerTimeout", "HeadPolicy", "SileroSilence", "TimeoutPolicy", "VadHeadPolicy"]
 
 
 # --------------------------------------------------------------------------- turn policies
@@ -66,7 +66,7 @@ class TimeoutPolicy:
 
 
 class AnySpeakerTimeout:
-    """turn_policy ``timeout_any`` (multi-party rooms; research/DIARIZATION_FIX.md section 3): a turn belongs to
+    """turn_policy ``timeout_any`` (multi-party rooms; research/archive/DIARIZATION_FIX.md section 3): a turn belongs to
     whoever spoke last, not to the 5 s dominant column, so every speaker's turns end. Same ``update(row)`` /
     ``primary`` / ``silence_ms`` surface as TimeoutPolicy. Fires
       * ``timeout``: no column active for ``timeout_ms`` and someone spoke since the last firing;
@@ -140,6 +140,62 @@ class HeadPolicy:
             self.armed = False
             return {"p": float(p), "silence_ms": int(self.silent * self.frame_ms)}
         return None
+
+
+class VadHeadPolicy:
+    """turn_policy ``vad_head`` (research/EOT_LATENCY.md; ``--mode single``'s default rule), no Silero. Per 80 ms frame
+    v (fed in order) with the turn head's p, the served VAD and, when a TS-VAD track is enrolled, P(user) / P(other):
+
+    - head path: the served VAD's silence (frames since the last frame with VAD >= ``vad_thr``) >= ``k_frames`` and
+      p >= ``threshold``;
+    - fallback: that silence >= ``fallback_frames`` (None = off);
+    - others path (``others`` = (user silence frames, hold frames), None = off; needs P(user) / P(other)): at the frame
+      where the user's own silence (frames since P(user) >= ``user_p``) reaches the user-silence frames, P(other) >=
+      ``others_p`` has held for the last hold frames: another speaker has the floor, so the user's turn ended when the
+      user went quiet (the any-speaker VAD would wait for the room to go quiet).
+
+    One firing per user turn: the head path and the fallback re-arm on a VAD speech frame, the others path on a
+    P(user) >= ``user_p`` frame, and a firing of either disarms both. The same rule as scripts/research/eot_latency.py
+    ``sim_room`` (``fw`` 0)."""
+
+    def __init__(self, threshold: float = 0.99, k_frames: int = 2, fallback_frames: int | None = 8,
+                 vad_thr: float = 0.4, frame_ms: int = FRAME_MS, others: tuple[int, int] | None = (12, 8),
+                 others_p: float = 0.9, user_p: float = 0.5):
+        self.thr, self.k, self.fb, self.vad_thr, self.frame_ms = threshold, int(k_frames), fallback_frames, vad_thr, frame_ms
+        self.others = None if not others else (int(others[0]), max(1, int(others[1])))
+        self.others_p, self.user_p = float(others_p), float(user_p)
+        self.v = 0  # next frame index
+        self.last = -1  # last VAD speech frame
+        self.fired = -2  # the VAD speech frame whose silence run already fired
+        self.last_u = -1  # last user speech frame (P(user) >= user_p)
+        self.fired_u = -2
+        self.orun = 0  # frames in a row with P(other) >= others_p
+
+    def update(self, p: float, vad: float, p_user: float | None = None, p_other: float | None = None) -> dict | None:
+        """The turn head's p, the served VAD and (enrolled TS-VAD track) P(user), P(other) on the next frame -> None,
+        or the turn-end event."""
+        v, self.v = self.v, self.v + 1
+        if vad >= self.vad_thr:
+            self.last = v
+        track = p_user is not None and p_other is not None
+        if track:
+            if p_user >= self.user_p:
+                self.last_u = v
+            self.orun = self.orun + 1 if p_other >= self.others_p else 0
+        sil = v - self.last if self.last >= 0 else 0
+        path = None
+        if self.last >= 0 and self.last != self.fired and sil > 0:
+            if sil >= self.k and p >= self.thr:
+                path = "head"
+            elif self.fb is not None and sil >= self.fb:
+                path = "fallback"
+        if path is None and track and self.others is not None and self.last_u >= 0 and self.last_u != self.fired_u \
+                and self.orun >= self.others[1] and v - self.last_u == self.others[0]:
+            path, sil = "others", v - self.last_u
+        if path is None:
+            return None
+        self.fired, self.fired_u = self.last, self.last_u
+        return {"p": float(p), "silence_ms": int(sil * self.frame_ms), "path": path}
 
 
 class SileroSilence:

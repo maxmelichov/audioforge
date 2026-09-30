@@ -1,5 +1,14 @@
 # Final report: one streaming model as a voice agent's audio front end, measured against the dedicated models and the shipping stacks
 
+> **Status (2026-09-29): historical.** This report describes the room-mode product of 2026-09-28 (115M model +
+> NVIDIA diarizer). The shipped product is now single-model mode, and the numbers to quote are the standard
+> scorecard in [`research/METRICS.md`](METRICS.md). Terms below map as follows: "dead air" = end-of-turn latency,
+> "cut-ins" = false interruptions, "missed within 3 s" = no response within 3 s (pooled over mono-mix sessions,
+> which no system can answer in time). "First partial transcript ... after speech onset" counted from the start of
+> speech, so it included the time it takes to say the first word; it is not STT latency (partial latency, word end
+> to word shown, is 441 ms median). Language ID row 11 is an older 0.40 M head; the shipped distilled head scores
+> 91.0 % / 97.8 % (`runs/lid.json`).
+
 2026-09-28 (first version 2026-09-27; this refresh adds the work of 2026-09-28 and re-reads its numbers from their JSON, see
 `research/VERIFICATION_2026-09-28.md`). Repository `nvidia-audio-models`. Written for a technical reader who did not
 follow the project. Every number comes from a `runs/*.json` file (Appendix A lists them) or, for three tables of
@@ -41,7 +50,8 @@ AmberNet for language ID.
 - **In the product** (37 recorded conversations through the real Pipecat 1.12 and LiveKit Agents 1.8 pipelines): vs
   **Pipecat's default local stack** our default cuts users off 1.6-5.5x less often and misses fewer ends, with
   similar dead air; vs **LiveKit's default** dead air is comparable and we miss fewer ends but cut in more on mono
-  mixes. First partial transcript 0.8-1.2 s after speech onset vs 2.6-3.7 s (Pipecat) and 3.4-11.3 s (LiveKit).
+  mixes. (A "first partial transcript after speech onset" comparison stood here; it counted from the start of speech
+  and was removed as misleading. See the status note above.)
 - **Added on 2026-09-28** (scorecard rows 15-26):
   - *Rooms.* The served server cut Nemotron-3 to 4 of its 8 columns (speakers 5-8 were invisible) and labelled every
     turn speaker 0 under load shedding. Fixed: all 8 columns and hold-on-shed are the launcher defaults, a voice-keyed
@@ -105,7 +115,7 @@ still mid-turn); miss = the end is not detected within the horizon; "open" = flo
 | 14 | compute | E2E_FINAL live runs, 2 threads, per audio second | server 0.80 wall (Sortformer) / 0.64 (Nemotron-3), 1.02 / 0.71 CPU s, 3.6 / 1.5 GB | Pipecat default 0.43 CPU s, 2.4 GB; LiveKit default 0.28 CPU s, 2.8 GB | – | – | **worse**: 1.7-3.6x the CPU of the default stacks; keeps up at 1x |
 | 15 | diarization, many speakers in the served system (2026-09-28) | 3 clips (6-speaker LibriSpeech mix, ICSI Bmr021 5 speakers, AMI IS1008b 4), offline `Session`, Nemotron-3; per-final speaker accuracy after a Hungarian map | after the fix (8 columns, `registry` labels, hold-on-shed): pooled DER **0.247**, speaker count 6 / 5 / 4 (exact), accuracy 0.83 (served speaker head) / **0.88** (TitaNet); forced level-1 shedding DER **0.329** | before (4 columns, column labels, VAD-on-shed): DER 0.395, count 4 / 4 / 4, accuracy 0.74; shedding 0.809 with one id per clip | no CI (3 clips); AMI dev 64 windows: DER 0.245 → 0.245, accuracy 0.93 → 0.77 (registry worse on 20 s windows) | Nemotron-3 card: 8 speakers (P) | **better** for rooms of more than 4 speakers and under load; **equal** on AMI windows; registry opt-in |
 | 16 | server compute after the performance pass | interleaved A/B `--perf none` vs `default`, 5 AMI windows, Nemotron-3, same process and load | RTF **0.86** (0.62x), CPU 0.67x, chunk p95 0.38x; 0 decision differences in 1313 messages, probabilities within 1e-5; direct 0.45-0.51 (load 3.5-5), 0.62 steady state (120 s window); Sortformer v2 0.61 | the same server before: RTF 1.39 in the A/B (load 7-8), 0.84 at load 4.7; E2E_FINAL live 0.64 / 0.80 | ratio from one A/B (no CI) | – | **better** (same outputs, less compute); still one session per 2 threads (K = 2 aggregate RTF 1.31) |
-| 17 | robustness of the server | `tests/test_bulletproof.py`, `research/BULLETPROOF.md` | 48 tests over 36 failure modes (audio, protocol, models, load shedding, clients); 3 defects in shipped code found and fixed; no default policy's measured behaviour changed | – | – | – | engineering; not a benchmark row |
+| 17 | robustness of the server | `tests/test_bulletproof.py`, `research/archive/BULLETPROOF.md` | 48 tests over 36 failure modes (audio, protocol, models, load shedding, clients); 3 defects in shipped code found and fixed; no default policy's measured behaviour changed | – | – | – | engineering; not a benchmark row |
 | 18 | EOT with the TS-VAD track, offline | eot-bench v2, AMI dev 974 / ICSI held-out 1312 turns, 5 s voice print from elsewhere in the meeting, ≤ 5 % FC cross-fitted, 6 s | hybrid **39.3 % [36.2, 42.8]** AMI, **20.4 % [18.2, 22.7]** ICSI; `hybrid_dyn` 34.2 / 18.7 %, open 17.9 / 13.2 % | the shipped hybrid on the label-free Sortformer column: 61.9 % [58.6, 65.3] AMI, 68.5 % [65.8, 71.2] ICSI | CIs do not overlap (paired CIs pending the Sortformer-track rebuild, §11) | – | **better** on meetings, given a voice print; head P50 still 3.2-4.2 s on AMI |
 | 19 | EOT with the TS-VAD track, live in Pipecat | 37 E2E clips × conditions = 69 sessions (64 two-party), 1x, system T = `--turn-input tsvad --diar-off`, `hybrid_dyn` | missed at 3 s 45.3 %; cut-ins 0.52 per session; server RTF 0.34 (median), 1.6 GB | C (product default, timeout): 34.5 %, 0.93; D (`hybrid_dyn` + arming, Sortformer): 44.0 %, 0.52; RTF 0.80 | T − C **+10.8 [+5.6, +15.8]** misses, −0.41 [−0.67, −0.12] cut-ins; T − D +1.3 [−3.6, +6.2], 0.00 [−0.17, +0.19] | – | **worse** than C on misses (pre-registered bar not met), **equal** to D at 0.43x the compute: a meeting-room gain, not a two-party gain; behind flags |
 | 20 | ASR, meetings: decoder-only adaptation | AMI / ICSI / LibriSpeech 200, RNNT prediction net + joint trained 500 steps (encoder and all live heads frozen, 748 / 759 tensors bit-identical) | AMI **22.50 %** | served decoder 24.43 % | AMI **−1.93 [−2.77, −1.24]**; ICSI −0.12 [−0.78, +0.56]; LibriSpeech +0.04 [−0.09, +0.18] | – | **better** on AMI, **equal** on ICSI and read speech; not shipped by default (probably AMI-vocabulary adaptation) |
@@ -137,7 +147,7 @@ Whisper-norm deltas for the TDT rows).
 - The served model streams at 160 ms chunks (att context [70, 1]); the others see the whole utterance. The 0.6-0.8
   point gap to parakeet-ctc-0.6b and Whisper turbo is significant and is the price of streaming with 80 ms
   lookahead: the same imported encoder at 1.04 s lookahead ([70, 13]) scores 1.92 % on these utterances
-  (`research/NEMO_IMPORT.md`, no JSON), and 2.26 % on the first 100 (`runs/served_model_build.json`).
+  (`research/archive/NEMO_IMPORT.md`, no JSON), and 2.26 % on the first 100 (`runs/served_model_build.json`).
 - Parakeet-TDT v3 per turn is statistically equal to the streaming model here (+0.26 [−0.20, +0.71]); its value is on
   meetings.
 - Published (P, full test-clean, model cards): parakeet-ctc-0.6b 1.87 %, parakeet-ctc-1.1b 1.83 %, parakeet-tdt-0.6b-v3
@@ -170,7 +180,7 @@ Headset-mix audio of the 4 AMI dev meetings, segments of 1-15 s with no other sp
 - Cost is the streaming model's advantage: 2.2x cheaper than parakeet-ctc-0.6b, 3x than TDT v3, 13-66x than
   Whisper small / turbo, and it is the only system in the table that gives partials while the user speaks.
 - Published AMI numbers (P, full AMI-IHM test, Open ASR Leaderboard protocol): parakeet-tdt-0.6b-v3 11.31 % (its
-  card, as stored in `hybrid_asr.json`; `research/DATA_PLAN.md` quotes 11.39), nemotron-speech-streaming-0.6b
+  card, as stored in `hybrid_asr.json`; `research/archive/DATA_PLAN.md` quotes 11.39), nemotron-speech-streaming-0.6b
   14.71 % at 160 ms, Parakeet-Realtime-EOU-120M 15.62 %, Whisper small 19.0 % (Whisper paper). Our dev subset and
   normaliser are not that protocol.
 
@@ -223,7 +233,7 @@ Label: "any speaker active" from AMI word times. Pooled over frames, threshold 0
 - **Verdict: better than every streaming VAD, worse than offline pyannote.** Caveat: the head was trained on AMI train
   with exactly this word-level label; the dedicated VADs detect acoustic speech, so part of the margin is label
   convention (pauses under ~0.5 s are hidden in AMI word times). No CI. On ICSI dev the head's F1 is 0.900.
-- `research/VAD_LAYERS.md`: a probe on block 4 alone matches the served head (F1 0.9476 vs 0.9485; best block 9
+- `research/archive/VAD_LAYERS.md`: a probe on block 4 alone matches the served head (F1 0.9476 vs 0.9485; best block 9
   0.9496), so the head is at the ceiling of what one encoder block gives.
 
 ## 3. Speaker verification (AMI dev single-speaker segments, 15 speakers; `runs/spk_head.json`, `runs/baselines_sd.json`)
@@ -287,7 +297,7 @@ Pooled frame DER, 80 ms, threshold 0.5, no collar, overlap scored.
 - Nemotron-3 scores above Sortformer v2 here mainly through a label-convention miss (VAD-level miss 16-19 % vs 10 %),
   yet in the product it gives lower dead air (§7). Its card claims DIHARD3 13.55 % and CALLHOME 11.32 % (P).
 
-### 4.1 Many speakers in the served system (2026-09-28; `research/DIARIZATION_FIX.md`, scratch `diar/`)
+### 4.1 Many speakers in the served system (2026-09-28; `research/archive/DIARIZATION_FIX.md`, scratch `diar/`)
 
 User report: "diarization, and many speakers in the room, doesn't work". Reproduced live through the quickstart
 server. Three causes at once: `final.speaker` was the 5 s dominant column, not the turn's speaker, and a turn only
@@ -347,7 +357,7 @@ ICSI-64, count error no worse; kill after two runs if the gap stays above 0.10.
 
 ## 5. End of turn
 
-Benchmark: **eot-bench v2** (`research/EOT_BENCH_V2.md`): AMI dev, 974 turns (236 floor-open, 738 floor-taken),
+Benchmark: **eot-bench v2** (`research/archive/EOT_BENCH_V2.md`): AMI dev, 974 turns (236 floor-open, 738 floor-taken),
 label-free causal enrollment of the primary speaker on streaming Sortformer tracks, every system's threshold
 cross-fitted over leave-meetings-out folds to ≤ 5 % false cutoffs per turn (realised held-out FC 4.8-6.5 %; up to
 12 % within the open stratum), horizons 6 s and 2 s, 1000 paired bootstraps over turns. **Floor-open** ends (nobody
@@ -409,7 +419,7 @@ Paired, head OR dyn − Silero: 6 s all **−7.9 [−10.0, −5.8]**, open +5.0 
 Head OR dyn − head OR Silero, open: −11.7 [−17.0, −7.0]; head OR Silero − hybrid, open: −9.3 [−14.7, −4.1].
 
 - **Verdict (ICSI): the direction replicates.** Better on all ends, equal on open ends; absolute misses are much
-  higher on ICSI (hesitations are 2-3x as frequent as in AMI, `research/ICSI.md`) and the frozen thresholds land at
+  higher on ICSI (hesitations are 2-3x as frequent as in AMI, `research/archive/ICSI.md`) and the frozen thresholds land at
   1-4 % FC, under budget. Cross-fitting the dynamic rule on ICSI itself gives 62.0 % but at 14.8 % FC, so it is not a
   shippable operating point. Parakeet-EOU, smart-turn and LiveKit were **not run on ICSI**; "better than every
   dedicated detector" is an AMI-dev statement.
@@ -540,7 +550,7 @@ chosen on the evaluation set): it shows the trade-off, the cross-fitted rows abo
   −80 ms on AMI (3280 → 3200) and 0 on ICSI, for +0.4 to +2.6 points of FC; no point beats `hybrid_dyn` by ≥ 300 ms
   at matched FC, so nothing was pinned. The head is not confident 200 ms into a pause.
 
-## 6. Language ID (FLEURS test, 17 languages, n = 2550; `runs/lid.json`, `research/LID.md`)
+## 6. Language ID (FLEURS test, 17 languages, n = 2550; `runs/lid.json`, `research/archive/LID.md`)
 
 | system | params | 1 s | 2 s | 3 s | 5 s | full utterance |
 |---|---|---|---|---|---|---|
@@ -677,7 +687,7 @@ Paired deltas (bootstrap over clips; n = 5 on AMI makes those CIs wide), compute
   CPU s per audio s). Ours is 1.7-3.6x the CPU of the default stacks and keeps up at 1x with backlog ≤ 0.7 s in all
   but two sessions.
 
-### 7.1 Server performance pass (2026-09-28; `runs/perf.json`, `research/PERFORMANCE.md`)
+### 7.1 Server performance pass (2026-09-28; `runs/perf.json`, `research/archive/PERFORMANCE.md`)
 
 Four exact CPU fast paths, on by default (`--perf default`; `--perf none` restores the old path): column-major
 `nn.Linear` weights (Accelerate's NN GEMM path), a cached relative-position projection, one shared subsampling for
@@ -701,7 +711,7 @@ clip, so both see the same load).
   `fast_subsample` (not exact, 2.6 % gain; opt-in `--perf all`), `torch.compile` (slower), int8 in torch (no engine on
   this wheel), `inference_mode` (no gain).
 
-### 7.2 Which RTF to quote (`research/PERFORMANCE.md` §1)
+### 7.2 Which RTF to quote (`research/archive/PERFORMANCE.md` §1)
 
 RTF = compute time / audio time, and the same model has several correct values depending on what is timed.
 
@@ -714,14 +724,14 @@ RTF = compute time / audio time, and the same model has several correct values d
 | **0.80 / 0.64** | **the whole server, live, 1x, per session** (Sortformer / Nemotron-3), before the fast paths; process CPU 1.02 / 0.71 CPU-s per audio-s | `runs/e2e_final.json` `server_total`, `_process` | **the product number for the E2E results** |
 | 0.45-0.51 / 0.62 | the whole server after the fast paths, in process on the 5 AMI windows / a 120 s window, load 3.5-5 | `runs/perf.json` | the current server cost |
 | 0.34 | the whole server on the TS-VAD path with the diarizer off (T), live | scratch `e2e_tsvad/runs` | the known-user turn path |
-| 0.16 | the on-device runtime study: 1 thread, random weights, no diarizer, no turn pass | `research/ONDEVICE.md` (no JSON) | "can the encoder + heads run on one core" only |
+| 0.16 | the on-device runtime study: 1 thread, random weights, no diarizer, no turn pass | `research/archive/ONDEVICE.md` (no JSON) | "can the encoder + heads run on one core" only |
 | 4.6 / 1.68 / 0.24 | the 0.6B streaming encoder: streaming chunk time on CPU (2026-09-26 probe) / `StreamingSession` on CPU / on MPS | `runs/enc_0p6b.json`, `runs/hybrid_asr.json` `core_0p6b/rtf` | why the 0.6B is not the CPU core |
 
 **Rule:** quote the whole-server live figure with its thread count, diarizer and machine load for "what does a
 session cost", the offline batch figure only next to other models' offline figures, and chunk-time p95 plus backlog
 (not RTF) for "does it keep up". Never quote the 0.16 or the quickstart's loaded-machine 0.85 / 1.0 for the server.
 
-### 7.3 Robustness (`research/BULLETPROOF.md`, `tests/test_bulletproof.py`)
+### 7.3 Robustness (`research/archive/BULLETPROOF.md`, `tests/test_bulletproof.py`)
 
 36 failure modes a deployment can hit (bad audio: NaN / Inf, extreme amplitudes, odd block sizes, minutes of silence,
 wrong sample rates; malformed or late protocol messages, floods, disconnects, 12 concurrent sessions; model failures:
@@ -831,7 +841,7 @@ not yet confirmed by the maintainer (`docs/RELEASE_CHECKLIST.md`).
   systems (2026-09-27) were lost with the scratch in a reboot; `scripts/research/tsvad_chain.sh` rebuilds the tracks
   and scores (resumable; stopped at 62 / 974 AMI windows), **about 5 h of CPU**. The same rebuild gives the
   Sortformer-input rows of the latency frontier (§5.7) and of `hybrid_fast` (§5.8).
-- **Improvement experiments 4 and 5** (pre-registered in `research/IMPROVEMENTS.md`): enrolment quality (print length
+- **Improvement experiments 4 and 5** (pre-registered in `research/archive/IMPROVEMENTS.md`): enrolment quality (print length
   1.5-10 s, live after_agent_arm prints, refresh; driver `tsvad_enroll.py` prepared) and meeting-ASR partials from the
   decoder-adapted head combined with the lookahead pass. Not run (deprioritised for the 0.6B and distillation work).
 - **TurnBench for the 0.6B core.** Not measured; the AMI turn row already fixed the verdict, but the table has no
@@ -930,7 +940,7 @@ resumable (each call bounded by `--budget` seconds, repeat until "done").
 | 6.1 transcript LID | `runs/hybrid_asr.json` (`lid_text`, `fleurs`) | `scripts/research/hybrid_asr.py run --set fleurs [--n-lang 30]`, `report` |
 | 7.1-7.3 performance, robustness | `runs/perf.json` | `scripts/research/bench_serve.py ab\|components\|run --streams K`; `tests/test_perf.py`, `tests/test_bulletproof.py` |
 | 8.1 0.6B core | `runs/hybrid_asr.json` (`core_0p6b`), `runs/spk_frame.json`, `runs/tsvad_turn_cores.json`; scratch `hybrid_asr/core_0p6b_rtf.json` (VAD) | `scripts/research/core_0p6b.py import\|vadfeats\|vad\|rtf\|report`, `tsvad_turn.py` (core-aware) |
-| frontier pilots | `runs/frontier_sa_captions.json`, `runs/frontier_codec_probe.json` | `research/FRONTIER.md` Part 2 |
+| frontier pilots | `runs/frontier_sa_captions.json`, `runs/frontier_codec_probe.json` | `research/archive/FRONTIER.md` Part 2 |
 | verification | `research/VERIFICATION_2026-09-28.md` | claim-by-claim read-back of this report |
 | server | – | `audioforge-serve --diarizer nemotron3` (= `python -m audioforge.serve --asr models/stage1_served.afm --diar models/nemo_nemotron3_diar.afm --diar-pool max --diar-left 1 --shed-diar hold`, all 8 columns) `[--enroll after_agent_arm] [--final-asr tdt_v3] [--lid ambernet] [--diar-labels registry] [--turn-input tsvad --diar-off --enroll explicit]`; the E2E runs used `--diar-spks 4` |
 | this report | `research/FINAL_REPORT.md` → `.html` | `scripts/final_report_html.py` |
@@ -976,7 +986,7 @@ Research documents by topic: `ANALYSIS.md` (the 149-model catalog), `NEMO_IMPORT
     positive wall-time savings (8-17 %).
 11. `README.md`'s "One model vs the dedicated models" table still shows the original speaker head (32.2 % EER) and
     "hybrid rule adds nothing yet" for the product; both are superseded (14.4 %; §7 here).
-12. Code references to `research/HYBRID_ASR.md` (serve.py, hybrid_asr.py, NEMO_IMPORT.md) and `research/
+12. Code references to `research/archive/HYBRID_ASR.md` (serve.py, hybrid_asr.py, NEMO_IMPORT.md) and `research/
     IMPROVE_115M.md` (tsvad.py) pointed to documents that were not in the committed tree when this report was
     assembled (an untracked HYBRID_ASR.md draft and `runs/improve_115m.json` appeared during finalisation); §1.2 and
     §11 are the write-up used here.
@@ -997,5 +1007,5 @@ Research documents by topic: `ANALYSIS.md` (the 149-model catalog), `NEMO_IMPORT
     0.721, miss 0.229, FA 0.189); `improve_115m.json` has F1 0.743, precision 0.750, miss 0.265, FA 0.155 (used here).
 20. The experiment-3 speaker head is quoted elsewhere as "17.2 % / 4.2 %"; the JSON has two heads, 17.1 / 4.4 (warm
     start) and 17.4 / 4.0 (fresh init). This report gives the range.
-21. Item 12 is resolved: `research/HYBRID_ASR.md`, `research/IMPROVE_115M.md` and `runs/improve_115m.json` are now
+21. Item 12 is resolved: `research/archive/HYBRID_ASR.md`, `research/IMPROVE_115M.md` and `runs/improve_115m.json` are now
     committed and agree with the JSON used here.

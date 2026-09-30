@@ -1,4 +1,4 @@
-"""nvidia/nemotron-speech-streaming-en-0.6b as a voice-agent front-end encoder (research/ENC_0P6B.md).
+"""nvidia/nemotron-speech-streaming-en-0.6b as a voice-agent front-end encoder (research/archive/ENC_0P6B.md).
 
 Every stage is a separate CPU process (2 threads, < 10 min, resumable) that builds the model straight from the
 .nemo through audioforge.nemo_import (memory-mapped weights, one fp32 copy ~2.5 GB); results merge into --json.

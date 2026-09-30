@@ -1,4 +1,4 @@
-"""Dyadic training additions (research/DYADIC.md section 8): the causal log-RMS energy input, the multi-horizon
+"""Dyadic training additions (research/archive/DYADIC.md section 8): the causal log-RMS energy input, the multi-horizon
 user-activity auxiliary targets, and the corrupted-then-corrected (rebind) conditioning windows.
 
 Causality, shapes, streaming == offline, warm-start identity (zero-initialised projections), label semantics."""

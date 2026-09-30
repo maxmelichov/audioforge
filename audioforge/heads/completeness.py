@@ -1,5 +1,5 @@
 """CompletenessHead: "is what the user has said so far a complete utterance?" on the shared encoder
-(research/COMPLETENESS.md; the smart-turn task, pipecat-ai/smart-turn, on our frozen FastConformer).
+(research/archive/COMPLETENESS.md; the smart-turn task, pipecat-ai/smart-turn, on our frozen FastConformer).
 
 Two outputs from one small causal temporal model (Linear -> SiLU -> GRU over the encoder frames):
 

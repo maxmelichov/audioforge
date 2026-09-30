@@ -1,6 +1,6 @@
 """Contamination probe: a speaker-conditioned streaming model gets a WRONG speaker assignment for a short window,
 then the correct one again. How long does the damage persist after the correction (state contamination), beyond the
-corrupted window itself? research/CONTAMINATION.md.
+corrupted window itself? research/archive/CONTAMINATION.md.
 
 Two subjects:
   turn   the turn head runs/stage1_turn_v3_trail6.afm (speaker kernels at encoder layers 0 / 2, causal chunked
@@ -52,7 +52,7 @@ from audioforge.train import load_model  # noqa: E402
 FRAME = 0.08
 BIN = 2  # 160 ms persistence bins (turn head chunk)
 N_BINS = 25  # 4 s
-THETA, K_FRAMES = 0.998164, 53  # frozen hybrid operating point (research/EOT_BENCH_V2.md section 7)
+THETA, K_FRAMES = 0.998164, 53  # frozen hybrid operating point (research/archive/EOT_BENCH_V2.md section 7)
 LEFT_CTX = 70  # encoder left context in frames (att_context_size [70, 1])
 TURN_WINDOWS = {"0.5s": 6, "1s": 12, "2s": 25}
 SAASR_WINDOWS = {"160ms": 2, "320ms": 4, "480ms": 6}  # the synthetic utterances are short (median target span 0.7 s)
@@ -725,7 +725,7 @@ def run_saasr(a):
 
 def run_report(a):
     out = {"question": "How long does a transient wrong speaker binding keep changing a speaker-conditioned streaming "
-                       "model's outputs after the binding is corrected?", "doc": "research/CONTAMINATION.md"}
+                       "model's outputs after the binding is corrected?", "doc": "research/archive/CONTAMINATION.md"}
     if a.turn:
         out["turn_head"] = json.load(open(a.turn))
     if a.turn_extra:
@@ -740,7 +740,7 @@ def run_report(a):
 
 
 # =========================================================================== scope addition (coordinator):
-# replay cost baseline, correction-delay sweep, real rebind events (research/CONTAMINATION.md sections 6-8)
+# replay cost baseline, correction-delay sweep, real rebind events (research/archive/CONTAMINATION.md sections 6-8)
 
 
 def _encode_from(model, audio, alen, act_np, s: int, T: int, dev):

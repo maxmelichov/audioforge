@@ -1,4 +1,4 @@
-"""pipecat-ai smart-turn training data as audioforge examples (research/COMPLETENESS.md §1 for the licence check).
+"""pipecat-ai smart-turn training data as audioforge examples (research/archive/COMPLETENESS.md §1 for the licence check).
 
 Only ``pipecat-ai/human_5_all`` is used: it is the one smart-turn dataset whose card carries a licence
 (``license: bsd-2-clause``; 3 862 human English clips, 1 931 complete / 1 931 incomplete, one FLAC per clip, 312 MB).

@@ -1,4 +1,4 @@
-# research/LAYER_ROUTING.md part 2: does the turn head become confident earlier if it reads mid-encoder blocks?
+# research/archive/LAYER_ROUTING.md part 2: does the turn head become confident earlier if it reads mid-encoder blocks?
 # trail6 (research/recipes/stage1_turn_v3_trail6.yaml, the served turn head) reads the TOP layer of the speaker-conditioned
 # encoder pass (speaker kernels at encoder layers [0, 2]). Here the head reads a learned softmax mix restricted to
 # blocks 4-12 of that same conditioned pass (from_layers: [3..11]; the mix starts uniform); the kernels, the ASR text

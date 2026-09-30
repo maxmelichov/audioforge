@@ -1,4 +1,4 @@
-# Conversational action tokens, run 1b (research/YIELD_TOKENS.md §4): run 1a's single-speaker data with the NEW ROWS
+# Conversational action tokens, run 1b (research/archive/YIELD_TOKENS.md §4): run 1a's single-speaker data with the NEW ROWS
 # trained fast. Diagnosis of runs 2 / 1a: neither ever emitted a token (max log P(<YIELD>) about -7 to -9 even on
 # training data) although the ASR was intact. With Adam every element moves by about lr per step, so at the gate-safe
 # lr (5e-5 / 1e-4) the two new output rows, which start at the mean token row with the lowest token bias (log P about

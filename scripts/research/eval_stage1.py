@@ -7,7 +7,7 @@ Tasks (each reuses the repo's own metric code; nothing is re-implemented):
          --diar-ckpt <afm>: also the primary track of an EXTERNAL Sortformer (own preprocessor/encoder; offline
          pass = upper bound, StreamingDiarizer card low-latency = real time), column chosen by overlap with the
          oracle primary on [onset, turn_end) only, fed to the turn head as spk_act, plus the diarizer+timeout
-         cascade (research/STAGE1.md, "Turn head with an external diarizer"). A turn head with act_columns > 1
+         cascade (research/archive/STAGE1.md, "Turn head with an external diarizer"). A turn head with act_columns > 1
          (TurnHead v3) is also fed all the diarizer's columns + the chosen column (its duration features are computed
          inside the head from the fed track). Extra non-learned cascade: "duration rule" = fire when the primary
          column has been silent >= k frames AND no other column is active (k swept like the timeout's).
@@ -131,7 +131,7 @@ def offline_primary_miss(model, val, batch_size) -> float:
 
 
 # --------------------------------------------------------------------------- turn head + external diarizer
-# NVIDIA streaming Sortformer v2 card "low latency" setting (research/SORTFORMER_IMPORT.md), in 80 ms frames.
+# NVIDIA streaming Sortformer v2 card "low latency" setting (research/archive/SORTFORMER_IMPORT.md), in 80 ms frames.
 SORTFORMER_LOW_LATENCY = dict(chunk_len=6, chunk_right_context=7, fifo_len=188, spkcache_update_period=144,
                               spkcache_len=188)
 SORTFORMER_ENC_LEFT = 188  # window-mode encoder left context (the non-causal encoder is re-run per step)
@@ -411,7 +411,7 @@ def eval_turn_external(model, name, val, on, en, chunk, diar_ckpt, batch_size, c
         res[f"column_hist_{src}"] = {str(k): int(np.sum(np.array(cs) == k)) for k in range(st[src][0].shape[1])}
     if enroll_mode != "oracle":
         res["enroll"] = enroll_mode
-        res["column_choice"] = f"{enroll_mode} (label-free, eot-bench v2; research/EOT_BENCH_V2.md)"
+        res["column_choice"] = f"{enroll_mode} (label-free, eot-bench v2; research/archive/EOT_BENCH_V2.md)"
     res["columns_agree_offline_stream"] = round(float(np.mean(np.array(cols["offline"]) == np.array(cols["stream"]))), 4)
     own = own_diar_acts(model, val, batch_size) if _diar_name(model) else None
     res["activity_vs_oracle"] = {"own_diar_stream": act_stats(own, val, ends) if own else None,
@@ -454,7 +454,7 @@ def eval_turn_external(model, name, val, on, en, chunk, diar_ckpt, batch_size, c
 
 
 # --------------------------------------------------------------------------- eot-bench v2 (leak-free protocol)
-# research/EOT_BENCH_V2.md. Everything below is opt-in (--bench v2 / --enroll); the default turn task is unchanged.
+# research/archive/EOT_BENCH_V2.md. Everything below is opt-in (--bench v2 / --enroll); the default turn task is unchanged.
 ENROLL_MODES = ("oracle", "causal_dominant", "first_active")
 ENROLL_K, ENROLL_S = 25, 25  # causal_dominant: 2.0 s look-back, re-bind after > 2.0 s of silence (AMI max_hold)
 V2_DEV_FOLDS = (("IS1008b", "ES2011b"), ("TS3004b", "IB4002"))  # leave-meetings-out halves for the fixed threshold
@@ -1386,7 +1386,7 @@ def eval_turn_v2(a) -> dict | None:
                          a.batch_size, a.v2_tag, **({"tracks_dir": td} if td else {}))
         return {"scores_left": left}
     t0 = time.time()
-    res = {"protocol": "eot-bench v2 (research/EOT_BENCH_V2.md)", "enroll_params": {"k_frames": ENROLL_K,
+    res = {"protocol": "eot-bench v2 (research/archive/EOT_BENCH_V2.md)", "enroll_params": {"k_frames": ENROLL_K,
            "s_frames": ENROLL_S}, "folds": [list(f) for f in V2_DEV_FOLDS], "floor_horizon_frames": V2_FLOOR_HORIZON,
            "score_tag": a.v2_tag}
     cfg_name, td = getattr(a, "v2_diar_config", "low_latency"), getattr(a, "v2_tracks_dir", None)
@@ -1582,7 +1582,7 @@ def main():
     ap.add_argument("--hybrid", action="store_true",
                     help="turn task: add the head-OR-timeout rows (serve.py turn_policy 'hybrid'), joint (θ, k) sweep")
     ap.add_argument("--bench", default="v1", choices=("v1", "v2"),
-                    help="turn task: v2 = the leak-free eot-bench v2 on all dev turns (research/EOT_BENCH_V2.md), "
+                    help="turn task: v2 = the leak-free eot-bench v2 on all dev turns (research/archive/EOT_BENCH_V2.md), "
                          "run as stages --v2-stage tracks|scores|report")
     ap.add_argument("--v2-stage", default="report", choices=("tracks", "embed", "bind", "scores", "report"),
                     help="v2 stage; embed / bind = the voice enrollment (audioforge/enrollment.py, EOT_BENCH_V2.md §8)")

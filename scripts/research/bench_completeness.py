@@ -1,4 +1,4 @@
-"""smart-turn x our turn head: learned fusion on eot-bench v2 and the completeness head (research/COMPLETENESS.md).
+"""smart-turn x our turn head: learned fusion on eot-bench v2 and the completeness head (research/archive/COMPLETENESS.md).
 
 Stages (CPU, 2 threads, each < 10 min):
   extract   per eot-bench v2 window (block C: 6 s-extended windows; block A: default 2 s windows) the per-frame score

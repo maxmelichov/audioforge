@@ -1,5 +1,5 @@
 # Stage 1c v5: the diarizer track reaches ONLY the turn head; the encoder is never speaker-conditioned.
-# research/TURN_ERRORS.md §3: with the streaming Sortformer track in the speaker kernels the v3 head misses 62-63 % of
+# research/archive/TURN_ERRORS.md §3: with the streaming Sortformer track in the speaker kernels the v3 head misses 62-63 % of
 # turn ends at <= 5 % false cutoffs whatever the head sees; with a clean kernel input and ALL head inputs from the
 # Sortformer track it misses 9.5 % (O/S/S). v4 retrained the kernels on noisy tracks and did not help
 # (runs/stage1_turn_v4_kernels_eval_n200.json: 62 % vs v3 63 %). Recommendation acted on: drop kernel conditioning.

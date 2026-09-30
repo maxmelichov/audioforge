@@ -1,4 +1,4 @@
-"""Per-turn final ASR for the hybrid front end (``serve --final-asr``; research/HYBRID_ASR.md).
+"""Per-turn final ASR for the hybrid front end (``serve --final-asr``; research/archive/HYBRID_ASR.md).
 
 The streaming 115M model keeps every live head (partials, VAD, turn, speaker, enrollment); a second, larger offline
 model transcribes each finished user turn once for the accurate final transcript. This module is that second model

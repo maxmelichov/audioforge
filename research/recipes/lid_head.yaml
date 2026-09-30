@@ -1,4 +1,4 @@
-# research/LID.md - spoken language ID head on the frozen served encoder (runs/stage1_served.afm, [70, 1]).
+# research/archive/LID.md - spoken language ID head on the frozen served encoder (runs/stage1_served.afm, [70, 1]).
 # heads.audio.LanguageHead (causal attentive-stats pooling, running posterior every frame) on a learned mix of encoder
 # blocks 8-12 (1-based; the per-block probe peaks at block 9 for 2 s and block 11 for 5 s), 17 FLEURS languages.
 # Head only: every other tensor of the served model is asserted bit-identical after training. Data: scripts/research/lid_data.py

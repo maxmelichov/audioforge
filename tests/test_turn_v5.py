@@ -1,5 +1,5 @@
 """TurnHead v5: the diarizer track reaches ONLY the head; the encoder is never speaker-conditioned
-(research/TURN_ERRORS.md: kernel input clean + head inputs from the Sortformer track -> 9.5 % misses vs 62 % with the
+(research/archive/TURN_ERRORS.md: kernel input clean + head inputs from the Sortformer track -> 9.5 % misses vs 62 % with the
 track in the kernels; v4 retraining the kernels on noisy tracks did not help).
 
 Under test: SpeechModel.forward runs the train-time conditioning (p_ext / ext_noise / flip) also when no head is

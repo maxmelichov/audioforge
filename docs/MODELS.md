@@ -9,7 +9,7 @@ disk, and its licence. audioforge's only model weights of its own are in `assets
 about to fetch and asks you to accept them (`--yes` / `AUDIOFORGE_ACCEPT_LICENSES=1` non-interactively).
 
 ```
-audioforge-download                          # asr + tsvad + lid + silero: single-model mode (the default)
+audioforge-download                          # asr + tsvad + lid: single-model mode (the default)
 audioforge-download --diarizer nemotron3     # + nemotron3 for room mode (--diarizer sortformer: Sortformer v2)
 audioforge-download --heads-version 0.1      # the measured 2026-09-27 build (stage1_served.afm), for research/
 audioforge-download --with tdt_v3 titanet ambernet silero      # or --with all
@@ -37,7 +37,8 @@ audioforge-download --list
 `stage1_served.afm`, the 2026-09-27 checkpoint that reads the all-block mix (`vad_layer: all`) and that most of
 `research/` was measured with (`--heads-version 0.1` rebuilds it).
 
-Default set: `asr` + `tsvad` + `lid` + `silero`. Peak disk during a default install is about 0.9 GB (the `.nemo` files are deleted
+Default set: `asr` + `tsvad` + `lid`. Silero is optional since single mode's default turn rule (`vad_head`,
+research/EOT_LATENCY.md) reads the model's own heads; `--with silero` for `hybrid_silero` / `hybrid_dyn`. Peak disk during a default install is about 0.9 GB (the `.nemo` files are deleted
 after conversion unless `--keep-nemo`). `--from-local DIR` and `--data-root DIR` (default `$AUDIOFORGE_DATA`, i.e.
 `<repo>/data`) reuse `.nemo` / `.onnx` files you already have; they are sha256-checked and used in place.
 
@@ -79,7 +80,7 @@ The code licence (`LICENSE`) does not cover the weights. In short (`NOTICE` has 
 - MIT: Silero VAD.
 
 Models that the research benchmarks compare against but that are never installed by this tool (their licences are in
-`research/BASELINES.md`): nemotron-speech-streaming-en-0.6b, parakeet_realtime_eou_120m-v1, Sortformer v2.1 and
+`research/archive/BASELINES.md`): nemotron-speech-streaming-en-0.6b, parakeet_realtime_eou_120m-v1, Sortformer v2.1 and
 MarbleNet (NVIDIA Open Model License), parakeet-ctc-0.6b / 1.1b (CC-BY-4.0), smart-turn (BSD-2-Clause), the LiveKit
 turn detectors (LiveKit Model License, evaluation only), pyannote, SpeechBrain, Whisper / faster-whisper, WebRTC VAD.
 

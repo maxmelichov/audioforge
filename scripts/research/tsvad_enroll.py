@@ -1,4 +1,4 @@
-"""research/IMPROVEMENTS.md section 4: how good must the TS-VAD voice print be? Print length and live prints.
+"""research/archive/IMPROVEMENTS.md section 4: how good must the TS-VAD voice print be? Print length and live prints.
 
 On the eot-bench v2 windows (AMI dev 974, ICSI held-out 1312; the primary is the target), per window a TS-VAD track
 [P(target), P(other)] from the served head (runs/tsvad_spk.pt) with the print taken by one of these rules:

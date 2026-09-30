@@ -18,7 +18,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 CATALOG = ROOT / "research" / "catalog.json"
-RAW = ROOT / "research" / "raw"
+RAW = ROOT / "research" / "archive" / "raw"
 
 
 def cmd_catalog(a):

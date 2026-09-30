@@ -1,0 +1,193 @@
+<!doctype html><html><head><meta charset="utf-8"><link rel="stylesheet" href="style.css">
+<style>
+.card { position: absolute; }
+.ct { position: absolute; left: 0; top: 0; font-size: 28px; font-weight: 700; color: var(--ink); white-space: nowrap; line-height: 1.1; }
+.plain { position: absolute; left: 0; font-size: 22px; color: var(--ink); line-height: 1.25; }
+.note { position: absolute; left: 0; font-size: 22px; color: var(--ink); font-weight: 700; line-height: 1.25; }
+.ph { position: absolute; font-size: 22px; font-weight: 700; color: var(--ink); line-height: 1.15; letter-spacing: -0.012em; }
+.pu { position: absolute; font-size: 22px; color: var(--ink2); line-height: 1.15; white-space: nowrap; }
+.lab { position: absolute; font-size: 22px; color: var(--ink2); white-space: nowrap; line-height: 1.1; }
+.lab.us { color: var(--ink); font-weight: 700; }
+.lab.grp { color: var(--ink); font-weight: 700; }
+.val { position: absolute; font-size: 22px; color: var(--ink2); white-space: nowrap; line-height: 1; }
+.val.us { color: var(--ink); font-weight: 700; }
+.cue { position: absolute; font-size: 22px; font-weight: 700; letter-spacing: 0.06em; color: var(--ink2); white-space: nowrap; line-height: 1; }
+.meth { position: absolute; left: 0; font-size: 22px; color: var(--ink2); line-height: 1.2; }
+.rt { position: absolute; font-size: 22px; color: var(--ink2); white-space: nowrap; line-height: 1; }
+</style></head><body><div id="stage"></div><script src="numbers_single.js"></script><script>
+// results_v8: audioforge single-model mode (the one 115M model) against named systems on the same audio, with
+// industry-standard metric names only (research/METRICS.md, EOT_LATENCY.md, TSWER.md, VAD_SINGLE.md). Every card:
+// a title, a plain-English line (.plain) saying what the metric means, a metric header with unit, bars with a value
+// on every bar (orange = audioforge, grey = others), a BETTER cue, and a method line with the audio it was run on.
+// Every number is data-key="ns:v8/..." from numbers_single.json (export_single.py) and render.py checks it.
+const st = document.getElementById("stage"); let svg = [];
+const css = k => getComputedStyle(document.documentElement).getPropertyValue(k).trim();
+const E = k => { const e = NS[k]; if (!e) throw new Error("numbers_single has no " + k); return e; };
+const s = k => E(k).shown ?? String(E(k).value), v = k => E(k).value;
+const N = k => `<span data-key="ns:${k}">${s(k)}</span>`;
+function el(cls, html, x, y, parent = st) { const e = document.createElement("div"); e.className = cls; e.innerHTML = html;
+  Object.assign(e.style, { left: x + "px", top: y + "px" }); parent.appendChild(e); return e; }
+function place(e, x, y, ax = 0, ay = 0) { e.style.left = (x - ax * e.offsetWidth) + "px"; e.style.top = (y - ay * e.offsetHeight) + "px"; return e; }
+const G = "#C8CDD4", AX = "#AEB6C0";
+function line(x1, y1, x2, y2, c, w, dash) { svg.push(`<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="${c}" stroke-width="${w}" stroke-linecap="round"${dash ? ' stroke-dasharray="5 5"' : ""}/>`); }
+function bar(x, y, w, h, kind) {
+  if (kind === "ref") svg.push(`<rect x="${x + 1}" y="${y + 1}" width="${Math.max(3, w) - 2}" height="${h - 2}" rx="4" fill="#FFFFFF" stroke="#9AA3AE" stroke-width="2" stroke-dasharray="6 4"/>`);
+  else svg.push(`<rect x="${x}" y="${y}" width="${Math.max(3, w)}" height="${h}" rx="4" fill="${kind === "us" ? css("--ours") : G}"/>`); }
+function wrap(e, w) { Object.assign(e.style, { whiteSpace: "normal", width: w + "px" }); return e; }
+
+// one bar panel: rows [label|null, key, kind] at pitch pt from y; zero line at x; bars scale to max over span.
+// kind: "us" (orange), "base" (grey), "ref" (dashed outline: a reference point, not a system), "grp" (label row)
+function barsAt(c, x, span, y, pt, rows, max, suf = "") {
+  let yy = y;
+  rows.forEach(([lab, k, kind]) => {
+    if (kind === "grp") { yy += pt; return; }
+    const us = kind === "us", bh = Math.round(pt * (us ? 0.62 : 0.5)), w = span * v(k) / max;
+    bar(x, yy + (pt - bh) / 2, w, bh, kind); window.BARCOUNT.bars++;
+    const vl = el("val" + (us ? " us" : ""), N(k) + suf, 0, 0, c); vl.dataset.barval = "1"; window.BARCOUNT.labels++;
+    place(vl, x + Math.max(3, w) + 8, yy + pt / 2, 0, 0.5);
+    yy += pt; });
+  line(x, y - 2, x, yy + 2, AX, 1.5);
+  return yy;
+}
+function labels(c, x, y, pt, rows) {
+  let yy = y;
+  rows.forEach(([lab, k, kind]) => { if (lab) place(el("lab" + (kind === "us" ? " us" : kind === "grp" ? " grp" : ""), lab, 0, 0, c), x + (kind === "sub" ? 18 : 0), yy + pt / 2, 0, 0.5); yy += pt; });
+  return yy;
+}
+function cue(c, x, xend, y, lower) { const e = el("cue", lower ? "← BETTER" : "BETTER →", 0, 0, c); e.dataset.cue = "1"; if (lower) place(e, x, y); else place(e, xend, y, 1, 0); return e; }
+// a panel header: metric name (bold) and the unit / direction (grey), both wrapped to w
+function header(c, x, y, w, name, unit) { const h = wrap(el("ph", name, x, y, c), w); h.dataset.metric = "1"; if (!unit) return y + h.offsetHeight;
+  const u = wrap(el("pu", unit, x, y + h.offsetHeight, c), w); return y + h.offsetHeight + u.offsetHeight; }
+
+// ---- cards ----------------------------------------------------------------------------------------------------
+const SYS = sq => [["audioforge", "ours", "us"], [sq ? "LiveKit" : "LiveKit turn detector", "livekit", "base"], [sq ? "Pipecat" : "Pipecat smart-turn v3", "pipecat", "base"]];
+const TM = [["eot", "End-of-turn latency", "p50, ms", " ms"], ["fi", "False interruptions", "% of your turns", " %"], ["miss", "Missed turn ends", "% of turn ends", " %"]];
+// the three turn-taking metrics side by side for one dataset (wide), or for both datasets stacked (square)
+function turnPanels(c, W, y, sets, sq) {
+  const lw = sq ? 128 : 222, gap = sq ? 18 : 16, pw = (W - lw - 2 * gap) / 3, pt = sq ? 25 : 29, vroom = sq ? 96 : 66;
+  let hy = 0; TM.forEach(([m, name, unit], i) => { hy = Math.max(hy, header(c, lw + i * (pw + gap), y, pw, name, sq ? "" : unit)); });
+  window.HDR = Math.max(window.HDR || 0, hy - y);
+  let yy = hy + 8;
+  sets.forEach(([ds, glab]) => {
+    const rows = SYS(sq).map(([lab, k, kind]) => [lab, `v8/${ds}/${k}/`, kind]);
+    if (glab) { const g = el("lab grp", glab, 0, yy, c); yy += g.offsetHeight + 2; }
+    labels(c, 0, yy, pt, rows);
+    let yb = yy;
+    TM.forEach(([m], i) => { const x = lw + i * (pw + gap), mx = Math.max(...rows.map(r => v(r[1] + m)));
+      yb = barsAt(c, x, pw - vroom, yy, pt, rows.map(r => [r[0], r[1] + m, r[2]]), mx, sq ? TM[i][3] : ""); });
+    yy = yb + (sq ? 4 : 8); });
+  TM.forEach((_, i) => cue(c, lw + i * (pw + gap), 0, yy, true));
+  return yy + 28;
+}
+const CARDS = {
+  calls: { title: "Turn-taking on calls",
+    plain: "How long after you stop talking the agent may answer, how often it cuts you off, how often it never notices you finished.",
+    note: "LiveKit answers sooner; audioforge cuts you off least and misses the fewest.",
+    meth: () => `same ${N("v8/calls/n")} turn ends for every system · user’s own channel of ${N("v8/calls/sessions")} two-party calls`,
+    draw: (c, W, y, sq) => turnPanels(c, W, y, [["calls", null]], sq) },
+  ami: { title: "Turn-taking in meetings",
+    plain: "The same three measures in meetings, where other people keep talking after you stop.",
+    note: "Pipecat answers sooner; audioforge cuts you off least and misses the fewest.",
+    meth: () => `same ${N("v8/ami/n")} AMI turns for every system · only audioforge uses your 5 s voice sample`,
+    draw: (c, W, y, sq) => turnPanels(c, W, y, [["ami", null]], sq) },
+  turn: { title: "Turn-taking",   // square: calls and meetings in one card, sharing the headers and cues
+    plain: "How long after you stop talking the agent may answer, how often it cuts you off, how often it misses that you finished. LiveKit answers sooner on calls, Pipecat in meetings.",
+    meth: () => "", sq: true,
+    draw: (c, W, y, sq) => turnPanels(c, W, y, [["calls", `Calls · user’s own channel · ${N("v8/calls/n")} turn ends`], ["ami", `Meetings · AMI · ${N("v8/ami/n")} turns · only audioforge has your 5 s voice sample`]], sq) },
+  twer: { title: "Your words when others talk",
+    plain: "Other people’s words that land in your transcript count as errors. Lower means a cleaner transcript of just you.",
+    plainSq: "Your words wrong per 100. Other people’s words in your transcript count as errors.",
+    meth: () => "Nemotron-3: NVIDIA’s diarizer, bound to you by the same 5 s voice sample · dashed: perfect speaker labels, a limit",
+    methSq: () => "Nemotron-3: NVIDIA’s diarizer, same 5 s sample",
+    draw: (c, W, y, sq) => {
+      const hy = header(c, 0, y, W, sq ? "Target-speaker WER, %" : "Target-speaker WER · words wrong per 100 of yours", ""); const pt = sq ? 25 : 29, gap = sq ? 18 : 30, cw = (W - gap) / 2, lw = sq ? 146 : 184, vroom = 50;
+      const G2 = [[sq ? "Calls, voices mixed" : `${N("v8/twer/calls/n")} calls, both voices mixed`, [["audioforge", "v8/twer/calls/ours", "us"], [sq ? "no filter" : "no speaker filter", "v8/twer/calls/none", "base"], ["perfect labels", "v8/twer/calls/oracle", "ref"]]],
+        ["Meetings (ICSI)", [["audioforge", "v8/twer/icsi/ours", "us"], ["Nemotron-3", "v8/twer/icsi/nemotron3", "base"], [sq ? "no filter" : "no speaker filter", "v8/twer/icsi/none", "base"]]]];
+      const mx = Math.max(...G2.flatMap(g => g[1].map(r => v(r[1])))); let yb = 0;
+      G2.forEach(([gl, rows], i) => { const x = i * (cw + gap), g = el("lab grp", gl, x, hy + 6, c), y0 = hy + 8 + g.offsetHeight;
+        rows.forEach(([lab, , kind], j) => place(el("lab" + (kind === "us" ? " us" : ""), lab, 0, 0, c), x, y0 + j * pt + pt / 2, 0, 0.5));
+        yb = barsAt(c, x + lw, cw - lw - vroom, y0, pt, rows, mx); if (!sq || !i) cue(c, x + lw, 0, yb + 6, true); });
+      return yb + 34; } },
+  vad: { title: "Voice activity detection",
+    plain: "Detecting speech. F1 balances missed and false speech (1 = perfect); miss rate = speech missed at equal false alarms.",
+    plainSq: "Detecting speech. F1 balances missed and false speech (1 = perfect); miss rate at 7.5 % false alarms.",
+    meth: () => `AMI meetings, ${N("v8/vad/n")} × 20 s · our head was trained on AMI labels`,
+    methSq: () => "AMI · our head was trained on AMI labels",
+    draw: (c, W, y, sq) => {
+      const lw = sq ? 118 : 190, gap = 22, pw = (W - lw - gap) / 2, pt = sq ? 25 : 29, vroom = 70;
+      const hy = Math.max(header(c, lw, y, pw, "F1", sq ? "" : "threshold 0.5"), header(c, lw + pw + gap, y, pw, "Miss rate, %", sq ? "" : `at ${N("v8/vad/fpr")} % false alarms`));
+      const rows = [["audioforge", "ours", "us"], [sq ? "Silero" : "Silero VAD", "silero", "base"], [sq ? "MarbleNet" : "NVIDIA MarbleNet", "marblenet", "base"]];
+      const y0 = hy + 8; labels(c, 0, y0, pt, rows);
+      barsAt(c, lw, pw - vroom, y0, pt, rows.map(([l, k, kd]) => [l, `v8/vad/${k}/f1`, kd]), 1);
+      const yb = barsAt(c, lw + pw + gap, pw - vroom, y0, pt, rows.map(([l, k, kd]) => [l, `v8/vad/${k}/miss`, kd]), Math.max(...rows.map(([, k]) => v(`v8/vad/${k}/miss`))));
+      cue(c, lw, lw + pw - 8, yb + 6, false); cue(c, lw + pw + gap, 0, yb + 6, true); return yb + 32; } },
+  cost: { title: "Cost",
+    plain: "Compute time for each 160 ms of audio. Under 160 ms keeps up with live speech.",
+    meth: () => "one 115M model + 5 small heads · no Silero · no diarizer",
+    methSq: () => "", inlineSq: true,
+    plainSq: "<b data-metric='1'>compute per 160 ms of audio</b>; under 160 ms keeps up with live speech",
+    draw: (c, W, y, sq) => {
+      const rows = [["Mac CPU, 2 threads", "v8/cost/cpu", "us"], ["Mac GPU (MPS)", "v8/cost/mps", "us"], ["RTX 5090 (PR #1)", "v8/cost/gpu", "us"]], pt = sq ? 25 : 29;
+      if (sq) {   // one row: header left, the three bars side by side, the 160 ms limit on each, the model line on the cue row
+        const SQL = ["Mac CPU", "Mac GPU", "RTX 5090"], g = 26, cw = (W - 2 * g) / 3, lw = 112, span = cw - lw - 8, hy = y - 6;
+        let yb = 0; rows.forEach((r, i) => { const x = i * (cw + g); labels(c, x, hy + 6, pt, [[SQL[i], r[1], r[2]]]); yb = barsAt(c, x + lw, span, hy + 6, pt, [r], 160, " ms");
+          line(x + lw + span, hy + 4, x + lw + span, yb - 2, "#6B7280", 2, true); const rt = el("rt", "160", 0, 0, c); place(rt, x + lw + span - 8, hy + 6 + pt / 2, 1, 0.5); });
+        cue(c, lw, 0, yb + 6, true); const m = el("meth", "one 115M model + 5 small heads · no Silero · no diarizer", 0, 0, c); m.style.whiteSpace = "nowrap"; place(m, W, yb + 4, 1, 0);
+        return yb + 32; }
+      const hy = header(c, 0, y, W, "Compute per 160 ms of audio", "ms, p50, the whole engine"), lw = 214, vroom = 8;
+      const y0 = hy + 8; labels(c, 0, y0, pt, rows); const span = W - lw - vroom, yb = barsAt(c, lw, span, y0, pt, rows, 160, " ms");
+      line(lw + span, y0 - 4, lw + span, yb + 4, "#6B7280", 2, true);   // the real-time limit
+      const r = el("rt", "160", 0, 0, c); place(r, lw + span, yb + 6, 1, 0);
+      cue(c, lw, 0, yb + 6, true); return yb + 34; } },
+};
+const FOOT = () => `Word accuracy is that of a 115M streaming model: ${N("v8/wer/libri/ours")} % WER on clean speech (LibriSpeech; Whisper small ${N("v8/wer/libri/whisper_small")} %), ${N("v8/wer/live/ours")} % on live calls vs ${N("v8/wer/live/livekit")} % for LiveKit’s default.<br>` +
+  "Same audio for every system in a card · Pipecat 1.12 / LiveKit Agents 1.8 defaults, each with Silero VAD, replayed without waiting for their speech-to-text (in their favour)<br>" +
+  "Calls: TurnBench and otoSpeech two-party calls · meetings: AMI, ICSI · clean speech: LibriSpeech · AMI is in Nemotron-3’s training data";
+const FOOT_SQ = () => `Word accuracy of a 115M streaming model: ${N("v8/wer/libri/ours")} % WER on clean speech (Whisper small ${N("v8/wer/libri/whisper_small")} %), ${N("v8/wer/live/ours")} % on live calls (LiveKit default ${N("v8/wer/live/livekit")} %) · ` +
+  "same audio for every system in a card · Pipecat 1.12 / LiveKit Agents 1.8 · AMI is in Nemotron-3’s training data";
+
+function card(k, x, y, w, sq) {
+  const C = CARDS[k], c = el("card", "", x, y); c.style.width = w + "px"; c.dataset.panel = k;
+  const t = el("ct", C.title, 0, 0, c); if (sq) t.style.fontSize = "26px";
+  let top = t.offsetHeight + (sq ? 4 : 8);
+  const p = wrap(el("plain", (sq && C.plainSq) || C.plain, 0, top, c), w); p.dataset.plain = "1";
+  if (sq && C.inlineSq) { const tr = t.offsetLeft + t.offsetWidth + 16; wrap(p, w - tr); place(p, tr, t.offsetTop + t.offsetHeight - 3, 0, 1); top = t.offsetHeight + 6; }
+  else top += p.offsetHeight + (sq ? 4 : 6);
+  if (C.note) { const n = wrap(el("note", C.note, 0, top, c), w); top += n.offsetHeight + (sq ? 4 : 6); }
+  top = C.draw(c, w, top + 6, sq);
+  const mh = (sq && C.methSq ? C.methSq : C.meth)();
+  if (mh) { const me = wrap(el("meth", mh, 0, top, c), w); top += me.offsetHeight; }
+  c.style.height = top + "px";
+  const sv = document.createElementNS("http://www.w3.org/2000/svg", "svg"); sv.setAttribute("width", w); sv.setAttribute("height", top);
+  Object.assign(sv.style, { position: "absolute", left: 0, top: 0, overflow: "visible" }); sv.innerHTML = svg.join(""); svg = []; c.prepend(sv);
+  return c;
+}
+function build(W, H) {
+  Object.assign(st.style, { width: W + "px", height: H + "px" }); st.innerHTML = ""; svg = []; window.BARCOUNT = { bars: 0, labels: 0 };
+  const M = 64, sq = H / W > 0.9;
+  const h1 = el("h1 abs", "audioforge: one 115M model for voice agents", M, M + 2); if (sq) h1.style.fontSize = "34px";
+  const sub = el("sub abs", sq ? "Standard metrics against LiveKit, Pipecat and NVIDIA models" : "Standard metrics against LiveKit, Pipecat and NVIDIA models, on the same audio for every system in a card", M, 0);
+  if (sq) sub.remove(); else place(sub, M, h1.offsetTop + h1.offsetHeight + 4);
+  const f = el("foot abs", (sq ? FOOT_SQ : FOOT)(), M, 0); f.style.width = (W - 2 * M) + "px"; f.style.top = (H - M - f.offsetHeight) + "px";
+  const top = sq ? h1.offsetTop + h1.offsetHeight + 12 : sub.offsetTop + sub.offsetHeight + 28, bot = f.offsetTop - (sq ? 12 : 20);
+  const cards = [];
+  if (!sq) {
+    const gx = 56, cw = (W - 2 * M - gx) / 2;
+    const a = card("calls", M, top, cw, false), b = card("ami", M + cw + gx, top, cw, false); cards.push(a, b);
+    const y2 = top + Math.max(a.offsetHeight, b.offsetHeight) + 30, g3 = 52, w1 = 660, w2 = 610, w3 = W - 2 * M - w1 - w2 - 2 * g3;
+    cards.push(card("twer", M, y2, w1, false), card("vad", M + w1 + g3, y2, w2, false), card("cost", M + w1 + w2 + 2 * g3, y2, w3, false));
+  } else {
+    const gw = W - 2 * M, a = card("turn", M, top, gw, true); cards.push(a);
+    const y2 = top + a.offsetHeight + 12, gx = 36, cl = 500, cr = gw - cl - gx;
+    const tw = card("twer", M, y2, cl, true), vd = card("vad", M + cl + gx, y2, cr, true); cards.push(tw, vd);
+    cards.push(card("cost", M, y2 + Math.max(tw.offsetHeight, vd.offsetHeight) + 10, gw, true));
+  }
+  window.LAYOUT = { bot, cardsBottom: Math.max(...cards.map(c => c.offsetTop + c.offsetHeight)) };
+  if (window.LAYOUT.cardsBottom > bot) window.BARCOUNT.overflow = window.LAYOUT.cardsBottom - bot;
+  if (new URLSearchParams(location.search).get("notext")) notext();
+}
+// removal test: hide the plain lines, notes, method lines, cues and footer; titles, metric headers and bar values stay
+function notext() { const s_ = document.createElement("style"); s_.textContent = "#stage .plain, #stage .note, #stage .meth, #stage .cue, #stage .foot, #stage .rt { color: transparent !important; } /* transparent !important */"; document.head.appendChild(s_); }
+window.build = build; window.notext = notext;
+const q = new URLSearchParams(location.search); if (q.get("w")) build(+q.get("w"), +q.get("h"));
+</script></body></html>

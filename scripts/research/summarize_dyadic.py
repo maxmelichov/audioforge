@@ -1,5 +1,5 @@
 """Collect runs/dyadic_bench_<corpus>.json (+ runs/turnbench_dev.json) into runs/dyadic_bench.json and print the
-markdown tables of research/DYADIC.md.   .venv/bin/python scripts/research/summarize_dyadic.py"""
+markdown tables of research/archive/DYADIC.md.   .venv/bin/python scripts/research/summarize_dyadic.py"""
 from __future__ import annotations
 
 import json

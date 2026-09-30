@@ -38,7 +38,7 @@ asyncio.run(main())
 ```bash
 git clone https://github.com/maxmelichov/audioforge && cd audioforge
 uv venv --python 3.12 .venv && uv pip install --python .venv/bin/python torch numpy pyyaml sentencepiece websockets
-# models: see research/NEMO_IMPORT.md and research/SORTFORMER_IMPORT.md (NVIDIA FastConformer streaming encoder,
+# models: see research/archive/NEMO_IMPORT.md and research/archive/SORTFORMER_IMPORT.md (NVIDIA FastConformer streaming encoder,
 # Streaming Sortformer v2, both CC-BY-4.0) and scripts/research/make_served_model.py for runs/stage1_served.afm
 .venv/bin/python -m audioforge.serve --asr runs/stage1_served.afm --diar runs/nemo_sortformer_v2.afm --port 8765
 ```

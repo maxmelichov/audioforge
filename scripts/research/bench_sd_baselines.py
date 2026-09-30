@@ -1,6 +1,6 @@
 """Dedicated VAD / diarization / speaker-verification models vs our heads, on the eval_stage1 AMI dev data.
 
-Same data and metric code as ``scripts/research/eval_stage1.py --tasks diar,spk`` (research/STAGE1.md):
+Same data and metric code as ``scripts/research/eval_stage1.py --tasks diar,spk`` (research/archive/STAGE1.md):
   VAD   64 x 20 s AMI dev diar windows, label = any speaker active (train.derive_labels), 80 ms frames.
         Finer outputs are max-pooled onto the 80 ms grid (sd.pool_probs), the rule the labels are built with.
         Pooled acc / recall / precision / F1 / FPR at several thresholds (a DET sweep), + CPU time.

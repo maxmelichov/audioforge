@@ -89,7 +89,9 @@ include = ["audioforge", "audioforge.*"]
 line-length = 120
 target-version = "py310"
 extend-exclude = ["research", "data", "runs", "models", "packages/audioforge-client",  # the client has its own config
-                  "integrations/turnbench_scorer"]  # vendored unchanged (MIT)
+                  "integrations/turnbench_scorer",  # vendored unchanged (MIT)
+                  "demo",  # image / video rendering pipeline, not package code
+                  "scripts/archive"]  # retired one-off drivers, kept as written
 
 [tool.ruff.lint]
 # pyflakes, syntax errors, import order and bugbear; style (line wrapping, quotes) is not enforced

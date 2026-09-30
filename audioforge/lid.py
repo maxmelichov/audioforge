@@ -1,5 +1,5 @@
 """Spoken language ID on the shared encoder: head files, attaching a head to a served model, and the serving rule
-(research/LID.md; ``audioforge.serve --lid``).
+(research/archive/LID.md; ``audioforge.serve --lid``).
 
 A LID head file (``save_head``) is a small torch archive {cfg, state_dict, labels, from_layers, meta}: the head is
 trained on a frozen served model, so only its own tensors are stored and it is attached at load time
@@ -12,7 +12,7 @@ import numpy as np
 import torch
 
 LID_NAME = "lid"
-HEAD_FILE = "lid_distill.pt"  # the served head of research/LID.md "Fix pass, 2026-09-29" (``serve --lid head``)
+HEAD_FILE = "lid_distill.pt"  # the served head of research/archive/LID.md "Fix pass, 2026-09-29" (``serve --lid head``)
 HEAD_MAX_MS = 3000.0  # its pre-registered rule: announce at the threshold, or the top language after 3 s of speech
 
 
@@ -76,7 +76,7 @@ class LangDecider:
     {"type": "language", "t", "language", "confidence"} when (a) at least ``min_ms`` of pooled audio has been seen,
     (b) max p >= ``threshold`` and (c) the top language differs from the last announced one; else None.
     ``max_ms`` (None = off): if nothing has been announced after ``max_ms`` of pooled audio, the top language is
-    announced anyway (evidence threshold or timeout, research/LID.md fix pass)."""
+    announced anyway (evidence threshold or timeout, research/archive/LID.md fix pass)."""
 
     def __init__(self, labels, threshold: float = 0.8, min_ms: float = 1000.0, frame_ms: float = 80.0,
                  max_ms: float | None = None):
@@ -125,7 +125,8 @@ class LIDStream:
         import time
         t0 = time.perf_counter()
         x = self.m.head_input(self.name, enc, hid)
-        keep = torch.tensor([[v > self.vad_gate for v in vad]]) if self.vad_gate is not None else None
+        keep = (torch.tensor([[v > self.vad_gate for v in vad]], device=x.device) if self.vad_gate is not None
+                else None)
         z = self.head.step(x, self.state, keep=keep, decay=self.decay).softmax(-1)[0]
         out = []
         for j in range(z.shape[0]):
@@ -137,7 +138,7 @@ class LIDStream:
         return out
 
 
-# the 17 FLEURS languages of research/LID.md (default label set of the AmberNet backend)
+# the 17 FLEURS languages of research/archive/LID.md (default label set of the AmberNet backend)
 DEFAULT_LANGS = ["en", "he", "ar", "ru", "es", "fr", "de", "pt", "it", "nl", "pl", "uk", "tr", "fa", "hi", "zh", "ja"]
 
 
@@ -147,7 +148,7 @@ class AmberNetLIDStream:
     classifies the last ``window_s`` s of it when the pooled speech first reaches each of ``checkpoints_ms`` (those
     below ``min_ms`` are skipped) and then every ``period_ms`` of new speech; its posterior restricted (renormalised)
     to ``labels`` goes through the same ``LangDecider``. AmberNet costs 16-81 ms per call on 2 CPU threads (1-8 s)
-    (research/LID.md), so it is not run per 160 ms chunk: the default schedule is ~6 calls in the first 8 s of speech,
+    (research/archive/LID.md), so it is not run per 160 ms chunk: the default schedule is ~6 calls in the first 8 s of speech,
     then one per 4 s (RTF ~0.02-0.03). Same interface as ``LIDStream`` (``feed_audio`` is called by
     ``serve.ASRStream`` with the raw samples first)."""
 

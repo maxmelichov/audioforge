@@ -1,4 +1,4 @@
-"""research/IMPROVEMENTS.md section 2b: a fast path for the head-gated turn rule (the user's comparison with
+"""research/archive/IMPROVEMENTS.md section 2b: a fast path for the head-gated turn rule (the user's comparison with
 smart-turn's ~225 ms decision: 200 ms Silero stop + 25 ms inference).
 
 hybrid_dyn (shipped) = head >= theta OR Silero silence - clamp(75 - 55 p, 2, 75) > offset: it cannot fire before

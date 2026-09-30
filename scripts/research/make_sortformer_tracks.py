@@ -16,7 +16,7 @@ data/ami/cache/sortformer/<split>/<key>.npy (key = ext_tracks.example_key: meeti
                           FIFO 188, update 144, cache 188, encoder left context 188) - the same procedure as
                           scripts/research/eval_stage1.py; slow (~2.4 s / window) -> <key>.stream.npy
 
-End-of-file flush fix (research/EOT_BENCH_V2.md, "flush artifact"): fed only the window audio, the diarizer flushes
+End-of-file flush fix (research/archive/EOT_BENCH_V2.md, "flush artifact"): fed only the window audio, the diarizer flushes
 at the window end with a shrinking right context, so the last ~13 frames (exactly the post-turn-end frames every turn
 decision is scored / trained on) differ from what a live stream computes (|dp| up to ~0.6). Streaming tracks are now
 computed on the window audio plus PAD_FRAMES = C + R + 1 frames (1.12 s) beyond the window end and cropped to the
@@ -303,7 +303,7 @@ def main():
         flush_fix = None if a.pad_mode == "none" else {
             "pad_mode": a.pad_mode, "pad_frames": pad_frames(cfg), "regen_v1": bool(a.regen_v1 or man.get("stream_v1")),
             "what": "window audio + pad frames beyond the end (the following meeting audio; at the meeting end what is left), cropped "
-                    "to T: no end-of-file flush inside the window (research/EOT_BENCH_V2.md)"}
+                    "to T: no end-of-file flush inside the window (research/archive/EOT_BENCH_V2.md)"}
     have = {s: [k for k in keys if xt.track_path(d, k, s).exists()] for s in xt.SOURCES}
     man.update({"dataset": a.dataset, "diar_ckpt": a.diar_ckpt, "split": a.split, "window_sec": ws, "trail_sec": a.trail_sec,
                 "meetings": default_meetings(a.dataset, a.split), "n_examples": n_all,

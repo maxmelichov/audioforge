@@ -3,7 +3,7 @@
     import audioforge
 
     fe = audioforge.load()                       # single-model mode, the models audioforge-download installed
-    s = fe.session(turn_policy="hybrid_dyn")
+    s = fe.session()                             # single mode: turn_policy vad_head (research/EOT_LATENCY.md)
     s.enroll(fe.voiceprint(user_clean_speech))   # the user's stored print: >= 5 s of clean speech (10 s for meetings)
     for block in blocks_of_pcm:                  # any length; int16 or float32, 16 kHz unless sample_rate= says so
         for ev in s.feed(block):
@@ -33,8 +33,8 @@ class Session:
         from .serve import Session as _ServeSession
         from .server.streams import Resampler
 
-        cfg = SessionConfig()
-        warnings = cfg.update(config)
+        cfg = SessionConfig(turn_policy=frontend.engine.turn_policy)  # the engine's default (single mode: vad_head)
+        warnings = cfg.update({k: v for k, v in config.items() if not (k == "turn_policy" and v is None)})
         if warnings:
             raise ValueError("; ".join(warnings))
         self.config = cfg
@@ -97,12 +97,13 @@ class Frontend:
         5 s of the user alone (10 s for meetings); research/SINGLE_MODEL.md A2 measured shorter and live prints."""
         return _voiceprint(self.engine.asr, audio, sample_rate)
 
-    def session(self, turn_policy: str = "timeout", *, frames: bool = False, **config: Any) -> Session:
+    def session(self, turn_policy: str | None = None, *, frames: bool = False, **config: Any) -> Session:
         """A new stream. ``config`` takes the protocol's session options: ``timeout_ms``, ``eot_threshold``,
-        ``sample_rate`` (default 16000); ``turn_policy`` is one of ``audioforge.serve.POLICIES``."""
+        ``sample_rate`` (default 16000); ``turn_policy`` is one of ``audioforge.serve.POLICIES`` (None: the engine's
+        default, ``vad_head`` in single mode, ``timeout`` in room mode)."""
         return Session(self, frames=frames, turn_policy=turn_policy, **config)
 
-    def run_file(self, path: str | os.PathLike, turn_policy: str = "timeout", block_ms: int = 160,
+    def run_file(self, path: str | os.PathLike, turn_policy: str | None = None, block_ms: int = 160,
                  frames: bool = False) -> list[dict]:
         """Every event of an audio file (any rate, resampled to 16 kHz), fed in ``block_ms`` blocks."""
         from .data import load_wav
@@ -118,14 +119,15 @@ class Frontend:
 
 def load(diarizer: str | None = None, models_dir: str | Path | None = None, *, asr: str | None = None,
          diar: str | None = None, threads: int = 2, warmup: bool = True, mode: str | None = None,
-         **engine_options: Any) -> Frontend:
+         device: str = "cpu", **engine_options: Any) -> Frontend:
     """Load the served models (as ``audioforge-serve`` does) and return a ``Frontend``.
 
     ``mode``: ``single`` (the default, as ``audioforge-serve``) or ``room``; without ``mode``, a ``diarizer``, ``diar``
     or ``final_asr`` selects room. ``diarizer`` (room): ``nemotron3`` (default if downloaded) or ``sortformer``;
     ``models_dir``: where
     ``audioforge-download`` put them (default ``$AUDIOFORGE_HOME``, else ``<repo>/models``, else
-    ``~/.cache/audioforge``); ``asr`` / ``diar`` override the paths. ``engine_options`` are
+    ``~/.cache/audioforge``); ``asr`` / ``diar`` override the paths. ``device``: ``cpu`` (default), ``mps`` (Apple GPU) or ``cuda`` /
+    ``cuda:N`` (as ``audioforge-serve --device``). ``engine_options`` are
     ``audioforge.serve.Engine.load`` keyword arguments (the server flags with underscores, e.g. ``enroll``,
     ``final_asr``, ``diar_labels``). ``mode="single"`` is ``audioforge-serve --mode single``: the one 115M model
     for a known user (TS-VAD turn input, no diarizer loaded, the distilled LID head, no final ASR); pass the user's
@@ -158,7 +160,7 @@ def load(diarizer: str | None = None, models_dir: str | Path | None = None, *, a
             if p is None:
                 raise FileNotFoundError(f"mode='single' needs the TS-VAD head {TSVAD_FILE}; run: audioforge-download")
             opts["tsvad"] = str(p)
-        engine = Engine.load(asr or need("asr"), None, "cpu", threads=threads, **opts)
+        engine = Engine.load(asr or need("asr"), None, device, threads=threads, **opts)
         if warmup:
             engine.warmup()
         return Frontend(engine)
@@ -173,7 +175,7 @@ def load(diarizer: str | None = None, models_dir: str | Path | None = None, *, a
         p = hub.find_model("tdt_v3", models_dir)
         if p is not None:
             os.environ["AUDIOFORGE_TDT_V3"] = str(p)
-    engine = Engine.load(asr or need("asr"), diar or need(diarizer), "cpu", threads=threads, **opts)
+    engine = Engine.load(asr or need("asr"), diar or need(diarizer), device, threads=threads, **opts)
     if warmup:
         engine.warmup()
     return Frontend(engine)

@@ -4,7 +4,7 @@ agent's transcriptions (the ``lk.transcription`` text streams AgentSession publi
     LIVEKIT_URL=ws://127.0.0.1:7880 LIVEKIT_API_KEY=devkey LIVEKIT_API_SECRET=secret \
     PYTHONPATH=. .venv/bin/python examples/livekit_publish_wav.py WIN.wav [--room audioforge-test] [--wait 3]
 
-Not run in this repo's tests (needs a LiveKit server); see research/INTEGRATION.md.
+Not run in this repo's tests (needs a LiveKit server); see research/archive/INTEGRATION.md.
 """
 from __future__ import annotations
 

@@ -36,9 +36,11 @@ How to read the turn-taking numbers:
 - **Binding** says which diarizer column counts as "the user". `oracle` uses the labels (an upper bound).
   `causal_dominant` is label-free and deployable; the server's default 5 s dominant rule is the same kind of rule,
   not the identical rule.
-- **Dead air / cut-ins (product tests).** Dead air is the time from the true end of the user's turn to the moment
-  the agent framework (Pipecat or LiveKit) receives the decision. A cut-in is a decision while the user keeps
-  talking. These were measured live through the integrations.
+- **End-of-turn latency / false interruptions (product tests).** End-of-turn latency (called "dead air" in the
+  older rows below) is the time from the true end of the user's turn to the moment the agent framework (Pipecat or
+  LiveKit) receives the decision. A false interruption (called a "cut-in" below) is a decision while the user keeps
+  talking. These were measured live through the integrations. The standard definitions and the current scorecard
+  are in [research/METRICS.md](../research/METRICS.md).
 - The benchmark fits its own timeout length (for example k 35-39 frames, about 3 s, for the causal timeout at
   6 s). The server's default timeout is 1000 ms. Benchmark rows are therefore not the served default operating point
   unless the text says so. The product tests use the served values.
@@ -48,7 +50,7 @@ How to read the turn-taking numbers:
 Installed entry point (from `pip install "audioforge[serve]"` or a source checkout):
 
 ```bash
-audioforge-download                 # fetch + verify the served ASR, the TS-VAD and LID heads, Silero
+audioforge-download                 # fetch + verify the served ASR, the TS-VAD and LID heads
 audioforge-serve                    # single-model mode (the default, §13): 127.0.0.1:8765, 2 threads
 audioforge-download --diarizer nemotron3 && audioforge-serve --mode room   # room mode: + NVIDIA Nemotron-3-Diarization
 ```
@@ -76,7 +78,7 @@ When `--asr` / `--diar` are not given, the launcher fills them from the models d
 (`stage1_served.afm`, and `nemo_nemotron3_diar.afm` if present, else `nemo_sortformer_v2.afm`). In a source checkout it falls back
 to the legacy `runs/` paths. It also fills in the optional model files that some flags need when they are in the
 models directory: TitaNet for `--enroll after_agent|explicit`, AmberNet for `--lid ambernet`, Parakeet-TDT v3 for
-`--final-asr tdt_v3`, and Silero. If a needed model is missing, it exits with the `audioforge-download` command to
+`--final-asr tdt_v3`, and Silero (room mode). If a needed model is missing, it exits with the `audioforge-download` command to
 run. Every other flag is passed to `audioforge.serve` unchanged.
 
 The module can also be run directly, with explicit model paths:
@@ -95,9 +97,9 @@ measured on `stage1_served.afm` (`audioforge-download --heads-version 0.1` rebui
 
 `stage1_served.afm` is the measured model: `stage1_turn_v3_trail6` with `heads.spk` transplanted from
 `stage1_spk_relational`; the other 747 tensors are bit-identical
-([INTEGRATION.md §8](../research/INTEGRATION.md#8-shipped-rules-2026-09-26)). Older documents and the `--asr` help
+([INTEGRATION.md §8](../research/archive/INTEGRATION.md#8-shipped-rules-2026-09-26)). Older documents and the `--asr` help
 text use `runs/stage1_heads_pretrained.afm`. That is the previous model: its turn head reads session frames and
-never reaches θ 0.998 ([INTEGRATION.md §1](../research/INTEGRATION.md#1-executive-summary)).
+never reaches θ 0.998 ([INTEGRATION.md §1](../research/archive/INTEGRATION.md#1-executive-summary)).
 
 The default port is 8765 in the server, `scripts/stream_client.py` and both adapters. Some research documents use
 `--port 8791`, because port 8765 was taken on the measurement machine; that is an override, not a default.
@@ -115,7 +117,7 @@ linked in the last column explain each group and what was measured about it.
 | flag | default | meaning | more |
 |---|---|---|---|
 | `--models-dir DIR` | `$AUDIOFORGE_HOME`, else `<repo>/models`, else `~/.cache/audioforge` | where audioforge-download put the models (`audioforge-serve` only) | [§1](#1-launching) |
-| `--mode {single,room}` | `single` (`room` when `--diarizer`, `--diar` or `--final-asr` is given) | preset. `single` (the default): everything from the one 115M checkpoint, for a known user: adds `--turn-input tsvad --diar-off --lid head --enroll after_agent_arm --dyn-wait-ms 2000,960`, loads no diarizer and no final-ASR worker (Silero VAD, 2 MB, when present, for `hybrid_dyn`), and refuses `--diar`, `--diarizer`, `--final-asr`, `--lid ambernet`, `--diar-embed titanet`; the voice print comes from an `enroll` message with an embedding (store >= 5 s of clean speech, 10 s for meetings), else live after `agent_end`. `room`: general diarization with NVIDIA Nemotron-3-Diarization (or `--diarizer sortformer`) next to the 115M model ([§7](#7-diarizer)). Flags you pass yourself win (`audioforge-serve` only) | [§13](#13-single-model-mode---mode-single) |
+| `--mode {single,room}` | `single` (`room` when `--diarizer`, `--diar` or `--final-asr` is given) | preset. `single` (the default): everything from the one 115M checkpoint, for a known user: adds `--turn-input tsvad --diar-off --lid head --enroll after_agent_arm --turn-policy vad_head --dyn-wait-ms 2000,960`, loads no diarizer, no final-ASR worker and no Silero (the default turn rule `vad_head` reads the model's own VAD, turn and TS-VAD heads; `hybrid_dyn` needs `--silero`), and refuses `--diar`, `--diarizer`, `--final-asr`, `--lid ambernet`, `--diar-embed titanet`; the voice print comes from an `enroll` message with an embedding (store >= 5 s of clean speech, 10 s for meetings), else live after `agent_end`. `room`: general diarization with NVIDIA Nemotron-3-Diarization (or `--diarizer sortformer`) next to the 115M model ([§7](#7-diarizer)). Flags you pass yourself win (`audioforge-serve` only) | [§13](#13-single-model-mode---mode-single) |
 | `--diarizer {nemotron3,sortformer}` | room mode: `nemotron3` if downloaded, else `sortformer` | room mode: which downloaded diarizer to pass as `--diar`; `nemotron3` also adds `--diar-pool max --diar-left 1`. For either diarizer the launcher adds `--shed-diar hold`; flags you pass yourself win (`audioforge-serve` only) | [§7.3](#73-nemotron-3-diarization-as-the-diarizer) |
 | `--asr PATH` | required (`audioforge-serve`: from the models directory) | ASR + heads `.afm` (`stage1_served_v2.afm`, the block-4 VAD build; `stage1_served.afm` = the measured v1) | [§3](#3-models-threads-and-speed) |
 | `--diar PATH` | required unless `--diar-off` (`audioforge-serve`: from the models directory; none with `--mode single`) | diarizer `.afm`: the Streaming Sortformer v2 or the Nemotron-3-Diarization import | [§7](#7-diarizer) |
@@ -144,6 +146,9 @@ linked in the last column explain each group and what was measured about it.
 | `--silero PATH` | `$AUDIOFORGE_DATA/silero/silero_vad_v5.onnx` | Silero VAD v5 ONNX for `hybrid_silero` / `hybrid_dyn`; loaded at the first session that uses such a policy, or at start when the flag is given (advanced) | [§4](#4-turn-policies-configturn_policy) |
 | `--silero-timeout-ms MS` | `2640` | hybrid_silero: any-speaker Silero silence that ends the turn (advanced) | [§4](#4-turn-policies-configturn_policy) |
 | `--dyn-wait-ms CAP,FLOOR` | the served rule: 6000,1600 | `hybrid_dyn`: the Silero-silence wait at head posterior 0 (CAP) and 1 (FLOOR), linear in between (plus the rule's offset); `--mode single` sets `2000,960` (research/SINGLE_MODEL.md A1) (advanced) | [§4](#4-turn-policies-configturn_policy) |
+| `--turn-policy {timeout,timeout_quiet,timeout_any,head,both,hybrid,hybrid_silero,hybrid_dyn,vad_head}` | `timeout` | the `turn_policy` of a session whose `config` does not name one (a client's `config` still wins); `--mode single` sets `vad_head` (research/EOT_LATENCY.md) (advanced) | [§4](#4-turn-policies-configturn_policy) |
+| `--vad-wait-ms K,FALLBACK` | `160,640` | `vad_head` (no Silero): the served VAD head's silence (VAD < 0.4) that the head path needs (K, with the turn head p >= theta, default 0.99) and the silence that ends the turn on its own (FALLBACK, 0 = none) (research/EOT_LATENCY.md) (advanced) | [§4](#4-turn-policies-configturn_policy) |
+| `--others-wait-ms USER_SIL,HOLD` | `960,640` | `vad_head` with an enrolled TS-VAD track (`--turn-input tsvad`): the turn also ends when the user's own silence (P(user) < 0.5) reaches USER_SIL while P(other) >= 0.9 has held for HOLD, i.e. another speaker has the floor, without waiting for the room to go quiet (0 = off; research/EOT_LATENCY.md) (advanced) | [§4](#4-turn-policies-configturn_policy) |
 
 **transcripts**
 
@@ -154,7 +159,8 @@ linked in the last column explain each group and what was measured about it.
 | `--final-asr-threads N` | `2` | --final-asr: torch threads of the offline model (advanced) | [§8](#8-final-asr-and-dual-lookahead) |
 | `--final-asr-device DEV` | `cpu` | --final-asr: cpu &#124; mps &#124; cuda (advanced) | [§8](#8-final-asr-and-dual-lookahead) |
 | `--asr-lookahead R` | off | second, text-only ASR pass at attention context [70, R], e.g. 13 (advanced) | [§8](#8-final-asr-and-dual-lookahead) |
-| `--asr-vad-gate P` | off | do not decode transducer tokens on frames whose served VAD <= P once `--asr-vad-hangover-ms` of such frames have passed (bounds hallucinated text on long non-speech; research/BULLETPROOF.md) (advanced) |  |
+| `--asr-chunk-ms {80,160}` | the model's (160) | streaming chunk of the one ASR pass (transcript, VAD, turn and TS-VAD heads): 160 = attention context [70,1] (the model's default) or 80 = [70,0], no lookahead (up to 80 ms earlier frames; +0.19 WER on LibriSpeech, +1.3 on AMI; the heads were trained at [70,1]; research/LATENCY_BUDGET.md) (advanced) |  |
+| `--asr-vad-gate P` | off | do not decode transducer tokens on frames whose served VAD <= P once `--asr-vad-hangover-ms` of such frames have passed (bounds hallucinated text on long non-speech; research/archive/BULLETPROOF.md) (advanced) |  |
 | `--asr-vad-hangover-ms MS` | `1200.0` | --asr-vad-gate: decoding continues this long after speech (advanced) |  |
 
 **language ID**
@@ -165,7 +171,7 @@ linked in the last column explain each group and what was measured about it.
 | `--lid-threshold P` | `0.9` | --lid: posterior needed to announce a language (advanced) | [§9](#9-spoken-language-id---lid) |
 | `--lid-min-ms MS` | `1000.0` | --lid: pooled speech needed before the first announcement (advanced) | [§9](#9-spoken-language-id---lid) |
 | `--lid-max-ms MS` | 3000 with `--lid head`, else off (0 = off) | --lid head/file: announce the top language after this much speech anyway (advanced) | [§9](#9-spoken-language-id---lid) |
-| `--lid-langs CODES` | the 17 languages of research/LID.md | --lid ambernet: comma-separated language codes to choose from (advanced) | [§9](#9-spoken-language-id---lid) |
+| `--lid-langs CODES` | the 17 languages of research/archive/LID.md | --lid ambernet: comma-separated language codes to choose from (advanced) | [§9](#9-spoken-language-id---lid) |
 
 **diarizer tuning**
 
@@ -185,8 +191,8 @@ linked in the last column explain each group and what was measured about it.
 
 | flag | default | meaning | more |
 |---|---|---|---|
-| `--perf SPEC` | `default` | CPU inference fast paths of `audioforge.perf`: `default` = the exact set (same outputs), `none`, `all` (adds float-rounding ones), or a list such as `default,-linear_t` (research/PERFORMANCE.md) (advanced) | [§3](#3-models-threads-and-speed) |
-| `--device DEV` | `cpu` | only cpu is supported (others fall back to cpu) (advanced) | [§3](#3-models-threads-and-speed) |
+| `--perf SPEC` | `default` | CPU inference fast paths of `audioforge.perf`: `default` = the exact set (same outputs), `none`, `all` (adds float-rounding ones), or a list such as `default,-linear_t` (research/archive/PERFORMANCE.md) (advanced) | [§3](#3-models-threads-and-speed) |
+| `--device DEV` | `cpu` | cpu, or mps / cuda / cuda:N (opt-in GPU; others fall back to cpu) (advanced) | [§3](#3-models-threads-and-speed) |
 | `--no-fast-conv` | off | keep PyTorch's Conv1d path in the conformer convolutions (slower) (advanced) | [§3](#3-models-threads-and-speed) |
 | `--no-warmup` | off | skip the 2 s warm-up session at start (advanced) | [§3](#3-models-threads-and-speed) |
 
@@ -218,7 +224,7 @@ produces the partials and finals. The VAD head gives `frame.vad`, and the turn h
 
 **`--threads`** sets the torch threads of the single worker thread that runs every session's compute. Measured
 (server alone, 1.04 s diarizer setting, `stage1_heads_pretrained`, 1x, load 3-6, n = 3 AMI windows + 1 LibriSpeech
-utterance per thread count; [INTEGRATION.md §4](../research/INTEGRATION.md#4-measured-tables)):
+utterance per thread count; [INTEGRATION.md §4](../research/archive/INTEGRATION.md#4-measured-tables)):
 
 | threads | RTF | chunk ms p50 / p95 | max backlog ms |
 |---|---|---|---|
@@ -229,7 +235,7 @@ With the current served stack (`stage1_served`, 0.32 s Sortformer, `--turn-input
 0.795 / 0.802 (Pipecat / LiveKit sessions) at 2 threads: ASR pass 0.149-0.151, turn pass 0.150, diarizer
 0.496-0.500. Peak RSS was 3581 / 3586 MB. Scope: 69 clip-conditions, 3489 s of audio per framework
 ([E2E_FINAL.md §7](../research/E2E_FINAL.md#7-rtf-by-component)). Concurrent sessions share the one worker, and
-concurrency has not been load-tested ([INTEGRATION.md §6](../research/INTEGRATION.md#6-product-readiness)).
+concurrency has not been load-tested ([INTEGRATION.md §6](../research/archive/INTEGRATION.md#6-product-readiness)).
 
 **`--perf`** (2026-09-28). The exact fast paths of `audioforge.perf` are on by default: column-major storage of the
 encoder / diarizer `nn.Linear` weights (Accelerate runs the 2-row GEMMs of a 160 ms step 3-4x faster in that
@@ -237,13 +243,13 @@ layout), a cache of the relative-position projection per attention layer, one sh
 the speaker-conditioned turn pass, and a cached RNNT prediction projection between emitted tokens. Protocol messages
 are identical to `--perf none` (2 of 1112 `eot` values differ in the 5th decimal on the 5 AMI windows, everything
 else bit-identical); the per-component costs before and after are in
-[PERFORMANCE.md §2-3](../research/PERFORMANCE.md). `--perf none` restores the 2026-09-27 code path.
+[PERFORMANCE.md §2-3](../research/archive/PERFORMANCE.md). `--perf none` restores the 2026-09-27 code path.
 
 **`--no-fast-conv`.** By default the conformer convolutions of both encoders are re-bound to an equivalent
 unfold / `F.linear` CPU path. Tokens stay identical, and diarizer probabilities differ by at most 3e-7. This
 path is what lets the server keep up: RTF 0.45-0.52 with it, 1.13-1.21 without it (the server then falls behind);
 2.5x end to end, verified, 2 threads, 1x
-([INTEGRATION.md §1](../research/INTEGRATION.md#1-executive-summary)). Use the flag only for debugging.
+([INTEGRATION.md §1](../research/archive/INTEGRATION.md#1-executive-summary)). Use the flag only for debugging.
 
 **`--device`.** The streaming server is CPU-only (fast-conv and per-frame decoding). `--final-asr-device` can
 put the offline final-ASR model on `mps` or `cuda`.
@@ -266,15 +272,16 @@ the diarizer column with the most activity (sum of probabilities) over the last 
 | `hybrid` | primary-silence timeout OR head ≥ `eot_threshold`. One `turn_end` per turn, at the earlier of the two decision times, tagged `hybrid`; the later path's firing for the same turn is dropped | `timeout_ms`, `eot_threshold` (0.98) | the hybrid event |
 | `hybrid_silero` | head ≥ θ OR **any-speaker Silero VAD v5 silence** ≥ `--silero-timeout-ms` (2640 ms). Silero runs on 32 ms chunks through Pipecat's VAD state machine (confidence 0.7, start / stop 0.2 s). One firing per silence run | `eot_threshold` (default θ 0.99828); `timeout_ms` is not used | the hybrid event |
 | `hybrid_dyn` | head ≥ θ OR Silero silence ≥ clamp(80 − 55 p, 7, 80) frames, where p is the head's posterior on the same frame: 6.4 s at p = 0, 4.24 s at p = 0.5, 2.48 s at p = 0.9, 2.0 s at p = 1 | `eot_threshold` (default θ 0.998283); `timeout_ms` is not used | the hybrid event |
+| `vad_head` | **`--mode single`'s default** (`--turn-policy vad_head`), no Silero: the served VAD head below 0.4 for ≥ K frames AND the turn head p ≥ θ, OR that silence ≥ FALLBACK (`--vad-wait-ms K,FALLBACK`, default `160,640`), OR, with an enrolled TS-VAD track, the user's own silence (P(user) < 0.5) reaching USER_SIL while P(other) ≥ 0.9 has held for HOLD: someone else has the floor, so the turn does not wait for the room to go quiet (`--others-wait-ms USER_SIL,HOLD`, default `960,640`, 0 = off). One `turn_end` per user turn, tagged `vad_head`. Two-party calls: EOT p50 956 ms vs 1290 ms for `hybrid_dyn 2000,960`, false interruptions 20.2 % vs 17.4 %, missed 7.3 % vs 6.4 %; AMI: EOT p50 1326 vs 1807 ms, missed 33.5 % vs 39.0 %, false interruptions 10.5 % vs 8.0 % (research/EOT_LATENCY.md, after the TS-VAD print fix) | `eot_threshold` (default θ 0.99) | the vad_head event |
 
 Notes:
 
 - `timeout_ms` is clamped to [80, 4840]. With the default 1000 ms, 13 silent frames are needed. The decision also
   waits for the diarizer column to be finalized, so `turn_end.t` is at least the last primary frame + 1.0 s + the
-  column lag (0.08-0.24 s with the default diarizer setting) ([INTEGRATION.md §2](../research/INTEGRATION.md#2-architecture)).
+  column lag (0.08-0.24 s with the default diarizer setting) ([INTEGRATION.md §2](../research/archive/INTEGRATION.md#2-architecture)).
 - `hybrid_silero` / `hybrid_dyn` must be in the first `config`, before any audio. They load the Silero ONNX once per
   server: one shared session, about 0.11 ms per 32 ms chunk (RTF +0.003) and about +24 MB RSS
-  ([INTEGRATION.md §8](../research/INTEGRATION.md#8-shipped-rules-2026-09-26)). They need `onnxruntime`
+  ([INTEGRATION.md §8](../research/archive/INTEGRATION.md#8-shipped-rules-2026-09-26)). They need `onnxruntime`
   (`audioforge[serve]`).
 - Setting `eot_threshold` in the config replaces the frozen θ of `hybrid_silero` / `hybrid_dyn`.
 - `--silero-timeout-ms` is a server-wide flag, not a per-session config key.
@@ -286,32 +293,32 @@ Product rows use the served model and the values in the row.
 
 | policy | benchmark: miss at ≤ 5 % FC | product (live, Pipecat / LiveKit) | sources |
 |---|---|---|---|
-| `timeout` | eot-bench v2, AMI dev n = 974, 6 s horizon, causal binding: **74.8 % [72.0, 77.5]** (floor-open 46.1 %) on 1.04 s Sortformer tracks; 70.1 % [67.2, 72.9] (open 36.5 %, held-out FC 8.4 %) on 0.32 s tracks. 2 s horizon: 92.5 %. STAGE1, AMI dev n = 200, column chosen with the oracle primary (optimistic): 38.4 % at k 21 frames (P50 2640 ms) | 1000 ms, 5 AMI windows, 0.32 s diarizer: median dead air **1923 ms / 1684 ms**, **3 / 5 cut-ins**. E2E, TurnBench dev user channel (16 clips): 1353 / 1330 ms, 1.32 / 2.22 cut-ins per min, 23 % / 23 % missed within 3 s | [EOT_BENCH_V2 §7](../research/EOT_BENCH_V2.md#7-hybrid-head-or-timeout-under-leak-free-scoring-and-the-032-s-diarizer-setting-2026-09-26), [STAGE1](../research/STAGE1.md#consolidated-turn-taking-results-2026-09-26-ami-dev-n200-misses-at-5-per-turn-false-cutoffs), [INTEGRATION §4](../research/INTEGRATION.md#default-preset-low_latency_032-032-s-pipecat-and-livekit-dead-air-re-run-2026-09-26), [E2E_FINAL §4](../research/E2E_FINAL.md#4-results-by-clip-set) |
-| `timeout_quiet` | STAGE1, AMI dev n = 200, Sortformer streaming (1.04 s): "primary silent & nobody else" misses **66-68 %**, against 38.4 % for the plain timeout on the same track | not measured | [STAGE1 turn head v3](../research/STAGE1.md#turn-head-v3-2026-09-26-all-four-diarizer-columns--silence-counters--future-activity-aux-trained-on-streaming-tracks) |
-| `head` | eot-bench v2, n = 974, 6 s, causal: **66.5 % [63.4, 69.7]** (open 57.3 %) on 1.04 s tracks; 65.8 % [62.6, 68.7] (open 55.0 %) on 0.32 s tracks. 2 s horizon: 79.8 % | θ 0.98, `--turn-input diar`, 5 AMI windows: Pipecat delivered a turn end on only 2 of 5 windows (median 1662 ms); LiveKit median 1237 ms on 4 of 5, 1 cut-in, plus firings inside the user's speech | [EOT_BENCH_V2 §7](../research/EOT_BENCH_V2.md#7-hybrid-head-or-timeout-under-leak-free-scoring-and-the-032-s-diarizer-setting-2026-09-26), [INTEGRATION §4b](../research/INTEGRATION.md#4b-served-stage1_turn_v3_trail6-head-with-diarizer-input---turn-input-diar-032-s-preset-2026-09-26) |
+| `timeout` | eot-bench v2, AMI dev n = 974, 6 s horizon, causal binding: **74.8 % [72.0, 77.5]** (floor-open 46.1 %) on 1.04 s Sortformer tracks; 70.1 % [67.2, 72.9] (open 36.5 %, held-out FC 8.4 %) on 0.32 s tracks. 2 s horizon: 92.5 %. STAGE1, AMI dev n = 200, column chosen with the oracle primary (optimistic): 38.4 % at k 21 frames (P50 2640 ms) | 1000 ms, 5 AMI windows, 0.32 s diarizer: median dead air **1923 ms / 1684 ms**, **3 / 5 cut-ins**. E2E, TurnBench dev user channel (16 clips): 1353 / 1330 ms, 1.32 / 2.22 cut-ins per min, 23 % / 23 % missed within 3 s | [EOT_BENCH_V2 §7](../research/archive/EOT_BENCH_V2.md#7-hybrid-head-or-timeout-under-leak-free-scoring-and-the-032-s-diarizer-setting-2026-09-26), [STAGE1](../research/archive/STAGE1.md#consolidated-turn-taking-results-2026-09-26-ami-dev-n200-misses-at-5-per-turn-false-cutoffs), [INTEGRATION §4](../research/archive/INTEGRATION.md#default-preset-low_latency_032-032-s-pipecat-and-livekit-dead-air-re-run-2026-09-26), [E2E_FINAL §4](../research/E2E_FINAL.md#4-results-by-clip-set) |
+| `timeout_quiet` | STAGE1, AMI dev n = 200, Sortformer streaming (1.04 s): "primary silent & nobody else" misses **66-68 %**, against 38.4 % for the plain timeout on the same track | not measured | [STAGE1 turn head v3](../research/archive/STAGE1.md#turn-head-v3-2026-09-26-all-four-diarizer-columns--silence-counters--future-activity-aux-trained-on-streaming-tracks) |
+| `head` | eot-bench v2, n = 974, 6 s, causal: **66.5 % [63.4, 69.7]** (open 57.3 %) on 1.04 s tracks; 65.8 % [62.6, 68.7] (open 55.0 %) on 0.32 s tracks. 2 s horizon: 79.8 % | θ 0.98, `--turn-input diar`, 5 AMI windows: Pipecat delivered a turn end on only 2 of 5 windows (median 1662 ms); LiveKit median 1237 ms on 4 of 5, 1 cut-in, plus firings inside the user's speech | [EOT_BENCH_V2 §7](../research/archive/EOT_BENCH_V2.md#7-hybrid-head-or-timeout-under-leak-free-scoring-and-the-032-s-diarizer-setting-2026-09-26), [INTEGRATION §4b](../research/archive/INTEGRATION.md#4b-served-stage1_turn_v3_trail6-head-with-diarizer-input---turn-input-diar-032-s-preset-2026-09-26) |
 | `both` | not measured as a rule (it is `timeout` for the finals plus extra `head` events) | not measured | |
-| `hybrid` | eot-bench v2, n = 974, 6 s, causal: **61.9 % [58.7, 65.0]** (open 45.9 %) on 1.04 s tracks, at the fitted (θ ≈ 0.998, k 49-52 frames ≈ 4 s); 63.7 % [60.5, 67.0] on 0.32 s tracks. With oracle speaker activity (n = 200): 1.6 % miss at P50 560 ms | θ 0.998 / 1000 ms fires exactly when the timeout fires: same dead air and the same 3 / 5 cut-ins. θ 0.998 / 4000 ms: 0 cut-ins, median dead air 4522 ms (Pipecat) | [EOT_BENCH_V2 §7](../research/EOT_BENCH_V2.md#7-hybrid-head-or-timeout-under-leak-free-scoring-and-the-032-s-diarizer-setting-2026-09-26), [TURN_ERRORS §8](../research/TURN_ERRORS.md#8-hybrid-decision-rule-joint-θ-k-sweep-2026-09-26), [INTEGRATION §4b](../research/INTEGRATION.md#4b-served-stage1_turn_v3_trail6-head-with-diarizer-input---turn-input-diar-032-s-preset-2026-09-26) |
-| `hybrid_silero` | held-out ICSI, n = 1312, 6 s, frozen AMI point (θ 0.998285, k 33 = 2.64 s): **81.7 % [79.5, 83.9]**, floor-open **62.2 %**, FC 2.4 % per turn / 0.6 % per pause. The hybrid on the same set: 82.1 % / open 71.5 % (open Δ −9.3 [−14.7, −4.1]). AMI dev (exploratory, rule picked after seeing the table): 59.6 % [56.3, 62.6], open 34.3 %, held-out FC 6.6 % | 5 AMI windows: median dead air **2941 / 2921 ms** against the timeout's 1702 / 1676 ms (about +1.2 s), **0 / 0 cut-ins** against 3 / 5 | [BASELINES ICSI](../research/BASELINES.md#turn-detection-icsi-held-out-confirmation), [BASELINES turn detection](../research/BASELINES.md#turn-detection), [INTEGRATION §8](../research/INTEGRATION.md#8-shipped-rules-2026-09-26) |
-| `hybrid_dyn` | held-out ICSI, n = 1312, 6 s, frozen AMI point: **79.5 % [77.2, 81.7]**, floor-open **50.5 % [44.5, 56.7]**, FC 1.8 % / 0.5 %; against `hybrid_silero` −2.2 [−3.2, −1.3] all, −11.7 [−17.0, −7.0] open. It is the best all-ends row on ICSI at any frozen point. AMI dev: 58.2 % (open 31.5 %) at 6.1 % held-out FC | 5 AMI windows: median dead air **2662 / 2425 ms** (+0.66 / +0.75 s over the timeout), **0 / 0 cut-ins**. E2E with `after_agent_arm` (system D): 0.00 cut-ins per min on AMI in both frameworks; 0.32-0.98 s more median dead air than `timeout` | [BASELINES dynamic timeout](../research/BASELINES.md#dynamic-timeout-icsi-held-out-confirmation), [INTEGRATION §8](../research/INTEGRATION.md#8-shipped-rules-2026-09-26), [E2E_FINAL §8](../research/E2E_FINAL.md#8-verdicts) |
+| `hybrid` | eot-bench v2, n = 974, 6 s, causal: **61.9 % [58.7, 65.0]** (open 45.9 %) on 1.04 s tracks, at the fitted (θ ≈ 0.998, k 49-52 frames ≈ 4 s); 63.7 % [60.5, 67.0] on 0.32 s tracks. With oracle speaker activity (n = 200): 1.6 % miss at P50 560 ms | θ 0.998 / 1000 ms fires exactly when the timeout fires: same dead air and the same 3 / 5 cut-ins. θ 0.998 / 4000 ms: 0 cut-ins, median dead air 4522 ms (Pipecat) | [EOT_BENCH_V2 §7](../research/archive/EOT_BENCH_V2.md#7-hybrid-head-or-timeout-under-leak-free-scoring-and-the-032-s-diarizer-setting-2026-09-26), [TURN_ERRORS §8](../research/archive/TURN_ERRORS.md#8-hybrid-decision-rule-joint-θ-k-sweep-2026-09-26), [INTEGRATION §4b](../research/archive/INTEGRATION.md#4b-served-stage1_turn_v3_trail6-head-with-diarizer-input---turn-input-diar-032-s-preset-2026-09-26) |
+| `hybrid_silero` | held-out ICSI, n = 1312, 6 s, frozen AMI point (θ 0.998285, k 33 = 2.64 s): **81.7 % [79.5, 83.9]**, floor-open **62.2 %**, FC 2.4 % per turn / 0.6 % per pause. The hybrid on the same set: 82.1 % / open 71.5 % (open Δ −9.3 [−14.7, −4.1]). AMI dev (exploratory, rule picked after seeing the table): 59.6 % [56.3, 62.6], open 34.3 %, held-out FC 6.6 % | 5 AMI windows: median dead air **2941 / 2921 ms** against the timeout's 1702 / 1676 ms (about +1.2 s), **0 / 0 cut-ins** against 3 / 5 | [BASELINES ICSI](../research/archive/BASELINES.md#turn-detection-icsi-held-out-confirmation), [BASELINES turn detection](../research/archive/BASELINES.md#turn-detection), [INTEGRATION §8](../research/archive/INTEGRATION.md#8-shipped-rules-2026-09-26) |
+| `hybrid_dyn` | held-out ICSI, n = 1312, 6 s, frozen AMI point: **79.5 % [77.2, 81.7]**, floor-open **50.5 % [44.5, 56.7]**, FC 1.8 % / 0.5 %; against `hybrid_silero` −2.2 [−3.2, −1.3] all, −11.7 [−17.0, −7.0] open. It is the best all-ends row on ICSI at any frozen point. AMI dev: 58.2 % (open 31.5 %) at 6.1 % held-out FC | 5 AMI windows: median dead air **2662 / 2425 ms** (+0.66 / +0.75 s over the timeout), **0 / 0 cut-ins**. E2E with `after_agent_arm` (system D): 0.00 cut-ins per min on AMI in both frameworks; 0.32-0.98 s more median dead air than `timeout` | [BASELINES dynamic timeout](../research/archive/BASELINES.md#dynamic-timeout-icsi-held-out-confirmation), [INTEGRATION §8](../research/archive/INTEGRATION.md#8-shipped-rules-2026-09-26), [E2E_FINAL §8](../research/E2E_FINAL.md#8-verdicts) |
 
 Reading:
 
 - **Why `timeout` is the default.** No rule measured so far wins on both axes. The shipped hybrids make the product
   respond later than the 1000 ms timeout (+0.66 to +1.2 s median dead air on 5 AMI windows) and cut in less (0 vs
   3 / 5). Their benchmark gains are on turn ends that the timeout never catches
-  ([INTEGRATION.md §8 verdict](../research/INTEGRATION.md#8-shipped-rules-2026-09-26)). Choose `timeout` when
+  ([INTEGRATION.md §8 verdict](../research/archive/INTEGRATION.md#8-shipped-rules-2026-09-26)). Choose `timeout` when
   responsiveness matters most, and `hybrid_dyn` when not interrupting the user matters most.
 - The Silero branch is speaker-unaware. On a floor-open end, silence from everyone is the right signal. At a pause
   where nobody else speaks, the branch sees the same silence. This is why `hybrid_silero` costs +1.4 points on taken ends on
-  ICSI ([BASELINES](../research/BASELINES.md#turn-detection-icsi-held-out-confirmation)).
+  ICSI ([BASELINES](../research/archive/BASELINES.md#turn-detection-icsi-held-out-confirmation)).
 - `hybrid` pays off only with a clean speaker track. On the Sortformer streaming track the head adds about 1 point
-  over the timeout ([TURN_ERRORS §8](../research/TURN_ERRORS.md#8-hybrid-decision-rule-joint-θ-k-sweep-2026-09-26)).
+  over the timeout ([TURN_ERRORS §8](../research/archive/TURN_ERRORS.md#8-hybrid-decision-rule-joint-θ-k-sweep-2026-09-26)).
 - Label-free primary selection is the dominant loss for every speaker-track rule: with oracle binding the same
   benchmark gives timeout 32.0 %, head 30.3 %, hybrid 28.7 % at 6 s
-  ([EOT_BENCH_V2 §7](../research/EOT_BENCH_V2.md#7-hybrid-head-or-timeout-under-leak-free-scoring-and-the-032-s-diarizer-setting-2026-09-26)).
+  ([EOT_BENCH_V2 §7](../research/archive/EOT_BENCH_V2.md#7-hybrid-head-or-timeout-under-leak-free-scoring-and-the-032-s-diarizer-setting-2026-09-26)).
   `--enroll after_agent_arm` / `after_agent` address this ([§6](#6-primary-speaker-enrollment---enroll)).
 - The timeout still ends turns during filled pauses ("um") or when the user resumes within 1 s. On AMI a 1 s pause is
-  usually a hesitation, not a hand-over ([INTEGRATION.md §1](../research/INTEGRATION.md#1-executive-summary)).
+  usually a hesitation, not a hand-over ([INTEGRATION.md §1](../research/archive/INTEGRATION.md#1-executive-summary)).
 
 ## 5. Turn head input (`--turn-input`)
 
@@ -335,7 +342,7 @@ decides what a `--turn-input diar` head is conditioned on and what `final.speake
 |---|---|---|---|
 | `dominant` (default) | none | the column with the most activity over the last 5 s; `null` if none was active | none |
 | `after_agent_arm` | `{"type": "agent_end"}` when the agent's TTS ends | from that audio position, the first column active for ≥ 3 consecutive frames is bound. Afterwards the causal_dominant rule runs, seeded at that column: it re-binds only after > 25 silent frames of the bound column, to the column with the most active frames over the last 25. Each `agent_end` re-arms. No TitaNet | none measurable: arm binder RTF 0.000 ([E2E_FINAL §7](../research/E2E_FINAL.md#7-rtf-by-component)) |
-| `after_agent` | `{"type": "agent_end"}` | the same choice. The chosen column's first 19 active frames (1.5 s) become a TitaNet-L enrollment. Afterwards the primary follows that voice: every `--enroll-stride` frames, each column with ≥ 8 active frames in the last 2 s is embedded. Hysteresis: margin 0.1 cosine, hold 6 frames | TitaNet-L +91 MB RSS on top of the loaded server (+201 MB in a fresh process). Binder 1.3-13 ms per diarizer frame. RTF 0.87-1.16 vs 0.60-0.84 without it (3 AMI dev windows, 2 threads, 0.32 s diarizer, load 3-6): at the edge of keeping up on 2 threads ([INTEGRATION §7](../research/INTEGRATION.md#7-primary-speaker-enrollment---enroll-after_agent--explicit-2026-09-26)) |
+| `after_agent` | `{"type": "agent_end"}` | the same choice. The chosen column's first 19 active frames (1.5 s) become a TitaNet-L enrollment. Afterwards the primary follows that voice: every `--enroll-stride` frames, each column with ≥ 8 active frames in the last 2 s is embedded. Hysteresis: margin 0.1 cosine, hold 6 frames | TitaNet-L +91 MB RSS on top of the loaded server (+201 MB in a fresh process). Binder 1.3-13 ms per diarizer frame. RTF 0.87-1.16 vs 0.60-0.84 without it (3 AMI dev windows, 2 threads, 0.32 s diarizer, load 3-6): at the edge of keeping up on 2 threads ([INTEGRATION §7](../research/archive/INTEGRATION.md#7-primary-speaker-enrollment---enroll-after_agent--explicit-2026-09-26)) |
 | `explicit` | `{"type": "enroll"}` (e.g. after a "say something" prompt) | as `after_agent`, started by `enroll`; one enrollment per message | as `after_agent` |
 
 Until a column is chosen, every mode uses the `dominant` rule. The modes other than `dominant` add
@@ -344,11 +351,11 @@ Until a column is chosen, every mode uses the `dominant` rule. The modes other t
 (default `data/nemo/speakerverification_en_titanet_large.nemo`; the launcher fills it from the models directory).
 `--enroll-stride` (default 5 frames = 400 ms) sets how often the voice modes re-embed; `--enroll-stride 10` halves
 the following cost at the price of slower switching, and a third thread is the other remedy (not measured
-numerically; [INTEGRATION §7](../research/INTEGRATION.md#7-primary-speaker-enrollment---enroll-after_agent--explicit-2026-09-26)).
+numerically; [INTEGRATION §7](../research/archive/INTEGRATION.md#7-primary-speaker-enrollment---enroll-after_agent--explicit-2026-09-26)).
 
 Measured effect (eot-bench v2, AMI dev n = 974, head trail6, 1.04 s Sortformer tracks, cross-fitted ≤ 5 % FC; "agent
 end" = the previous other speaker's labelled turn end, a stand-in for the TTS end;
-[EOT_BENCH_V2 §9](../research/EOT_BENCH_V2.md#9-who-is-the-primary-speaker-titanet-l-following-an-agent-end-identity-rule-and-enrollment-length-2026-09-26)):
+[EOT_BENCH_V2 §9](../research/archive/EOT_BENCH_V2.md#9-who-is-the-primary-speaker-titanet-l-following-an-agent-end-identity-rule-and-enrollment-length-2026-09-26)):
 
 | binding (server mode) | hybrid, 6 s | Δ vs causal_dominant, 6 s | hybrid, 2 s | Δ, 2 s | timeout, 6 s |
 |---|---|---|---|---|---|
@@ -362,7 +369,7 @@ end" = the previous other speaker's labelled turn end, a stand-in for the TTS en
   (`after_agent`) catches the same turns 2-6 s late: it is a loss for dead air and a gain for the 6 s miss rate. The
   benchmark's verdict: arm at the agent end in every case, and enable TitaNet following only where the 6 s miss rate
   matters more than dead air.
-- Product test (5 AMI windows, [INTEGRATION §8](../research/INTEGRATION.md#8-shipped-rules-2026-09-26)):
+- Product test (5 AMI windows, [INTEGRATION §8](../research/archive/INTEGRATION.md#8-shipped-rules-2026-09-26)):
   `after_agent_arm` changed nothing measurable. Timeout decisions were unchanged, there was one fewer LiveKit cut-in
   (5 to 4), and the hybrids were 240 ms later on one window.
 - Send `agent_end` exactly when the TTS playback ends. If it is sent while the agent is still audible, the agent's
@@ -384,14 +391,14 @@ Measured:
 
 | | `low_latency_032` | `low_latency` | scope, source |
 |---|---|---|---|
-| turn-end miss, 6 s, causal: hybrid / head / timeout | 63.7 / 65.8 / 70.1 % | 61.9 / 66.5 / 74.8 % | eot-bench v2, AMI dev n = 974; CIs overlap; the timeout's apparent gain at 0.32 s comes with held-out FC 8.4 % ([EOT_BENCH_V2 §7](../research/EOT_BENCH_V2.md#7-hybrid-head-or-timeout-under-leak-free-scoring-and-the-032-s-diarizer-setting-2026-09-26)) |
+| turn-end miss, 6 s, causal: hybrid / head / timeout | 63.7 / 65.8 / 70.1 % | 61.9 / 66.5 / 74.8 % | eot-bench v2, AMI dev n = 974; CIs overlap; the timeout's apparent gain at 0.32 s comes with held-out FC 8.4 % ([EOT_BENCH_V2 §7](../research/archive/EOT_BENCH_V2.md#7-hybrid-head-or-timeout-under-leak-free-scoring-and-the-032-s-diarizer-setting-2026-09-26)) |
 | P50 at 6 s where systems fire (oracle timeout / head, oracle) | 2720 / 2320 ms | 3200 / 2960 ms | same |
 | nominal emission delay | 240 ms | 840 ms | same |
 | DER (miss / FA / confusion), 6 s windows, 4 columns pooled | 28.3 (17.6 / 5.0 / 5.7) | 26.3 (16.4 / 5.0 / 4.9) | same |
 | server RTF, 2 threads, 1x | 0.49 / 0.53 | 0.40 / 0.43 | 2 AMI dev windows, load 1.5-2.4 ([EARLY_RESULTS](../research/EARLY_RESULTS.md#live-streaming-server-2026-09-26)) |
 | speaker-column age on arrival, p50 (p95) | 210-227 (291) ms | 857 (1035) ms | same |
 | max backlog | 120-140 ms | 120 ms | same |
-| product dead air, `timeout` 1000, back to back | IS1008b_003 1602 ms, ES2011b_027 1661 ms (Pipecat) | 1821 ms, 2402 ms | 2 AMI windows, load 3.7-4.5 ([INTEGRATION §4](../research/INTEGRATION.md#default-preset-low_latency_032-032-s-pipecat-and-livekit-dead-air-re-run-2026-09-26)) |
+| product dead air, `timeout` 1000, back to back | IS1008b_003 1602 ms, ES2011b_027 1661 ms (Pipecat) | 1821 ms, 2402 ms | 2 AMI windows, load 3.7-4.5 ([INTEGRATION §4](../research/archive/INTEGRATION.md#default-preset-low_latency_032-032-s-pipecat-and-livekit-dead-air-re-run-2026-09-26)) |
 
 The 0.32 s setting is a latency gain, not an accuracy gain. Miss rates stay within the 1.04 s CIs, DER is 2 points
 worse, and it costs about +0.1 RTF (the diarizer runs about 3x as often). Transcripts are identical at both settings.
@@ -410,7 +417,7 @@ Encoder left context of the diarizer in window mode, in frames (default 188, the
 with). Sortformer's encoder is non-causal, so each step re-encodes [left context, chunk, right context]. A shorter
 left context is cheaper; for Sortformer v2 its effect on accuracy was not measured. For Nemotron-3-Diarization the
 encoder is frame-local, so a larger left context only costs time, and 1 is the recommended value
-([SORTFORMER_IMPORT.md](../research/SORTFORMER_IMPORT.md#patch-intent-files-owned-by-other-agents)).
+([SORTFORMER_IMPORT.md](../research/archive/SORTFORMER_IMPORT.md#patch-intent-files-owned-by-other-agents)).
 
 ### 7.3 Nemotron-3-Diarization as the diarizer
 
@@ -432,7 +439,7 @@ default `--diar-config` (E2E systems CN / DN, [E2E_FINAL §2](../research/E2E_FI
 | diarizer RTF | 0.496 / 0.500 | 0.300 / 0.302 | same |
 | server peak RSS | 3581 / 3586 MB | 1485 / 1482 MB | same |
 | product dead air with `timeout` (CN − C) | | 8-135 ms lower on the two-party sets; CIs exclude 0 in 6 of 8 cells | [E2E_FINAL §8](../research/E2E_FINAL.md#8-verdicts) |
-| streaming DER, 1.04 s buffer, AMI dev 64 × 20 s | 0.252 | 0.241 | [SORTFORMER_IMPORT](../research/SORTFORMER_IMPORT.md#comparison-ami-dev-headset-mix-word-level-labels-80-ms-frames-threshold-05-no-collar) |
+| streaming DER, 1.04 s buffer, AMI dev 64 × 20 s | 0.252 | 0.241 | [SORTFORMER_IMPORT](../research/archive/SORTFORMER_IMPORT.md#comparison-ami-dev-headset-mix-word-level-labels-80-ms-frames-threshold-05-no-collar) |
 | primary-track miss (offline, 200 turn windows) | 0.129 | 0.192 | same |
 
 E2E_FINAL recommends Nemotron-3 as the default diarizer. Its caveats: it was scored there only through the turn
@@ -444,7 +451,7 @@ been measured inside the server. The launcher's `--diarizer nemotron3` adds `--d
 
 ### 7.4 Multi-speaker rooms: `--diar-labels`, `--shed-diar`, `timeout_any`
 
-Added 2026-09-28 after the report "many speakers in the room doesn't work" ([research/DIARIZATION_FIX.md](../research/DIARIZATION_FIX.md)). Three
+Added 2026-09-28 after the report "many speakers in the room doesn't work" ([research/archive/DIARIZATION_FIX.md](../research/archive/DIARIZATION_FIX.md)). Three
 independent causes, three flag-gated fixes; the defaults keep the previous behaviour:
 
 - **`final.speaker` was the 5 s dominant column, not the turn's speaker**, and a turn only ended when that column fell
@@ -496,7 +503,7 @@ Heads, events and partials are unchanged: `tests/test_hybrid_asr.py` checks that
 single-pass server. The pass costs one more encoder pass per chunk. Both flags can be combined.
 
 Measured accuracy and latency (`runs/hybrid_asr.json`, `runs/final_asr.json`; [FINAL_REPORT §1](../research/FINAL_REPORT.md#1-asr)
-and the `research/HYBRID_ASR.md` draft): on AMI dev, 200 single-speaker segments, `normalize_text` WER, the streaming
+and the `research/archive/HYBRID_ASR.md` draft): on AMI dev, 200 single-speaker segments, `normalize_text` WER, the streaming
 model alone has 24.4 % (20.6 % with the Whisper normaliser); Parakeet-TDT 0.6B v3 run offline on each turn, i.e.
 what `--final-asr tdt_v3` produces, has 9.72 % [8.22, 11.54] (9.50 % Whisper-normalised), a paired difference of
 −14.70 [−17.02, −12.71] points, at RTF 0.065 per turn on 2 CPU threads (batch 1, machine under load) and about
@@ -519,11 +526,11 @@ without a confident call.
 | head file, e.g. `--lid runs/lid_aug.pt` | a 0.40 M-parameter head on the served encoder's per-layer outputs. It pools VAD speech frames only, with a 30 s half-life, and needs no extra encoder pass | 75.0 % / 89.3 % (`lid_aug`); 72.6 % / 87.7 % (`lid_head`) | 78.7 % / 2.40 s / 0.17 (`lid_aug`) | 18.7 % (`lid_aug`), 31.1 % (`lid_head`) | 0.16 ms per 160 ms chunk (RTF 0.001) |
 | `--lid ambernet` (or an AmberNet `.nemo`) | NVIDIA AmberNet (28.9 M parameters, NGC Terms of Use). It re-classifies the last 8 s of VAD speech at 1, 1.5, 2, 3, 5 and 8 s of pooled speech, then every 4 s, restricted to `--lid-langs` | 95.1 % / 99.5 % | 96.8 % / 2.16 s / 0.03 | 67.7 % | 16-81 ms per call for 1-8 s of speech; RTF about 0.02-0.03 at the served schedule |
 
-Source: [LID.md fix pass](../research/LID.md#fix-pass-2026-09-29) for `--lid head` (it misses the pre-registered
+Source: [LID.md fix pass](../research/archive/LID.md#fix-pass-2026-09-29) for `--lid head` (it misses the pre-registered
 bar of 92 % / 98 % on FLEURS by under a point and meets the EdAcc and cost bars, so LID stays off by default);
-[LID.md §3](../research/LID.md#3-head-vs-dedicated-models-fleurs-test-17-languages-n--2550),
-[§4](../research/LID.md#4-streaming-the-servers-announcement-rule), [§5](../research/LID.md#5-cost-cpu-2-threads-this-mac),
-[verdict](../research/LID.md#verdict-and-recommendation). The recommendation there: use `--lid ambernet` with
+[LID.md §3](../research/archive/LID.md#3-head-vs-dedicated-models-fleurs-test-17-languages-n--2550),
+[§4](../research/archive/LID.md#4-streaming-the-servers-announcement-rule), [§5](../research/archive/LID.md#5-cost-cpu-2-threads-this-mac),
+[verdict](../research/archive/LID.md#verdict-and-recommendation). The recommendation there: use `--lid ambernet` with
 `--lid-langs` restricted to the languages the product supports. For mostly non-native English speakers, restrict the
 label set and raise `--lid-threshold`, because AmberNet calls about a third of accented English segments another
 language. Since the fix pass, `--lid head` is the no-second-model option: 3.9 points behind AmberNet at 2 s, 1.8 on
@@ -541,7 +548,7 @@ by the head file.
 backlog, lag and cost breakdown). The full list is in
 [PROTOCOL.md §6](PROTOCOL.md#6-keys-added-by---debug-fields). It also runs `validate()` on every outgoing message.
 The debug stat `diar_lag_ms_mean_measured` is computed from sample counts and always reads the structural mean at 1x
-([INTEGRATION.md §5 D8](../research/INTEGRATION.md#5-defects-found-by-the-verifier-and-their-status)).
+([INTEGRATION.md §5 D8](../research/archive/INTEGRATION.md#5-defects-found-by-the-verifier-and-their-status)).
 
 The server prints one log line per connection event to stdout: config applied, warnings about ignored config fields,
 enrollment armed, disconnects, and the final `stats`.
@@ -592,7 +599,7 @@ median dead air 2322 / 2340 ms. The timeout variants cut in 1.36-3.39 times per 
 in a meeting is usually a hesitation ([E2E_FINAL §1](../research/E2E_FINAL.md#1-summary),
 [§4](../research/E2E_FINAL.md#4-results-by-clip-set)). The rule itself (`hybrid_dyn`) is the best all-ends turn rule
 on held-out ICSI meetings: 79.5 % miss, floor-open 50.5 %, at 1.8 % FC, n = 1312
-([BASELINES](../research/BASELINES.md#dynamic-timeout-icsi-held-out-confirmation)). Caveat: n = 5 AMI windows with
+([BASELINES](../research/archive/BASELINES.md#dynamic-timeout-icsi-held-out-confirmation)). Caveat: n = 5 AMI windows with
 one scored end each. Every AMI CI except the cut-in deltas includes 0.
 
 ### Lowest latency
@@ -607,9 +614,9 @@ Why: the 1000 ms `timeout` on the 0.32 s diarizer setting (the default `--diar-c
 configuration measured. Nemotron-3 lowered dead air by another 8-135 ms on the two-party sets and cut server RTF from
 about 0.80 to about 0.64 ([E2E_FINAL §8](../research/E2E_FINAL.md#8-verdicts)). The 0.32 s setting saved 0.2-0.7 s of
 dead air per window against 1.04 s
-([INTEGRATION §4](../research/INTEGRATION.md#default-preset-low_latency_032-032-s-pipecat-and-livekit-dead-air-re-run-2026-09-26)).
+([INTEGRATION §4](../research/archive/INTEGRATION.md#default-preset-low_latency_032-032-s-pipecat-and-livekit-dead-air-re-run-2026-09-26)).
 The structural floor is about 1.2-1.4 s after a clean end (1.0 s + 0.08-0.24 s + compute;
-[INTEGRATION §1](../research/INTEGRATION.md#1-executive-summary)). `--threads 4` lowered RTF from 0.433-0.520 to
+[INTEGRATION §1](../research/archive/INTEGRATION.md#1-executive-summary)). `--threads 4` lowered RTF from 0.433-0.520 to
 0.341-0.422 in the server-alone test ([§3](#3-models-threads-and-speed)); it was not part of the E2E runs. A
 `timeout_ms` below 1000 lowers the floor by the same amount, but it has not been measured, and the 1000 ms timeout
 already cuts in on filled pauses. `--enroll after_agent_arm` is free and can be added.
@@ -625,18 +632,18 @@ audioforge-serve --diar-config low_latency --enroll after_agent --threads 4 \
 Why, component by component:
 
 - **Turn rule:** `hybrid_dyn` has the lowest miss rate on all ends of any frozen rule on held-out ICSI (79.5 %,
-  floor-open 50.5 %, FC 1.8 %; [BASELINES](../research/BASELINES.md#dynamic-timeout-icsi-held-out-confirmation)) and
-  0 cut-ins on 5 AMI windows ([INTEGRATION §8](../research/INTEGRATION.md#8-shipped-rules-2026-09-26)).
+  floor-open 50.5 %, FC 1.8 %; [BASELINES](../research/archive/BASELINES.md#dynamic-timeout-icsi-held-out-confirmation)) and
+  0 cut-ins on 5 AMI windows ([INTEGRATION §8](../research/archive/INTEGRATION.md#8-shipped-rules-2026-09-26)).
 - **Enrollment:** `after_agent` (TitaNet following) has the lowest 6 s miss of the deployable bindings (hybrid
   51.6 % vs 61.9 % for causal_dominant). It is **worse at the 2 s horizon** (+8.5 points), i.e. it catches ends
-  later ([EOT_BENCH_V2 §9](../research/EOT_BENCH_V2.md#9-who-is-the-primary-speaker-titanet-l-following-an-agent-end-identity-rule-and-enrollment-length-2026-09-26)).
+  later ([EOT_BENCH_V2 §9](../research/archive/EOT_BENCH_V2.md#9-who-is-the-primary-speaker-titanet-l-following-an-agent-end-identity-rule-and-enrollment-length-2026-09-26)).
   It was at the edge of keeping up on 2 threads (RTF 0.87-1.16), hence `--threads 4`; the 4-thread cost with
   enrollment was not measured. Use `after_agent_arm` if 2 s responsiveness matters.
 - **Diarizer:** Sortformer v2 at `low_latency` (1.04 s) is the setting all EOT_BENCH_V2 §9 enrollment numbers were
   measured on, and it has 2 DER points less than the 0.32 s setting (26.3 vs 28.3). Miss rates were within CIs at both
-  settings ([EOT_BENCH_V2 §7](../research/EOT_BENCH_V2.md#7-hybrid-head-or-timeout-under-leak-free-scoring-and-the-032-s-diarizer-setting-2026-09-26)).
+  settings ([EOT_BENCH_V2 §7](../research/archive/EOT_BENCH_V2.md#7-hybrid-head-or-timeout-under-leak-free-scoring-and-the-032-s-diarizer-setting-2026-09-26)).
   It adds about 0.6 s of column lag. Nemotron-3 with max pooling had a lower streaming DER at the same 1.04 s buffer
-  (0.241 vs 0.252, [SORTFORMER_IMPORT](../research/SORTFORMER_IMPORT.md#comparison-ami-dev-headset-mix-word-level-labels-80-ms-frames-threshold-05-no-collar)),
+  (0.241 vs 0.252, [SORTFORMER_IMPORT](../research/archive/SORTFORMER_IMPORT.md#comparison-ami-dev-headset-mix-word-level-labels-80-ms-frames-threshold-05-no-collar)),
   but it has not been measured with enrollment or inside the server at that setting.
 - **Transcript:** `--final-asr tdt_v3` and `--asr-lookahead 13` exist for transcript accuracy, but no committed
   document measures them yet ([§8](#8-final-asr-and-dual-lookahead)). This whole preset has not been run end to end.
@@ -670,7 +677,7 @@ The default mode since 2026-09-29, for a voice agent that talks to **one known u
 
 ```bash
 audioforge-serve                                # = --mode single (or mode: single in the --config file)
-# client: {"type":"config","turn_policy":"hybrid_dyn"}
+# client: {"type":"config"} (the turn rule defaults to vad_head; a config turn_policy wins)
 #         then {"type":"enroll","embedding":[192 floats]} (a stored print), or {"type":"agent_end"} at each TTS end
 ```
 
@@ -682,9 +689,12 @@ What the preset sets (flags you pass yourself win):
 | `--diar-off` | on, and no `--diar` | the track [P(user), P(other), 0, 0] is `frame.speakers`; the primary is always column 0; no diarizer is loaded |
 | `--lid` | `head` | language ID from the distilled head on the same encoder pass ([§9](#9-spoken-language-id---lid)) |
 | `--enroll` | `after_agent_arm` | without a stored print, the print is the first `--tsvad-print-s` (5) s of speech after `agent_end` |
-| `--dyn-wait-ms` | `2000,960` | `hybrid_dyn` waits 2.0 s of silence at head p = 0 and 0.96 s at p = 1 (research/SINGLE_MODEL.md A1) |
+| `--turn-policy` | `vad_head` | the turn rule of a session whose config names none: the model's own VAD and turn heads plus the user's TS-VAD track, no Silero. Against `hybrid_dyn 2000,960` it answers 406 ms sooner at p50 on two-party calls with the same false interruptions and misses, and misses fewer AMI turn ends (research/EOT_LATENCY.md) |
+| `--dyn-wait-ms` | `2000,960` | for a client that asks for `hybrid_dyn` (then pass `--silero`, or `audioforge-download --with silero`): 2.0 s of silence at head p = 0 and 0.96 s at p = 1 (research/SINGLE_MODEL.md A1) |
 | `--tsvad` | `tsvad_spk.pt` | from the models directory, else `runs/` |
-| `--silero` | when present | the silence arm of `hybrid_dyn` (Silero VAD v5, 2.3 MB ONNX) |
+
+No Silero is downloaded or loaded in single mode. A session that asks for `hybrid_silero` / `hybrid_dyn` without
+`--silero` (or the file at its default path) runs `hybrid` with a `silero_unavailable` notice.
 
 Refused with a one-line error, because each would load a second model: `--diar`, `--diarizer`, `--final-asr`,
 `--lid ambernet`, `--diar-embed titanet`. An `enroll` message carrying an `embedding` sets the print under every
@@ -699,20 +709,24 @@ user's clean speech. What was measured about its length (research/SINGLE_MODEL.m
 - A 3 s print loses 13 points on AMI and 1.2 on ICSI. A 1.5 s print loses 20-22.
 - A print taken live after `agent_end` loses 16-41 points in meetings. Store the user's print (≥ 5 s) when you can.
 
-Measured against room mode, the previous product default (the full table with sources is in research/SINGLE_MODEL.md):
-- **Turn ends in meetings, stored print** (offline, ≤ 5 % false cut-offs, 6 s): 34.2 % missed on AMI vs 61.9-74.8 %,
-  and 18.7 % on ICSI vs 68.5-85.3 %. This is the best turn detector measured on either corpus.
-- **Live through Pipecat** (37 clips, 69 sessions, the preset's exact flags, `hybrid_dyn`, stored 5 s print):
-  - 37.7 % of user turns not answered within 3 s, against 34.1 % for room mode (+3.6, CI +0.0 to +7.6).
-  - 0.67 cut-ins per session against 1.07 (−38 %, CI excludes 0).
-  - Median dead air 1388 ms against 1292 ms.
-  - On the user channel of two-party calls the gap is +4.6 points (CI excludes 0).
-  - The earlier rule (`hybrid_dyn` at the served wait) missed 45.3 % (research/SINGLE_MODEL.md A1).
-- **Cost:** server RTF 0.33 (max 0.34) against 0.635, and peak RSS 1156 MB against 1485 MB. There is no diarizer
-  pass and no diarizer in memory.
-- **Transcript:** the streaming one (AMI-200 24.4 %, LibriSpeech-200 2.29 %). The default can add Parakeet-TDT v3
-  per turn (9.7 % on AMI) as a second model.
+Measured (standard metrics, definitions and sources in [research/METRICS.md](../research/METRICS.md); live rows are
+the 32 two-party calls fed on the user's channel through Pipecat, with the earlier turn rule `hybrid_dyn 2000,960`;
+the offline end-of-turn comparison of that rule with today's `vad_head` default is research/EOT_LATENCY.md):
+- **End-of-turn latency** p50 / p95: 1382 / 3400 ms. Room mode: 1272 / 1631 ms. LiveKit default: 1350 / 3096 ms.
+  Pipecat default: 1675 / 3197 ms.
+- **False interruptions:** 17.4 % of user turns. Room mode: 26.6 %. LiveKit default: 23.9 %. Pipecat default:
+  30.3 %.
+- **Response rate:** 88.1 % of user turns answered. Room mode: 89.9 %. LiveKit default: 82.6 %. Pipecat default:
+  78.9 %.
+- **Partial latency** (word end to word shown): 441 / 732 ms p50 / p95 on CPU.
+- **Compute:** 53 ms per 160 ms chunk on 2 CPU threads (3 real-time sessions per process). Room mode's server takes
+  about twice that. Peak RSS is 1156 MB, against 1485 MB for room mode. There is no diarizer pass and no diarizer in
+  memory.
+- **Transcript:** the streaming one. WER is 2.48 % on LibriSpeech test-clean, 6.13 % on test-other and 20.6 % on AMI
+  (Whisper normalizer). Room mode can add Parakeet-TDT v3 per turn (9.5 % on AMI) as a second model.
 - **LID:** 91.0 % at 2 s and 97.8 % on full utterances on FLEURS-17, against AmberNet's 95.1 % / 99.5 %.
+- **Turn ends in meetings, stored print** (offline research benchmark, ≤ 5 % of turns cut off early, 6 s): 34.2 %
+  missed on AMI vs 61.9-74.8 %, and 18.7 % on ICSI vs 68.5-85.3 %.
 
 **The voice sample is a requirement, not an option.** Store at least 5 s of the user's clean speech (10 s for
 meetings) as a print and send it at every connect. Two ways to make one:

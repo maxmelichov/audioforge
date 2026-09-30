@@ -1,6 +1,6 @@
-"""Dedicated open turn-detection models vs our turn detection on eot-bench v2 (research/BASELINES.md, "Turn detection").
+"""Dedicated open turn-detection models vs our turn detection on eot-bench v2 (research/archive/BASELINES.md, "Turn detection").
 
-Same data and scorer as scripts/research/eval_stage1.py --bench v2 (research/EOT_BENCH_V2.md): the 974 AMI dev turn windows
+Same data and scorer as scripts/research/eval_stage1.py --bench v2 (research/archive/EOT_BENCH_V2.md): the 974 AMI dev turn windows
 (block A: default 2 s-trail windows, horizon = the window's trail; block C: 6 s-extended windows, horizons 25 / 75
 post-end emission frames), label-free causal enrollment where a speaker track is needed, fixed threshold at <= 5 %
 false cutoffs per turn chosen on one leave-meetings-out half and applied to the other, floor-open / taken strata,
@@ -524,7 +524,7 @@ def stage_report(a, base, ext, meta, meta_base, work):
     t0 = time.time()
     tr = build_tracks(ext, work)
     ref = json.loads(REF_JSON.read_text())["turn_v2"]
-    out = {"protocol": "eot-bench v2 (research/EOT_BENCH_V2.md), baselines on the same windows / scorer",
+    out = {"protocol": "eot-bench v2 (research/archive/EOT_BENCH_V2.md), baselines on the same windows / scorer",
            "ours_from": str(REF_JSON.relative_to(ROOT)), "n_boot": a.n_boot}
     for blk, convs, mt, hz, two in (("C_extended_windows_stream", ext, meta, {"2s": 25, "6s": 75}, False),
                                     ("A_default_windows_all", base, meta_base, {"2s": None}, True)):

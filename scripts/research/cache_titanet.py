@@ -1,6 +1,6 @@
 """Cache frozen NVIDIA TitaNet-Large embeddings (the speaker-distillation teacher) per single-speaker segment.
 
-research/SPK_HEAD.md. One L2-normalised 192-d embedding per example, keyed by ``data.segment_id`` (LibriSpeech
+research/archive/SPK_HEAD.md. One L2-normalised 192-d embedding per example, keyed by ``data.segment_id`` (LibriSpeech
 ``id``; ``meeting:start:speaker:n_samples`` for AMI / ICSI asr-mode segments), written to the ``.npz`` named by
 the source's ``spk_teacher`` key (arrays ``ids`` and ``emb``). Resumable: existing ids are skipped and the file is
 rewritten every ``--save-every`` seconds and at ``--budget`` (run again to continue). CPU, 2 threads.

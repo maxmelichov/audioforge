@@ -1,8 +1,8 @@
 # Stage 1d (c) = (a) with the auxiliary head replaced by multi-horizon future-activity targets for the USER's party only: bins (t, t+240], (t+240, t+400], (t+400, t+640], (t+640, t+1040] ms (heads/turn.py multi_horizon_targets); future_act_aux (cumulative 480 / 960 / 2000 ms windows, user + others) kept at weight 0 so the warm-start tensors load; EOT target unchanged.
 # Everything else is research/recipes/stage1_turn_dyadic.yaml (a):
-# the trail6 turn head continued on REAL DYADIC audio (research/DYADIC.md section 8): otoSpeech-141h
+# the trail6 turn head continued on REAL DYADIC audio (research/archive/DYADIC.md section 8): otoSpeech-141h
 # (CC BY 4.0, two channels, one party each) with column 0 = the window's party (the "user"), column 1 = the OTHER
-# party's exact activity (the agent: a product knows its own TTS timeline, research/OUTSIDE.md 6.3), plus AMI turn
+# party's exact activity (the agent: a product knows its own TTS timeline, research/archive/OUTSIDE.md 6.3), plus AMI turn
 # windows with their cached streaming Sortformer tracks (so the head keeps working on diarizer input) and the
 # synthetic four-move conversations. Encoder, ASR and every other head frozen (pretrained_lr_mult 0): heads.turn only.
 #
@@ -16,7 +16,7 @@
 #
 # Conditioning = trail6's (p_ext 0.9 on AMI items with a cached streaming track + ext_noise; dyadic / synthetic items
 # have no ext track, so their track is the oracle party activity with 1 % frame flips and their agent column stays
-# exact) plus corrupted-then-corrected windows (research/CONTAMINATION.md section 9, model.py rebind): with p 0.1 per
+# exact) plus corrupted-then-corrected windows (research/archive/CONTAMINATION.md section 9, model.py rebind): with p 0.1 per
 # item the final track binds the wrong party (primary column swapped with the most active other column) for 1-4 s
 # ending between the onset and the turn end, then is correct again; the EOT labels stay the clean ones.
 #

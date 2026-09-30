@@ -1,8 +1,8 @@
-"""Scoring of the dyadic-trained turn heads (research/DYADIC.md section 8) against the AMI-trained trail6 head.
+"""Scoring of the dyadic-trained turn heads (research/archive/DYADIC.md section 8) against the AMI-trained trail6 head.
 
 Heads (tags): trail6 (runs/stage1_turn_v3_trail6.afm, the control), dyadic (a), energy (b), mh (c), energy_mh (d).
 
-Sets and protocols (all eot-bench v2, research/EOT_BENCH_V2.md sections 1-3):
+Sets and protocols (all eot-bench v2, research/archive/EOT_BENCH_V2.md sections 1-3):
   oto dev      the HUMAN party's non-backchannel turns of the 60 dev conversations of research/recipes/stage1_turn_dyadic.yaml
                (first 160 conversations of the slice, positions i % 8 in {0, 1, 2}; never trained on), 20 s windows
                with a 2 s trail (block A) and the same starts with a 6 s trail (block C). Input = the two-channel
@@ -379,7 +379,7 @@ def tables(res) -> str:
 
 
 def stage_tb_policy(a) -> dict:
-    """TurnBench dev (official gold / score_task, per speaker; research/DYADIC.md section 7's replica with TP-to-branch
+    """TurnBench dev (official gold / score_task, per speaker; research/archive/DYADIC.md section 7's replica with TP-to-branch
     attribution) of the 'fixed' policy p > theta OR Silero silence >= k for one head, theta over the head's own score
     quantiles (plus off) x section 7's k grid: the max-recall point at fp <= 0.10 (section 4's dev rule), the lowest
     P50 with recall >= 0.80 and fp <= 0.10 (section 7's fit rule, in-sample), the lowest P50 at fp <= 0.10 at any

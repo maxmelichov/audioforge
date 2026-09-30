@@ -1,6 +1,6 @@
 """Turn-head error analysis on AMI dev: why the v3 turn head works with oracle speaker activity and fails with
 NVIDIA's streaming Sortformer track, and why a silence timeout on the same noisy track does better
-(research/TURN_ERRORS.md).
+(research/archive/TURN_ERRORS.md).
 
 Two stages, so every model process stays small (CPU, 2 threads, one model load, resumable):
 

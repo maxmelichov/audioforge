@@ -112,7 +112,7 @@ All times are **audio time in seconds**, counted from the first sample the clien
   before `t`. Measured column age on arrival, CPU, 2 threads, 1x, 2 AMI dev windows: p50 210-227 ms (p95 291 ms)
   with `low_latency_032` and 857 ms (p95 1035 ms) with `low_latency`
   ([EARLY_RESULTS](../research/EARLY_RESULTS.md#live-streaming-server-2026-09-26),
-  [INTEGRATION.md §1](../research/INTEGRATION.md#1-executive-summary)). The column's own frame end is sent only as
+  [INTEGRATION.md §1](../research/archive/INTEGRATION.md#1-executive-summary)). The column's own frame end is sent only as
   the debug field `spk_t`. Until the first column exists (about 0.3 s with the default preset, about 1 s with
   `low_latency`), `speakers` is `[0, 0, 0, 0]`, the same as "nobody talking".
 - **Decision time.** `turn_end.t` and the `t` of the `final` that follows it are the **decision time**: the audio
@@ -156,9 +156,9 @@ config message never ends the session.
 | field | type | default | allowed values | effect |
 |---|---|---|---|---|
 | `type` | string | | `"config"` | |
-| `turn_policy` | string | `"timeout"` | `timeout`, `timeout_quiet`, `timeout_any`, `head`, `both`, `hybrid`, `hybrid_silero`, `hybrid_dyn` | end-of-turn rule; see [CONFIGURATION.md §4](CONFIGURATION.md#4-turn-policies-configturn_policy). An unknown value is ignored (the current policy stays). `hybrid_silero` / `hybrid_dyn` / `timeout_any` must be set before the session starts. `timeout_any` (multi-party rooms, [CONFIGURATION.md §7.4](CONFIGURATION.md#74-multi-speaker-rooms---diar-labels---shed-diar-timeout_any)) ends *every* speaker's turn: `timeout_ms` of nobody talking, or a speaker change (`turn_end.policy: "change"`) |
+| `turn_policy` | string | the server's `--turn-policy`: `"vad_head"` in single mode (the default), `"timeout"` in room mode | `timeout`, `timeout_quiet`, `timeout_any`, `head`, `both`, `hybrid`, `hybrid_silero`, `hybrid_dyn`, `vad_head` | end-of-turn rule; see [CONFIGURATION.md §4](CONFIGURATION.md#4-turn-policies-configturn_policy). An unknown value is ignored (the current policy stays). `hybrid_silero` / `hybrid_dyn` / `timeout_any` must be set before the session starts. `timeout_any` (multi-party rooms, [CONFIGURATION.md §7.4](CONFIGURATION.md#74-multi-speaker-rooms---diar-labels---shed-diar-timeout_any)) ends *every* speaker's turn: `timeout_ms` of nobody talking, or a speaker change (`turn_end.policy: "change"`) |
 | `timeout_ms` | integer (number accepted) | `1000` | clamped to [80, 4840] | primary-column silence that ends a turn for `timeout`, `timeout_quiet`, `both`, `hybrid`. Upper bound = 5 s primary window minus 160 ms. Not used by `hybrid_silero` / `hybrid_dyn` |
-| `eot_threshold` | number | policy-dependent: `0.99828` for `hybrid_silero`, `0.998283` for `hybrid_dyn`, else `0.98` | clamped to [0, 1] | turn-head threshold for `head`, `both`, `hybrid*`. Setting it overrides the Silero policies' frozen thresholds |
+| `eot_threshold` | number | policy-dependent: `0.99828` for `hybrid_silero`, `0.998283` for `hybrid_dyn`, `0.99` for `vad_head`, else `0.98` | clamped to [0, 1] | turn-head threshold for `head`, `both`, `hybrid*`. Setting it overrides the Silero policies' frozen thresholds |
 | `sample_rate` | integer | `16000` | 8000-192000; only before the first audio frame | input sample rate of the binary frames; other values are ignored |
 | `format` | string | `"int16"` | `int16`, `float32`; only before the first audio frame | sample format of the binary frames |
 | `channels` | integer | `1` | 1-8; only before the first audio frame | interleaved channels in the binary frames, averaged to mono |
@@ -270,12 +270,12 @@ Sent when a turn policy fires.
 | field | type | meaning | when present |
 |---|---|---|---|
 | `t` | number | decision time, s (see [time semantics](#3-time-semantics)) | always |
-| `policy` | string | `timeout`, `head`, `hybrid`, `hybrid_silero` or `hybrid_dyn`. `timeout_quiet` fires are tagged `timeout`; with `both` each path is tagged with its own name. `timeout_any` fires are tagged `timeout` (nobody talking for `timeout_ms`) or `change` (another speaker took over; `silence_ms` = the previous speaker's silence) | always |
+| `policy` | string | `timeout`, `head`, `hybrid`, `hybrid_silero`, `hybrid_dyn` or `vad_head`. `timeout_quiet` fires are tagged `timeout`; with `both` each path is tagged with its own name. `timeout_any` fires are tagged `timeout` (nobody talking for `timeout_ms`) or `change` (another speaker took over; `silence_ms` = the previous speaker's silence) | always |
 | `p` | number or null | the turn head's probability. `head` path: the value that crossed the threshold. `timeout` under `timeout` / `timeout_quiet` / `both`: `null`. Under `hybrid*`: the head value used by the firing path, or for a timeout / Silero firing the latest head value ready by `t` (`null` without a turn head) | always |
-| `silence_ms` | int | the firing path's silence in ms. timeout: silence of the diarizer primary column; head: frames since the VAD head last exceeded 0.5, times 80; Silero paths: Silero any-speaker silence | always |
+| `silence_ms` | int | the firing path's silence in ms. timeout: silence of the diarizer primary column; head: frames since the VAD head last exceeded 0.5, times 80; Silero paths: Silero any-speaker silence; `vad_head`: the served VAD head's silence (head path / fallback) or the user's TS-VAD silence (others path) | always |
 
 Which fires cut a `final` (the "cutting policy"): `timeout` fires for `timeout`, `timeout_quiet` and `both`; `head`
-fires for `head`; the single merged fire for `hybrid`, `hybrid_silero`, `hybrid_dyn`. Under `both`, `head` fires
+fires for `head`; the single merged fire for `hybrid`, `hybrid_silero`, `hybrid_dyn`, `vad_head`. Under `both`, `head` fires
 are reported without a `final`.
 
 ### 5.5 `final`
@@ -400,7 +400,7 @@ message. They are not part of the stable protocol.
 | `stats` | `turn_ms_p50` | mean turn-head time per ASR frame, ms |
 | `stats` | `backlog_ms_max`, `backlog_ms_end` | queued unprocessed audio when a block was taken, max and last, ms |
 | `stats` | `send_lag_ms_p50`, `send_lag_ms_p95`, `send_lag_ms_max` | wall ms from a block's last sample arriving to its messages being ready |
-| `stats` | `diar_lag_ms_mean_measured` | mean audio-time lag of diarizer columns. Computed from sample counts, so at 1x it always reads the structural mean; it is not a wall-clock measurement ([INTEGRATION.md §5 D8](../research/INTEGRATION.md#5-defects-found-by-the-verifier-and-their-status)) |
+| `stats` | `diar_lag_ms_mean_measured` | mean audio-time lag of diarizer columns. Computed from sample counts, so at 1x it always reads the structural mean; it is not a wall-clock measurement ([INTEGRATION.md §5 D8](../research/archive/INTEGRATION.md#5-defects-found-by-the-verifier-and-their-status)) |
 | `stats` | `turn_input` | as in `ready` |
 | `stats` | `enroll_ms_p50`, `enroll_ms_max`, `enroll_ms_mean`, `enroll_n_embed` | binder time per diarizer frame and number of TitaNet embeddings (with `--enroll` other than `dominant`) |
 | `stats` | `silero_ms_p50`, `silero_ms_p95`, `silero_ms_mean`, `silero_chunks` | Silero VAD time per 32 ms chunk and chunk count (`hybrid_silero` / `hybrid_dyn` sessions) |
@@ -593,7 +593,7 @@ of the session: level 2. Turn events and streaming finals continue at every leve
 
 ## 12. Known protocol limitations
 
-From the verifier's defect list ([INTEGRATION.md §5](../research/INTEGRATION.md#5-defects-found-by-the-verifier-and-their-status)),
+From the verifier's defect list ([INTEGRATION.md §5](../research/archive/INTEGRATION.md#5-defects-found-by-the-verifier-and-their-status)),
 with their state in the current code:
 
 - **D2** Finals are cut at a token index, not a word start, so a word can be split between two finals.

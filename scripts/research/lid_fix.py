@@ -1,8 +1,8 @@
-"""LID fix pass (research/LID.md, "Fix pass, 2026-09-29"): diagnose the head, scale the data, distil AmberNet into a
+"""LID fix pass (research/archive/LID.md, "Fix pass, 2026-09-29"): diagnose the head, scale the data, distil AmberNet into a
 head on the shared encoder, streaming decision rule, fusion fallback.
 
 Data (all on the SSD through the data/ symlinks):
-  fetch_more   the rest of every FLEURS-17 train tarball beyond the 250 utterances research/LID.md used
+  fetch_more   the rest of every FLEURS-17 train tarball beyond the 250 utterances research/archive/LID.md used
                (split "trainx", data/lid/fleurs/<lang>/trainx, manifest data/lid/fleurs/manifest_trainx.jsonl).
                FLEURS train / dev / test are speaker-disjoint, so dev / test stay untouched. Resumable per language.
   extra_en     accented / conversational English for the English class: LibriSpeech train-clean-100 utterances,
@@ -16,7 +16,7 @@ Stages (every model-loading call goes through scripts/dev/gate.sh; each call sto
   probe        per-block linear probes (2 s / 5 s), data-scaling curve.
   train        head training on cached features: CE to the label + KL to AmberNet (temperature T), feature-level
                augmentation; checkpoints on the SSD, read back after writing.
-  eval         the head on the research/LID.md clips (FLEURS-17 test 1/2/3/5 s/full, EdAcc), CIs.
+  eval         the head on the research/archive/LID.md clips (FLEURS-17 test 1/2/3/5 s/full, EdAcc), CIs.
   rule         streaming announcement rule (first-announced language accuracy, time to announce).
 """
 from __future__ import annotations
@@ -240,7 +240,7 @@ def _aug_audio(x: np.ndarray, rng) -> tuple[np.ndarray, float]:
 
 def _view_audio(r: dict, view: str, onsets: dict, cap_s: float, rng):
     """(audio, offset_samples, speed) of row ``r`` for ``view``: 'on' = from the Silero onset - 0.1 s (the
-    research/LID.md clips), 'full' = from the file start, 'aug' = 'full' augmented (_aug_audio)."""
+    research/archive/LID.md clips), 'full' = from the file start, 'aug' = 'full' augmented (_aug_audio)."""
     x = D.load_audio(r)
     off, s = 0, 1.0
     if view in ("on", "aug"):  # the augmented view is the 'on' view augmented (frames map by the speed factor)
@@ -481,8 +481,8 @@ def boot_ci(ok: np.ndarray, n_boot: int = 1000, seed: int = 0) -> list[float]:
 def stage_probe(a):
     """Linear probe per encoder block (1-17) and window (1 / 2 / 3 / 5 s from the onset, all frames): mean-pooled
     block output, standardise + logistic regression (C = 0.1), fitted on FLEURS train (the 250 per language of
-    research/LID.md, 'on' view: encoder started at the onset, as the test clips), scored on the FLEURS-17 test clips ('on' view,
-    = the research/LID.md clips) and EdAcc (fraction called en). --scale: the same probe on the best blocks with
+    research/archive/LID.md, 'on' view: encoder started at the onset, as the test clips), scored on the FLEURS-17 test clips ('on' view,
+    = the research/archive/LID.md clips) and EdAcc (fraction called en). --scale: the same probe on the best blocks with
     50 / 125 / 250 / 1000 / all train utterances per language (train + trainx)."""
     Ptr, ytr = load_pool("train", "on")
     Pte, yte = load_pool("test", "on")
@@ -922,7 +922,7 @@ def stage_train(a):
 
 
 def stage_confusion(a):
-    """Diagnosis of the current served-candidate head (research/LID.md lid_aug) from its saved predictions
+    """Diagnosis of the current served-candidate head (research/archive/LID.md lid_aug) from its saved predictions
     (data/lid/preds/lid_aug.npz): per-language accuracy, the largest off-diagonal confusions at 2 s and on full
     utterances, accuracy per window length with CIs; the same for AmberNet for reference."""
     import sys as _s
@@ -1016,12 +1016,12 @@ def stage_rule(a):
 
 # --------------------------------------------------------------------------- fusion fallback: head + transcript-text LID
 V3_LANGS = ["bg", "hr", "cs", "da", "nl", "en", "et", "fi", "fr", "de", "el", "hu", "it", "lv", "lt", "mt", "pl", "pt",
-            "ro", "sk", "sl", "es", "sv", "ru", "uk"]  # Parakeet-TDT v3's 25 (research/HYBRID_ASR.md section 1)
+            "ro", "sk", "sl", "es", "sv", "ru", "uk"]  # Parakeet-TDT v3's 25 (research/archive/HYBRID_ASR.md section 1)
 TDT_WORK = SSD / "scratch/hybrid_asr"
 
 
 def stage_fusion(a):
-    """Head early call + text LID (langid.py over the Parakeet-TDT v3 transcript, research/HYBRID_ASR.md section 5) to
+    """Head early call + text LID (langid.py over the Parakeet-TDT v3 transcript, research/archive/HYBRID_ASR.md section 5) to
     confirm or override, on the utterances that have a v3 transcript: the 2 s clips (30 per language, 510) and the
     full utterances (150 per language for 10 languages, 30 for the others). Rules: head alone; text alone (empty =
     wrong); 'override' = the text's language when it is one of v3's supported FLEURS-17 languages with langid

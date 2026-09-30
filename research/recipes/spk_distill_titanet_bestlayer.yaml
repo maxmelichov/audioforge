@@ -1,4 +1,4 @@
-# research/SPK_HEAD.md - distillation: the same speaker head on the best single encoder layer of the sweep, supervised by cosine
+# research/archive/SPK_HEAD.md - distillation: the same speaker head on the best single encoder layer of the sweep, supervised by cosine
 # distillation onto frozen NVIDIA TitaNet-Large embeddings (CC-BY-4.0; 192-d, cached per single-speaker segment
 # by scripts/research/cache_titanet.py) instead of AAM over the 190 AMI ids. Data: AMI train + ICSI train single-speaker
 # segments and 5k LibriSpeech train-clean-100 utterances. Head only (init.train_only); the ASR is untouched.
@@ -18,7 +18,7 @@ heads:
   diar: {weight: 0}
   turn: {weight: 0}
   # distill: 1 - cos(student, spk_teacher); aam_weight 0: no class labels used (ICSI / LibriSpeech ids are not AMI's)
-  # from_layers: [3] = encoder block 4, the best block of the layer sweep (research/SPK_HEAD.md)
+  # from_layers: [3] = encoder block 4, the best block of the layer sweep (research/archive/SPK_HEAD.md)
   spk: {type: speaker, num_speakers: 190, from_layers: [3], weight: 1.0,
         distill: {target: spk_teacher, weight: 1.0}, aam_weight: 0.0}
 data:

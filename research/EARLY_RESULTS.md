@@ -34,11 +34,11 @@ final report wins. Paths in the text were updated for the 2026-09-28 / 09-29 mov
 Re-checked on text-disjoint audio and unseen speakers, the numbers stay within ~1.5 points, with two
 exceptions: speaker ID is 100% on training speakers but 38% on unseen ones, and codec token accuracy
 falls from 25.1% to 22.2%. SALM was not re-checked this way. See
-[`research/VERIFICATION.md`](VERIFICATION.md) (C08).
+[`research/archive/VERIFICATION.md`](archive/VERIFICATION.md) (C08).
 
 ### Ablations (verified, verdicts mixed)
 
-Matched-budget ablations from [`research/VERIFICATION.md`](VERIFICATION.md) §3 (CPU, one seed,
+Matched-budget ablations from [`research/archive/VERIFICATION.md`](archive/VERIFICATION.md) §3 (CPU, one seed,
 synthetic data). All three verdicts are **mixed**.
 
 - **One encoder, five heads vs separate models (`voice_agent_frontend`): mixed.** The inference gain is real:
@@ -89,17 +89,17 @@ Synthetic results above prove the code works; these are the numbers on real audi
 
 | What | Result | Where |
 |---|---|---|
-| NVIDIA's models as local teachers/benchmarks | parakeet-ctc-1.1b 1.64% WER, 63x realtime on M5 | `research/TEACHERS.md` |
-| NVIDIA weights loaded into audioforge (no NeMo) | streaming ASR 1.92% WER at 1 s lookahead, 2.48% at 0; Parakeet-CTC 1.68% | `research/NEMO_IMPORT.md` |
-| NVIDIA Streaming Sortformer v2 (CC-BY-4.0) in audioforge | DER 0.20 on AMI dev windows (our head 0.38, trivial 0.31) | `research/SORTFORMER_IMPORT.md` |
-| Our heads on the frozen NVIDIA encoder (AMI dev, unseen speakers, 160 ms chunks) | VAD 0.92 acc; speaker EER 15%; ASR gate held (1.23%) | `research/STAGE1.md` |
-| Encoder fine-tuning | WER gate trips (2.1 -> 4.3% in 500 steps) even at lr x0.05 with a KL anchor; encoder stays frozen | `research/PLAN.md` §6 |
-| **Speaker-aware end-of-turn on real meetings** | **leak-free end-to-end win** (eot-bench v2: n=974 AMI dev turns, label-free enrollment, 6 s horizon): hybrid rule (head trained on 6 s trails OR timeout) misses 61.9% of turn ends vs 74.8% for the deployable silence timeout on the same diarizer track (CI excludes 0), ties it on floor-open ends (45.9 vs 46.1); with oracle enrollment 28.7%. Remaining gap = label-free speaker enrollment (~37 pts); **arming the primary at the agent's own TTS end** (eot-bench v2 §9, `serve --enroll after_agent`; the agent end from the labels as a stand-in) cuts it: hybrid 51.6% with TitaNet-L voice following (−10.3 [−13.5, −6.9] vs 61.9; floor-open 34.0 vs 45.9) and 56.0% with no embedding (−5.9 [−8.6, −3.5]) at 6 s; at 2 s only the embedding-free variant is better (−3.9), the voice-followed one fires late (+8.5). 0.32 s diarizer setting: same misses, 0.5–0.8 s less latency. Clean speaker activity: 560 ms / 1.6% misses vs 1440 ms / 6.3%. | `research/EOT_BENCH_V2.md`, `research/STAGE1.md` |
-| On-device | 111M model at 160 ms chunks: RTF 0.16 on one CPU core (a fixed-shape runtime study with random weights: mel + encoder + heads + greedy decode, no diarizer, no second encoder pass; not the served server, whose live figure is 0.64-0.80 at 2 threads, `research/PERFORMANCE.md` §1) | `research/ONDEVICE.md` |
+| NVIDIA's models as local teachers/benchmarks | parakeet-ctc-1.1b 1.64% WER, 63x realtime on M5 | `research/archive/TEACHERS.md` |
+| NVIDIA weights loaded into audioforge (no NeMo) | streaming ASR 1.92% WER at 1 s lookahead, 2.48% at 0; Parakeet-CTC 1.68% | `research/archive/NEMO_IMPORT.md` |
+| NVIDIA Streaming Sortformer v2 (CC-BY-4.0) in audioforge | DER 0.20 on AMI dev windows (our head 0.38, trivial 0.31) | `research/archive/SORTFORMER_IMPORT.md` |
+| Our heads on the frozen NVIDIA encoder (AMI dev, unseen speakers, 160 ms chunks) | VAD 0.92 acc; speaker EER 15%; ASR gate held (1.23%) | `research/archive/STAGE1.md` |
+| Encoder fine-tuning | WER gate trips (2.1 -> 4.3% in 500 steps) even at lr x0.05 with a KL anchor; encoder stays frozen | `research/archive/PLAN.md` §6 |
+| **Speaker-aware end-of-turn on real meetings** | **leak-free end-to-end win** (eot-bench v2: n=974 AMI dev turns, label-free enrollment, 6 s horizon): hybrid rule (head trained on 6 s trails OR timeout) misses 61.9% of turn ends vs 74.8% for the deployable silence timeout on the same diarizer track (CI excludes 0), ties it on floor-open ends (45.9 vs 46.1); with oracle enrollment 28.7%. Remaining gap = label-free speaker enrollment (~37 pts); **arming the primary at the agent's own TTS end** (eot-bench v2 §9, `serve --enroll after_agent`; the agent end from the labels as a stand-in) cuts it: hybrid 51.6% with TitaNet-L voice following (−10.3 [−13.5, −6.9] vs 61.9; floor-open 34.0 vs 45.9) and 56.0% with no embedding (−5.9 [−8.6, −3.5]) at 6 s; at 2 s only the embedding-free variant is better (−3.9), the voice-followed one fires late (+8.5). 0.32 s diarizer setting: same misses, 0.5–0.8 s less latency. Clean speaker activity: 560 ms / 1.6% misses vs 1440 ms / 6.3%. | `research/archive/EOT_BENCH_V2.md`, `research/archive/STAGE1.md` |
+| On-device | 111M model at 160 ms chunks: RTF 0.16 on one CPU core (a fixed-shape runtime study with random weights: mel + encoder + heads + greedy decode, no diarizer, no second encoder pass; not the served server, whose live figure is 0.64-0.80 at 2 threads, `research/archive/PERFORMANCE.md` §1) | `research/archive/ONDEVICE.md` |
 
 In real meetings a mid-turn hesitation (median ~1.2 s) is longer than the silence at a true speaker
 change (~1 s, and 45% of changes overlap), so silence timeouts cannot work in principle
-(`research/AMI.md`); whether a learned speaker-aware head can beat them at low latency is still
+(`research/archive/AMI.md`); whether a learned speaker-aware head can beat them at low latency is still
 open — the remaining lever is training it on real diarizer tracks.
 
 ### Live streaming server (2026-09-26)
@@ -135,7 +135,7 @@ Everything below was measured on 2026-09-26 with the paths of that day (`runs/st
 - **Diarizer setting (`--diar-config`, default `low_latency_032`, since 2026-09-26).** Two NVIDIA card settings via
   `AOSCConfig.preset` (`streaming_diar.SORTFORMER_PRESETS`): `low_latency_032` = chunk 3 + right context 1 (0.32 s)
   and `low_latency` = chunk 6 + right context 7 (1.04 s, the previous default and the setting STAGE1 scored). Why the
-  switch: research/EOT_BENCH_V2.md section 7 (974 AMI dev turns, leak-free cross-fit, <= 5 % FC) gives the same miss
+  switch: research/archive/EOT_BENCH_V2.md section 7 (974 AMI dev turns, leak-free cross-fit, <= 5 % FC) gives the same miss
   rates at both settings (causal binding, 6 s: hybrid 63.7 vs 61.9 %, head 65.8 vs 66.5 %, timeout 70.1 vs 74.8 %,
   CIs overlapping) but 0.5-0.8 s lower P50 wherever systems fire (oracle timeout 2720 vs 3200 ms, head 2320 vs
   2960 ms; nominal emission delay 240 vs 840 ms). The cost is DER 28.3 vs 26.3 on the dev windows. The `ready`
@@ -162,7 +162,7 @@ Everything below was measured on 2026-09-26 with the paths of that day (`runs/st
   At 4 threads: RTF 0.34-0.42. The server patches the conformer convolutions with an equivalent unfold/linear CPU
   path (identical tokens), which gives about 3x on the ASR and 2x on the diarizer. Without it, RTF was 1.2-1.3 and
   the server fell behind.
-- **Many speakers in the room (2026-09-28, [`research/DIARIZATION_FIX.md`](DIARIZATION_FIX.md)).** As
+- **Many speakers in the room (2026-09-28, [`research/archive/DIARIZATION_FIX.md`](archive/DIARIZATION_FIX.md)).** As
   shipped, `final.speaker` was the 5 s dominant column (not the turn's speaker), `--diarizer nemotron3` cut the
   diarizer to 4 of its 8 columns (speakers 5-8 invisible), and under load shedding every final became speaker 0.
   Fix: the launcher no longer adds `--diar-spks 4` (all 8 Nemotron-3 columns; `frame.speakers` is 8 long) and adds
@@ -174,7 +174,7 @@ Everything below was measured on 2026-09-26 with the paths of that day (`runs/st
   the speaker count exact, per-final accuracy 0.74 → 0.83 (0.88 with TitaNet); forced shedding 0.809 → 0.329; AMI
   20 s windows unchanged (0.245). Flag reference:
   [`docs/CONFIGURATION.md` §7.4](../docs/CONFIGURATION.md#74-multi-speaker-rooms---diar-labels---shed-diar-timeout_any).
-- **Known user: the TS-VAD turn path (2026-09-28, behind flags; [`research/IMPROVEMENTS.md`](IMPROVEMENTS.md)
+- **Known user: the TS-VAD turn path (2026-09-28, behind flags; [`research/archive/IMPROVEMENTS.md`](archive/IMPROVEMENTS.md)
   §1).** `--turn-input tsvad` feeds the turn head the output of a 0.26 M target-speaker VAD head on the ASR pass's
   block 4, conditioned on the user's voice print: sent by the client (`{"type": "enroll", "embedding": [192
   floats]}`, `--enroll explicit`), or taken from the next `--tsvad-print-s` seconds of speech after `agent_end`
@@ -191,7 +191,7 @@ Everything below was measured on 2026-09-26 with the paths of that day (`runs/st
 
 ### Corrections log (2026-09-25)
 
-An adversarial verification pass ([`research/VERIFICATION.md`](VERIFICATION.md)) found these
+An adversarial verification pass ([`research/archive/VERIFICATION.md`](archive/VERIFICATION.md)) found these
 claims wrong or overstated. The corrected text is above; the originals are kept here so the history stays visible.
 
 - "four new solutions" → three: the docs' own table marks only 3 designs as new (C09).

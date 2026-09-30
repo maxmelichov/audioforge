@@ -1,4 +1,4 @@
-"""Layer routing for the diarization and turn heads (research/LAYER_ROUTING.md). Train / evaluate / report stages.
+"""Layer routing for the diarization and turn heads (research/archive/LAYER_ROUTING.md). Train / evaluate / report stages.
 
   train      run a head-only recipe (GPU, one job on the machine), then assert that every tensor outside the trained
              prefixes (--trained, default the diar head + its mix) is bit-identical to the init checkpoint.
@@ -126,7 +126,7 @@ def stage_diar_eval(a):
 
 # --------------------------------------------------------------------------- turn: eot-bench v2 paired vs trail6
 def stage_turn_pair(a):
-    """eot-bench v2 (research/EOT_BENCH_V2.md §7 protocol) on stored head scores (eval_stage1 --bench v2 --v2-stage
+    """eot-bench v2 (research/archive/EOT_BENCH_V2.md §7 protocol) on stored head scores (eval_stage1 --bench v2 --v2-stage
     scores --v2-tag <tag>): causal_dominant binding, block A (default windows, 2 s) and block C (extended windows, 2 s /
     6 s emission horizons), threshold cross-fitted at <= 5 % per-turn FC (2-fold leave-meetings-out); miss, held-out FC
     and P50 per system, and paired bootstraps (tag minus --base) over all / floor-open / taken turns (the §7 pair code)."""

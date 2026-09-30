@@ -14,7 +14,7 @@
 # PYTORCH_MPS_HIGH_WATERMARK_RATIO=0.5 caps MPS at half of unified memory (PLAN.md §4 rules).
 # Memory estimate (batch 6, AMI windows <= 16 s): ~0.5 GB weights, AdamW state only for ~4M new params,
 # activations only for the speaker-conditioned encoder pass (the kernels are trainable) and the # Heads train and are evaluated at the 160 ms streaming context: the ported model's default [70,13]
-# is a 1.12 s chunk, which makes sub-400 ms end-of-turn structurally impossible (research/STAGE1.md).
+# is a 1.12 s chunk, which makes sub-400 ms end-of-turn structurally impossible (research/archive/STAGE1.md).
 # ~3-5 GB peak on MPS.
 name: stage1_heads_pretrained
 init: {from: runs/nemo_hybrid_streaming_multi.afm, pretrained_lr_mult: 0}
@@ -28,7 +28,7 @@ heads:
   vad: {type: frame, key: vad, hidden: 64, from_layers: all, weight: 0.5}
   eou: {type: frame, key: eou, hidden: 64, pos_weight: 5.0, weight: 0.5}
   spk: {type: speaker, num_speakers: 190, from_layers: all, weight: 0.3}
-  # from_layers: all + prefix loss per research/TURN_ABLATION.md (else the head collapses into a VAD
+  # from_layers: all + prefix loss per research/archive/TURN_ABLATION.md (else the head collapses into a VAD
   # on column 0 and outputs ~0 on the growing prefixes the streaming turn path feeds it)
   diar: {type: sortformer, num_spks: 4, from_layers: all, prefix_prob: 0.5, prefix_min: 8, weight: 1.0}
   turn: {type: turn, mode: kernel, use_text: true, condition_on_speaker: true, k_tokens: 4, text_dim: 64,

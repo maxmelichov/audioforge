@@ -11,7 +11,9 @@ from __future__ import annotations
 
 import glob
 import json
+import re
 import statistics
+import subprocess
 from decimal import ROUND_HALF_UP, Decimal
 from pathlib import Path
 
@@ -34,6 +36,110 @@ def get(d, path):
 
 def rnd(x, dec):
     return str(Decimal(str(x)).quantize(Decimal(1).scaleb(-dec), rounding=ROUND_HALF_UP))
+
+
+def load_committed(rel):
+    """A run file as committed at HEAD (not the working tree), with the commit that last touched it. Used for the tWER
+    files: the working tree can hold another agent's uncommitted re-run made with uncommitted code."""
+    blob = subprocess.check_output(["git", "-C", str(ROOT), "show", f"HEAD:{rel}"])
+    h = subprocess.check_output(["git", "-C", str(ROOT), "log", "-1", "--format=%h", "--", rel]).decode().strip()
+    return json.loads(blob), f"{rel} @ {h} (committed)"
+
+
+def v8(put, out):
+    """results_v8: turn-taking on calls and in meetings (EOT latency p50, false-interruption rate, missed turn ends),
+    target-speaker WER, VAD F1 and miss rate at a fixed false-alarm rate, compute per 160 ms chunk, and the footer WER
+    line. Every key is v8/...; every entry names its file and path."""
+    # 1-2. turn-taking, same turn ends for every system (runs/eot_latency.json table)
+    eot = load("runs/eot_latency.json")
+    ours = eot["selection"]["fastest_print_fix_goal_no_clip_cut"]   # the shipped vad_head rule (EOT_LATENCY.md, constants.py; commit 6ad219a)
+    assert ours.startswith("(g) head theta 0.99: ourVAD<0.4 sil>=160ms & p>=0.99 | fallback 640ms | others"), ours
+    systems = (("ours", ours), ("livekit", "LiveKit EnglishModel + Silero (defaults)"),
+               ("pipecat", "Pipecat smart-turn v3.2 + Silero (defaults)"))
+    for ds, tk in (("calls", "two_party_user"), ("ami", "ami")):
+        for key, row in systems:
+            r = eot["table"][tk][row]
+            base = f"table > {tk} > {row}"
+            put(f"v8/{ds}/{key}/eot", r["eot_total_ms_p50"], 0, f"end-of-turn latency p50, ms, {tk}, {row}", "runs/eot_latency.json", base + " > eot_total_ms_p50")
+            put(f"v8/{ds}/{key}/fi", r["false_interruption_pct"], 0, f"false-interruption rate, % of user turns, {tk}, {row}", "runs/eot_latency.json", base + " > false_interruption_pct")
+            put(f"v8/{ds}/{key}/miss", r["missed_pct"], 0, f"missed turn ends, % of turn ends, {tk}, {row}", "runs/eot_latency.json", base + " > missed_pct")
+        n = eot["table"][tk][ours]["n_turns"]
+        assert all(eot["table"][tk][row]["n_turns"] == n for _, row in systems)   # the same turn ends for every system
+        put(f"v8/{ds}/n", n, 0, f"reference turn ends scored, {tk}", "runs/eot_latency.json", f"table > {tk} > <rule> > n_turns")
+        put(f"v8/{ds}/sessions", eot["n_sessions"]["two_party_user" if ds == "calls" else "ami"], 0, f"sessions / windows, {tk}", "runs/eot_latency.json", f"n_sessions > {tk}")
+    # 3. target-speaker WER (the user's words only), committed run files
+    tl, tl_src = load_committed("runs/tswer_live.json")
+    for key, arm in (("none", "none"), ("ours", "tsvad_d2"), ("oracle", "oracle_d2")):
+        put(f"v8/twer/calls/{key}", tl["results"]["mono"][arm]["wer"], 0, f"tWER %, the 16 two-party mono-mix sessions (both voices in one channel), arm {arm}",
+            tl_src, f"results > mono > {arm} > wer")
+    put("v8/twer/calls/n", tl["results"]["mono"]["n_sessions"], 0, "mono-mix sessions scored", tl_src, "results > mono > n_sessions")
+    tw, tw_src = load_committed("runs/tswer.json")
+    arms = tw["results"]["icsi"]["primary"]["arms"]
+    put("v8/twer/icsi/ours", arms["tsvad_d2"]["twer"], 0, "tWER %, ICSI held-out, primary speaker, audioforge TS-VAD filter (5 s print)", tw_src, "results > icsi > primary > arms > tsvad_d2 > twer")
+    put("v8/twer/icsi/none", arms["none"]["twer"], 0, "tWER %, ICSI held-out, primary speaker, no filter (every word)", tw_src, "results > icsi > primary > arms > none > twer")
+    n3 = {b: arms[f"n3_{b}_d2"]["twer"] for b in ("spk", "tn")}
+    best = min(n3, key=n3.get)   # the better of the two binders for NVIDIA's system
+    put("v8/twer/icsi/nemotron3", n3[best], 0, f"tWER %, ICSI, NVIDIA Nemotron-3-Diarization column bound by the same 5 s print (better binder: {best}; spk {n3['spk']}, TitaNet {n3['tn']})",
+        tw_src, f"min(results > icsi > primary > arms > n3_spk_d2 / n3_tn_d2 > twer)")
+    # 4. VAD, AMI dev 64 x 20 s windows: F1 at the 0.5 threshold and the miss rate at the same ~7.5 % false-alarm rate
+    va = load("runs/vad_auc.json")
+    for key, k in (("ours", "audioforge_block4_head"), ("silero", "silero_v5.1.2"), ("marblenet", "marblenet_frame_vad_v2")):
+        put(f"v8/vad/{key}/f1", va[k]["f1_at_0.5"], 3, f"VAD F1 at threshold 0.5, AMI dev, {k}", "runs/vad_auc.json", f"{k} > f1_at_0.5")
+    vs = load("runs/vad_single.json")["eval"]["ami_dev"]["L3"]
+    assert abs(vs["f1"] - va["audioforge_block4_head"]["f1_at_0.5"]) < 1e-4   # the two files agree on the shipped head
+    for key in ("ours", "silero", "marblenet"):
+        out[f"v8/vad/{key}/miss"] = dict(out[f"vad2/{key}/miss"])
+    put("v8/vad/fpr", 100 * vs["at_fpr0.075"]["fpr"], 1, "false-alarm rate of the fixed operating point, %", "runs/vad_single.json", "eval > ami_dev > L3 > at_fpr0.075 > fpr")
+    put("v8/vad/n", load("runs/baselines_sd.json")["vad"]["n"], 0, "AMI dev windows (20 s)", "runs/baselines_sd.json", "vad > n")
+    # 6. cost: compute per 160 ms chunk, the full single-mode engine (Session.chunk_ms) on the bundled clip, 2 threads, CPU and
+    # the Mac GPU from the same run (runs/mps_115m.json, research/MPS_115M.md); the RTX 5090 figure as cited in runs/
+    mp = load("runs/mps_115m.json")
+    for key, dev, name in (("cpu", "cpu", "Apple M5 CPU, 2 threads"), ("mps", "mps", "Apple M5 GPU (MPS)")):
+        put(f"v8/cost/{key}", mp["engine"][dev]["chunk_ms_p50"], 1, f"ms of compute per 160 ms chunk, p50, full --mode single engine on the bundled clip, {name}",
+            "runs/mps_115m.json", f"engine > {dev} > chunk_ms_p50")
+    note = load("runs/stt_latency.json")["gpu_estimate"]["note"]
+    m = re.search(r"5090's (\d+) ms/chunk \((research/GPU_RUN_[\d-]+\.md), PR #1\)", note)
+    assert m, note
+    put("v8/cost/gpu", int(m.group(1)), 0, f"ms per 160 ms chunk on an RTX 5090, measured in PR #1 ({m.group(2)} on that branch; no GPU run file in runs/ locally)",
+        "runs/stt_latency.json", "gpu_estimate > note (cites PR #1)")
+    # footer: word accuracy of the 115M streaming model
+    hy = load("runs/hybrid_asr.json")
+    for key, k in (("ours", "served"), ("whisper_small", "whisper_small")):
+        p = f"english > results > {k}/libri > wer_normalize_text > wer"
+        put(f"v8/wer/libri/{key}", 100 * get(hy, p), 1, f"WER %, LibriSpeech test-clean 200 utterances, {k}", "runs/hybrid_asr.json", p)
+    L = load("runs/single_model.json")["table"]["live_69"]["systems"]
+    for key, row in (("ours", "single_S (A1 rule, --mode single, live)"), ("livekit", "livekit_default_B"), ("pipecat", "pipecat_default_A")):
+        put(f"v8/wer/live/{key}", 100 * L[row]["wer"], 1, f"WER %, live sessions (the 32 with transcripts), {row}", "runs/single_model.json", f"table > live_69 > systems > {row} > wer")
+
+
+def v9(put, out):
+    """results_v9: the four winning cards of v8 as paired vertical bars (audioforge vs one competitor), each with the
+    relative change computed here from the SAME rounded values printed on the bars (the "shown" strings), so a reader
+    who divides the two bar labels gets the printed %. The raw-value change is kept in "raw" (and in the scope).
+    Never typed. Only improvements are shown, so each must be > 0 or the export stops. Every key is v9/...."""
+    def sh(k):
+        return float(out[k]["shown"])
+    def rel_lower(key, ours, other, what):   # lower is better: % fewer
+        o, b = out[ours], out[other]
+        r, raw = 100 * (1 - sh(ours) / sh(other)), 100 * (1 - o["value"] / b["value"])
+        assert r > 0 and raw > 0, (key, o["value"], b["value"])
+        put(key, r, 0, f"% relative reduction, {what}: 1 - {o['shown']} / {b['shown']} (bar labels); raw values 1 - {o['value']} / {b['value']} = {raw:.2f}",
+            o["source"] + (" + " + b["source"] if b["source"] != o["source"] else ""), f"1 - {ours}.shown / {other}.shown")
+        out[key]["raw"] = raw
+    rel_lower("v9/calls/fi_rel", "v8/calls/ours/fi", "v8/calls/livekit/fi", "false interruptions on calls, audioforge vs LiveKit")
+    rel_lower("v9/calls/miss_rel", "v8/calls/ours/miss", "v8/calls/livekit/miss", "missed turn ends on calls, audioforge vs LiveKit")
+    rel_lower("v9/ami/fi_rel", "v8/ami/ours/fi", "v8/ami/pipecat/fi", "false interruptions in AMI meetings, audioforge vs Pipecat")
+    rel_lower("v9/ami/miss_rel", "v8/ami/ours/miss", "v8/ami/pipecat/miss", "missed turn ends in AMI meetings, audioforge vs Pipecat")
+    rel_lower("v9/twer/rel", "v8/twer/calls/ours", "v8/twer/calls/none", "target-speaker WER on mono-mix calls, audioforge vs our own STT with no speaker filter")
+    # VAD F1, higher is better: % higher. MarbleNet's F1 must agree with the baselines file the task names.
+    o, b = out["v8/vad/ours/f1"], out["v8/vad/marblenet/f1"]
+    mb = load("runs/baselines_sd.json")["vad"]["marblenet_frame_vad_v2"]["sweep"]["0.5"]["f1"]
+    assert abs(mb - b["value"]) < 1e-4, (mb, b["value"])
+    r, raw = 100 * (sh("v8/vad/ours/f1") / sh("v8/vad/marblenet/f1") - 1), 100 * (o["value"] / b["value"] - 1)
+    assert r > 0 and raw > 0, r
+    put("v9/vad/rel", r, 1, f"% relative increase in VAD F1 at 0.5, audioforge vs NVIDIA MarbleNet: {o['shown']} / {b['shown']} - 1 (bar labels); raw {o['value']} / {b['value']} - 1 = {raw:.2f}",
+        "runs/vad_auc.json (+ runs/vad_single.json, runs/baselines_sd.json agree)", "v8/vad/ours/f1.shown / v8/vad/marblenet/f1.shown - 1")
+    out["v9/vad/rel"]["raw"] = raw
 
 
 def main():
@@ -182,6 +288,10 @@ def main():
             f"vad > {sysn} > sweep > {thr} > miss")
     put("vad2/rel", 100 * (1 - out["vad2/ours/miss"]["value"] / out["vad2/marblenet/miss"]["value"]), 0,
         "% less missed speech than NVIDIA MarbleNet at the same false-alarm rate (relative)", "runs/vad_single.json + runs/baselines_sd.json", "1 - vad2/ours/miss / vad2/marblenet/miss")
+    # results_v7 first words in milliseconds (the measured unit), exact
+    for key, row in (("ours", "single_S (A1 rule, --mode single, live)"), ("pipecat", "pipecat_default_A"), ("livekit", "livekit_default_B")):
+        put(f"firstms/{key}", L[row]["first_text_ms_median"], 0, f"ms from the user's first onset to the first words on screen (median), {key}",
+            "runs/single_model.json", f"table > live_69 > systems > {row} > first_text_ms_median")
     # results_v7 secondary lines (relative, from the raw values)
     put("v7/missed_rel", 100 * (1 - out["ext/ami/ours"]["value"] / out["ext/ami/eou"]["value"]), 0,
         "% fewer missed turn ends than NVIDIA Parakeet-Realtime-EOU, AMI (relative)", "runs/single_model.json + runs/baselines_turn.json", "1 - ext/ami/ours / ext/ami/eou")
@@ -203,6 +313,10 @@ def main():
         "% fewer word errors than Whisper small (relative: (14.4 - 9.5) / 14.4)", "runs/hybrid_asr.json + runs/final_asr.json", "1 - wer/ours / wer/whisper_small")
     put("wer/pp", out["wer/whisper_small"]["value"] - out["wer/ours"]["value"], 1,
         "percentage points fewer word errors (absolute)", "runs/hybrid_asr.json + runs/final_asr.json", "wer/whisper_small - wer/ours")
+    # ---- results_v8 / architecture_v8 (standard metric names only; research/METRICS.md, EOT_LATENCY.md, TSWER.md) ----
+    v8(put, out)
+    # ---- results_v9 (the user's mock-up: paired bars, relative change per chart) ----
+    v9(put, out)
     (HERE / "numbers_single.json").write_text(json.dumps(out, indent=1))
     (HERE / "numbers_single.js").write_text("// generated by export_single.py from the run files; do not edit\nwindow.NS = " + json.dumps(out) + ";\n")
     for k, v in out.items():

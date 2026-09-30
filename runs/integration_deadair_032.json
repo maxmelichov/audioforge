@@ -1,7 +1,7 @@
 {
  "date": "2026-09-26",
  "what": "Product-level dead air / cut-ins / WER of the Pipecat and LiveKit (room-less) demos against audioforge.serve with the new default diarizer preset low_latency_032 (0.32 s) vs low_latency (1.04 s); policies timeout (1000 ms), hybrid (1000 ms, theta 0.998), hybrid (4000 ms backstop, theta 0.998)",
- "windows": "the 5 AMI dev turn windows of research/INTEGRATION.md section 4 (ES2011b_027, IB4002_119, IS1008b_003, IS1008b_014, TS3004b_064), WAVs/refs reused from scratchpad wf-integ/{pipecat/ami,livekit/audio}; 1.04 s pair = IS1008b_003, ES2011b_027",
+ "windows": "the 5 AMI dev turn windows of research/archive/INTEGRATION.md section 4 (ES2011b_027, IB4002_119, IS1008b_003, IS1008b_014, TS3004b_064), WAVs/refs reused from scratchpad wf-integ/{pipecat/ami,livekit/audio}; 1.04 s pair = IS1008b_003, ES2011b_027",
  "server": "PYTHONPATH=. .venv/bin/python -m audioforge.serve --asr runs/stage1_heads_pretrained.afm --diar runs/nemo_sortformer_v2.afm --port P --threads 2 --debug-fields [--diar-config low_latency]; one server per session, CPU, 2 threads, 1x real time",
  "hybrid_driver": "the demos' CLIs and adapters whitelist only timeout|head|both; a scratch driver (deadair032/drive.py) called the unmodified run_files/amain with policy 'hybrid' after widening integrations.*.POLICIES and the LiveKit cut_policy property at runtime (no repo code edited)",
  "pads": "Pipecat pad 3.0 s, LiveKit tail 2.5 s (as before); hybrid 4000 ms runs 5.5 s so the backstop can land",

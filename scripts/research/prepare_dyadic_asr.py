@@ -1,4 +1,4 @@
-"""Per-channel ASR transcripts of oto conversations (research/DYADIC.md section 8): oto has no transcripts, but the turn
+"""Per-channel ASR transcripts of oto conversations (research/archive/DYADIC.md section 8): oto has no transcripts, but the turn
 head's text branch was trained on each window's PRIMARY words (AMI reference transcript, aligned through the ASR
 joint). For the dyadic training windows the primary's words are the frozen ASR head's greedy decode of the party's OWN
 channel (one party, clean), each word stamped with the emission time of its last token. Written once per

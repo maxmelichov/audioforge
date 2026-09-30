@@ -6,7 +6,7 @@
     PYTHONPATH=. python scripts/research/bench_serve.py compare runs/perf/base_nemo.json runs/perf/opt_nemo.json [--tol 1e-4]
     PYTHONPATH=. python scripts/research/bench_serve.py table runs/perf/*.json
 
-What is measured (research/PERFORMANCE.md):
+What is measured (research/archive/PERFORMANCE.md):
 * Every clip is streamed through a fresh ``Session`` in 20 ms blocks (the block size of a paced client and of the
   live runs in research/E2E_FINAL.md), as fast as the CPU allows (not paced). Per block: wall and process CPU time.
   RTF = processing wall time / audio time; ``cpu_rtf`` = process CPU time / audio time (both threads counted).
@@ -88,7 +88,8 @@ def load_engine(a):
     d = NEMOTRON if a.diar == "nemotron" else SORTFORMER if a.diar == "sortformer" else dict(diar=a.diar)
     r0 = cur_rss_mb()
     t0 = time.perf_counter()
-    eng = S.Engine.load(str(ROOT / a.asr), str(ROOT / d["diar"]), "cpu", diar_pool=d.get("diar_pool"),
+    eng = S.Engine.load(str(ROOT / a.asr), str(ROOT / d["diar"]), getattr(a, "device", "cpu"),
+                        diar_pool=d.get("diar_pool"),
                         diar_spks=d.get("diar_spks"), threads=a.threads, diar_left=d.get("diar_left", S.DIAR_ENC_LEFT),
                         enroll=a.enroll, silero=str(ROOT / "data/silero/silero_vad_v5.onnx"),
                         preload_silero=a.policy in S.SILERO_POLICIES, perf="none")
@@ -501,7 +502,7 @@ def _time_blocks(fn, x):
 
 
 def cmd_audit(a):
-    """Re-measure the figures research/PERFORMANCE.md section 1 reconciles, under one stated condition: the served
+    """Re-measure the figures research/archive/PERFORMANCE.md section 1 reconciles, under one stated condition: the served
     models, CPU, --threads, fixed AMI clips, one process, wall and process CPU time, load average recorded."""
     import torch
     torch.set_num_threads(a.threads)
@@ -602,6 +603,7 @@ def main(argv=None):
     r.add_argument("--enroll", default="dominant")
     r.add_argument("--arm-every", type=float, default=8.0, help="--enroll after_agent_arm: agent_end every N s")
     r.add_argument("--opt", action="append", default=[], help="Engine perf option name[=value] (repeatable)")
+    r.add_argument("--device", default="cpu", help="cpu | mps | cuda[:N] (serve --device; research/MPS_115M.md)")
     r.add_argument("--streams", type=int, default=1)
     r.add_argument("--stream-seconds", type=float, default=60.0)
     r.add_argument("--batch", action="store_true", help="--streams: batch the pending blocks of all sessions")
@@ -628,7 +630,7 @@ def main(argv=None):
     b.add_argument("--arm-every", type=float, default=8.0)
     b.add_argument("--tol", type=float, default=1e-4)
     b.add_argument("--out", required=True)
-    co = sub.add_parser("components", help="per-component ms per 160 ms of audio (research/PERFORMANCE.md section 2)")
+    co = sub.add_parser("components", help="per-component ms per 160 ms of audio (research/archive/PERFORMANCE.md section 2)")
     co.add_argument("--asr", default=ASR)
     co.add_argument("--diar", default="nemotron")
     co.add_argument("--clips", default="e2e5", choices=list(CLIP_SETS))
@@ -637,7 +639,7 @@ def main(argv=None):
     co.add_argument("--enroll", default="dominant")
     co.add_argument("--opt", action="append", default=[])
     co.add_argument("--out", required=True)
-    au = sub.add_parser("audit", help="re-measure the component figures of research/PERFORMANCE.md section 1")
+    au = sub.add_parser("audit", help="re-measure the component figures of research/archive/PERFORMANCE.md section 1")
     au.add_argument("--asr", default=ASR)
     au.add_argument("--clips", default="e2e5", choices=list(CLIP_SETS))
     au.add_argument("--threads", type=int, default=2)

@@ -1,4 +1,4 @@
-"""research/IMPROVEMENTS.md section 1: the served TS-VAD turn path live, through the Pipecat adapter, on E2E_FINAL's clips.
+"""research/archive/IMPROVEMENTS.md section 1: the served TS-VAD turn path live, through the Pipecat adapter, on E2E_FINAL's clips.
 
 System T = audioforge.serve --turn-input tsvad --diar-off --enroll explicit (the product has the user's voice print: a 5 s print
 of the user's single-speaker speech from elsewhere in the same conversation / meeting, sent once at connect as
@@ -111,14 +111,40 @@ def cmd_prepare(a):
     print(f"{len(refs)} clips -> {out}")
 
 
-def _print_ivs(segs, excl, name, L=5.0):
+def _print_ivs(segs, excl, name, L=5.0, attempt: int = 0):
     import tsvad as T
-    return T.clip_from(segs, L, random.Random(f"e2e_{name}_{L}"), exclude=excl)
+    seed = f"e2e_{name}_{L}" if attempt == 0 else f"e2e_{name}_{L}_retry{attempt}"
+    return T.clip_from(segs, L, random.Random(seed), exclude=excl)
+
+
+def _vad(model, x) -> np.ndarray:
+    """The served VAD head's per-frame speech probability on raw 16 kHz audio (plain causal encode at [70, 1])."""
+    import torch
+    xx, lens = model._pad([np.asarray(x, np.float32)])
+    with torch.inference_mode():
+        enc, elen, hid = model.encode(xx, lens, [70, 1], return_hidden=True)
+        v = model.heads["vad"](model.head_input("vad", enc, hid)).sigmoid()[0, : int(elen[0])]
+    return v.float().reshape(v.shape[0], -1)[:, 0].numpy()
+
+
+def _tb_annotated(cid, ch):
+    """Every annotated segment of TurnBench channel ``ch`` (annotators a and b, bracketed events such as [laughs]
+    included): the Dyadic labels drop some of the other party's speech inside the user's long turns, so a
+    "single-speaker" print could overlap it (research/TSWER.md "Root cause")."""
+    from audioforge.datasets import dyadic as D
+    keys = [f"speaker_{ch + 1}_annotation_{x}" for x in ("a", "b")]
+    row = D.tb_row(D.TB_ROOT, cid, ["conversation_id"] + keys)
+    return sorted((float(e["start_s"]), float(e["end_s"])) for k in keys for e in (row.get(k) or []))
 
 
 def cmd_prints(a):
     """Per clip, the user's voice print(s) from single-speaker speech outside [clip start - 2 s, clip end + 2 s]:
-    the served block-4 speaker head over the clip audio alone (audioforge.tsvad_stream.voiceprint)."""
+    the served block-4 speaker head over the clip audio alone (audioforge.tsvad_stream.voiceprint).
+
+    ``--recheck`` (two-party sets): every stored print must pass ``enrollment.print_is_clean`` (the user speaking on
+    >= 80 % of its frames, the other party's channel on <= 10 %, the served VAD head on each channel) and, for
+    TurnBench, overlap no annotated segment of the other party; a print that fails is re-drawn (seeded retries) from
+    segments with those segments excluded, and the old one is kept as "<L>_v1" (research/TSWER.md "Fix")."""
     import torch
     from audioforge.datasets import dyadic as D
     from audioforge.train import load_model
@@ -130,12 +156,14 @@ def cmd_prints(a):
     refs = json.loads((work / "clips.json").read_text())
     out = work / "prints.json"
     have = json.loads(out.read_text()) if out.exists() else {}
+    from audioforge.enrollment import print_is_clean
     model = load_model(str(ROOT / "runs" / "stage1_served.afm"), "cpu").eval()
     lens = [float(x) for x in a.lens.split(",")]
     ami_ds = None
     dy = {}
     for r in refs:
-        if r["name"] in have and all(str(L) in have[r["name"]] for L in lens):
+        if r["name"] in have and all(str(L) in have[r["name"]] for L in lens) and not (
+                a.recheck and r["set"] != "ami"):
             continue
         a0, b0 = r["start"] - 2.0, r["start"] + r["dur"] + 2.0
         rec = have.get(r["name"], {})
@@ -156,6 +184,8 @@ def cmd_prints(a):
             h = r["human_channel"]
             own = ds.acts[cid][f"{cid}:{h}"]
             oth = sorted(ds.acts[cid][f"{cid}:{1 - h}"])
+            if a.recheck and r["set"] == "turnbench":
+                oth = sorted(oth + _tb_annotated(cid, 1 - h))
             segs = []
             for s, e in own:  # the human's speech with the other party silent (0.2 s guard), >= 1 s
                 cut = [(s, e)]
@@ -177,8 +207,41 @@ def cmd_prints(a):
                 xx, sr, _ = D.read_stereo(r["set"], ds.root, cid)
                 ch = D.resample16k(xx, sr)
                 chan = np.asarray(ch.T if ch.shape[0] != 2 else ch, np.float32)[h]
+            chan_o = (np.asarray(ds.channels16k(cid)[1 - h], np.float32) if r["set"] == "turnbench" else
+                      np.asarray(ch.T if ch.shape[0] != 2 else ch, np.float32)[1 - h])
             get = lambda ivs: np.concatenate([chan[int(x * SR): int(y * SR)] for x, y in ivs])  # noqa: E731
         for L in lens:
+            if a.recheck and r["set"] != "ami":
+                old = rec.get(str(L))
+                other = (lambda ivs: np.concatenate([chan_o[int(x * SR): int(y * SR)] for x, y in ivs]))  # noqa: E731
+
+                def clean(ivs):
+                    ok, q = print_is_clean(_vad(model, get(ivs)), _vad(model, other(ivs)))
+                    if ok and r["set"] == "turnbench":
+                        ok = not any(x < oe and y > os_ for x, y in ivs for os_, oe in _tb_annotated(cid, 1 - h))
+                    return ok, q
+                if old:
+                    ok, q = clean(old["ivs"])
+                    if ok:
+                        old["check"] = q
+                        continue
+                    print(f"  {r['name']} {L}: stored print fails the check {q}; re-drawing", flush=True)
+                for k in range(1, 21):
+                    ivs = _print_ivs(segs, (a0, b0), r["name"], L, attempt=k)
+                    if ivs is None:
+                        break
+                    ok, q = clean(ivs)
+                    if ok:
+                        if old:
+                            rec[f"{L}_v1"] = old
+                        rec[str(L)] = {"ivs": [[round(x, 3), round(y, 3)] for x, y in ivs], "check": q,
+                                       "attempt": k,
+                                       "embedding": [round(float(v), 6) for v in voiceprint(model, get(ivs))]}
+                        print(f"  {r['name']} {L}: new print {rec[str(L)]['ivs']} {q} (attempt {k})", flush=True)
+                        break
+                else:
+                    print(f"  {r['name']} {L}: no clean print in 20 draws; kept the stored one", flush=True)
+                continue
             ivs = _print_ivs(segs, (a0, b0), r["name"], L)
             if ivs is None:
                 rec[str(L)] = None
@@ -403,6 +466,7 @@ def main():
         s.add_argument("--work", default=str(WORK))
         if n == "prints":
             s.add_argument("--lens", default="1.5,3.0,5.0,10.0")
+            s.add_argument("--recheck", action="store_true", help="re-check stored two-party prints, re-draw failures")
         if n in ("queue", "run"):
             s.add_argument("--system", default="T", choices=list(SYSTEMS))
             s.add_argument("--budget", type=float, default=540)

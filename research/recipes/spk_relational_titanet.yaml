@@ -1,4 +1,4 @@
-# research/SPK_HEAD.md - relational distillation + AAM on the block-4 tap (see the head comment), teacher cosine
+# research/archive/SPK_HEAD.md - relational distillation + AAM on the block-4 tap (see the head comment), teacher cosine
 # distillation onto frozen NVIDIA TitaNet-Large embeddings (CC-BY-4.0; 192-d, cached per single-speaker segment
 # by scripts/research/cache_titanet.py) instead of AAM over the 190 AMI ids. Data: AMI train + ICSI train single-speaker
 # segments and 5k LibriSpeech train-clean-100 utterances. Head only (init.train_only); the ASR is untouched.
@@ -17,7 +17,7 @@ heads:
   eou: {weight: 0}
   diar: {weight: 0}
   turn: {weight: 0}
-  # "relational" (research/OUTSIDE.md §3): block-4 tap, the head's usual attentive-stats pooling, loss =
+  # "relational" (research/archive/OUTSIDE.md §3): block-4 tap, the head's usual attentive-stats pooling, loss =
   # AAM (45 AMI speakers / 190 classes; AMI batches only: ICSI / LibriSpeech carry no AMI id) + relational MSE between the
   # student's and TitaNet's within-batch cosine matrices (1.0) + cosine term (0.5)
   spk: {type: speaker, num_speakers: 190, from_layers: [3], weight: 1.0,

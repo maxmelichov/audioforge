@@ -1,4 +1,4 @@
-"""Train-time activity conditioning (research/TURN_ABLATION.md, "What you need to change elsewhere" 1-2).
+"""Train-time activity conditioning (research/archive/TURN_ABLATION.md, "What you need to change elsewhere" 1-2).
 
 The speaker-conditioned encoder pass (TDT / CTC / kernel turn head) was trained only on the clean oracle primary
 activity, then evaluated on diarization output (P50 240 ms -> 2240 ms, miss 7 % -> 48 %). ``conditioning:`` feeds it,

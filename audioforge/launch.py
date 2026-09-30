@@ -7,16 +7,17 @@
     audioforge-serve --help-advanced                  # every flag
 
 On top of ``python -m audioforge.serve`` it adds ``--models-dir`` and ``--diarizer``: ``--asr`` / ``--diar`` are filled
-in from the models directory when absent (``--shed-diar hold`` is added unless given, research/DIARIZATION_FIX.md), as
+in from the models directory when absent (``--shed-diar hold`` is added unless given, research/archive/DIARIZATION_FIX.md), as
 are the optional model paths a flag needs (TitaNet for ``--enroll after_agent|explicit``, AmberNet for
-``--lid ambernet``, Silero for ``hybrid_silero``/``hybrid_dyn``, Parakeet-TDT v3 for ``--final-asr tdt_v3``). Every
+``--lid ambernet``, Silero for ``hybrid_silero``/``hybrid_dyn`` in room mode, Parakeet-TDT v3 for ``--final-asr tdt_v3``). Every
 other flag goes to ``audioforge.serve`` unchanged (docs/CONFIGURATION.md explains them).
 
 Without ``--mode``, ``--diarizer`` / ``--diar`` / ``--final-asr`` select room mode (the paragraph above); otherwise the
 default ``--mode single`` (docs/CONFIGURATION.md section 13, research/SINGLE_MODEL.md) adds ``cli.MODES["single"]``
-(``--turn-input tsvad --diar-off --lid head --enroll after_agent_arm --dyn-wait-ms 2000,960``), the TS-VAD head file
-and Silero VAD (2 MB, for ``hybrid_dyn``) when present, loads no diarizer, and refuses the options that would load a
-second model (``cli.SINGLE_CONFLICTS``, ``--diarizer``, ``--lid ambernet``).
+(``--turn-input tsvad --diar-off --lid head --enroll after_agent_arm --turn-policy vad_head --dyn-wait-ms 2000,960``)
+and the TS-VAD head file, loads no diarizer and no Silero (the default turn rule ``vad_head`` reads the model's own VAD,
+turn and TS-VAD heads, research/EOT_LATENCY.md), and refuses the options that would load a second model
+(``cli.SINGLE_CONFLICTS``, ``--diarizer``, ``--lid ambernet``).
 """
 from __future__ import annotations
 
@@ -127,11 +128,9 @@ def resolve_models(argv: list[str], models_dir: str | None = None, diarizer: str
                 sys.exit(f"audioforge-serve: the server needs the 'asr' model, not found in {hub.models_dir(models_dir)}."
                          f"\n  run: audioforge-download" + (f" --dir {models_dir}" if models_dir else ""))
             argv += ["--asr", str(p)]
-        if not (_in_argv(argv, "--silero") or "silero" in config):  # the silence arm of hybrid_dyn (2 MB ONNX VAD)
-            p = hub.find_model("silero", models_dir)
-            if p is not None:
-                argv += ["--silero", str(p)]
-        return argv  # no diarizer, TitaNet, AmberNet or TDT
+        # no Silero: the default turn rule (vad_head) reads the model's own heads; a session that asks for
+        # hybrid_silero / hybrid_dyn loads serve's default Silero path lazily, or pass --silero
+        return argv  # no diarizer, TitaNet, AmberNet, TDT or Silero
 
     def _has(argv: list[str], flag: str) -> bool:
         return _in_argv(argv, flag) or flag[2:].replace("-", "_") in config
@@ -157,7 +156,7 @@ def resolve_models(argv: list[str], models_dir: str | None = None, diarizer: str
         argv += ["--diar", need(diarizer, "the server")]
         product = hub.diarizer_defaults(diarizer)  # Nemotron-3: max pooling, frame-local encoder, all 8 columns
     else:
-        product = {"shed_diar": "hold"}  # research/DIARIZATION_FIX.md section 4: no speaker-0 collapse under load
+        product = {"shed_diar": "hold"}  # research/archive/DIARIZATION_FIX.md section 4: no speaker-0 collapse under load
     for key, val in product.items():
         flag = "--" + key.replace("_", "-")
         if not _has(argv, flag):

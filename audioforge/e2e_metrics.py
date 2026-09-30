@@ -12,7 +12,7 @@ Definitions (one per clip; ``turns`` = the user's floor turns as sorted, non-ove
   within-turn pause).
 * **other**: response moments that are neither a first response nor a cut-in (repeat answers, answers to the other
   party only, answers before the user's first turn).
-* ``interruptions_1s`` (AMI comparability with research/INTEGRATION.md section 4): moments followed by user speech
+* ``interruptions_1s`` (AMI comparability with research/archive/INTEGRATION.md section 4): moments followed by user speech
   (``user_intervals``) within 1 s.
 
 Aggregation pools the scored ends of all clips; paired comparisons resample clips (bootstrap) and recompute the pooled

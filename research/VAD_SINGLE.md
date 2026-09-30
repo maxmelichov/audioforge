@@ -1,6 +1,6 @@
 # Single-layer VAD head (block 4) vs the served all-layer head
 
-2026-09-29. Follow-up to research/VAD_LAYERS.md, where a block-4 probe came within 0.001 F1 of the served VAD head.
+2026-09-29. Follow-up to research/archive/VAD_LAYERS.md, where a block-4 probe came within 0.001 F1 of the served VAD head.
 The served head (`runs/stage1_served.afm` heads.vad, bit-identical to `stage1_heads_pretrained.afm`'s) has 64 hidden
 units and reads a learned softmax mix of all 17 FastConformer blocks. This study trains real heads on one block and
 checks them against it, both directly and through every consumer of the VAD in the server.
@@ -83,7 +83,7 @@ slightly lower realised FC (7.7 vs 8.1 %), which accounts for part of their +0.7
 - **VAD.** `sd.score_vad` at 0.5 on the any-speaker 80 ms label, AUC, and the miss rate at FPR 0.075 (the point
   where BASELINES compares us with Silero). `vad_single.py eval`.
 - **LID.** The `lid.py eval_head` VAD-gated rule: frames with VAD ≤ 0.5 are not pooled, and a clip with no speech
-  frame pools everything. It uses the served `runs/lid_distill.pt` on the research/LID.md clips (onset − 0.1 s,
+  frame pools everything. It uses the served `runs/lid_distill.pt` on the research/archive/LID.md clips (onset − 0.1 s,
   2 s; full utterance), with all three VADs computed from the same encoder pass. The served-VAD column reproduces
   runs/lid.json `lid_distill_vadgated` exactly (91.02 / 97.80); the ungated head gives 91.18 / 97.69.
   `vad_single.py lid`: 2 s on CPU, full on MPS.

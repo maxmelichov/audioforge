@@ -1,4 +1,4 @@
-"""Fusion stage of scripts/research/bench_completeness.py (research/COMPLETENESS.md §2): learned fusion of our trail6 head,
+"""Fusion stage of scripts/research/bench_completeness.py (research/archive/COMPLETENESS.md §2): learned fusion of our trail6 head,
 smart-turn v3.2 and the two silence timeouts on eot-bench v2, cross-fitted by the v2 meeting folds, plus the
 error complementarity of smart-turn and our hybrid on floor-open ends."""
 from __future__ import annotations

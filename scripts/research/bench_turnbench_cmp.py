@@ -1,4 +1,4 @@
-"""Our completeness head on TurnBench dev with the OFFICIAL scorer (research/COMPLETENESS.md §3.4), built on
+"""Our completeness head on TurnBench dev with the OFFICIAL scorer (research/archive/COMPLETENESS.md §3.4), built on
 scripts/research/bench_turnbench.py (its stages, event rules, scorer wrapper and operating-point rule are imported unchanged;
 this script only adds the completeness systems and writes to its own work dir / output).
 

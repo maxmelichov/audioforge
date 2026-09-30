@@ -1,4 +1,4 @@
-"""Conversational action tokens <HOLD> / <YIELD> in the RNNT vocabulary (research/YIELD_TOKENS.md): the transcript
+"""Conversational action tokens <HOLD> / <YIELD> in the RNNT vocabulary (research/archive/YIELD_TOKENS.md): the transcript
 builder (datasets/ami.action_transcript), the vocabulary extension (audioforge/vocab.py: ids preserved, blank moved,
 old logits unchanged), special-aware SentencePiece encoding, and the decision-score extraction / pause-site scoring
 used by scripts/research/bench_yield_tokens.py."""

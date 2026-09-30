@@ -1,4 +1,4 @@
-# Stage 1c: turn head v3 on REAL STREAMING diarizer tracks (research/STAGE1.md, n = 200 table: with oracle
+# Stage 1c: turn head v3 on REAL STREAMING diarizer tracks (research/archive/STAGE1.md, n = 200 table: with oracle
 # activity the head misses 29.5 % at <= 5 % false cutoffs vs 6.3 % for a silence timeout; with NVIDIA's streaming
 # Sortformer 69 % vs 38 % for a timeout on the same track). Diagnosis acted on:
 #   (1) the head has no explicit notion of "how long has the primary been silent" -> duration_feats (causal

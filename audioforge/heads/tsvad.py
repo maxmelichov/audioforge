@@ -6,7 +6,7 @@ relational speaker head's 192-d embedding of a few seconds of the user's speech,
 (``e = None``) the head falls back to a learned "no enrollment" vector and was trained to behave as a plain VAD
 there (target = any speech, other = 0: PVAD 2.0's enrollment-less training).
 
-Architecture (research/OUTSIDE.md §4: FiLM on hidden features beats input concatenation; PVAD 2.0 / Bovbjerg 2025):
+Architecture (research/archive/OUTSIDE.md §4: FiLM on hidden features beats input concatenation; PVAD 2.0 / Bovbjerg 2025):
 
     x (B,T,D) encoder frames (one block, e.g. block 4 = the speaker head's tap)
     h = SiLU(LN(W x))                                    per-frame projection to ``hidden``

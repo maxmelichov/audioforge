@@ -1,4 +1,4 @@
-"""Hybrid front end (research/HYBRID_ASR.md): the Parakeet-TDT import (strict tensor count, duration outputs), the
+"""Hybrid front end (research/archive/HYBRID_ASR.md): the Parakeet-TDT import (strict tensor count, duration outputs), the
 incremental greedy TDT decoder (any split of the encoder frames == offline greedy), and serve --final-asr.
 
 Uses tiny synthetic .nemo archives; the real-checkpoint tests need data/nemo/parakeet-tdt-0.6b-v3.nemo and

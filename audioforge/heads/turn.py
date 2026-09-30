@@ -1,6 +1,6 @@
 """TurnHead (v2 core, v3 duration/activity inputs, v5 mode concat): speaker- and text-aware end-of-turn (EOT) on the shared encoder.
 
-Per-frame logit "the PRIMARY speaker's turn is over" from up to three inputs (research/PLAN.md R1):
+Per-frame logit "the PRIMARY speaker's turn is over" from up to three inputs (research/archive/PLAN.md R1):
 
 (a) acoustics - the encoder features;
 (b) text state (``use_text: true``) - the ASR transducer's PredictionNet state after the tokens known
@@ -28,7 +28,7 @@ The temporal model is a unidirectional GRU, so the head is causal and streams fr
 with ``pos_weight`` over valid frames; targets = frames after the primary's last active frame
 (``eot_targets``), so the stock ``data.Collate`` batch (``spk_act``, ``text``) is enough.
 
-v3 inputs (research/STAGE1.md n=200: with a real streaming diarizer the head misses 69 % vs 38 % for a silence
+v3 inputs (research/archive/STAGE1.md n=200: with a real streaming diarizer the head misses 69 % vs 38 % for a silence
 timeout on the same track). All default OFF: a head without them has exactly the v2 modules, state_dict and outputs.
   * ``act_columns: S`` (> 1) - the head also reads the diarizer's full (T, S) track ``cols`` plus a one-hot of the
     primary's column ``prim`` (the enrollment rule, datasets/ext_tracks.enroll_column), so a next speaker who lands
@@ -45,7 +45,7 @@ timeout on the same track). All default OFF: a head without them has exactly the
   The new inputs enter through a separate zero-initialised projection added to the v2 input layer, so a v3 head
   initialised from a v2 checkpoint starts exactly as the v2 head (init.from loads the old tensors unchanged).
 
-Dyadic additions (research/DYADIC.md section 8; both default OFF, a head without them is unchanged):
+Dyadic additions (research/archive/DYADIC.md section 8; both default OFF, a head without them is unchanged):
   * ``energy_input: true`` (or {tau_frames: 125, clip: 4.0}) - one causal scalar per 80 ms frame from the RAW audio
     the model hears: log-RMS of the frame's 1280 samples [1280 t, 1280 (t + 1)), standardised by a causal running
     mean / variance (EMA with alpha_t = max(1 / (t + 1), 1 / tau_frames): the cumulative mean for the first
@@ -393,7 +393,7 @@ class TurnHead(Head):
         self.concat = "concat" in mode
         self.use_text, self.text_head, self.k_tokens, self.text_dim = use_text, text_head, k_tokens, text_dim
         self.align_mode, self.max_per_frame = align, max_per_frame
-        # train-time text augmentation (research/TURN_ABLATION.md, B): at inference the greedy-decoded tokens
+        # train-time text augmentation (research/archive/TURN_ABLATION.md, B): at inference the greedy-decoded tokens
         # arrive ~1 frame after the aligned reference (26-33 % of turn-final tokens >= 2 frames late) and carry
         # ~24 % WER. text_delay: shift each item's token frames by d ~ U{0..text_delay}; text_noise: substitute
         # each token with this probability; decoded_prob: per step, train on the ASR head's own greedy decode
@@ -730,7 +730,7 @@ class TurnHead(Head):
     @torch.no_grad()
     def decode_aux(self, enc, enc_len, spk_act=None, text=None, cols=None, prim=None, energy=None):
         """(P(EOT) (B,T), P(user active in each multi_horizon_aux bin) (B,T,H)) from one pass; the second is None
-        without multi_horizon_aux. The predictive trigger of research/DYADIC.md section 8 reads bins 1-2."""
+        without multi_horizon_aux. The predictive trigger of research/archive/DYADIC.md section 8 reads bins 1-2."""
         h = self.hidden_states(enc, enc_len, spk_act, text, cols, prim, energy)
         return self.out(h).squeeze(-1).sigmoid(), (self.mh(h).sigmoid() if self.mh is not None else None)
 

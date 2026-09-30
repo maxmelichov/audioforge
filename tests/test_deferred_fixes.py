@@ -1,4 +1,4 @@
-"""Deferred fixes (research/VERIFICATION.md §6, items 5-8): explicit att_context_size, per-layer
+"""Deferred fixes (research/archive/VERIFICATION.md §6, items 5-8): explicit att_context_size, per-layer
 streaming outputs, and from_layers: all heads in transcribe / StreamingSession."""
 from pathlib import Path
 

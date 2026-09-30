@@ -1,6 +1,6 @@
 """Single-layer VAD head vs the served all-layer head (research/VAD_SINGLE.md).
 
-research/VAD_LAYERS.md found a block-4 probe within 0.001 F1 of the served VAD head (a 64-hidden frame head on a
+research/archive/VAD_LAYERS.md found a block-4 probe within 0.001 F1 of the served VAD head (a 64-hidden frame head on a
 softmax mix of all 17 blocks). This trains real heads with the served recipe (research/recipes/vad_single.yaml) on one
 block and measures them against the served head, directly and through every consumer of the VAD in the server
 (audioforge/server/streams.py: --asr-vad-gate, the LID head's VAD-gated pooling, the TS-VAD track's arm collection).

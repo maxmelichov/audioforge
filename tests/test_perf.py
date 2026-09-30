@@ -1,4 +1,4 @@
-"""audioforge.perf: the CPU inference fast paths keep the served system's outputs (research/PERFORMANCE.md section 3).
+"""audioforge.perf: the CPU inference fast paths keep the served system's outputs (research/archive/PERFORMANCE.md section 3).
 
 Tiny models (tests/test_serve.py helpers) stand in for the checkpoints: every *exact* option must give bit-identical
 tensors / tokens / protocol messages, ``fast_subsample`` agrees to float rounding. The real-checkpoint proof is

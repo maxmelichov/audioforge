@@ -26,11 +26,11 @@ Two models run side by side on one 80 ms frame clock:
   (`AOSCConfig.preset` / `streaming_diar.SORTFORMER_PRESETS`; FIFO 188, update 144, cache 188, encoder left
   context 188 frames in both):
   - `low_latency_032` (default since 2026-09-26): card "ultra low latency", chunk 3 + right context 1 = 0.32 s.
-    research/EOT_BENCH_V2.md section 7 (n = 974 AMI dev turns, leak-free cross-fit): the same miss rates as the
+    research/archive/EOT_BENCH_V2.md section 7 (n = 974 AMI dev turns, leak-free cross-fit): the same miss rates as the
     1.04 s setting (e.g. causal hybrid 63.7 vs 61.9 %, head 65.8 vs 66.5 %, timeout 70.1 vs 74.8 %; CIs overlap)
     with 0.5-0.8 s lower P50 wherever the systems fire (nominal emission delay 240 vs 840 ms), at DER 28.3 vs 26.3.
-  - `low_latency`: card "low latency", chunk 6 + right context 7 = 1.04 s, as scored in research/STAGE1.md
-    (n=200) and research/SORTFORMER_IMPORT.md.
+  - `low_latency`: card "low latency", chunk 6 + right context 7 = 1.04 s, as scored in research/archive/STAGE1.md
+    (n=200) and research/archive/SORTFORMER_IMPORT.md.
   Its 4 columns are the speakers. Measured on this Mac (CPU, 2 threads, 1x, 2 AMI dev windows; research/EARLY_RESULTS.md "Live
   streaming server"): RTF 0.49-0.53 (0.32 s) vs 0.40-0.43 (1.04 s), both keep up (max backlog 120-140 ms);
   speaker-column age on arrival p50 210-227 ms vs 857 ms.
@@ -66,15 +66,15 @@ head's probability is exposed as the `eot` field and as an optional policy.
 * `hybrid`: plain timeout (timeout_ms) OR head >= eot_threshold: one turn_end per turn, tagged `hybrid`, at the
   earlier of the two paths' decision times (the later path's firing for the same turn is dropped); `p` = the head's
   probability at that time, `silence_ms` = the firing path's silence (timeout: diarizer primary; head: VAD).
-  Measured (research/TURN_ERRORS.md section 8, runs/turn_v3_hybrid_n200.json; 200 AMI dev turns, turn head v3,
+  Measured (research/archive/TURN_ERRORS.md section 8, runs/turn_v3_hybrid_n200.json; 200 AMI dev turns, turn head v3,
   joint (θ, k) sweep, <= 5 % per-turn FC; oracle-overlap enrollment unless noted): oracle primary activity
   1.6 % miss at P50 560 ms (θ 0.947, k 24 frames = 1920 ms) vs head 5.8 % / 560 ms, timeout 6.3 % / 1440 ms;
   Sortformer streaming track 37.4 % / 2640 ms (θ 0.997, k 21) vs timeout 38.4 % / 2640 ms, head 62.6 % / inf;
   label-free causal_dominant enrollment 86.8 % / inf (k 26) vs timeout 88.4 %. On the streaming track the head adds
   about 1 point, so `timeout` stays the default; `hybrid` pays off only with a clean speaker track. In config
   terms k frames = timeout_ms 80 k (k 21 -> 1680). The head there is fed the diarizer track (`--turn-input diar`).
-* `hybrid_silero` / `hybrid_dyn` (added 2026-09-26; research/BASELINES.md "ICSI held-out confirmation" and "Dynamic
-  timeout: ICSI held-out confirmation"; measured live in research/INTEGRATION.md section 8): the head path as
+* `hybrid_silero` / `hybrid_dyn` (added 2026-09-26; research/archive/BASELINES.md "ICSI held-out confirmation" and "Dynamic
+  timeout: ICSI held-out confirmation"; measured live in research/archive/INTEGRATION.md section 8): the head path as
   `hybrid` (threshold 0.99828 / 0.998283 unless the config sets `eot_threshold`) OR an **any-speaker Silero VAD v5
   silence** in place of the diarizer-primary timeout: Silero on 32 ms chunks -> Pipecat's VAD state machine
   (confidence 0.7, start / stop 0.2 s; `baselines.turn.PipecatVADState`) -> silence since the end of the last
@@ -88,17 +88,17 @@ head's probability is exposed as the `eot` field and as an optional policy.
   one shared ORT session (+~10 MB), ~0.1 ms per 32 ms chunk on this Mac (RTF +0.003). Set the policy in the first
   config message (the Silero chunk grid starts with the stream).
 
-Why the plain timeout (research/STAGE1.md, n=200 AMI dev turns, misses at <= 5 % false cutoffs;
-research/INTEGRATION_VERIFY.md D1): the plain silence timeout on the Sortformer streaming primary misses 38.4 %,
+Why the plain timeout (research/archive/STAGE1.md, n=200 AMI dev turns, misses at <= 5 % false cutoffs;
+research/archive/INTEGRATION_VERIFY.md D1): the plain silence timeout on the Sortformer streaming primary misses 38.4 %,
 while "primary silent AND nobody else active" misses 66-68 %, no better than the served head (69 %). The previous
 server implemented the second rule while citing the first rule's number. Caveat: STAGE1's 38.4 % picks the column
 with the oracle primary's activity; with deployable, label-free enrollment (as served here) eot-bench v2
-(research/EOT_BENCH_V2.md) finds every streaming system's misses substantially higher, the timeout's included.
+(research/archive/EOT_BENCH_V2.md) finds every streaming system's misses substantially higher, the timeout's included.
 The head-vs-timeout ranking for the exact served rule (label-free 5 s primary) is the eot-bench v2 result, not
 STAGE1's.
 
 Primary-speaker enrollment (`--enroll`, default `dominant` = the 5 s dominant column above, unchanged).
-research/EOT_BENCH_V2.md section 9: the loss of the label-free binding is *which* speaker is the user, not how the
+research/archive/EOT_BENCH_V2.md section 9: the loss of the label-free binding is *which* speaker is the user, not how the
 column is followed, and a voice agent has one identity signal the benchmark's rules lack: it knows when it stopped
 speaking. Two opt-in modes bind the primary by voice with the ported NVIDIA TitaNet-L (`enrollment.TitaNetEmbedder`,
 loaded only then, +~200 MB RSS; `--titanet` = its .nemo):
@@ -109,7 +109,7 @@ loaded only then, +~200 MB RSS; `--titanet` = its .nemo):
   (`--enroll-stride`, 400 ms; one TitaNet pass per active column, ~50-150 ms each on 2 threads). Every agent_end
   re-arms (a new enrollment for the next user turn).
 * `explicit`: the same, started by {"type": "enroll"} (a "say something" prompt); one enrollment per message.
-* `after_agent_arm` (research/EOT_BENCH_V2.md section 9 "after_prev_end_causal"; no TitaNet, no embedding cost):
+* `after_agent_arm` (research/archive/EOT_BENCH_V2.md section 9 "after_prev_end_causal"; no TitaNet, no embedding cost):
   on agent_end the first column active for >= 3 consecutive frames is chosen; from then on the primary follows the
   causal_dominant rule seeded at that column (`CausalDominant`: re-binds only after > 25 silent frames of the bound
   column, to the column with the most active frames over the last 25). Each agent_end re-arms; the binding holds
@@ -128,7 +128,7 @@ before the encoder pass. `session` (default for kernel heads): the head reads th
 speaker-conditioned cache-aware encoder stream is run over the same mel chunks (the StreamingSpeakerASR
 pattern: one extra encoder pass per chunk); concat / v3 heads get spk_act / cols / prim from the diarizer.
 
-`tsvad` (research/IMPROVEMENTS.md section 1): the turn head is fed the enrolled user's activity from the TS-VAD head
+`tsvad` (research/archive/IMPROVEMENTS.md section 1): the turn head is fed the enrolled user's activity from the TS-VAD head
 (`--tsvad`, default runs/tsvad_spk.pt; research/IMPROVE_115M.md Part A) on block 4 of the ASR pass, [P(target),
 P(other)] as columns 0 / 1 (primary 0), on the ASR chunk clock (decision time = the chunk's, no diarizer lag); the
 speaker-conditioned second encoder pass is as with `diar`. The voice print (`audioforge.tsvad_stream`): with
@@ -140,7 +140,7 @@ is a plain VAD (its no-enrolment vector). Each new print sends {"type": "voicepr
 speakers / primary, the timeout policies) unless `--diar-off`: then the session's columns are [P(target), P(other),
 0, 0] (finalized with their ASR chunk) and no diarizer pass runs; TitaNet is never loaded in this mode.
 
-Spoken language ID (`--lid`, off by default; research/LID.md). A LID head file (`audioforge.lid.save_head`,
+Spoken language ID (`--lid`, off by default; research/archive/LID.md). A LID head file (`audioforge.lid.save_head`,
 e.g. runs/lid_head.pt: heads.audio.LanguageHead trained head-only on the frozen served encoder) is attached to the ASR
 model at load. Per 160 ms chunk it reads the same chunk's per-layer encoder outputs (no extra encoder pass) and
 updates a running attentive-stats posterior over its languages (`audioforge.lid.LIDStream`): frames with VAD <= 0.5
@@ -152,9 +152,9 @@ language or null). Without `--lid` no message or key changes. `--lid ambernet` (
 uses the dedicated NVIDIA AmberNet instead (`audioforge.lid.AmberNetLIDStream`, +29 M parameters): the audio of the
 VAD-speech frames is kept and AmberNet re-classifies the last 8 s of speech at 1, 1.5, 2, 3, 5 and 8 s of pooled
 speech and then every 4 s (16-81 ms per call on 2 threads for 1-8 s of speech, more under load: too much for every
-chunk), restricted to `--lid-langs`; same message and rule. research/LID.md measures both (AmberNet is the more accurate backend there).
+chunk), restricted to `--lid-langs`; same message and rule. research/archive/LID.md measures both (AmberNet is the more accurate backend there).
 
-Hybrid final ASR (`--final-asr tdt_v3`, off by default; research/HYBRID_ASR.md). The streaming model keeps every
+Hybrid final ASR (`--final-asr tdt_v3`, off by default; research/archive/HYBRID_ASR.md). The streaming model keeps every
 live decision (partials, VAD, turn_end, speakers, enrollment); a second, offline model (NVIDIA Parakeet-TDT 0.6B v3,
 `audioforge.final_asr.FinalASRWorker`, loaded only with the flag, by default in its own process with its own torch
 threads so it never runs on the streaming worker or holds its GIL) transcribes each finished turn once. At every
@@ -169,7 +169,7 @@ once (no pass). The stats message waits for pending passes and carries `final_as
 `final_latency_ms` {p50, p95, max, n} and `final_asr_rss_mb` (worker peak RSS; null in thread mode); `ready`
 carries `final_asr`. Without the flag no message or key changes (`validate`).
 
-Dual lookahead (`--asr-lookahead R`, e.g. 13; off by default; research/HYBRID_ASR.md). A second, text-only
+Dual lookahead (`--asr-lookahead R`, e.g. 13; off by default; research/archive/HYBRID_ASR.md). A second, text-only
 cache-aware streaming pass of the *same* ASR model at att_context [70, R] (R = 13: 1.12 s chunks, 1.04 s lookahead;
 `LookaheadStream`) runs next to the served [70, 1] pass inside `Session.process`; every head (VAD, turn, speakers,
 LID) and the partials still come from the [70, 1] pass, unchanged. At each cutting turn_end the segment's lookahead

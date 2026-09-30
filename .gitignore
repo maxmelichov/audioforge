@@ -19,17 +19,19 @@ runs/*.log
 *.afm
 !assets/*.pt
 
-# demo renders and intermediate clips / event logs (demo/*.py rebuilds them)
-demo/*.mp4
-demo/*.mov
-demo/*.gif
-demo/frames/
+# demo renders and intermediate clips / event logs (renders belong in $DEMO_OUT, outside the repo)
+*.mp4
+*.mov
+*.gif
+demo_out/
+demo/**/frames/
 demo/clips/
 demo/events/
 demo/audio/
+renders/
 
-# large raw dump of all 943 NVIDIA repos (the audio subset is kept in research/raw/audio_models.json)
-research/raw/all_full.json
+# large raw dump of all 943 NVIDIA repos (the audio subset is kept in research/archive/raw/audio_models.json)
+research/archive/raw/all_full.json
 
 # models written by audioforge-download (default <repo>/models; see audioforge/hub.py)
 models/
@@ -48,5 +50,9 @@ htmlcov/
 *.part
 *.tmp
 scratch/
+scratchpad/
+logs/
+tmp/
 .venv*/
 venv*/
+demo/images/redesign/*.png

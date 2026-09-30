@@ -3,7 +3,7 @@
     PYTHONPATH=. .venv/bin/python scripts/research/make_served_model.py [--check-wer 100] [--out runs/stage1_served.afm]
 
 runs/stage1_served.afm = runs/stage1_turn_v3_trail6.afm (encoder, RNNT, CTC, VAD, EOU, diar and turn heads) with
-``heads.spk`` copied from runs/stage1_spk_relational.afm (research/SPK_HEAD.md recommendation: block-4 relational
+``heads.spk`` copied from runs/stage1_spk_relational.afm (research/archive/SPK_HEAD.md recommendation: block-4 relational
 head, ``from_layers: [3]``, 14.4 % AMI / 5.2 % ICSI within-meeting EER at n = 64 vs 32 % for the all-layer stage-1
 head). The all-layer mix parameter ``layer_mix.spk`` is dropped (a single tap has none). Every other tensor is
 asserted bit-identical to trail6, the speaker tensors bit-identical to the relational checkpoint, and the config

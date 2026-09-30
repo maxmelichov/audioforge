@@ -1,4 +1,4 @@
-"""Bulletproofing the served front end (research/BULLETPROOF.md): audio, protocol, model/state, watchdog and
+"""Bulletproofing the served front end (research/archive/BULLETPROOF.md): audio, protocol, model/state, watchdog and
 determinism robustness of audioforge/serve.py, with tiny random models (the real-model runs are in
 scripts/bulletproof.py). Every test asserts the same three things in some form: no crash / hang, a structured
 ``error`` message for every failure, and a bounded, valid output."""
@@ -202,7 +202,7 @@ class FailingDiarizer(H.EnergyDiarizer):
 
 class BoundedEnergyDiarizer(H.EnergyDiarizer):
     """EnergyDiarizer that drops the audio it has consumed: the shared test double keeps every sample ever fed
-    (O(n) per call), which made the 30-min soak look like a server slowdown (research/BULLETPROOF.md section 1)."""
+    (O(n) per call), which made the 30-min soak look like a server slowdown (research/archive/BULLETPROOF.md section 1)."""
 
     def __init__(self, *a, **k):
         super().__init__(*a, **k)
@@ -975,8 +975,14 @@ def test_device_fallback_and_startup_checks(monkeypatch, tmp_path, capsys):
     import audioforge.serve as SS
     monkeypatch.setattr("audioforge.train.load_model", lambda p, d: H._asr_model())
     monkeypatch.setattr("audioforge.nemo_import.load_any", lambda p, d: H._diar_model())
-    eng = Engine.load("a.afm", "d.afm", device="mps", threads=1)
+    eng = Engine.load("a.afm", "d.afm", device="tpu", threads=1)
     assert eng.counters == {"device_fallback": 1} and "falling back to cpu" in capsys.readouterr().out
+    # a GPU device this process cannot see (mps off a Mac, cuda without a GPU) degrades the same way
+    monkeypatch.setattr("torch.backends.mps.is_available", lambda: False)
+    monkeypatch.setattr("torch.cuda.is_available", lambda: False)
+    for dev in ("mps", "cuda", "cuda:1"):
+        assert Engine.load("a.afm", "d.afm", device=dev, threads=1).counters == {"device_fallback": 1}
+    capsys.readouterr()
     with pytest.raises(SystemExit) as ei:
         SS.main(["--asr", str(tmp_path / "missing.afm"), "--diar", str(tmp_path / "also_missing.afm")])
     assert ei.value.code == 2

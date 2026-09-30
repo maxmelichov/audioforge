@@ -1,5 +1,5 @@
 {
- "protocol": "eot-bench v2 (research/EOT_BENCH_V2.md) on a dyadic slice: human-party turns, cross-fitted <= 5 % per-turn FC operating point (folds = conversations at even / odd positions), 1000 bootstraps; frozen_ami = the operating point fitted on all 974 AMI dev turns applied unchanged",
+ "protocol": "eot-bench v2 (research/archive/EOT_BENCH_V2.md) on a dyadic slice: human-party turns, cross-fitted <= 5 % per-turn FC operating point (folds = conversations at even / odd positions), 1000 bootstraps; frozen_ami = the operating point fitted on all 974 AMI dev turns applied unchanged",
  "corpus": "oto",
  "hours_slice": null,
  "roles_scored": "human",

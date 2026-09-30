@@ -12,7 +12,7 @@ research/E2E_FINAL.md has the setup, tables and verdict; runs/e2e_final.json the
      1000 ms, through the committed Pipecat / LiveKit adapters.
   D  Ours, best rules: the same server with --enroll after_agent_arm and turn policy hybrid_dyn; agent_end sent at
      the other party's labelled turn ends (a stand-in for the TTS-end event).
-  Dp Ours, predictive trigger OR per-channel Silero (research/DYADIC.md section 8, head (c), oto-fitted point
+  Dp Ours, predictive trigger OR per-channel Silero (research/archive/DYADIC.md section 8, head (c), oto-fitted point
      0.012 / 0.012 / 1.4 s): not wired into serve.py, so it runs through the offline causal scorer (``predictive``).
 
 A, C, D run through a Pipecat 1.12 pipeline (WAV transport at 1x -> STT -> user aggregator -> mock LLM/TTS);

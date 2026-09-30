@@ -1,4 +1,4 @@
-"""research/IMPROVEMENTS.md section 2c: latency / false-cutoff frontier of the served turn head (the product knob).
+"""research/archive/IMPROVEMENTS.md section 2c: latency / false-cutoff frontier of the served turn head (the product knob).
 
 From the stored score arrays only (no model runs): eot-bench v2 AMI dev (974) and ICSI held-out (1312), 6 s horizon.
 Systems on the TS-VAD 5 s-print track (research/IMPROVE_115M.md A.2): the served head alone (threshold swept),

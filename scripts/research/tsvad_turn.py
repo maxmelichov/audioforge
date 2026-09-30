@@ -1,4 +1,4 @@
-"""research/IMPROVEMENTS.md section 2: a predictive turn head trained on TS-VAD tracks (heads only, frozen encoder).
+"""research/archive/IMPROVEMENTS.md section 2: a predictive turn head trained on TS-VAD tracks (heads only, frozen encoder).
 
 The head is ``uc_turn_head.UCTurnHead`` (scripts/research/uc_turn_head.py) (reused from the user-channel draft): per 80 ms frame it reads the
 frozen encoder's TOP layer of the ASR pass (no speaker-conditioned second pass), the TS-VAD track [P(target),

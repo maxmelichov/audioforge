@@ -76,7 +76,7 @@ bars `#2F3136`, the same single accent) if it is wanted later.
     diarizer's who-is-talking columns, the true conditioning input) from above-left → "Turn over?".
   - Every output sits in one column: a flat icon plus at most three words. The icons are orange only for our heads.
     A "Today" row of three grey boxes (VAD → Turn → Whisper) closes the image.
-  - No subtitle, footer, dashed lines or example values. The engineering details moved to `demo/README.md`.
+  - No subtitle, footer, dashed lines or example values. The engineering details moved to `demo/archive/README.md`.
   - `render.py` also writes `demo_out/images/architecture_notext.png`, the same render with every word hidden, to
     check that the flow reads without text.
 - **A2 `A2_stack`**: the model as a vertical stack with the same heads annotated at their layer heights: "speaking?"
@@ -107,7 +107,7 @@ in `demo/images/redesign/`.
 - The architecture images contain structural facts only (17 layers, layer 4, the second pass, the heads' parameter
   counts in the footnote), taken from the reviewed v5 figure and `research/FINAL_REPORT.md` / `VAD_LAYERS.md`. The
   "speaking?" head is drawn reading all 17 layers because the served head is a learned mix of all 17 blocks
-  (`research/VAD_LAYERS.md`). The v5 "Why it matters" strip (speaker errors 32 → 14 %, 38 % less compute) is left out
+  (`research/archive/VAD_LAYERS.md`). The v5 "Why it matters" strip (speaker errors 32 → 14 %, 38 % less compute) is left out
   because those numbers are not in `numbers_b.json`.
 
 ## Checks (`render.py`, all eight PNGs pass; `demo/images/redesign/checks.json`)

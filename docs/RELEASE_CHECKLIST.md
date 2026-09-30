@@ -24,8 +24,8 @@ Status legend: [x] done, [ ] open, [?] needs a decision from the maintainer.
   (`~/.cache/huggingface/token`), regardless of the scan below: it was in the environment of many scripted runs.
 - [ ] Secrets scan on the tracked tree, must print nothing (run from the repo root):
   ```bash
-  git grep -nE 'hf_[A-Za-z0-9]{20,}|ghp_[A-Za-z0-9]{20,}|sk-[A-Za-z0-9]{20,}|AKIA[0-9A-Z]{16}' -- . ':!research/raw'
-  git grep -nIoE '[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[a-z]{2,}' -- . ':!research/raw' ':!research/papers' | grep -v 'noreply@\|example\.\|@gmail.com$'
+  git grep -nE 'hf_[A-Za-z0-9]{20,}|ghp_[A-Za-z0-9]{20,}|sk-[A-Za-z0-9]{20,}|AKIA[0-9A-Z]{16}' -- . ':!research/archive/raw'
+  git grep -nIoE '[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[a-z]{2,}' -- . ':!research/archive/raw' ':!research/papers' | grep -v 'noreply@\|example\.\|@gmail.com$'
   git log --format='%ae %ce' | sort -u          # author / committer e-mails that will become public
   ```
   Last run 2026-09-28: no tokens in tracked files; no personal e-mail addresses in tracked file contents. The commit
@@ -35,8 +35,8 @@ Status legend: [x] done, [ ] open, [?] needs a decision from the maintainer.
   the history (`git filter-repo --mailmap`) before the first push.
 - [ ] Untracked files are not scanned by `git grep`. Before the first push run the same greps with `grep -rn` over
   the working tree minus `data/ .venv/ models/`, or push from a clean clone.
-- [ ] `research/raw/` holds Hugging Face API dumps (model cards and metadata, public data). Check nothing personal was
-  captured in `research/raw/all.json` (author handles are public HF usernames).
+- [ ] `research/archive/raw/` holds Hugging Face API dumps (model cards and metadata, public data). Check nothing personal was
+  captured in `research/archive/raw/all.json` (author handles are public HF usernames).
 
 ## 3. Large files
 
@@ -58,7 +58,7 @@ Status legend: [x] done, [ ] open, [?] needs a decision from the maintainer.
   `assets/lid_distill.pt` (3.7 MB, sha256 `07de4e4d…`) to the same `v0.1.0` release.** `audioforge-download` fetches
   them from `RELEASE_URL` when they are not in the checkout, and fails with one line if the download fails. Check the
   hashes against `audioforge/hub.py` `COMPONENTS` after uploading. `lid_distill.pt` was trained on AmberNet's
-  outputs (NGC Terms of Use): confirm redistribution is allowed (research/LID.md) before attaching it.
+  outputs (NGC Terms of Use): confirm redistribution is allowed (research/archive/LID.md) before attaching it.
 - [ ] Docs say "stored 5 s of clean speech, 10 s for meetings; live grabs are not enough" wherever the default mode
   is introduced: README (voice sample, quickstart), docs/CONFIGURATION.md §1 / §13, docs/PROTOCOL.md §4.5,
   docs/ARCHITECTURE.md. The quickstart output in the README was captured with the default mode on 2026-09-29.
@@ -70,7 +70,7 @@ Status legend: [x] done, [ ] open, [?] needs a decision from the maintainer.
 - [ ] ~~Other agents' uncommitted work at the time of this checklist~~ (`audioforge/serve.py`, `final_asr.py`,
   `modules/relpos.py`, `streaming_diar.py`, the integrations, `tests/test_serve_shipped.py`, and the untracked
   `uc_stream.py`, `perf.py`, `heads/uc_turn.py`, `scripts/research/uc_turn.py`, `scripts/research/bench_serve.py`,
-  `scripts/frontier_*.py`, `demo/`, `docs/UPSTREAM_PRS.md`, `research/HYBRID_ASR.md`, `research/IMPROVE_115M.md`,
+  `scripts/frontier_*.py`, `demo/`, `docs/UPSTREAM_PRS.md`, `research/archive/HYBRID_ASR.md`, `research/IMPROVE_115M.md`,
   `runs/improve_115m.json`, `tests/test_bulletproof.py`, `tests/test_uc_*.py`) must be committed or dropped.
   `ruff check` currently reports 17 F401/F841 findings, all in those untracked files; CI will fail until they are
   fixed (`ruff check --fix` handles 13 of them).
@@ -104,7 +104,7 @@ Status legend: [x] done, [ ] open, [?] needs a decision from the maintainer.
 - [ ] **GPU distillation run**: `scripts/research/distill_0p6b_to_115m/` (README: steps, `setup.sh`, `preflight.sh`),
   ~6 A100 hours; bring back `runs/distill_0p6b.json`. Not required for the release; it is the next research step.
 - [ ] **Watch and listen to the demo v4 render** (`showcase_v4.mp4`, `showcase_v4_square.mp4` on the external SSD)
-  end to end before posting `demo/linkedin_post.md`; the narration was only checked by Whisper. The post's point 2
+  end to end before posting `demo/archive/linkedin_post.md`; the narration was only checked by Whisper. The post's point 2
   still says the TS-VAD path is "not served yet": it has been served since 2026-09-28 (behind flags; live result in
   `research/FINAL_REPORT.md` §5.6), so that sentence needs an update before posting.
 - [ ] Optional before release: the ~5 h CPU Sortformer-track rebuild (`scripts/research/tsvad_chain.sh`) for the

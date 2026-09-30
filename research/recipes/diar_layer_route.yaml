@@ -1,5 +1,5 @@
-# research/LAYER_ROUTING.md part 1: which encoder block should the diarization head read?
-# The served diar head (runs/stage1_served.afm) reads a near-uniform learned mix of all 17 blocks; research/SPK_HEAD.md
+# research/archive/LAYER_ROUTING.md part 1: which encoder block should the diarization head read?
+# The served diar head (runs/stage1_served.afm) reads a near-uniform learned mix of all 17 blocks; research/archive/SPK_HEAD.md
 # found speaker identity in blocks 1-9 and chance from block 10 up. This recipe is the CONTROL (from_layers: all, the
 # stage-1 mix re-trained on identical data/steps); the taps are the same recipe with one override:
 #   heads.diar.from_layers=[1]   block 2      heads.diar.from_layers=[3]   block 4      heads.diar.from_layers=[5]  block 6

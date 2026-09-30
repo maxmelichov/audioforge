@@ -1,4 +1,4 @@
-"""research/IMPROVEMENTS.md section 6: nemotron-speech-streaming-en-0.6b as the GPU streaming core (the user's request:
+"""research/archive/IMPROVEMENTS.md section 6: nemotron-speech-streaming-en-0.6b as the GPU streaming core (the user's request:
 22.5 % AMI WER for the streaming partials is too high, production is GPU).
 
   import   re-import data/nemo/nemotron-speech-streaming-en-0.6b.nemo -> <ssd>/runs/nemo_nemotron_speech_streaming_en_0.6b.afm

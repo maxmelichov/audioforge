@@ -1,4 +1,4 @@
-"""Label-free voice enrollment: follow the primary speaker's diarizer column by VOICE (research/EOT_BENCH_V2.md §8).
+"""Label-free voice enrollment: follow the primary speaker's diarizer column by VOICE (research/archive/EOT_BENCH_V2.md §8).
 
 A streaming diarizer's columns are slots, not identities: after a pause the same person can come back in another
 column (a column swap), so a binding that picks a column once (or re-binds by "who dominates") follows the wrong slot.
@@ -13,7 +13,7 @@ Pieces (all numpy / torch, no labels anywhere except the explicitly-oracle ``voi
   * ``enroll_voice``      - the bindings ``voice_first`` / ``voice_dominant`` / ``voice_oracle``.
   * ``agreement``         - agreement of a per-frame binding with a reference column at the turn end.
 
-TitaNet-L backend (research/EOT_BENCH_V2.md §9; the own-head embedding above has 34 % within-window EER):
+TitaNet-L backend (research/archive/EOT_BENCH_V2.md §9; the own-head embedding above has 34 % within-window EER):
   * ``TitaNetEmbedder``        - embeds any set of 80 ms frames of a waveform (their audio concatenated) with the
                                  ported NVIDIA TitaNet-Large (``nemo_import.import_titanet``, 192-d, unit norm).
   * ``recent_embeddings_audio`` - the per-frame / per-column look-back embeddings from audio instead of features, on a
@@ -92,11 +92,12 @@ class ColumnEmbedder:
     @torch.no_grad()
     def __call__(self, x, valid) -> np.ndarray:
         """x (N, L, D), valid (N, L) bool -> (N, E) float32 unit vectors."""
-        x = torch.as_tensor(np.asarray(x, np.float32))
-        valid = torch.as_tensor(np.asarray(valid, bool))
+        dev = next(self.head.parameters()).device  # cpu, or the GPU of an --device cuda / mps engine
+        x = torch.as_tensor(np.asarray(x, np.float32), device=dev)
+        valid = torch.as_tensor(np.asarray(valid, bool), device=dev)
         if x.shape[0] == 0:
             return np.zeros((0, self.head.emb[0].out_features), np.float32)
-        return F.normalize(self.head.emb(self.head.pool(x, valid)), dim=-1).numpy().astype(np.float32)
+        return F.normalize(self.head.emb(self.head.pool(x, valid)), dim=-1).cpu().numpy().astype(np.float32)
 
 
 def recent_embeddings(feats, p, embed, win: int = 25, min_frames: int = 8, thr: float = 0.5, chunk: int = 256):
@@ -515,3 +516,20 @@ def agreement(cols, ref_cols, ends, mask=None) -> float:
 def rebinds(col) -> int:
     """Binding changes along a per-frame binding (the -1 -> first column step counts, as for causal_dominant)."""
     return int((np.diff(np.asarray(col)) != 0).sum())
+
+
+def print_is_clean(own_vad, other_vad=None, min_speech: float = 0.8, max_other: float = 0.1,
+                   thr: float = 0.5) -> tuple[bool, dict]:
+    """Quality check of a voice-print segment (research/TSWER.md "Root cause"): the user must be speaking on at least
+    ``min_speech`` of its 80 ms frames (the served VAD head on the user's audio), and where a second channel is
+    available (the other party's microphone), the other party at most ``max_other`` of them. A print cut from a
+    stretch where the other party talks or laughs over the user (TurnBench tb_160: 62 % of the frames) is a mixture of
+    both voices; the TS-VAD head then calls the user's own voice "other". -> (ok, {"speech", "other"} fractions)."""
+    own = np.asarray(own_vad, np.float32).reshape(-1)
+    q = {"speech": round(float((own > thr).mean()) if len(own) else 0.0, 3)}
+    ok = len(own) > 0 and q["speech"] >= min_speech
+    if other_vad is not None:
+        oth = np.asarray(other_vad, np.float32).reshape(-1)
+        q["other"] = round(float((oth > thr).mean()) if len(oth) else 0.0, 3)
+        ok = ok and q["other"] <= max_other
+    return bool(ok), q

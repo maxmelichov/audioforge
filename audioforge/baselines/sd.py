@@ -1,4 +1,4 @@
-"""Dedicated VAD / diarization / speaker-verification baselines, scored like our heads (research/BASELINES.md).
+"""Dedicated VAD / diarization / speaker-verification baselines, scored like our heads (research/archive/BASELINES.md).
 
 What is here:
   * frame conversions to the AMI label grid (80 ms frames, "any overlap": ``int(s/.08) .. ceil(e/.08)-1``,

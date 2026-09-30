@@ -11,7 +11,7 @@ repos:
       - id: check-added-large-files
         args: ["--maxkb=20000"]  # assets/served_heads_v0.1.pt (19.2 MB) is the largest file allowed
       - id: check-yaml
-        exclude: ^research/raw/
+        exclude: ^research/archive/raw/
       - id: check-merge-conflict
   - repo: local
     hooks:

@@ -1,4 +1,4 @@
-"""scripts/research/contamination_probe.py (research/CONTAMINATION.md): a transient wrong speaker binding, corrected at t0.
+"""scripts/research/contamination_probe.py (research/archive/CONTAMINATION.md): a transient wrong speaker binding, corrected at t0.
 
 Under test (tiny hermetic models, no checkpoints):
   - the corruptions touch only the window [lo, hi) of the bound track / column (zero, swap, rand, eps, noop);

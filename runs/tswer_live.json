@@ -1,0 +1,1259 @@
+{
+ "generated": "2026-09-30 01:59",
+ "question": "WER of the user's transcript on the live two-party sessions with the target-speaker filter on, next to the published 23.2 % (runs/single_model.json table.live_69 single_S, all words, no filter)",
+ "rows": {
+  "a": {
+   "arm": "none_full",
+   "label": "all words, no filter, vs the full reference (both parties on mono; the user on the user channel)"
+  },
+  "b": {
+   "arm": "none",
+   "label": "all words, no filter, vs the user's words only"
+  },
+  "c": {
+   "arm": "tsvad_d2",
+   "label": "our TS-VAD-filtered words (5 s stored print, P > 0.5, +-160 ms) vs the user's words"
+  },
+  "d": {
+   "arm": "oracle_d2",
+   "label": "oracle filter (the user's annotated segments) vs the user's words"
+  }
+ },
+ "sessions_scored": {
+  "n": 32,
+  "clips": [
+   "tb_106",
+   "tb_107",
+   "tb_112",
+   "tb_113",
+   "tb_114",
+   "tb_125",
+   "tb_128",
+   "tb_138",
+   "tb_157",
+   "tb_158",
+   "tb_159",
+   "tb_160",
+   "tb_20",
+   "tb_21",
+   "tb_22",
+   "tb_42"
+  ]
+ },
+ "sessions_excluded": {
+  "n": 37,
+  "list": [
+   {
+    "clip": "ami_ES2011b_027",
+    "set": "ami",
+    "cond": "mono",
+    "why": "rebuilt AMI window: no per-speaker (or any) reference in the clip list; not in the 23.2 %"
+   },
+   {
+    "clip": "ami_IB4002_119",
+    "set": "ami",
+    "cond": "mono",
+    "why": "rebuilt AMI window: no per-speaker (or any) reference in the clip list; not in the 23.2 %"
+   },
+   {
+    "clip": "ami_IS1008b_003",
+    "set": "ami",
+    "cond": "mono",
+    "why": "rebuilt AMI window: no per-speaker (or any) reference in the clip list; not in the 23.2 %"
+   },
+   {
+    "clip": "ami_IS1008b_014",
+    "set": "ami",
+    "cond": "mono",
+    "why": "rebuilt AMI window: no per-speaker (or any) reference in the clip list; not in the 23.2 %"
+   },
+   {
+    "clip": "ami_TS3004b_064",
+    "set": "ami",
+    "cond": "mono",
+    "why": "rebuilt AMI window: no per-speaker (or any) reference in the clip list; not in the 23.2 %"
+   },
+   {
+    "clip": "oto_f619bed328134a054bbd860d0e753862",
+    "set": "oto",
+    "cond": "mono",
+    "why": "no human transcript (otoSpeech)"
+   },
+   {
+    "clip": "oto_f619bed328134a054bbd860d0e753862",
+    "set": "oto",
+    "cond": "user",
+    "why": "no human transcript (otoSpeech)"
+   },
+   {
+    "clip": "oto_0be3180d399e8624b96b2fc545b8dd59",
+    "set": "oto",
+    "cond": "mono",
+    "why": "no human transcript (otoSpeech)"
+   },
+   {
+    "clip": "oto_0be3180d399e8624b96b2fc545b8dd59",
+    "set": "oto",
+    "cond": "user",
+    "why": "no human transcript (otoSpeech)"
+   },
+   {
+    "clip": "oto_b49a3e43a039db495da6d043c86ae60b",
+    "set": "oto",
+    "cond": "mono",
+    "why": "no human transcript (otoSpeech)"
+   },
+   {
+    "clip": "oto_b49a3e43a039db495da6d043c86ae60b",
+    "set": "oto",
+    "cond": "user",
+    "why": "no human transcript (otoSpeech)"
+   },
+   {
+    "clip": "oto_f2aaa6476baf617ea458accea6ae1464",
+    "set": "oto",
+    "cond": "mono",
+    "why": "no human transcript (otoSpeech)"
+   },
+   {
+    "clip": "oto_f2aaa6476baf617ea458accea6ae1464",
+    "set": "oto",
+    "cond": "user",
+    "why": "no human transcript (otoSpeech)"
+   },
+   {
+    "clip": "oto_3f40c7c2a606fff075cf3a21cbac2fc7",
+    "set": "oto",
+    "cond": "mono",
+    "why": "no human transcript (otoSpeech)"
+   },
+   {
+    "clip": "oto_3f40c7c2a606fff075cf3a21cbac2fc7",
+    "set": "oto",
+    "cond": "user",
+    "why": "no human transcript (otoSpeech)"
+   },
+   {
+    "clip": "oto_60019edb26c7ef23125c8f8c16060418",
+    "set": "oto",
+    "cond": "mono",
+    "why": "no human transcript (otoSpeech)"
+   },
+   {
+    "clip": "oto_60019edb26c7ef23125c8f8c16060418",
+    "set": "oto",
+    "cond": "user",
+    "why": "no human transcript (otoSpeech)"
+   },
+   {
+    "clip": "oto_629ad1f171c186ab92ccaf1d71f641fb",
+    "set": "oto",
+    "cond": "mono",
+    "why": "no human transcript (otoSpeech)"
+   },
+   {
+    "clip": "oto_629ad1f171c186ab92ccaf1d71f641fb",
+    "set": "oto",
+    "cond": "user",
+    "why": "no human transcript (otoSpeech)"
+   },
+   {
+    "clip": "oto_5bc1e19ecd43cc6d45d0c1b9b78be5aa",
+    "set": "oto",
+    "cond": "mono",
+    "why": "no human transcript (otoSpeech)"
+   },
+   {
+    "clip": "oto_5bc1e19ecd43cc6d45d0c1b9b78be5aa",
+    "set": "oto",
+    "cond": "user",
+    "why": "no human transcript (otoSpeech)"
+   },
+   {
+    "clip": "oto_8eadd289ac73b01dfebfeff8d4addf20",
+    "set": "oto",
+    "cond": "mono",
+    "why": "no human transcript (otoSpeech)"
+   },
+   {
+    "clip": "oto_8eadd289ac73b01dfebfeff8d4addf20",
+    "set": "oto",
+    "cond": "user",
+    "why": "no human transcript (otoSpeech)"
+   },
+   {
+    "clip": "oto_9ba6497b3efd43ade7c941dba70bf247",
+    "set": "oto",
+    "cond": "mono",
+    "why": "no human transcript (otoSpeech)"
+   },
+   {
+    "clip": "oto_9ba6497b3efd43ade7c941dba70bf247",
+    "set": "oto",
+    "cond": "user",
+    "why": "no human transcript (otoSpeech)"
+   },
+   {
+    "clip": "oto_2d279851ee7fbb9d1dd4bd7321a81cc7",
+    "set": "oto",
+    "cond": "mono",
+    "why": "no human transcript (otoSpeech)"
+   },
+   {
+    "clip": "oto_2d279851ee7fbb9d1dd4bd7321a81cc7",
+    "set": "oto",
+    "cond": "user",
+    "why": "no human transcript (otoSpeech)"
+   },
+   {
+    "clip": "oto_30059024c18cc428bbb6064fbd9de247",
+    "set": "oto",
+    "cond": "mono",
+    "why": "no human transcript (otoSpeech)"
+   },
+   {
+    "clip": "oto_30059024c18cc428bbb6064fbd9de247",
+    "set": "oto",
+    "cond": "user",
+    "why": "no human transcript (otoSpeech)"
+   },
+   {
+    "clip": "oto_3664de3358dd01ae0445d3ceca5a8738",
+    "set": "oto",
+    "cond": "mono",
+    "why": "no human transcript (otoSpeech)"
+   },
+   {
+    "clip": "oto_3664de3358dd01ae0445d3ceca5a8738",
+    "set": "oto",
+    "cond": "user",
+    "why": "no human transcript (otoSpeech)"
+   },
+   {
+    "clip": "oto_5f9148c5dfff61031a7c9ef711020cad",
+    "set": "oto",
+    "cond": "mono",
+    "why": "no human transcript (otoSpeech)"
+   },
+   {
+    "clip": "oto_5f9148c5dfff61031a7c9ef711020cad",
+    "set": "oto",
+    "cond": "user",
+    "why": "no human transcript (otoSpeech)"
+   },
+   {
+    "clip": "oto_7342c0192cfc7ec241574ae320b46aba",
+    "set": "oto",
+    "cond": "mono",
+    "why": "no human transcript (otoSpeech)"
+   },
+   {
+    "clip": "oto_7342c0192cfc7ec241574ae320b46aba",
+    "set": "oto",
+    "cond": "user",
+    "why": "no human transcript (otoSpeech)"
+   },
+   {
+    "clip": "oto_1d3cff3bea6cd86d2b9505270ae700bb",
+    "set": "oto",
+    "cond": "mono",
+    "why": "no human transcript (otoSpeech)"
+   },
+   {
+    "clip": "oto_1d3cff3bea6cd86d2b9505270ae700bb",
+    "set": "oto",
+    "cond": "user",
+    "why": "no human transcript (otoSpeech)"
+   }
+  ]
+ },
+ "note_23p2": "the published 23.2 % = 818 / 3525 over the same 32 TurnBench sessions (16 mono vs both parties' text, 16 user channel vs the user's text): the other 37 of the 69 sessions carry no reference and add nothing to it. Row (a) here re-decodes the same audio offline (masked [70,1] forward); 'live_none_full' re-scores the stored live finals (reproduces 23.2 exactly).",
+ "protocol": {
+  "asr": "runs/stage1_served.afm rnnt, att [70,1], masked forward on the session wav (== cache-aware streaming pass 1), greedy, emission frames recorded",
+  "filter": "word kept if the mask (dilated +-2 frames) is on at mean emission frame - 5 frames (the AMI median emission lag, 400 ms); d0 / d4 in the json",
+  "tsvad": "assets/tsvad_spk.pt on the session's block-4 features, stored 5 s print of the clip (scratch/e2e_tsvad/prints.json '5.0', the print the live sessions enrolled), P > 0.5",
+  "oracle": "annotator a's segments of the user's channel (80 ms frames)",
+  "reference": "user = annotator a's segments of the user's channel with midpoint in the clip, bracketed tags removed (== clips.json text_user), teachers.normalize_text; full = text_mono (both parties) on mono sessions, text_user on user-channel sessions",
+  "scoring": "(S + D + I) / N pooled over sessions; S / D / I by jiwer, total checked equal to audioforge.metrics.edit_distance (e2e_final.score_record); 95 % CI: 1000 bootstrap resamples of clips (seed 0)",
+  "script": "scripts/research/tswer.py live / live_report"
+ },
+ "results": {
+  "all": {
+   "n_sessions": 32,
+   "n_clips": 16,
+   "none_full": {
+    "wer": 22.47,
+    "ci_clip": [
+     18.81,
+     27.19
+    ],
+    "sub": 7.83,
+    "del": 12.62,
+    "ins": 2.01,
+    "S": 276,
+    "D": 445,
+    "I": 71,
+    "ref_words": 3525,
+    "hyp_words": 3151
+   },
+   "none": {
+    "wer": 39.9,
+    "ci_clip": [
+     32.04,
+     52.95
+    ],
+    "sub": 11.46,
+    "del": 5.95,
+    "ins": 22.49,
+    "S": 310,
+    "D": 161,
+    "I": 608,
+    "ref_words": 2704,
+    "hyp_words": 3151
+   },
+   "tsvad_d0": {
+    "wer": 30.47,
+    "ci_clip": [
+     25.31,
+     37.68
+    ],
+    "sub": 10.87,
+    "del": 11.06,
+    "ins": 8.54,
+    "S": 294,
+    "D": 299,
+    "I": 231,
+    "ref_words": 2704,
+    "hyp_words": 2636
+   },
+   "tsvad_d2": {
+    "wer": 29.14,
+    "ci_clip": [
+     23.98,
+     36.18
+    ],
+    "sub": 11.39,
+    "del": 7.88,
+    "ins": 9.87,
+    "S": 308,
+    "D": 213,
+    "I": 267,
+    "ref_words": 2704,
+    "hyp_words": 2758
+   },
+   "tsvad_d2_interp_ref": {
+    "wer": 29.26,
+    "ci_clip": [
+     24.19,
+     36.3
+    ],
+    "sub": 11.48,
+    "del": 7.81,
+    "ins": 9.96,
+    "S": 310,
+    "D": 211,
+    "I": 269,
+    "ref_words": 2700,
+    "hyp_words": 2758
+   },
+   "tsvad_d4": {
+    "wer": 29.7,
+    "ci_clip": [
+     24.76,
+     36.45
+    ],
+    "sub": 11.02,
+    "del": 7.36,
+    "ins": 11.32,
+    "S": 298,
+    "D": 199,
+    "I": 306,
+    "ref_words": 2704,
+    "hyp_words": 2811
+   },
+   "oracle_d0": {
+    "wer": 26.26,
+    "ci_clip": [
+     21.23,
+     33.91
+    ],
+    "sub": 10.58,
+    "del": 7.62,
+    "ins": 8.06,
+    "S": 286,
+    "D": 206,
+    "I": 218,
+    "ref_words": 2704,
+    "hyp_words": 2716
+   },
+   "oracle_d2": {
+    "wer": 26.78,
+    "ci_clip": [
+     21.38,
+     34.93
+    ],
+    "sub": 10.84,
+    "del": 6.58,
+    "ins": 9.36,
+    "S": 293,
+    "D": 178,
+    "I": 253,
+    "ref_words": 2704,
+    "hyp_words": 2779
+   },
+   "oracle_d2_interp_ref": {
+    "wer": 26.89,
+    "ci_clip": [
+     21.46,
+     35.24
+    ],
+    "sub": 10.93,
+    "del": 6.52,
+    "ins": 9.44,
+    "S": 295,
+    "D": 176,
+    "I": 255,
+    "ref_words": 2700,
+    "hyp_words": 2779
+   },
+   "oracle_d4": {
+    "wer": 27.92,
+    "ci_clip": [
+     22.38,
+     36.64
+    ],
+    "sub": 10.98,
+    "del": 6.43,
+    "ins": 10.5,
+    "S": 297,
+    "D": 174,
+    "I": 284,
+    "ref_words": 2704,
+    "hyp_words": 2814
+   },
+   "live_none_full": {
+    "wer": 23.21,
+    "ci_clip": [
+     19.25,
+     28.35
+    ],
+    "sub": 8.03,
+    "del": 12.99,
+    "ins": 2.18,
+    "S": 283,
+    "D": 458,
+    "I": 77,
+    "ref_words": 3525,
+    "hyp_words": 3144
+   },
+   "live_none": {
+    "wer": 39.76,
+    "ci_clip": [
+     31.95,
+     52.57
+    ],
+    "sub": 11.65,
+    "del": 5.92,
+    "ins": 22.19,
+    "S": 315,
+    "D": 160,
+    "I": 600,
+    "ref_words": 2704,
+    "hyp_words": 3144
+   },
+   "none_interp_ref": {
+    "wer": 40.04,
+    "ci_clip": [
+     32.13,
+     53.1
+    ],
+    "sub": 11.56,
+    "del": 5.89,
+    "ins": 22.59,
+    "S": 312,
+    "D": 159,
+    "I": 610,
+    "ref_words": 2700,
+    "hyp_words": 3151
+   },
+   "paired": {
+    "tsvad_d2 - none": {
+     "delta": -10.76,
+     "ci_clip": [
+      -19.57,
+      -5.78
+     ]
+    },
+    "tsvad_d2 - oracle_d2": {
+     "delta": 2.36,
+     "ci_clip": [
+      -2.82,
+      7.34
+     ]
+    },
+    "none - none_full": {
+     "delta": 17.43,
+     "ci_clip": [
+      11.63,
+      27.57
+     ]
+    }
+   }
+  },
+  "user_channel": {
+   "n_sessions": 16,
+   "n_clips": 16,
+   "none_full": {
+    "wer": 17.09,
+    "ci_clip": [
+     14.53,
+     20.59
+    ],
+    "sub": 8.28,
+    "del": 7.03,
+    "ins": 1.78,
+    "S": 112,
+    "D": 95,
+    "I": 24,
+    "ref_words": 1352,
+    "hyp_words": 1281
+   },
+   "none": {
+    "wer": 17.09,
+    "ci_clip": [
+     14.53,
+     20.59
+    ],
+    "sub": 8.28,
+    "del": 7.03,
+    "ins": 1.78,
+    "S": 112,
+    "D": 95,
+    "I": 24,
+    "ref_words": 1352,
+    "hyp_words": 1281
+   },
+   "tsvad_d0": {
+    "wer": 20.04,
+    "ci_clip": [
+     16.58,
+     25.09
+    ],
+    "sub": 7.84,
+    "del": 10.58,
+    "ins": 1.63,
+    "S": 106,
+    "D": 143,
+    "I": 22,
+    "ref_words": 1352,
+    "hyp_words": 1231
+   },
+   "tsvad_d2": {
+    "wer": 18.05,
+    "ci_clip": [
+     15.09,
+     22.28
+    ],
+    "sub": 8.21,
+    "del": 8.06,
+    "ins": 1.78,
+    "S": 111,
+    "D": 109,
+    "I": 24,
+    "ref_words": 1352,
+    "hyp_words": 1267
+   },
+   "tsvad_d2_interp_ref": {
+    "wer": 18.15,
+    "ci_clip": [
+     15.15,
+     22.47
+    ],
+    "sub": 8.3,
+    "del": 8.0,
+    "ins": 1.85,
+    "S": 112,
+    "D": 108,
+    "I": 25,
+    "ref_words": 1350,
+    "hyp_words": 1267
+   },
+   "tsvad_d4": {
+    "wer": 17.75,
+    "ci_clip": [
+     14.87,
+     21.93
+    ],
+    "sub": 8.21,
+    "del": 7.77,
+    "ins": 1.78,
+    "S": 111,
+    "D": 105,
+    "I": 24,
+    "ref_words": 1352,
+    "hyp_words": 1271
+   },
+   "oracle_d0": {
+    "wer": 18.12,
+    "ci_clip": [
+     15.48,
+     21.46
+    ],
+    "sub": 8.28,
+    "del": 8.06,
+    "ins": 1.78,
+    "S": 112,
+    "D": 109,
+    "I": 24,
+    "ref_words": 1352,
+    "hyp_words": 1267
+   },
+   "oracle_d2": {
+    "wer": 17.09,
+    "ci_clip": [
+     14.53,
+     20.59
+    ],
+    "sub": 8.28,
+    "del": 7.03,
+    "ins": 1.78,
+    "S": 112,
+    "D": 95,
+    "I": 24,
+    "ref_words": 1352,
+    "hyp_words": 1281
+   },
+   "oracle_d2_interp_ref": {
+    "wer": 17.19,
+    "ci_clip": [
+     14.59,
+     20.8
+    ],
+    "sub": 8.37,
+    "del": 6.96,
+    "ins": 1.85,
+    "S": 113,
+    "D": 94,
+    "I": 25,
+    "ref_words": 1350,
+    "hyp_words": 1281
+   },
+   "oracle_d4": {
+    "wer": 17.09,
+    "ci_clip": [
+     14.53,
+     20.59
+    ],
+    "sub": 8.28,
+    "del": 7.03,
+    "ins": 1.78,
+    "S": 112,
+    "D": 95,
+    "I": 24,
+    "ref_words": 1352,
+    "hyp_words": 1281
+   },
+   "live_none_full": {
+    "wer": 17.31,
+    "ci_clip": [
+     14.7,
+     21.04
+    ],
+    "sub": 8.43,
+    "del": 6.95,
+    "ins": 1.92,
+    "S": 114,
+    "D": 94,
+    "I": 26,
+    "ref_words": 1352,
+    "hyp_words": 1284
+   },
+   "live_none": {
+    "wer": 17.31,
+    "ci_clip": [
+     14.7,
+     21.04
+    ],
+    "sub": 8.43,
+    "del": 6.95,
+    "ins": 1.92,
+    "S": 114,
+    "D": 94,
+    "I": 26,
+    "ref_words": 1352,
+    "hyp_words": 1284
+   },
+   "none_interp_ref": {
+    "wer": 17.19,
+    "ci_clip": [
+     14.59,
+     20.8
+    ],
+    "sub": 8.37,
+    "del": 6.96,
+    "ins": 1.85,
+    "S": 113,
+    "D": 94,
+    "I": 25,
+    "ref_words": 1350,
+    "hyp_words": 1281
+   },
+   "paired": {
+    "tsvad_d2 - none": {
+     "delta": 0.96,
+     "ci_clip": [
+      0.07,
+      2.66
+     ]
+    },
+    "tsvad_d2 - oracle_d2": {
+     "delta": 0.96,
+     "ci_clip": [
+      0.07,
+      2.66
+     ]
+    },
+    "none - none_full": {
+     "delta": 0.0,
+     "ci_clip": [
+      0.0,
+      0.0
+     ]
+    }
+   }
+  },
+  "mono": {
+   "n_sessions": 16,
+   "n_clips": 16,
+   "none_full": {
+    "wer": 25.82,
+    "ci_clip": [
+     20.94,
+     31.15
+    ],
+    "sub": 7.55,
+    "del": 16.11,
+    "ins": 2.16,
+    "S": 164,
+    "D": 350,
+    "I": 47,
+    "ref_words": 2173,
+    "hyp_words": 1870
+   },
+   "none": {
+    "wer": 62.72,
+    "ci_clip": [
+     48.45,
+     86.62
+    ],
+    "sub": 14.64,
+    "del": 4.88,
+    "ins": 43.2,
+    "S": 198,
+    "D": 66,
+    "I": 584,
+    "ref_words": 1352,
+    "hyp_words": 1870
+   },
+   "tsvad_d0": {
+    "wer": 40.9,
+    "ci_clip": [
+     32.46,
+     52.03
+    ],
+    "sub": 13.91,
+    "del": 11.54,
+    "ins": 15.46,
+    "S": 188,
+    "D": 156,
+    "I": 209,
+    "ref_words": 1352,
+    "hyp_words": 1405
+   },
+   "tsvad_d2": {
+    "wer": 40.24,
+    "ci_clip": [
+     31.69,
+     51.68
+    ],
+    "sub": 14.57,
+    "del": 7.69,
+    "ins": 17.97,
+    "S": 197,
+    "D": 104,
+    "I": 243,
+    "ref_words": 1352,
+    "hyp_words": 1491
+   },
+   "tsvad_d2_interp_ref": {
+    "wer": 40.37,
+    "ci_clip": [
+     31.84,
+     51.82
+    ],
+    "sub": 14.67,
+    "del": 7.63,
+    "ins": 18.07,
+    "S": 198,
+    "D": 103,
+    "I": 244,
+    "ref_words": 1350,
+    "hyp_words": 1491
+   },
+   "tsvad_d4": {
+    "wer": 41.64,
+    "ci_clip": [
+     32.95,
+     53.42
+    ],
+    "sub": 13.83,
+    "del": 6.95,
+    "ins": 20.86,
+    "S": 187,
+    "D": 94,
+    "I": 282,
+    "ref_words": 1352,
+    "hyp_words": 1540
+   },
+   "oracle_d0": {
+    "wer": 34.39,
+    "ci_clip": [
+     26.44,
+     46.75
+    ],
+    "sub": 12.87,
+    "del": 7.17,
+    "ins": 14.35,
+    "S": 174,
+    "D": 97,
+    "I": 194,
+    "ref_words": 1352,
+    "hyp_words": 1449
+   },
+   "oracle_d2": {
+    "wer": 36.46,
+    "ci_clip": [
+     28.03,
+     50.19
+    ],
+    "sub": 13.39,
+    "del": 6.14,
+    "ins": 16.94,
+    "S": 181,
+    "D": 83,
+    "I": 229,
+    "ref_words": 1352,
+    "hyp_words": 1498
+   },
+   "oracle_d2_interp_ref": {
+    "wer": 36.59,
+    "ci_clip": [
+     28.12,
+     50.26
+    ],
+    "sub": 13.48,
+    "del": 6.07,
+    "ins": 17.04,
+    "S": 182,
+    "D": 82,
+    "I": 230,
+    "ref_words": 1350,
+    "hyp_words": 1498
+   },
+   "oracle_d4": {
+    "wer": 38.76,
+    "ci_clip": [
+     29.72,
+     53.46
+    ],
+    "sub": 13.68,
+    "del": 5.84,
+    "ins": 19.23,
+    "S": 185,
+    "D": 79,
+    "I": 260,
+    "ref_words": 1352,
+    "hyp_words": 1533
+   },
+   "live_none_full": {
+    "wer": 26.88,
+    "ci_clip": [
+     21.55,
+     33.0
+    ],
+    "sub": 7.78,
+    "del": 16.75,
+    "ins": 2.35,
+    "S": 169,
+    "D": 364,
+    "I": 51,
+    "ref_words": 2173,
+    "hyp_words": 1860
+   },
+   "live_none": {
+    "wer": 62.2,
+    "ci_clip": [
+     48.21,
+     85.46
+    ],
+    "sub": 14.87,
+    "del": 4.88,
+    "ins": 42.46,
+    "S": 201,
+    "D": 66,
+    "I": 574,
+    "ref_words": 1352,
+    "hyp_words": 1860
+   },
+   "none_interp_ref": {
+    "wer": 62.89,
+    "ci_clip": [
+     48.48,
+     86.87
+    ],
+    "sub": 14.74,
+    "del": 4.81,
+    "ins": 43.33,
+    "S": 199,
+    "D": 65,
+    "I": 585,
+    "ref_words": 1350,
+    "hyp_words": 1870
+   },
+   "paired": {
+    "tsvad_d2 - none": {
+     "delta": -22.48,
+     "ci_clip": [
+      -40.53,
+      -12.41
+     ]
+    },
+    "tsvad_d2 - oracle_d2": {
+     "delta": 3.78,
+     "ci_clip": [
+      -6.09,
+      12.89
+     ]
+    },
+    "none - none_full": {
+     "delta": 36.9,
+     "ci_clip": [
+      25.03,
+      58.09
+     ]
+    }
+   }
+  },
+  "all_without_tb_160": {
+   "n_sessions": 30,
+   "n_clips": 15,
+   "none_full": {
+    "wer": 23.38,
+    "ci_clip": [
+     19.74,
+     27.95
+    ],
+    "sub": 8.16,
+    "del": 13.08,
+    "ins": 2.15,
+    "S": 270,
+    "D": 433,
+    "I": 71,
+    "ref_words": 3310,
+    "hyp_words": 2948
+   },
+   "none": {
+    "wer": 40.2,
+    "ci_clip": [
+     32.11,
+     54.46
+    ],
+    "sub": 12.04,
+    "del": 6.1,
+    "ins": 22.07,
+    "S": 306,
+    "D": 155,
+    "I": 561,
+    "ref_words": 2542,
+    "hyp_words": 2948
+   },
+   "tsvad_d2": {
+    "wer": 29.27,
+    "ci_clip": [
+     24.22,
+     36.53
+    ],
+    "sub": 11.96,
+    "del": 8.1,
+    "ins": 9.21,
+    "S": 304,
+    "D": 206,
+    "I": 234,
+    "ref_words": 2542,
+    "hyp_words": 2570
+   },
+   "oracle_d2": {
+    "wer": 27.66,
+    "ci_clip": [
+     22.08,
+     36.08
+    ],
+    "sub": 11.37,
+    "del": 6.77,
+    "ins": 9.52,
+    "S": 289,
+    "D": 172,
+    "I": 242,
+    "ref_words": 2542,
+    "hyp_words": 2612
+   },
+   "paired": {
+    "tsvad_d2 - none": {
+     "delta": -10.93,
+     "ci_clip": [
+      -20.12,
+      -5.58
+     ]
+    },
+    "tsvad_d2 - oracle_d2": {
+     "delta": 1.61,
+     "ci_clip": [
+      -3.37,
+      7.12
+     ]
+    },
+    "none - none_full": {
+     "delta": 16.82,
+     "ci_clip": [
+      11.24,
+      27.69
+     ]
+    }
+   }
+  },
+  "user_channel_without_tb_160": {
+   "n_sessions": 15,
+   "n_clips": 15,
+   "none_full": {
+    "wer": 17.7,
+    "ci_clip": [
+     15.12,
+     21.64
+    ],
+    "sub": 8.65,
+    "del": 7.16,
+    "ins": 1.89,
+    "S": 110,
+    "D": 91,
+    "I": 24,
+    "ref_words": 1271,
+    "hyp_words": 1204
+   },
+   "none": {
+    "wer": 17.7,
+    "ci_clip": [
+     15.12,
+     21.64
+    ],
+    "sub": 8.65,
+    "del": 7.16,
+    "ins": 1.89,
+    "S": 110,
+    "D": 91,
+    "I": 24,
+    "ref_words": 1271,
+    "hyp_words": 1204
+   },
+   "tsvad_d2": {
+    "wer": 18.73,
+    "ci_clip": [
+     15.8,
+     23.25
+    ],
+    "sub": 8.58,
+    "del": 8.26,
+    "ins": 1.89,
+    "S": 109,
+    "D": 105,
+    "I": 24,
+    "ref_words": 1271,
+    "hyp_words": 1190
+   },
+   "oracle_d2": {
+    "wer": 17.7,
+    "ci_clip": [
+     15.12,
+     21.64
+    ],
+    "sub": 8.65,
+    "del": 7.16,
+    "ins": 1.89,
+    "S": 110,
+    "D": 91,
+    "I": 24,
+    "ref_words": 1271,
+    "hyp_words": 1204
+   },
+   "paired": {
+    "tsvad_d2 - none": {
+     "delta": 1.03,
+     "ci_clip": [
+      0.08,
+      3.01
+     ]
+    },
+    "tsvad_d2 - oracle_d2": {
+     "delta": 1.03,
+     "ci_clip": [
+      0.08,
+      3.01
+     ]
+    },
+    "none - none_full": {
+     "delta": 0.0,
+     "ci_clip": [
+      0.0,
+      0.0
+     ]
+    }
+   }
+  },
+  "mono_without_tb_160": {
+   "n_sessions": 15,
+   "n_clips": 15,
+   "none_full": {
+    "wer": 26.92,
+    "ci_clip": [
+     22.17,
+     32.49
+    ],
+    "sub": 7.85,
+    "del": 16.77,
+    "ins": 2.31,
+    "S": 160,
+    "D": 342,
+    "I": 47,
+    "ref_words": 2039,
+    "hyp_words": 1744
+   },
+   "none": {
+    "wer": 62.71,
+    "ci_clip": [
+     47.79,
+     88.65
+    ],
+    "sub": 15.42,
+    "del": 5.04,
+    "ins": 42.25,
+    "S": 196,
+    "D": 64,
+    "I": 537,
+    "ref_words": 1271,
+    "hyp_words": 1744
+   },
+   "tsvad_d2": {
+    "wer": 39.81,
+    "ci_clip": [
+     31.3,
+     50.69
+    ],
+    "sub": 15.34,
+    "del": 7.95,
+    "ins": 16.52,
+    "S": 195,
+    "D": 101,
+    "I": 210,
+    "ref_words": 1271,
+    "hyp_words": 1380
+   },
+   "oracle_d2": {
+    "wer": 37.61,
+    "ci_clip": [
+     28.51,
+     50.86
+    ],
+    "sub": 14.08,
+    "del": 6.37,
+    "ins": 17.15,
+    "S": 179,
+    "D": 81,
+    "I": 218,
+    "ref_words": 1271,
+    "hyp_words": 1408
+   },
+   "paired": {
+    "tsvad_d2 - none": {
+     "delta": -22.9,
+     "ci_clip": [
+      -41.55,
+      -12.31
+     ]
+    },
+    "tsvad_d2 - oracle_d2": {
+     "delta": 2.2,
+     "ci_clip": [
+      -7.48,
+      12.37
+     ]
+    },
+    "none - none_full": {
+     "delta": 35.79,
+     "ci_clip": [
+      23.93,
+      58.58
+     ]
+    }
+   }
+  }
+ },
+ "consistency_turnbench_16_vs_runs_tswer_json": {
+  "none": {
+   "tswer_json": 62.81,
+   "here_mono": 62.89,
+   "tswer_json_SDIN": [
+    199,
+    68,
+    581,
+    1350
+   ],
+   "here_SDIN": [
+    199,
+    65,
+    585,
+    1350
+   ]
+  },
+  "tsvad_d2": {
+   "tswer_json": 44.96,
+   "here_mono": 40.37,
+   "tswer_json_SDIN": [
+    188,
+    203,
+    216,
+    1350
+   ],
+   "here_SDIN": [
+    198,
+    103,
+    244,
+    1350
+   ]
+  },
+  "oracle_d2": {
+   "tswer_json": 36.81,
+   "here_mono": 36.59,
+   "tswer_json_SDIN": [
+    182,
+    85,
+    230,
+    1350
+   ],
+   "here_SDIN": [
+    182,
+    82,
+    230,
+    1350
+   ]
+  }
+ }
+}

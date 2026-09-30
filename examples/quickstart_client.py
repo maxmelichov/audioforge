@@ -41,7 +41,10 @@ async def main(a) -> None:
     n = int(SR * BLOCK_S)
     async with connect(a.url, max_size=2 ** 22) as ws:
         print(json.loads(await ws.recv()))  # ready
-        await ws.send(json.dumps({"type": "config", "turn_policy": a.policy, "sample_rate": SR}))
+        cfg = {"type": "config", "sample_rate": SR}
+        if a.policy:  # else the server's default: vad_head in single mode (research/EOT_LATENCY.md)
+            cfg["turn_policy"] = a.policy
+        await ws.send(json.dumps(cfg))
         if a.voiceprint and not a.enroll_live:  # the user's stored print: the server follows this voice
             await ws.send(json.dumps({"type": "enroll", "embedding": json.loads(Path(a.voiceprint).read_text())}))
         elif a.enroll_live:  # take the print from the first seconds of speech that follow (a prompted, clean sample)
@@ -81,7 +84,7 @@ if __name__ == "__main__":
     ap = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
     ap.add_argument("audio", nargs="?", default=str(HERE / "audio" / "two_party_call_16s.wav"))
     ap.add_argument("--url", default="ws://127.0.0.1:8765")
-    ap.add_argument("--policy", default="hybrid_dyn")
+    ap.add_argument("--policy", default=None, help="turn_policy (default: the server's; single mode: vad_head)")
     ap.add_argument("--voiceprint", default=str(HERE / "audio" / "two_party_call_16s.voiceprint.json"),
                     help="JSON list of 192 numbers: the user's stored voice print ('' = none)")
     ap.add_argument("--enroll-live", action="store_true", help="no stored print: take it from the next speech "

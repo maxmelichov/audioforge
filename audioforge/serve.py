@@ -94,11 +94,16 @@ from .server.constants import (
     SR,
     STAT_KEEP,
     TSVAD_DYN,
+    VAD_HEAD_OTHERS_MS,
+    VAD_HEAD_OTHERS_P,
+    VAD_HEAD_SIL_THR,
+    VAD_HEAD_USER_P,
+    VAD_HEAD_WAIT_MS,
     VOICE_MODES,
     diar_lag_ms,
     diar_preset,
 )
-from .server.policies import AnySpeakerTimeout, HeadPolicy, SileroSilence, TimeoutPolicy
+from .server.policies import AnySpeakerTimeout, HeadPolicy, SileroSilence, TimeoutPolicy, VadHeadPolicy
 from .server.protocol import (
     DEBUG_KEYS,
     ENROLL_KEYS,
@@ -163,6 +168,7 @@ __all__ = [
     "FRAME_SAMPLES",
     "handle",
     "HeadPolicy",
+    "VadHeadPolicy",
     "HYBRID_POLICIES",
     "LID_KEYS",
     "LOOKAHEAD_MARGIN_FRAMES",
@@ -208,6 +214,14 @@ __all__ = [
 ]
 
 
+
+def gpu_available(device) -> bool:
+    """True when ``device`` names a GPU this process can use: ``cuda[:N]`` with a visible CUDA GPU, or ``mps`` (Apple
+    GPU)."""
+    d = str(device)
+    return (d.startswith("cuda") and torch.cuda.is_available()) or (d == "mps" and torch.backends.mps.is_available())
+
+
 class Engine:
     """Both models, loaded once, shared by every session (compute is serialized on one worker thread)."""
 
@@ -220,19 +234,21 @@ class Engine:
                  lid: str | None = None, lid_threshold: float = 0.9, lid_min_ms: float = 1000.0,
                  lid_langs: list | None = None, lid_max_ms: float | None = None, final_asr=None, final_asr_worker: str = "process",
                  final_asr_threads: int | None = 2, final_asr_device: str = "cpu", asr_lookahead: int | None = None,
-                 asr_vad_gate: float | None = None, asr_vad_hangover_ms: float = 1200.0,
+                 asr_chunk_ms: int | None = None, asr_vad_gate: float | None = None, asr_vad_hangover_ms: float = 1200.0,
                  max_session_s: float = DEFAULT_MAX_SESSION_S, idle_timeout_s: float = DEFAULT_IDLE_TIMEOUT_S,
                  log_json: bool = False, perf: str | None = "default", tsvad: str | None = None,
                  tsvad_print_s: float = 5.0, tsvad_refresh_s: float = 0.0, diar_off: bool = False,
                  diar_labels: str = "column", diar_embed: str = "spk", shed_diar: str = "vad",
-                 registry_thr: float | None = None, dyn_wait_ms: str | tuple | None = None):
+                 registry_thr: float | None = None, dyn_wait_ms: str | tuple | None = None,
+                 vad_wait_ms: str | tuple | None = None, others_wait_ms: str | tuple | None = None,
+                 turn_policy: str = "timeout"):
         self.threads = threads
         self.asr_lookahead = int(asr_lookahead) if asr_lookahead else None
         self.asr_vad_gate = None if asr_vad_gate is None else float(asr_vad_gate)
         self.asr_vad_hangover = max(1, int(round(float(asr_vad_hangover_ms) / FRAME_MS)))
         self.max_session_s, self.idle_timeout_s = float(max_session_s), float(idle_timeout_s)
         self.log_json = bool(log_json)
-        # robustness bookkeeping (research/BULLETPROOF.md): every degradation and refused message is counted here
+        # robustness bookkeeping (research/archive/BULLETPROOF.md): every degradation and refused message is counted here
         # (Engine.health()), and every live connection is registered so the watchdog can see the global backlog
         self.counters: dict[str, int] = {}
         self.counter_lock = threading.Lock()
@@ -259,11 +275,11 @@ class Engine:
         self.lid_name, self.lid_threshold, self.lid_min_ms = None, float(lid_threshold), float(lid_min_ms)
         self.lid_model, self.lid_langs = None, list(lid_langs) if lid_langs else None
         self.lid_max_ms = float(lid_max_ms) if lid_max_ms else None  # 0 / None: no timeout
-        if lid in ("ambernet",) or (lid and str(lid).endswith(".nemo")):  # the dedicated backend (research/LID.md)
+        if lid in ("ambernet",) or (lid and str(lid).endswith(".nemo")):  # the dedicated backend (research/archive/LID.md)
             from .nemo_import import import_ambernet
             self.lid_model = import_ambernet(None if lid == "ambernet" else lid)
             self.lid_name = "ambernet"
-        elif lid:  # spoken language ID head (research/LID.md), attached to the ASR model's encoder
+        elif lid:  # spoken language ID head (research/archive/LID.md), attached to the ASR model's encoder
             from .lid import HEAD_MAX_MS, attach_head, resolve_head
             if lid == "head" and lid_max_ms is None:  # the shipped head and its pre-registered rule (fix pass)
                 self.lid_max_ms = HEAD_MAX_MS
@@ -273,7 +289,7 @@ class Engine:
             fast_conv(self.asr)
             if self.diar is not None:
                 fast_conv(self.diar)
-        # --perf: the CPU inference fast paths of audioforge.perf (research/PERFORMANCE.md section 3); the default
+        # --perf: the CPU inference fast paths of audioforge.perf (research/archive/PERFORMANCE.md section 3); the default
         # set is exact (same outputs as without it), "none" turns them off
         from . import perf as _perf
         self.perf_opts = _perf.parse(perf)
@@ -303,6 +319,26 @@ class Engine:
             if not 0 < floor <= cap:
                 raise ValueError(f"--dyn-wait-ms {dyn_wait_ms!r}: needs 0 < FLOOR <= CAP")
             self.dyn_t0, self.dyn_a = cap / FRAME_MS, (cap - floor) / FRAME_MS
+        # --vad-wait-ms K,FALLBACK: turn_policy vad_head's VAD-head silence for the head path / the fallback (0 = none)
+        k_ms, fb_ms = ((float(x) for x in (vad_wait_ms.split(",") if isinstance(vad_wait_ms, str) else vad_wait_ms))
+                       if vad_wait_ms else VAD_HEAD_WAIT_MS)
+        if not (k_ms > 0 and (fb_ms == 0 or fb_ms >= k_ms)):
+            raise ValueError(f"--vad-wait-ms {vad_wait_ms!r}: needs K > 0 and FALLBACK = 0 or >= K")
+        self.vad_head_k = max(1, int(round(k_ms / FRAME_MS)))
+        self.vad_head_fb = int(round(fb_ms / FRAME_MS)) if fb_ms else None
+        # --others-wait-ms USER_SIL,HOLD: vad_head's others path (the user's TS-VAD silence reaching USER_SIL while
+        # P(other) >= 0.9 has held for HOLD; 0 = off)
+        ou = ([float(x) for x in (others_wait_ms.split(",") if isinstance(others_wait_ms, str) else others_wait_ms)]
+              if others_wait_ms is not None else list(VAD_HEAD_OTHERS_MS))
+        if len(ou) == 1:
+            ou.append(VAD_HEAD_OTHERS_MS[1] if ou[0] else 0.0)
+        if len(ou) != 2 or ou[0] < 0 or ou[1] < 0 or (ou[0] and ou[0] < FRAME_MS):
+            raise ValueError(f"--others-wait-ms {others_wait_ms!r}: needs USER_SIL,HOLD in ms (USER_SIL 0 = off)")
+        self.vad_head_others = (int(round(ou[0] / FRAME_MS)), max(1, int(round(ou[1] / FRAME_MS)))) if ou[0] else None
+        # --turn-policy: the policy of a session whose config does not name one (--mode single: vad_head)
+        if turn_policy not in POLICIES:
+            raise ValueError(f"--turn-policy {turn_policy!r}: one of {POLICIES}")
+        self.turn_policy = turn_policy
         self.tsvad_print_s, self.tsvad_refresh_s = float(tsvad_print_s), float(tsvad_refresh_s)
         if self.turn_input == "tsvad":
             if not (needs_diar or (h is not None and asr_model.head_cfg[self.turn_name].get("condition_on_speaker"))):
@@ -312,8 +348,9 @@ class Engine:
             from .tsvad_stream import load_tsvad
             self.tsvad = tsvad if isinstance(tsvad, torch.nn.Module) else load_tsvad(str(tsvad or DEFAULT_TSVAD),
                                                                                          asr_model.encoder.d_model)
+            self.tsvad = self.tsvad.to(next(asr_model.parameters()).device)
             self.dyn_offset = TSVAD_DYN[1]
-        # --diar-labels / --shed-diar (research/DIARIZATION_FIX.md): stable voice-keyed ids on the finals and the
+        # --diar-labels / --shed-diar (research/archive/DIARIZATION_FIX.md): stable voice-keyed ids on the finals and the
         # last-stable-column rule under load shedding; defaults keep the legacy behaviour
         if diar_labels not in DIAR_LABEL_MODES or shed_diar not in SHED_DIAR_MODES or diar_embed not in ("spk", "titanet"):
             raise ValueError(f"--diar-labels {diar_labels!r} / --shed-diar {shed_diar!r} / --diar-embed {diar_embed!r}")
@@ -346,9 +383,16 @@ class Engine:
         assert abs(asr_frame_ms - FRAME_MS) < 1e-6 and (
             diar_model is None or abs(diar_model.frame_sec * 1000 - FRAME_MS) < 1e-6), \
             "both models must run on the 80 ms frame clock"
-        att = asr_model.encoder.att_context_size
+        att = list(asr_model.encoder.att_context_size)
+        # --asr-chunk-ms: the streaming chunk of the ASR pass, 160 = [L, 1] or 80 = [L, 0] (a context the model was
+        # trained with; the NVIDIA hybrid was trained for [70, 0/1/16/33]); None = the model's own
+        if asr_chunk_ms:
+            if int(asr_chunk_ms) % FRAME_MS or int(asr_chunk_ms) < FRAME_MS:
+                raise ValueError(f"--asr-chunk-ms {asr_chunk_ms}: a multiple of {FRAME_MS}")
+            att = [att[0], int(asr_chunk_ms) // FRAME_MS - 1]
+        self.asr_att = att
         self.chunk_ms = (att[1] + 1) * FRAME_MS
-        self.lag = diar_lag_ms(2, 0) if diar_off else diar_lag_ms(self.diar_cfg["chunk_len"],
+        self.lag = diar_lag_ms(att[1] + 1, 0) if diar_off else diar_lag_ms(self.diar_cfg["chunk_len"],
                                                                  self.diar_cfg["chunk_right_context"])
         # Silero VAD v5 for hybrid_silero / hybrid_dyn: loaded at the first session that asks for such a policy
         # (or at start with preload_silero); ``silero_model`` may be injected (tests)
@@ -509,13 +553,24 @@ class Engine:
     @classmethod
     def load(cls, asr_path: str, diar_path: str | None, device: str = "cpu", diar_pool: str | None = None,
              diar_spks: int | None = None, **kw) -> "Engine":
-        """Load the ASR + heads ``.afm`` and the diarizer (any device falls back to CPU) and build the engine; ``kw``
+        """Load the ASR + heads ``.afm`` and the diarizer on ``device`` (``cpu``; ``cuda[:N]`` / ``mps`` when that GPU is
+        visible, anything else falls back to CPU) and build the engine; ``kw``
         are the server options (the ``audioforge.serve`` flags with underscores). ``diar_path`` None (only with
         ``diar_off``, ``--mode single``): no diarizer is loaded at all."""
         from .nemo_import import load_any
         from .train import load_model
         fallback = None
-        if device != "cpu":  # the server's streaming path is CPU-only (fast-conv, per-frame decoding): degrade, not die
+        device = str(device)
+        if device != "cpu" and gpu_available(device):
+            # cpu is the measured default. cuda[:N] / mps (opt-in, --device) run the same streaming code with the models
+            # on the GPU: same events as cpu on the bundled clip (PR #1 on an RTX 5090; research/MPS_115M.md)
+            kw["fast"] = False  # fast-conv is the CPU path for the conformer convolutions
+            if device.startswith("cuda"):
+                # full fp32: cuDNN's TF32 convolutions (PyTorch's default) moved the encoder output 1.5 % (relative)
+                # away from cpu, enough to flip greedy RNNT decodes live (process-wide flags, set for this process)
+                torch.backends.cudnn.allow_tf32 = False
+                torch.backends.cuda.matmul.allow_tf32 = False
+        elif device != "cpu":  # unknown, or the GPU is not visible: degrade, not die
             fallback = device
             log.warning(f"[serve] warning: --device {device} is not supported by this server; falling back to cpu")
             device = "cpu"
@@ -527,7 +582,7 @@ class Engine:
         diar = load_any(diar_path, device) if diar_path is not None else None
         if diar is None and not kw.get("diar_off"):
             raise ValueError("no --diar given: a diarizer is required unless --turn-input tsvad --diar-off")
-        if diar is not None and diar_pool is not None:  # Nemotron-3: 10 ms -> 80 ms pooling (research/SORTFORMER_IMPORT.md: max for streaming)
+        if diar is not None and diar_pool is not None:  # Nemotron-3: 10 ms -> 80 ms pooling (research/archive/SORTFORMER_IMPORT.md: max for streaming)
             for h in diar.heads.values():
                 if hasattr(h, "pool"):
                     h.pool = diar_pool
@@ -570,7 +625,7 @@ class Engine:
 
     def warmup(self, seconds: float = 2.0):
         """Run ``seconds`` of noise through a throwaway session so the first real session starts warm."""
-        s = Session(self, SessionConfig())
+        s = Session(self, SessionConfig(turn_policy=self.turn_policy))
         rng = np.random.default_rng(0)
         s.process((rng.standard_normal(int(seconds * SR)) * 0.01).astype(np.float32))
         s.finish()
@@ -599,7 +654,7 @@ class Session:
             from .lid import LIDStream
             lid = LIDStream(e.asr, e.lid_name, threshold=e.lid_threshold, min_ms=e.lid_min_ms, max_ms=e.lid_max_ms)
         self.asr = ASRStream(e.asr, e.vad_name, e.turn_name, e.turn_input, lid=lid, vad_gate=e.asr_vad_gate,
-                             vad_hangover_frames=e.asr_vad_hangover)
+                             vad_hangover_frames=e.asr_vad_hangover, att_context_size=e.asr_att)
         if e.diar_off:  # --diar-off: the TS-VAD track stands in for the diarizer's columns (no Sortformer pass)
             from .tsvad_stream import TSVADColumns
             self.diar = TSVADColumns(self.asr, e.num_spks)
@@ -609,6 +664,8 @@ class Session:
                         else TimeoutPolicy(self.cfg.timeout_ms, e.num_spks,
                                            require_quiet=self.cfg.turn_policy == "timeout_quiet"))
         self.head_pol = HeadPolicy(self.cfg.theta)
+        self.vh_pol = VadHeadPolicy(self.cfg.theta, e.vad_head_k, e.vad_head_fb, VAD_HEAD_SIL_THR,  # turn_policy vad_head
+                                    others=e.vad_head_others, others_p=VAD_HEAD_OTHERS_P, user_p=VAD_HEAD_USER_P)
         self.resampler = Resampler(self.cfg.sample_rate) if self.cfg.sample_rate != SR else None
         self.S = e.num_spks
         self.rows = _Ring()  # finalized diarizer columns (the last 2048 = 164 s; len() counts all)
@@ -717,6 +774,7 @@ class Session:
         if isinstance(self.timeout, TimeoutPolicy):
             self.timeout.require_quiet = cfg.turn_policy == "timeout_quiet"
         self.head_pol.thr = cfg.theta
+        self.vh_pol.thr = cfg.theta
 
     def _tsvad_theta(self):
         """--turn-input tsvad: the head threshold of hybrid_dyn / hybrid defaults to TSVAD_DYN's (a config
@@ -779,7 +837,7 @@ class Session:
             if t_speech <= self.hyb_t:
                 continue
             self.hyb_t = t_dec
-            ev = dict(ev, p=ev["p"] if pol in ("head", "dyn") else self._p_at(t_dec))
+            ev = dict(ev, p=ev["p"] if pol in ("head", "dyn", "vad_head") else self._p_at(t_dec))
             out.append((t_dec, self.cfg.turn_policy, ev, v))
         return out
 
@@ -853,8 +911,7 @@ class Session:
     # decision times: the audio time at which the data behind a frame's decision is complete (independent of how
     # the client batched its audio, so events and finals are deterministic)
     def _asr_ready_t(self, v: int) -> float:
-        a = self.asr
-        need = ((v // a.cs + 1) * a.chunk_mel - 1) * a.hop + a.half  # samples for the chunk holding frame v
+        need = self.asr.frame_ready_samples(v)  # samples for the chunk holding frame v
         return min(need, self.samples) / SR
 
     def _diar_ready_t(self, v: int) -> float:
@@ -863,8 +920,7 @@ class Session:
 
     def _asr_frames_at(self, t: float) -> int:
         a = self.asr
-        ready = (int(round(t * SR)) - a.half) // a.hop + 1
-        n = max(ready, 0) // a.chunk_mel * a.cs
+        n = a.frames_ready(int(round(t * SR)))
         return a.n_frames if t >= self.samples / SR and self.finished else min(n, a.n_frames)
 
     def _turn_end(self, pol: str, ev: dict, frame_v: int, t_dec: float, out: list):
@@ -878,7 +934,7 @@ class Session:
 
     def _attribute(self, f0: int, f: int, col_speaker):
         """``final.speaker`` (+ the optional ``speaker_conf`` / ``diar_shed`` keys) for the segment of frames [f0, f)
-        (research/DIARIZATION_FIX.md). Legacy (``--diar-labels column --shed-diar vad``): the caller's primary column,
+        (research/archive/DIARIZATION_FIX.md). Legacy (``--diar-labels column --shed-diar vad``): the caller's primary column,
         no extra keys. ``hold``: the same column plus ``diar_shed``. ``registry``: the turn's dominant column picks
         the speaker's own frames, their voice embedding is matched against the session's SpeakerRegistry (stable id
         across column permutations and re-entries); with too few frames the column's last id, else ``null``."""
@@ -936,7 +992,7 @@ class Session:
 
     def _emit_final(self, t_dec: float, f: int, speaker, out: list):
         """Cut the current segment at ASR frame ``f`` (decision time ``t_dec``): the streaming final, then the
-        lookahead / offline finals it is due (research/HYBRID_ASR.md)."""
+        lookahead / offline finals it is due (research/archive/HYBRID_ASR.md)."""
         cut = max(self.seg_tok, self.asr.tok_at[f - 1] if f > 0 else 0)
         tok = self.e.asr.tokenizer
         text = tok.decode(self.asr.tokens[self.seg_tok:cut]) if tok is not None else ""
@@ -1108,7 +1164,7 @@ class Session:
         """Run a block of 16 kHz float samples (any length) through both models -> messages, in order:
         error*, frame* | frames, (turn_end, final?)*, partial?. ``arrived``: perf_counter time the block's last
         sample arrived. ``backlog_ms`` / ``shed``: the connection's unprocessed audio and the watchdog's shedding
-        level (research/BULLETPROOF.md section 4): level >= 1 skips the diarizer for this block (its columns are
+        level (research/archive/BULLETPROOF.md section 4): level >= 1 skips the diarizer for this block (its columns are
         replaced by the served VAD in column 0), level >= 2 also drops the partial, batches the frames into one
         ``frames`` message and drops the lookahead pass for good."""
         t0 = time.perf_counter()
@@ -1230,6 +1286,13 @@ class Session:
                 ev = self.head_pol.update(p, vad)
                 if ev is not None and self._fires("head"):
                     events.append((t_rdy, "head", ev, v))
+                if self.cfg.turn_policy == "vad_head":
+                    pu = po = None  # the others path reads the enrolled user's TS-VAD track of the same frame
+                    if tsv and self.tsvad is not None and self.tsvad.enrolled and v < len(self.asr.tsvad_p):
+                        pu, po = (float(x) for x in self.asr.tsvad_p[v][:2])
+                    ev = self.vh_pol.update(p, vad, pu, po)
+                    if ev is not None:
+                        events.append((t_rdy, "vad_head", ev, v))
         out = self.take_notices()
         row, spk_v = self._latest_row(), len(self.rows) - 1
         fr_msgs = []
@@ -1242,6 +1305,10 @@ class Session:
                 ev = self.head_pol.update(f["eot"], f["vad"])
                 if ev is not None and self._fires("head"):
                     events.append((self._asr_ready_t(f["v"]), "head", ev, f["v"]))
+                if self.cfg.turn_policy == "vad_head":
+                    ev = self.vh_pol.update(f["eot"], f["vad"])
+                    if ev is not None:
+                        events.append((self._asr_ready_t(f["v"]), "vad_head", ev, f["v"]))
             m = {"type": "frame", "t": round((f["v"] + 1) * FRAME_MS / 1000, 3), "vad": round(f["vad"], 4),
                  "eot": None if self.last_eot is None else round(self.last_eot, 5),
                  "speakers": [round(min(max(float(p), 0.0), 1.0), 4) for p in row], "primary": self.timeout.primary}
@@ -1425,12 +1492,12 @@ def _log(*a):
 async def handle(ws, engine: Engine, log=_log):
     """One connection = one session (protocol: docs/PROTOCOL.md). Every client mistake answers with a
     structured ``error`` message (fatal ones close the connection with code 1008 / 1011); nothing a client sends
-    can raise out of this coroutine (research/BULLETPROOF.md section 2)."""
+    can raise out of this coroutine (research/archive/BULLETPROOF.md section 2)."""
     from websockets.exceptions import ConnectionClosed
     loop = asyncio.get_running_loop()
     peer = getattr(ws, "remote_address", None)
     peer_s = f"{peer[0]}:{peer[1]}" if isinstance(peer, tuple) and len(peer) >= 2 else str(peer)
-    cfg, conn = SessionConfig(), _Conn()
+    cfg, conn = SessionConfig(turn_policy=engine.turn_policy), _Conn()
     session: Session | None = None
     resampler: Resampler | None = None
     t_conn = time.perf_counter()

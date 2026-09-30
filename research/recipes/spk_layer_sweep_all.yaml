@@ -1,4 +1,4 @@
-# research/SPK_HEAD.md - layer sweep: is the speaker head's 32 % within-meeting EER the frozen encoder's
+# research/archive/SPK_HEAD.md - layer sweep: is the speaker head's 32 % within-meeting EER the frozen encoder's
 # features or the supervision? This run keeps the stage-1 objective (AAM-softmax with 190 output classes; the 45 AMI train
 # speakers' single-speaker segments are the only labelled data) and keeps the stage-1 learned softmax mix over all 17 layers (from_layers: all, initialised from
 # stage 1's near-uniform mix and trained): the control that separates the data change (segments instead of 16 s turn windows) from the layer. Head only: everything but heads.spk is frozen and

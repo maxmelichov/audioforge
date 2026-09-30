@@ -1,4 +1,4 @@
-# Stage 1c: turn head v3 on REAL STREAMING diarizer tracks (research/STAGE1.md, n = 200 table: with oracle
+# Stage 1c: turn head v3 on REAL STREAMING diarizer tracks (research/archive/STAGE1.md, n = 200 table: with oracle
 # activity the head misses 29.5 % at <= 5 % false cutoffs vs 6.3 % for a silence timeout; with NVIDIA's streaming
 # Sortformer 69 % vs 38 % for a timeout on the same track). Diagnosis acted on:
 #   (1) the head has no explicit notion of "how long has the primary been silent" -> duration_feats (causal
@@ -32,7 +32,7 @@ name: v4_stage1_turn_v3
 init:
   from: runs/stage1_turn_v3.afm  # continue from v3 (head already trained on streaming tracks)
   pretrained_lr_mult: 0
-  # v4: the SPEAKER KERNELS (encoder.speaker_kernels.*, 2.1M params) train too. research/TURN_ERRORS.md:
+  # v4: the SPEAKER KERNELS (encoder.speaker_kernels.*, 2.1M params) train too. research/archive/TURN_ERRORS.md:
   # they were frozen after stage 1, where they only ever saw clean oracle activity; feeding them a clean track
   # while the head sees the noisy Sortformer track gives 9.5% misses instead of 63%.
   pretrained_scope: [preprocessor., encoder.pre_encode., encoder.layers., layer_mix., heads.rnnt., heads.ctc.,

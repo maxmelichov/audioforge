@@ -1,6 +1,6 @@
 {
  "question": "How long does a transient wrong speaker binding keep changing a speaker-conditioned streaming model's outputs after the binding is corrected?",
- "doc": "research/CONTAMINATION.md",
+ "doc": "research/archive/CONTAMINATION.md",
  "turn_head": {
   "n": 321,
   "conditions": [

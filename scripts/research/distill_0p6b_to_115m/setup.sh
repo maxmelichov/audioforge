@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # One-time setup of a rented Linux GPU box (1 x A100 / H100, CUDA 12 driver, >= 200 GB disk) for
-# scripts/research/distill_0p6b_to_115m (research/IMPROVEMENTS.md section 7). Run from the repo root:
+# scripts/research/distill_0p6b_to_115m (research/archive/IMPROVEMENTS.md section 7). Run from the repo root:
 #     bash scripts/research/distill_0p6b_to_115m/setup.sh [--skip-data]
 # Every step is resumable (re-run after an interruption). Nothing here needs a GPU.
 set -euo pipefail

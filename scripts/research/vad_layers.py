@@ -1,4 +1,4 @@
-"""Frame VAD per encoder block, and what a "gated encoder" would save (research/VAD_LAYERS.md).
+"""Frame VAD per encoder block, and what a "gated encoder" would save (research/archive/VAD_LAYERS.md).
 
 Question 1  Is a probe on an early block (2-4) as good a VAD as the served head (stage1_heads_pretrained.afm, a
             64-hidden frame head on a learned mix of all 17 blocks)?  Logistic regression and a 64-hidden MLP on the

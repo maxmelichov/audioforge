@@ -50,6 +50,11 @@ behind it, learned on a shared laptop:
 
 ## Where things live
 
+[`docs/REPO_LAYOUT.md`](docs/REPO_LAYOUT.md) is the one-screen map of the tree. In short: package code in
+`audioforge/`, tests in `tests/`, user docs in `docs/`, experiment drivers in `scripts/research/`, dated notes in
+`research/` (current reports at the top, superseded ones in `research/archive/`), their result JSONs in `runs/`, and
+the launch images in `demo/images/`. Anything under an `archive/` directory is kept for the record and not maintained.
+
 | you want to change | look at |
 |---|---|
 | server behaviour | `audioforge/serve.py` (engine, session, connection loop) and `audioforge/server/` |

@@ -1,4 +1,4 @@
-"""Spoken-LID data (research/LID.md): a small FLEURS subset, streamed (no full tarball on disk).
+"""Spoken-LID data (research/archive/LID.md): a small FLEURS subset, streamed (no full tarball on disk).
 
   fetch   for each language / split, stream data/<fleurs>/audio/<split>.tar.gz from the google/fleurs HF dataset
           repo and keep the first N utterances (FLAC, 16 kHz mono) + a manifest; the rest of the tarball is never

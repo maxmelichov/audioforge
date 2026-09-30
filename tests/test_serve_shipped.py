@@ -1,4 +1,4 @@
-"""serve.py's shipped rules (research/INTEGRATION.md section 8): turn policies hybrid_silero (head OR any-speaker Silero
+"""serve.py's shipped rules (research/archive/INTEGRATION.md section 8): turn policies hybrid_silero (head OR any-speaker Silero
 silence >= 2.64 s) and hybrid_dyn (head OR Silero silence >= clamp(80 - 55 p, 7, 80) frames), and --enroll
 after_agent_arm (the agent-end choice, then causal_dominant). Tiny models + a scripted diarizer and an energy "Silero"
 stand in for the checkpoints; the real Silero ONNX test runs when data/silero/silero_vad_v5.onnx exists."""
@@ -119,7 +119,7 @@ def test_silero_not_loaded_unless_a_silero_policy_is_used():
     s = Session(eng, SessionConfig(turn_policy="hybrid"))  # no Silero needed: nothing loaded
     assert s.sil is None and eng.silero_model is None
     # a Silero policy without the file degrades to hybrid (head at the Silero policy's threshold OR the diarizer
-    # timeout) and reports it once as a non-fatal error (research/BULLETPROOF.md) instead of killing the session
+    # timeout) and reports it once as a non-fatal error (research/archive/BULLETPROOF.md) instead of killing the session
     s2 = Session(eng, SessionConfig(turn_policy="hybrid_silero"))
     assert s2.sil is None and s2.cfg.turn_policy == "hybrid" and s2.cfg.theta == POLICY_THETA["hybrid_silero"]
     msgs = s2.process(np.zeros(3200, np.float32))

@@ -629,7 +629,7 @@ def eot_bench(scores: list[np.ndarray], onsets, ends, frame_ms: float = FRAME_SE
     Reports the lowest-latency threshold with false-cutoff rate <= ``max_fc`` and the false-cutoff
     rate of the most conservative threshold whose P50 latency is <= ``fixed_latency_ms``.
 
-    Options (eot-bench v2, research/EOT_BENCH_V2.md; all off by default = the output above, unchanged):
+    Options (eot-bench v2, research/archive/EOT_BENCH_V2.md; all off by default = the output above, unchanged):
       pauses           per conversation [(start, end)] within-turn pause frames (``pause_runs(hes)``): adds
                        ``fc_per_pause`` = pauses with a firing on one of their frames / all pauses;
       fc_unit          'turn' (default) | 'pause': which FC rate ``max_fc`` (and the fixed-latency point) constrains;

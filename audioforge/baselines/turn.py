@@ -1,4 +1,4 @@
-"""Dedicated open turn-detection models as per-frame end-of-turn score tracks (research/BASELINES.md, "Turn detection").
+"""Dedicated open turn-detection models as per-frame end-of-turn score tracks (research/archive/BASELINES.md, "Turn detection").
 
 Every baseline is turned into one score per 80 ms frame of an eot-bench v2 window (scripts/research/eval_stage1.py --bench v2),
 so the SAME scorer (conversation.eot_outcomes / eval_stage1 cross-fitted 5 % FC operating points) applies to them and

@@ -10,7 +10,7 @@ import audioforge
 fe = audioforge.load()                                   # single-model mode: the models audioforge-download installed
 user = json.load(open("examples/audio/two_party_call_16s.voiceprint.json"))  # or fe.voiceprint(>= 5 s of clean speech)
 pcm, sr = sf.read("examples/audio/two_party_call_16s.wav", dtype="int16")
-s = fe.session(turn_policy="hybrid_dyn", sample_rate=sr)
+s = fe.session(sample_rate=sr)                           # single mode's turn rule: vad_head (no Silero)
 s.enroll(user)
 blocks = [pcm[i:i + sr // 50] for i in range(0, len(pcm), sr // 50)]   # 20 ms, like a microphone
 for events in [s.feed(b) for b in blocks] + [s.end()]:

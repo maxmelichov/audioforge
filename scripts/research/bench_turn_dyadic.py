@@ -1,4 +1,4 @@
-"""eot-bench v2 (research/EOT_BENCH_V2.md) on the dyadic slices (research/DYADIC.md), NO retraining: how the AMI-trained
+"""eot-bench v2 (research/archive/EOT_BENCH_V2.md) on the dyadic slices (research/archive/DYADIC.md), NO retraining: how the AMI-trained
 trail6 head and the timeout / Silero / Parakeet-EOU baselines behave on two-party audio where the "user" is one channel.
 
 Set: the HUMAN party's non-backchannel turns (datasets/dyadic.py roles; agent = the party who speaks second) of the
@@ -16,7 +16,7 @@ Systems (block C and A; 'oracle' = the party's own labelled activity, which a tw
   eou_posterior                 Parakeet-Realtime-EOU log P(<EOU>) on the mixed mono (+ 0.32 s of real audio, cropped)
   natives                       1040 ms (13 frames) primary timeout, 1000 ms Silero timeout, <EOU> emitted
   [subset] timeout / head / any-speaker on streaming Sortformer v2 tracks with causal_dominant enrollment: only on
-           --max-tracks windows (39 s of CPU per 20 s window in window mode: see research/DYADIC.md), reported as a
+           --max-tracks windows (39 s of CPU per 20 s window in window mode: see research/archive/DYADIC.md), reported as a
            separate block together with the oracle rows on the same windows.
 Block A's head / EOU scores are the first frames of the block C streams (causal models: the 2 s window is a prefix
 of the 6 s one; no re-run with an end-of-file flush 2 s after the end).
@@ -310,7 +310,7 @@ def stage_report(a, base, ext, meta, meta_base, ds, work: Path) -> dict:
     E.V2_DEV_FOLDS_AMI = E.V2_DEV_FOLDS
     E.V2_DEV_FOLDS = folds
     st = ds.stats()
-    out = {"protocol": "eot-bench v2 (research/EOT_BENCH_V2.md) on a dyadic slice: human-party turns, cross-fitted "
+    out = {"protocol": "eot-bench v2 (research/archive/EOT_BENCH_V2.md) on a dyadic slice: human-party turns, cross-fitted "
                        "<= 5 % per-turn FC operating point (folds = conversations at even / odd positions), 1000 "
                        "bootstraps; frozen_ami = the operating point fitted on all 974 AMI dev turns applied unchanged",
            "corpus": a.corpus, "hours_slice": a.hours, "roles_scored": a.roles,

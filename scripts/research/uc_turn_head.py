@@ -1,4 +1,4 @@
-"""User-channel predictive turn head (research/IMPROVEMENTS.md section 1).
+"""User-channel predictive turn head (research/archive/IMPROVEMENTS.md section 1).
 
 The product input: the user's OWN audio channel goes through the frozen streaming encoder (the pass the ASR already
 makes, so the head costs no extra encoder compute), and the agent's activity is known exactly from its TTS timeline.
@@ -10,7 +10,7 @@ Per 80 ms frame the head reads
 * causal duration counters of both columns (frames since last active, current run length; log-clipped),
 * optionally the causal standardised log-RMS of the user channel (heads/turn.py energy features),
 
-and predicts the future voice activity of both parties (VAP-style projection, research/OUTSIDE.md 2.1):
+and predicts the future voice activity of both parties (VAP-style projection, research/archive/OUTSIDE.md 2.1):
 
 * ``user_bins``: P(user active anywhere in bin j), disjoint bins with frame edges ``edges`` (default 3, 5, 8, 13, 25
   = (0,240], (240,400], (400,640], (640,1040], (1040,2000] ms; the first four are head (c)'s bins),
@@ -20,7 +20,7 @@ and predicts the future voice activity of both parties (VAP-style projection, re
   in the bin); ``p_user_silent_vap`` = the mass of classes with all user bits 0.
 
 Decision rules live outside the head (scripts/research/uc_turn.py): e.g. the predictive trigger
-"rising edge of P(bin1) < t1 AND P(bin2) < t2" of research/DYADIC.md section 8, or "P(user quiet 2 s) > theta".
+"rising edge of P(bin1) < t1 AND P(bin2) < t2" of research/archive/DYADIC.md section 8, or "P(user quiet 2 s) > theta".
 
 Streaming: ``init_state`` / ``step`` process any number of frames with carried GRU, duration and energy state and give
 exactly the outputs of one ``forward`` over the concatenation (tests/test_uc_turn.py).

@@ -1,4 +1,4 @@
-"""Multi-speaker diarization in the served system: reproduce, diagnose, measure (research/DIARIZATION_FIX.md).
+"""Multi-speaker diarization in the served system: reproduce, diagnose, measure (research/archive/DIARIZATION_FIX.md).
 
 Subcommands (every model / server run goes through scripts/dev/gate.sh):
 

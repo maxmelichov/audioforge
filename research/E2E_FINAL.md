@@ -2,7 +2,7 @@
 
 2026-09-27. Data: `runs/e2e_final.json` (generated 2026-09-27 23:41 by `scripts/e2e_final.py report`; keys `table`,
 `paired`, `clean_checks`, `components_live`, `clips`, `per_clip`). Driver: `scripts/e2e_final.py`; metric definitions:
-`audioforge/e2e_metrics.py`. Protocol background: [`INTEGRATION.md`](INTEGRATION.md) §4 and §8. This document is a
+`audioforge/e2e_metrics.py`. Protocol background: [`INTEGRATION.md`](archive/INTEGRATION.md) §4 and §8. This document is a
 write-up; every number below is read from the JSON (the tables are rendered from it, not typed).
 
 ## 1. Summary
@@ -33,7 +33,7 @@ final pass exists (`research/FINAL_REPORT.md` §1); our first partial arrives 0.
   transcript.
 - *Multi-party room* (several people, the agent addressed by one of them): CN with `hybrid_dyn` (= DN). On the AMI
   windows DN has 0 cut-ins in both frameworks at 2.3 s median dead air; the timeout variants cut in 1.4-3.4 times per
-  minute because a 1 s pause in a meeting is usually a hesitation, not a hand-over (`research/AMI.md`). Send
+  minute because a 1 s pause in a meeting is usually a hesitation, not a hand-over (`research/archive/AMI.md`). Send
   `agent_end` from the TTS so the primary speaker is bound to the first voice after the agent stops.
 
 ## 2. Systems
@@ -45,7 +45,7 @@ final pass exists (`research/FINAL_REPORT.md` §1); our first partial arrives 0.
 | C | ours, product default | `audioforge.serve`: `runs/stage1_served.afm` (115M frozen NVIDIA streaming encoder + our VAD / speaker / turn heads, 160 ms chunks) + Streaming Sortformer v2 at 0.32 s; `turn_policy: "timeout"` 1000 ms on the label-free primary column; `--enroll dominant` | our streaming RNNT (same model) | through the committed Pipecat / LiveKit adapters |
 | D | ours, best rules | same server with `--enroll after_agent_arm` and `turn_policy: "hybrid_dyn"` (head p ≥ 0.998 OR any-speaker Silero silence ≥ clamp(80 − 55 p, 7, 80) frames); `agent_end` sent at the other party's labelled turn ends | same | the `agent_end` time is a **label-derived stand-in** for the TTS-end event |
 | CN / DN | C / D with Nemotron-3-Diarization 100M instead of Sortformer v2 | `--diar runs/nemo_nemotron3_diar.afm --diar-pool max --diar-left 1 --diar-spks 4` (10 ms outputs max-pooled to 80 ms, the first 4 of its 8 arrival-order columns) | same | |
-| Dp | ours, predictive OR Silero | head (c) of `research/DYADIC.md` §8 (`runs/stage1_turn_dyadic_mh.afm`) on the mixed mono plus both parties' per-channel Silero tracks; predictive trigger (P(bin1) < 0.012 AND P(bin2) < 0.012, 2 s refractory) OR user-channel Pipecat-VAD silence ≥ 1.4 s | – | **offline** causal scorer, two-channel input, decision times without delivery lag; not wired into `serve.py` |
+| Dp | ours, predictive OR Silero | head (c) of `research/archive/DYADIC.md` §8 (`runs/stage1_turn_dyadic_mh.afm`) on the mixed mono plus both parties' per-channel Silero tracks; predictive trigger (P(bin1) < 0.012 AND P(bin2) < 0.012, 2 s refractory) OR user-channel Pipecat-VAD silence ≥ 1.4 s | – | **offline** causal scorer, two-channel input, decision times without delivery lag; not wired into `serve.py` |
 
 A, C, D, CN, DN ran through a Pipecat pipeline (WAV transport at 1x → STT → user aggregator → mock LLM / TTS); B, C, D,
 CN, DN through a LiveKit `AgentSession` (stub LLM, tone TTS). The **response moment** is what a caller waits for:
@@ -426,7 +426,7 @@ channel (3.8 s, RTF 0.98) and one Pipecat DN session there (2.4 s).
    1.5-1.7 cut-ins per minute, between C's Pipecat and LiveKit cut-in rates at 0.3-0.55 s less dead air. It is a decision-time
    number with no delivery lag, on an input (both channels) the live systems did not get, and the head is not in
    `serve.py`. Its operating point (0.012 / 0.012 / 1.4 s) was fitted on otoSpeech and scores fp 0.175 on TurnBench dev
-   with the official scorer (`research/DYADIC.md` §8, above the 0.10 budget), which is consistent with its cut-in rate
+   with the official scorer (`research/archive/DYADIC.md` §8, above the 0.10 budget), which is consistent with its cut-in rate
    here. It marks the headroom of a predictive trigger, not a shipped result.
 6. **Caveats.** (a) `agent_end` for D / DN is the other party's labelled turn end, a stand-in for the TTS-end event a
    product would send; two of the five AMI windows have no earlier other-speaker turn, so their `agent_end` is at

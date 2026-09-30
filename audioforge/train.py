@@ -52,7 +52,7 @@ def load_data(cfg: dict, split: str) -> list[dict]:
     if "mix" in d:  # several sources (e.g. synthetic conversations + AMI turn + AMI diar): see load_mix
         return load_mix(cfg, split)
     data = _load_source(cfg, split)
-    if d.get("spk_teacher"):  # cached teacher embeddings per example (speaker distillation, research/SPK_HEAD.md)
+    if d.get("spk_teacher"):  # cached teacher embeddings per example (speaker distillation, research/archive/SPK_HEAD.md)
         data = attach_teacher(data, d["spk_teacher"], split)
     return data
 
@@ -279,7 +279,7 @@ class Trainer:
         else:
             params = [p for p in model.parameters() if p.requires_grad]
         rows = t.get("row_lr")  # {params: [names], rows: [ids], lr: x}: only these rows of these tensors train, at lr x
-        if rows:  # (new vocabulary rows, research/YIELD_TOKENS.md: Adam moves every element by ~lr per step, so new
+        if rows:  # (new vocabulary rows, research/archive/YIELD_TOKENS.md: Adam moves every element by ~lr per step, so new
             named = dict(model.named_parameters())  # output rows starting near zero cannot grow at a gate-safe lr)
             idx = torch.as_tensor(sorted(int(i) for i in rows["rows"]))
             fast = []

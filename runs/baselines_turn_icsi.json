@@ -1,5 +1,5 @@
 {
- "protocol": "eot-bench v2 (research/EOT_BENCH_V2.md) on held-out ICSI meetings; frozen = operating points fitted on all 974 AMI dev turns (in-sample, <= 5 % per-turn FC), crossfit = the AMI leave-meetings-out protocol re-run on ICSI",
+ "protocol": "eot-bench v2 (research/archive/EOT_BENCH_V2.md) on held-out ICSI meetings; frozen = operating points fitted on all 974 AMI dev turns (in-sample, <= 5 % per-turn FC), crossfit = the AMI leave-meetings-out protocol re-run on ICSI",
  "meetings": [
   "Bmr021",
   "Bns001",

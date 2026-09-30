@@ -38,7 +38,7 @@ function bar(x, y, w, h, c) { svg.push(`<rect x="${x}" y="${y}" width="${Math.ma
 // rows: [label, key|null, kind] kind: "us" | "base" | "grp" (a group label row, no bar)
 function bars(c, W, y0, y1, rows, max, lower, ticks, unit, lw) {
   const lx = lw, x1 = W - (lower ? 70 : 160), X = t => lx + (x1 - lx) * t / max;
-  const ay = y1 - 28, n = rows.length, pt = Math.max(W < 500 ? 24 : 27, Math.min(38, (ay - 8 - y0) / n));
+  const ay = y1 - 28, n = rows.length, pt = Math.max(W < 500 ? 24 : 26, Math.min(38, (ay - 8 - y0) / n));
   let y = y0;
   rows.forEach(([lab, k, kind]) => {
     if (kind === "grp") { place(el("lab grp", lab, 0, 0, c), 0, y + pt / 2, 0, 0.5); y += pt; return; }
@@ -48,6 +48,7 @@ function bars(c, W, y0, y1, rows, max, lower, ticks, unit, lw) {
     const vl = el("val" + (us ? " us" : ""), N(k), 0, 0, c); vl.dataset.barval = "1"; window.BARCOUNT.labels++;
     place(vl, X(v(k)) + 10, y + pt / 2, 0, 0.5);
     y += pt; });
+  if (y > ay - 6) window.BARCOUNT.overlaps = (window.BARCOUNT.overlaps || 0) + 1;   // last bar must end above the axis
   // axis at the bottom: zero line, ticks (unit on the last), the BETTER cue at the good end, above the axis
   line(lx, y0, lx, ay, "#AEB6C0", 1.5); line(lx, ay, x1, ay, "#AEB6C0", 1.5);
   ticks.forEach((t, i) => { line(X(t), ay, X(t), ay + 6, "#AEB6C0", 1.5); place(el("tick", t + (i === ticks.length - 1 ? unit : ""), 0, 0, c), X(t), ay + 8, 0.5, 0); });
@@ -76,11 +77,8 @@ const CARDS = {
   cut: { title: "Talks over you less", hero: () => [N("s69/ours/cutins"), "", "interruptions / call", "↓"], sec: () => `${N("v7/cut_rel")} % fewer than LiveKit default`,
     meth: "live, the same 69 calls",
     draw: (c, W, y0, y1) => bars(c, W, y0, y1, [["audioforge", "s69/ours/cutins", "us"], ["LiveKit default", "s69/livekit/cutins", "base"], ["Pipecat default", "s69/pipecat/cutins", "base"]], 2, true, [0, 1, 2], "", 170) },
-  first: { title: "Words on screen sooner", hero: () => [N("first/ours"), " s", "to first words", "↓"], sec: () => `${N("v7/first_x")}× faster than Pipecat default`, secSq: () => `${N("v7/first_x")}× faster than Pipecat · one Mac, no GPU`,
-    meth: "live, median after you start speaking · all on one Mac, no GPU",
-    draw: (c, W, y0, y1) => bars(c, W, y0, y1, [["audioforge", "first/ours", "us"], ["Pipecat default", "first/pipecat", "base"], ["LiveKit default", "first/livekit", "base"]], 6, true, [0, 3, 6], " s", 170) },
 };
-const GROUPS = [["UNDERSTANDS YOU", ["find", "vad"]], ["KNOWS WHEN TO RESPOND", ["missed", "answer", "cut"]], ["FEELS FAST", ["first"]]];
+const GROUPS = [["UNDERSTANDS YOU", ["find", "vad"]], ["KNOWS WHEN TO RESPOND", ["missed", "answer", "cut"]]];
 const FOOT_SQ = "AMI + ICSI · 69 live calls · 5 s enrollment, Nemotron-3 too · turns at ≈ 5 % false cut-offs · Pipecat 1.12 / LiveKit 1.8 defaults · AMI is in Nemotron-3’s training data";
 const FOOT = "AMI + ICSI meetings · 69 live calls · 5 s voice enrollment · Pipecat 1.12 / LiveKit Agents 1.8 defaults · AMI is in Nemotron-3’s training data";
 
@@ -90,6 +88,7 @@ function card(k, x, y, w, h, sq) {
   const [val, unit, words, arrow] = C.hero();
   const hz = sq ? 0.84 : 1, he = el("hero", `<span class="v">${val}</span><span class="u">${unit}</span><span class="w">${words}</span><span class="ar">${arrow}</span>`, 0, 0, c);
   if (!sq && w < 460) { he.querySelector(".v").style.fontSize = "44px"; he.querySelector(".w").style.fontSize = "24px"; }
+  if (!sq && he.offsetWidth > w) { he.querySelector(".v").style.fontSize = "42px"; he.querySelector(".w").style.fontSize = "22px"; he.querySelector(".u").style.fontSize = "26px"; }
   if (sq) { he.querySelector(".v").style.fontSize = "36px"; he.querySelector(".u").style.fontSize = "24px"; he.querySelector(".w").style.fontSize = "22px"; he.querySelector(".ar").style.fontSize = "24px"; }
   place(he, 0, t.offsetHeight + (sq ? 4 : 12));
   let top = he.offsetTop + he.offsetHeight + (sq ? 4 : 10);
@@ -114,26 +113,23 @@ function build(W, H) {
   const f = el("foot abs", sq ? FOOT_SQ : FOOT, M, 0); f.style.width = (W - 2 * M) + "px"; f.style.top = (H - M - f.offsetHeight - 2) + "px";
   const top = sub.offsetTop + sub.offsetHeight + (sq ? 16 : 40), bot = f.offsetTop - (sq ? 14 : 36);
   if (!sq) {
-    // three columns in story order: UNDERSTANDS YOU (2 stacked) | KNOWS WHEN TO RESPOND (missed on top, the two live cards
-    // side by side below) | FEELS FAST (1)
-    const gx = 46, c1 = 450, c3 = 380, c2 = W - 2 * M - c1 - c3 - 2 * gx, gap = 30;
-    let y0 = group(GROUPS[0][0], M, top, c1); const avail = bot - y0;
-    card("find", M, y0, c1, Math.round(avail * 0.555) - gap / 2, false); card("vad", M, y0 + Math.round(avail * 0.555) + gap / 2, c1, avail - Math.round(avail * 0.555) - gap / 2, false);
+    // two columns in story order: UNDERSTANDS YOU (2 stacked) | KNOWS WHEN TO RESPOND (missed on top, the two live cards
+    // side by side below)
+    const gx = 64, c1 = 600, c2 = W - 2 * M - c1 - gx, gap = 30;
+    let y0 = group(GROUPS[0][0], M, top, c1); const avail = bot - y0, h1 = Math.round(avail * 0.565);
+    card("find", M, y0, c1, h1 - gap / 2, false); card("vad", M, y0 + h1 + gap / 2, c1, avail - h1 - gap / 2, false);
     const x2 = M + c1 + gx; y0 = group(GROUPS[1][0], x2, top, c2);
-    const hm = Math.round(avail * 0.53); card("missed", x2, y0, c2, hm - gap / 2, false);
-    const hw = (c2 - 40) / 2; card("answer", x2, y0 + hm + gap / 2, hw, avail - hm - gap / 2, false); card("cut", x2 + hw + 40, y0 + hm + gap / 2, hw, avail - hm - gap / 2, false);
-    const x3 = x2 + c2 + gx; y0 = group(GROUPS[2][0], x3, top, c3);
-    card("first", x3, y0, c3, Math.round(avail * 0.5), false);
+    const hm = Math.round(avail * 0.52); card("missed", x2, y0, c2, hm - gap / 2, false);
+    const hw = (c2 - 56) / 2; card("answer", x2, y0 + hm + gap / 2, hw, avail - hm - gap / 2, false); card("cut", x2 + hw + 56, y0 + hm + gap / 2, hw, avail - hm - gap / 2, false);
   } else {
-    // 2 x 3 grid in story order: UNDERSTANDS YOU (find, vad) / KNOWS WHEN TO RESPOND (missed, answer, then cut) / FEELS FAST (first)
-    const gw = W - 2 * M, cx = (gw - 40) / 2, gp = 6;
-    let y = group(GROUPS[0][0], M, top, gw, true); const hdr = y - top, avail = bot - top - 3 * hdr - 2 * gp;
-    const r1 = Math.round(avail * 0.325), r2 = Math.round(avail * 0.35), r3 = avail - r1 - r2;
+    // UNDERSTANDS YOU (find, vad) / KNOWS WHEN TO RESPOND: missed on the left, the two live cards stacked on the right
+    const gw = W - 2 * M, cx = (gw - 40) / 2, gp = 8;
+    let y = group(GROUPS[0][0], M, top, gw, true); const hdr = y - top, avail = bot - top - 2 * hdr - gp;
+    const r1 = Math.round(avail * 0.36), r2 = avail - r1;
     card("find", M, y, cx, r1, true); card("vad", M + cx + 40, y, cx, r1, true); y += r1 + gp;
     y = group(GROUPS[1][0], M, y, gw, true);
-    card("missed", M, y, cx, r2, true); card("answer", M + cx + 40, y, cx, r2, true); y += r2 + gp;
-    group("", M, y, cx, true); group(GROUPS[2][0], M + cx + 40, y, cx, true); y += hdr;
-    card("cut", M, y, cx, r3, true); card("first", M + cx + 40, y, cx, r3, true);
+    card("missed", M, y, cx, r2, true); const hh = (r2 - 16) / 2;
+    card("answer", M + cx + 40, y, cx, hh, true); card("cut", M + cx + 40, y + hh + 16, cx, hh, true);
   }
   if (new URLSearchParams(location.search).get("notext")) notext();
 }

@@ -1,4 +1,4 @@
-"""Download the dyadic slices (research/DYADIC.md): Behavior-SD (CC BY 4.0, synthetic two-channel dialogues, one
+"""Download the dyadic slices (research/archive/DYADIC.md): Behavior-SD (CC BY 4.0, synthetic two-channel dialogues, one
 HF tar shard) and kyutai/DailyTalkContiguous (CC BY-SA 4.0, stereo acted dialogues with word timestamps).
 
   .venv/bin/python scripts/research/prepare_dyadic.py --corpus behavior_sd   # test/0001.tar (~730 MB) -> data/behavior_sd/test/0001/

@@ -14,6 +14,7 @@ from __future__ import annotations
 
 import json
 import os
+import shutil
 import sys
 from pathlib import Path
 
@@ -37,8 +38,66 @@ JOBS = {
     "r5": [("results_v5.html", "grid", "results_v5")],
     "r6": [("results_v6.html", "grid", "results_v6")],
     "r7": [("results_v7.html", "grid", "results_v7")],
+    "v8": [("arch_v8.html", "v8", "architecture_v8")],
+    "r8": [("results_v8.html", "grid", "results_v8")],
+    "r9": [("results_v9.html", "grid", "results_v9")],
 }
+FINAL = {"results_v9"}   # also copied to $DEMO_OUT/images (full size) and demo/images (half size)
+# v8 content rules (the user's): standard metric names only, no home-made names, 115M model only
+BANNED_V8 = ["dead air", "cut-in", "cut in", "cutin", "first words", "unanswered", "0.6b", "0.6 b", "parakeet", "talks over",
+             "interruptions / call", "per call", "finds your voice", "hears speech"]
+V8 = r"""() => {
+  const st = document.getElementById("stage"), text = st.innerText.toLowerCase(), fails = [];
+  const cards = [...st.querySelectorAll("[data-panel]")];
+  cards.forEach(c => { const k = c.dataset.panel;
+    const pl = c.querySelector("[data-plain]"); if (!pl || pl.textContent.trim().split(/\s+/).length < 6) fails.push(`card ${k}: no plain-English line`);
+    if (!c.querySelector("[data-metric]")) fails.push(`card ${k}: no metric name`);
+    if (!c.querySelector("[data-cue]")) fails.push(`card ${k}: no BETTER cue`);
+    if (/\bF1\b/.test(c.innerText) && !/F1 (balances|:)/.test(pl ? pl.textContent : "")) fails.push(`card ${k}: F1 without its meaning in the plain line`); });
+  return { text, fails, overflow: (window.BARCOUNT || {}).overflow || 0, ncards: cards.length };
+}"""
 NS = json.loads((HERE / "numbers_single.json").read_text()) if (HERE / "numbers_single.json").exists() else {}
+
+# v9 (the user's mock-up): four cards, paired bars, a bracket with the relative change on every chart. Latency is not shown.
+BANNED_V9 = BANNED_V8 + ["latency", " ms", "p50"]
+V9 = r"""() => {
+  const st = document.getElementById("stage"), fails = [];
+  const cards = [...st.querySelectorAll("[data-panel]")];
+  cards.forEach(c => { const k = c.dataset.panel;
+    const pl = c.querySelector("[data-plain]"); if (!pl || pl.textContent.trim().split(/\s+/).length < 6) fails.push(`card ${k}: no plain-English line`);
+    if (!c.querySelector(".fn")) fails.push(`card ${k}: no footnote`);
+    const nm = c.querySelectorAll("[data-metric]").length, nd = c.querySelectorAll("[data-rel]").length, nb = c.querySelectorAll("[data-barval]").length;
+    if (!nm || nd !== nm || nb !== 2 * nm) fails.push(`card ${k}: ${nm} charts, ${nd} changes, ${nb} bar values`);
+    if (/\bF1\b/.test(c.innerText) && !/F1/.test(pl ? pl.textContent : "")) fails.push(`card ${k}: F1 without its meaning in the plain line`); });
+  const tw = st.querySelector('[data-panel="twer"]');   // the 63 is our own STT with no speaker filter, not LiveKit / Pipecat
+  if (tw && /livekit|pipecat/i.test(tw.innerText)) fails.push("tWER card names LiveKit / Pipecat: its grey bar is 'no speaker filter'");
+  if (tw && !/no speaker filter/.test(tw.innerText)) fails.push("tWER card: grey bar not labelled 'no speaker filter'");
+  const rels = [...st.querySelectorAll("[data-rel]")].map(d => ({ rel: d.dataset.rel, ours: d.dataset.ours, other: d.dataset.other, lower: d.dataset.lower === "1", arrow: d.textContent.trim()[0] }));
+  return { text: st.innerText.toLowerCase(), fails, ncards: cards.length, rels, bars: window.BARS, charts: window.CHARTS };
+}"""
+
+
+def check_v9(c9):
+    """v9 rules: each change = formula over the bar labels as printed (numbers_single "shown"; so it cannot be typed and a
+    reader dividing the labels gets the printed %), arrow matches the
+    direction, every bar's height matches its value on its axis."""
+    fails = list(c9["fails"])
+    if c9["ncards"] != 4:
+        fails.append(f"{c9['ncards']} cards, want 4")
+    for r in c9["rels"]:
+        o, b = float(NS[r["ours"]]["shown"]), float(NS[r["other"]]["shown"])   # the change is computed from the printed bar labels
+        want = 100 * (1 - o / b) if r["lower"] else 100 * (o / b - 1)
+        got = NS[r["rel"]]
+        if abs(got["value"] - want) > 1e-9 or want <= 0:
+            fails.append(f"change {r['rel']}: file {got['value']} != formula {want}")
+        if r["arrow"] != ("\u2193" if r["lower"] else "\u2191"):
+            fails.append(f"change {r['rel']}: arrow {r['arrow']!r}")
+    for b in c9["bars"]:
+        want = b["full"] * (b["value"] - b["lo"]) / (b["hi"] - b["lo"])
+        if abs(b["h"] - want) > 0.5 or not (b["lo"] <= b["value"] <= b["hi"]):
+            fails.append(f"bar {b['key']}: height {b['h']:.1f} != {want:.1f}")
+    fails += [f"banned text '{x}'" for x in BANNED_V9 if x in c9["text"]]
+    return fails
 
 METRICS = r"""() => {
   const lum = c => { const m = c.match(/[\d.]+/g).map(Number); const f = v => { v /= 255; return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); };
@@ -84,6 +143,8 @@ def check(m):
     fails += [f"clipped '{c}'" for c in m["clipped"]]
     if m.get("bars") and m["bars"]["bars"] != m["bars"]["labels"]:   # pages that count bars: every bar carries its value
         fails.append(f"bars without a value label: {m['bars']['bars']} bars, {m['bars']['labels']} labels")
+    if m.get("bars") and m["bars"].get("overlaps"):
+        fails.append(f"{m['bars']['overlaps']} bar chart(s) whose last bar reaches the axis line")
     for v in m["vals"]:
         src = NS if v["key"].startswith("ns:") else NB
         k = v["key"][3:] if v["key"].startswith("ns:") else v["key"]
@@ -115,7 +176,7 @@ def main():
                     pg.evaluate("([W, H, l]) => build(W, H, l)", [W, H, layout])
                     png = OUT / f"{name}{suf}.png"
                     pg.screenshot(path=str(png), type="png")
-                    if name.endswith(("_v3", "_v4", "_v5", "_v6", "_v7")) or name in ("results_v4", "results_v5", "results_v6", "results_v7"):   # the removal test: the same render with every label hidden
+                    if name.endswith(("_v3", "_v4", "_v5", "_v6", "_v7", "_v8", "_v9")) or name in ("results_v4", "results_v5", "results_v6", "results_v7", "results_v8"):   # the removal test: the same render with every label hidden
                         pg.evaluate("notext()")
                         nt = OUT / f"{name}{suf}_notext.png"
                         pg.screenshot(path=str(nt), type="png")
@@ -126,11 +187,24 @@ def main():
                         pg.screenshot(path=str(OUT.parent / "images" / "architecture_notext.png"), type="png")
                         pg.evaluate("document.querySelectorAll('style').forEach(s => { if (s.textContent.includes('transparent !important')) s.remove(); })")
                     r = check(pg.evaluate(METRICS))
+                    if name.endswith("_v8"):   # the v8 content rules
+                        c8 = pg.evaluate(V8)
+                        r["fails"] += c8["fails"] + [f"banned text '{b}'" for b in BANNED_V8 if b in c8["text"]]
+                        if c8["overflow"]:
+                            r["fails"].append(f"cards run {c8['overflow']:.0f}px into the footer")
+                        if name.startswith("results") and c8["ncards"] < 4:
+                            r["fails"].append(f"only {c8['ncards']} cards")
+                    if name.endswith("_v9"):   # the v9 rules
+                        r["fails"] += check_v9(pg.evaluate(V9))
                     if errs:
                         r["fails"].insert(0, f"page errors {errs}")
                     im = Image.open(png)
                     r["size_px"] = list(im.size)
                     im.resize((W, H), Image.LANCZOS).save(HERE / f"{name}{suf}.png", optimize=True)
+                    if name in FINAL:   # finals: full size to $DEMO_OUT/images, half size to demo/images (with the notext pair)
+                        for fn in (f"{name}{suf}.png", f"{name}{suf}_notext.png"):
+                            shutil.copyfile(OUT / fn, OUT.parent / "images" / fn)
+                            shutil.copyfile(HERE / fn, HERE.parent / fn)
                     res[name + suf] = r
                     print(f"{name + suf:16s} {im.size} edge {r['min_edge']} contrast {r['min_contrast']} type {r['min_size']}px  FAIL: {r['fails'] or 'none'}")
                     pg.close()

@@ -1,4 +1,4 @@
-"""Voice enrollment (audioforge/enrollment.py; research/EOT_BENCH_V2.md §8).
+"""Voice enrollment (audioforge/enrollment.py; research/archive/EOT_BENCH_V2.md §8).
 
 Under test:
   - ColumnEmbedder == SpeakerHead.embed on unmasked frames; recent_embeddings == a brute-force look-back;

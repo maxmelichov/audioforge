@@ -1,0 +1,296 @@
+{
+ "protocol": "The served 115M streaming engine on the Mac GPU (MPS) vs the CPU (research/MPS_115M.md) -> runs/mps_115m.json.\n\nStages (each one process, < 10 min, resumable; run through scripts/dev/gate.sh, one torch/MPS job at a time):\n  parity                 audioforge.load(device=cpu|mps) (--mode single) on examples/audio/two_party_call_16s.wav with its\n                         stored voice print, 20 ms blocks: turn_end / final / voiceprint events CPU vs MPS; plus the\n                         max |diff| of the streamed encoder output (ASR core at [70,1], 160 ms chunks) and of the\n                         RNNT decode (token ids) on the clip\n  core --device D        the ASR core as it streams words: model.StreamingSession (mel + cache-aware encoder at\n                         [70,1] + greedy RNNT), batch 1, 160 ms chunks, 2 threads; per-chunk compute p50/p95 and RTF on\n                         the first 20 LibriSpeech-200 utterances (warm-up, then best of 3 by RTF), then the WER on all\n                         200 (normalize_text, the runs/hybrid_asr.json protocol, streamed, not masked offline).\n                         Also the full single-mode engine per-chunk compute (Session.chunk_ms) on the clip.\n  streams --device D     K single-mode sessions (audioforge.load) fed interleaved 160 ms block by block on one thread\n                         (scripts/research/streams_cpu.py): real time while the p95 of the summed per-block compute of\n                         all K streams < 160 ms\n  report                 -> runs/mps_115m.json\n",
+ "model": "runs/stage1_served_v2.afm",
+ "att_context": [
+  70,
+  1
+ ],
+ "chunk_ms": 160,
+ "machine": "Apple M5 laptop, torch 2.14.0",
+ "fp32": true,
+ "parity": {
+  "clip": {
+   "events_equal": true,
+   "events_cpu": [
+    [
+     "voiceprint",
+     0.0,
+     null,
+     null,
+     null
+    ],
+    [
+     "turn_end",
+     11.936,
+     null,
+     null,
+     "vad_head"
+    ],
+    [
+     "final",
+     11.936,
+     0,
+     "so um what value guides your life bled what values do you live by",
+     null
+    ],
+    [
+     "turn_end",
+     15.456,
+     null,
+     null,
+     "vad_head"
+    ],
+    [
+     "final",
+     15.456,
+     1,
+     "value guys my life",
+     null
+    ],
+    [
+     "final",
+     16.0,
+     0,
+     "",
+     null
+    ]
+   ],
+   "events_mps": [
+    [
+     "voiceprint",
+     0.0,
+     null,
+     null,
+     null
+    ],
+    [
+     "turn_end",
+     11.936,
+     null,
+     null,
+     "vad_head"
+    ],
+    [
+     "final",
+     11.936,
+     0,
+     "so um what value guides your life bled what values do you live by",
+     null
+    ],
+    [
+     "turn_end",
+     15.456,
+     null,
+     null,
+     "vad_head"
+    ],
+    [
+     "final",
+     15.456,
+     1,
+     "value guys my life",
+     null
+    ],
+    [
+     "final",
+     16.0,
+     0,
+     "",
+     null
+    ]
+   ],
+   "encoder_frames": 201,
+   "encoder_max_abs_diff": 6.496906280517578e-06,
+   "encoder_rel_diff": 1.7830076489867054e-06,
+   "encoder_max_abs": 1.8704835176467896,
+   "tokens_equal": true
+  }
+ },
+ "engine": {
+  "cpu": {
+   "chunk_ms_p50": 29.84,
+   "chunk_ms_p95": 32.13,
+   "rtf": 0.1906,
+   "rtf_all": [
+    0.1906,
+    0.1912,
+    0.1906
+   ],
+   "peak_rss_mb": 1126.3
+  },
+  "mps": {
+   "chunk_ms_p50": 28.71,
+   "chunk_ms_p95": 31.49,
+   "rtf": 0.1826,
+   "rtf_all": [
+    0.1826,
+    0.1826,
+    0.1837
+   ],
+   "peak_rss_mb": 1130.2,
+   "mps_driver_mb": 532.6,
+   "mps_current_mb": 490.7
+  }
+ },
+ "core": {
+  "cpu": {
+   "timing": {
+    "utterances": 20,
+    "audio_s": 156.5,
+    "chunks": 988,
+    "chunk_ms_p50": 17.59,
+    "chunk_ms_p95": 19.96,
+    "chunk_ms_mean": 17.88,
+    "rtf": 0.1129,
+    "rtf_all": [
+     0.1129,
+     0.1162,
+     0.1129
+    ],
+    "peak_rss_mb": 1123.9
+   },
+   "wer_libri200_normalize_text": {
+    "wer": 0.0229,
+    "errors": 106,
+    "ref_words": 4634,
+    "n": 200
+   },
+   "mem_after_wer": {
+    "peak_rss_mb": 1123.9
+   }
+  },
+  "mps": {
+   "timing": {
+    "utterances": 20,
+    "audio_s": 156.5,
+    "chunks": 988,
+    "chunk_ms_p50": 10.22,
+    "chunk_ms_p95": 11.87,
+    "chunk_ms_mean": 10.3,
+    "rtf": 0.065,
+    "rtf_all": [
+     0.0692,
+     0.065,
+     0.0651
+    ],
+    "peak_rss_mb": 1124.0,
+    "mps_driver_mb": 524.1,
+    "mps_current_mb": 476.1
+   },
+   "wer_libri200_normalize_text": {
+    "wer": 0.0229,
+    "errors": 106,
+    "ref_words": 4634,
+    "n": 200
+   },
+   "mem_after_wer": {
+    "peak_rss_mb": 1124.0,
+    "mps_driver_mb": 524.4,
+    "mps_current_mb": 476.1
+   }
+  },
+  "hyps_equal_cpu_mps": 200,
+  "hyps_compared": 200
+ },
+ "streams": {
+  "cpu": {
+   "k": {
+    "1": {
+     "agg_block_ms_p50": 30.0,
+     "agg_block_ms_p95": 32.7,
+     "per_stream_block_ms_p50": 30.0,
+     "real_time": true,
+     "peak_rss_mb": 2327.0
+    },
+    "2": {
+     "agg_block_ms_p50": 59.7,
+     "agg_block_ms_p95": 62.0,
+     "per_stream_block_ms_p50": 29.8,
+     "real_time": true,
+     "peak_rss_mb": 2337.8
+    },
+    "3": {
+     "agg_block_ms_p50": 89.7,
+     "agg_block_ms_p95": 98.3,
+     "per_stream_block_ms_p50": 29.9,
+     "real_time": true,
+     "peak_rss_mb": 2337.8
+    },
+    "4": {
+     "agg_block_ms_p50": 121.8,
+     "agg_block_ms_p95": 136.9,
+     "per_stream_block_ms_p50": 30.4,
+     "real_time": true,
+     "peak_rss_mb": 2337.8
+    },
+    "5": {
+     "agg_block_ms_p50": 165.3,
+     "agg_block_ms_p95": 180.0,
+     "per_stream_block_ms_p50": 33.1,
+     "real_time": false,
+     "peak_rss_mb": 2337.8
+    }
+   },
+   "streams_real_time": 4
+  },
+  "mps": {
+   "k": {
+    "1": {
+     "agg_block_ms_p50": 29.0,
+     "agg_block_ms_p95": 33.4,
+     "per_stream_block_ms_p50": 29.0,
+     "real_time": true,
+     "peak_rss_mb": 2249.2,
+     "mps_driver_mb": 532.6,
+     "mps_current_mb": 490.7
+    },
+    "2": {
+     "agg_block_ms_p50": 58.1,
+     "agg_block_ms_p95": 61.2,
+     "per_stream_block_ms_p50": 29.1,
+     "real_time": true,
+     "peak_rss_mb": 2252.2,
+     "mps_driver_mb": 540.6,
+     "mps_current_mb": 500.8
+    },
+    "3": {
+     "agg_block_ms_p50": 87.1,
+     "agg_block_ms_p95": 96.9,
+     "per_stream_block_ms_p50": 29.0,
+     "real_time": true,
+     "peak_rss_mb": 2252.2,
+     "mps_driver_mb": 548.6,
+     "mps_current_mb": 510.8
+    },
+    "4": {
+     "agg_block_ms_p50": 116.2,
+     "agg_block_ms_p95": 126.3,
+     "per_stream_block_ms_p50": 29.0,
+     "real_time": true,
+     "peak_rss_mb": 2252.2,
+     "mps_driver_mb": 564.6,
+     "mps_current_mb": 520.9
+    },
+    "5": {
+     "agg_block_ms_p50": 145.3,
+     "agg_block_ms_p95": 152.0,
+     "per_stream_block_ms_p50": 29.1,
+     "real_time": true,
+     "peak_rss_mb": 2252.2,
+     "mps_driver_mb": 572.6,
+     "mps_current_mb": 531.0
+    },
+    "6": {
+     "agg_block_ms_p50": 174.6,
+     "agg_block_ms_p95": 183.8,
+     "per_stream_block_ms_p50": 29.1,
+     "real_time": false,
+     "peak_rss_mb": 2252.2,
+     "mps_driver_mb": 588.6,
+     "mps_current_mb": 541.0
+    }
+   },
+   "streams_real_time": 5
+  }
+ }
+}

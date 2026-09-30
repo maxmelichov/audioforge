@@ -1,4 +1,4 @@
-"""research/IMPROVEMENTS.md section 1: does the served --turn-input tsvad path reproduce the offline benchmark?
+"""research/archive/IMPROVEMENTS.md section 1: does the served --turn-input tsvad path reproduce the offline benchmark?
 
 For N eot-bench v2 AMI dev windows: stream the window's audio through serve.Session (turn_input tsvad, explicit
 5 s voice print = the benchmark's stored print, 20 ms blocks, policy head) and compare per frame (i) the live TS-VAD

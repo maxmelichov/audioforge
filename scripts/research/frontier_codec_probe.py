@@ -1,5 +1,5 @@
 """FRONTIER pilot 2: does the frozen 12.5 Hz streaming ASR encoder predict 12.5 Hz codec tokens frame-synchronously?
-(research/FRONTIER.md, P2: the precondition for ASR-encoder-driven streaming speech-to-speech / voice conversion.)
+(research/archive/FRONTIER.md, P2: the precondition for ASR-encoder-driven streaming speech-to-speech / voice conversion.)
 
 The served FastConformer (runs/stage1_served.afm, 80 ms frames, [70,1] streaming mask) and Kyutai Mimi (24 kHz, 12.5 Hz,
 codebook 0 = WavLM-distilled "semantic" RVQ level, 1..7 acoustic) share an 80 ms clock. We fit per-frame probes

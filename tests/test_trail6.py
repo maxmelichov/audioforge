@@ -1,5 +1,5 @@
-"""Turn head v3 trained on 6 s post-end trails (research/recipes/stage1_turn_v3_trail6.yaml; research/STAGE1.md "Turn head v3
-trained on 6 s trails"; motivation research/EOT_BENCH_V2.md: v3 saw only 2 s after a turn end).
+"""Turn head v3 trained on 6 s post-end trails (research/recipes/stage1_turn_v3_trail6.yaml; research/archive/STAGE1.md "Turn head v3
+trained on 6 s trails"; motivation research/archive/EOT_BENCH_V2.md: v3 saw only 2 s after a turn end).
 
 Under test:
   - AMI turn windows with trail_sec 6 / window_sec 20: >= 75 post-end frames unless the trail stops at the primary's

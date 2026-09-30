@@ -1,4 +1,4 @@
-"""Held-out ICSI confirmation of the dynamic-timeout policies (research/COMPLETENESS.md §2.4; research/BASELINES.md,
+"""Held-out ICSI confirmation of the dynamic-timeout policies (research/archive/COMPLETENESS.md §2.4; research/archive/BASELINES.md,
 "Dynamic timeout: ICSI held-out confirmation").
 
 COMPLETENESS.md §2.4 picked, after seeing the AMI dev table, the dynamic Silero timeout modulated by the trail6 head

@@ -1,5 +1,5 @@
 {
- "protocol": "eot-bench v2 (research/EOT_BENCH_V2.md), baselines on the same windows / scorer",
+ "protocol": "eot-bench v2 (research/archive/EOT_BENCH_V2.md), baselines on the same windows / scorer",
  "ours_from": "runs/turn_trail6_hybrid_leakfree.json",
  "n_boot": 1000,
  "C_extended_windows_stream": {

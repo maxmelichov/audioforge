@@ -1,4 +1,4 @@
-"""Completeness head + smart-turn dataset loader (research/COMPLETENESS.md)."""
+"""Completeness head + smart-turn dataset loader (research/archive/COMPLETENESS.md)."""
 import io
 import json
 from pathlib import Path

@@ -25,10 +25,10 @@ Written against livekit-agents 1.8.3 / livekit (rtc) 1.1.18. What is mapped to w
   START_OF_SPEECH after ``min_speech_duration`` above ``activation_threshold``, END_OF_SPEECH after
   ``min_silence_duration`` below it (``frames`` = the speech audio). Any-speaker VAD: it does not know who speaks.
 * Turn detection. The product default is the server's **plain silence timeout on the diarizer's label-free primary
-  track** (other speakers do not delay it; research/STAGE1.md n=200 AMI dev turns: 38.4 % misses for the plain
+  track** (other speakers do not delay it; research/archive/STAGE1.md n=200 AMI dev turns: 38.4 % misses for the plain
   timeout with an oracle-enrolled column vs 66-68 % for the server's older "nobody else active" rule, now its
-  ``timeout_quiet`` policy, and 69 % for the served head; research/INTEGRATION_VERIFY.md D1; label-free enrollment
-  raises all of these, research/EOT_BENCH_V2.md). Two hooks:
+  ``timeout_quiet`` policy, and 69 % for the served head; research/archive/INTEGRATION_VERIFY.md D1; label-free enrollment
+  raises all of these, research/archive/EOT_BENCH_V2.md). Two hooks:
   (a) ``turn_detection="stt"`` + ``AudioforgeSTT``: LiveKit commits the user turn on our END_OF_SPEECH
   (recommended; exactly the server's decision). (b) ``AudioforgeTurnDetector`` implements the installed
   version's *audio* turn-detector protocol (``voice.turn._StreamingTurnDetector``: ``stream()`` ->
@@ -41,7 +41,7 @@ Written against livekit-agents 1.8.3 / livekit (rtc) 1.1.18. What is mapped to w
   ``_StreamingTurnDetector`` is a private (underscore) protocol and may change between LiveKit releases.
 
 Server policies ``hybrid`` / ``hybrid_silero`` / ``hybrid_dyn`` (``turn_policy=``; the head OR an any-speaker Silero
-silence, research/INTEGRATION.md section 8) emit one turn_end per turn tagged with the policy name, which then cuts the
+silence, research/archive/INTEGRATION.md section 8) emit one turn_end per turn tagged with the policy name, which then cuts the
 finals and maps to END_OF_SPEECH like the timeout's. ``eot_threshold=None`` (default) leaves the head threshold to the
 server (0.98; the hybrid_silero / hybrid_dyn frozen points 0.99828 / 0.998283). Primary enrollment (server ``--enroll
 after_agent | after_agent_arm``): ``fe.agent_end()`` when the agent's TTS finished (queued behind the audio already
@@ -79,10 +79,10 @@ FRAME_S = 0.08
 DEFAULT_URL = "ws://127.0.0.1:8765"
 DIAR_LAG_MAX_S = 0.96  # server docstring: a diarizer column is final 560-960 ms after its frame ends (+ compute)
 DIAR_LAG_MEAN_S = 0.76
-# hybrid* = the server's one-event-per-turn rules (research/INTEGRATION.md section 8): hybrid_dyn / hybrid_silero =
+# hybrid* = the server's one-event-per-turn rules (research/archive/INTEGRATION.md section 8): hybrid_dyn / hybrid_silero =
 # head OR any-speaker Silero silence; their turn_end carries the policy name and cuts the finals
-POLICIES = ("timeout", "head", "both", "hybrid", "hybrid_silero", "hybrid_dyn")
-HYBRID_POLICIES = ("hybrid", "hybrid_silero", "hybrid_dyn")
+POLICIES = ("timeout", "head", "both", "hybrid", "hybrid_silero", "hybrid_dyn", "vad_head")
+HYBRID_POLICIES = ("hybrid", "hybrid_silero", "hybrid_dyn", "vad_head")
 DEFAULT_EOT_THRESHOLD = 0.98  # the server's head threshold for "head" / "both" / "hybrid"
 
 
@@ -98,7 +98,7 @@ class AudioforgeOptions:
     # turn_end.t is the decision time (the deciding diarizer frame's end + 560-960 ms); without the server's
     # --debug-fields "frame_t" the primary's last active frame is estimated as t - diar_lag_s - silence_ms
     diar_lag_s: float = DIAR_LAG_MEAN_S
-    # server --final-asr (research/HYBRID_ASR.md): which finals are the transcript. "stream" (default): the streaming
+    # server --final-asr (research/archive/HYBRID_ASR.md): which finals are the transcript. "stream" (default): the streaming
     # finals, offline ones ignored; "offline": the offline model's finals - the streaming final of a turn is held and
     # FINAL_TRANSCRIPT + END_OF_SPEECH are emitted when the turn's offline final (same t) arrives. Servers without
     # --final-asr send no "source" and every final is used, whatever this says.

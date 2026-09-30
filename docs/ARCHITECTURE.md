@@ -46,9 +46,11 @@ transcript. The rest of this page notes where the two differ.
 - **The diarizer** (room mode only) is NVIDIA's, because our own general diarization head is not good enough (0.394
   vs 0.232 DER). It runs on its own front end on the same 80 ms clock. Its columns arrive 80-240 ms after their audio with the default 0.32 s
   setting.
-- **End of turn** is a policy over these signals, chosen per session: a silence timeout on the primary speaker's
-  column (`timeout`, the default), the head's probability OR a Silero silence with a dynamic wait (`hybrid_dyn`),
-  any speaker's silence (`timeout_any`), and others ([`CONFIGURATION.md`](CONFIGURATION.md) §4).
+- **End of turn** is a policy over these signals, chosen per session. Single mode's default is `vad_head`: the VAD
+  head's silence AND the turn head's probability, a VAD-silence fallback, and the user's TS-VAD silence while someone
+  else has the floor; no Silero (research/EOT_LATENCY.md). Room mode's default is a silence timeout on the primary
+  speaker's column (`timeout`). Others: the head's probability OR a Silero silence with a dynamic wait (`hybrid_dyn`),
+  any speaker's silence (`timeout_any`), and more ([`CONFIGURATION.md`](CONFIGURATION.md) §4).
 - **Speed** comes from exact CPU fast paths (`audioforge/perf.py`, on by default): column-major weights, cached
   position projections, one subsampling shared by both encoder passes, and a cached RNNT joint. Decisions are
   unchanged and compute drops to 0.62x. Conformer convolutions run as unfold + linear (`fast_conv`).
@@ -66,7 +68,7 @@ transcript. The rest of this page notes where the two differ.
    │  ASRStream (encoder pass, RNNT, VAD, turn, speaker)   audioforge/server/streams.py
    │  speaker columns: TS-VAD track (single) or diarizer step + binding (room)   tsvad_stream.py, server/binding.py
    │  turn policies                                        audioforge/server/policies.py
-   │  load shedding, NaN guards, segment cap               (research/BULLETPROOF.md)
+   │  load shedding, NaN guards, segment cap               (research/archive/BULLETPROOF.md)
    ▼
  Engine (shared)            audioforge/serve.py: models, the compute thread, Silero, the final-ASR worker process
    │

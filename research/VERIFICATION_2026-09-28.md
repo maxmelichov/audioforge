@@ -576,7 +576,7 @@ R frontier pilots). "(x-100, sign flipped)" = the JSON stores Silero − ours; t
 
 ## 2. Mismatches found, and what was changed
 
-1. **`research/DIARIZATION_FIX.md` §3.4, AMI dev 64 windows, "after" row** (and the §3.4 reading and item 1 of the
+1. **`research/archive/DIARIZATION_FIX.md` §3.4, AMI dev 64 windows, "after" row** (and the §3.4 reading and item 1 of the
    proposed default; also commit message c67693a): the doc gave DER **0.229** (.183 / .021 / .025), count error
    -0.09 / 0.19, final-id error -0.93, 206 finals (3 null), per-final accuracy 0.772. Those are the aggregate of the
    resumable run's first pass, 57 of 64 windows (`scratch/diar/logs/run_ami.txt`). The complete file
@@ -585,18 +585,18 @@ R frontier pilots). "(x-100, sign flipped)" = the JSON stores Silero − ours; t
    error equal the "before" row (`ami_A_legacy.json`, 0.2448) to four decimals. **Fixed in the doc** (row, reading,
    proposed default); the report says "AMI-64 DER unchanged at 0.245" instead of "0.245 -> 0.229". The commit message
    is history and was not rewritten.
-2. **`research/DIARIZATION_FIX.md` §1.3, Nemotron-3 two-session "mix" row** (count -2, acc 0.68, purity 0.76):
+2. **`research/archive/DIARIZATION_FIX.md` §1.3, Nemotron-3 two-session "mix" row** (count -2, acc 0.68, purity 0.76):
    `scratch/diar/logs/n3_concurrent.json` has no `clip2` and scored the second session against the ICSI reference
    (n_ref 5, 9 of 23 finals scored: count -1, acc 0.667, purity 0.669). No stored file holds the doc's values.
    **Annotated in the doc**; the report does not use the row.
-3. **`research/BULLETPROOF.md`** said `tests/test_bulletproof.py` has 45 tests; `pytest --collect-only` collects
+3. **`research/archive/BULLETPROOF.md`** said `tests/test_bulletproof.py` has 45 tests; `pytest --collect-only` collects
    **48** (commit 548b629 also says 48). **Fixed in the doc.** The report's "48 tests" is the collected count; the
    note has 36 failure-mode rows (sections 1-5), not 48.
-4. **`research/IMPROVEMENTS.md` §3, TitaNet-L row**: "8.2 / –" sat in the "AMI n=64 all / within" column, i.e. the
+4. **`research/archive/IMPROVEMENTS.md` §3, TitaNet-L row**: "8.2 / –" sat in the "AMI n=64 all / within" column, i.e. the
    within-meeting value in the "all" slot. JSON: 6.6 / 8.2 (n = 64), 10.9 / 12.0 (n = 200) (`runs/baselines_sd.json`
    `spk/titanet_large`), ICSI 1.0 within (n = 64), 2.2 / 2.1 (n = 200) (`runs/spk_head.json`
    `variants/spk_distill_titanet/eval/icsi_*/teacher`). **Fixed in the doc.**
-5. **"Identical outputs" for the performance pass** (`research/PERFORMANCE.md` §3, README, CHANGELOG):
+5. **"Identical outputs" for the performance pass** (`research/archive/PERFORMANCE.md` §3, README, CHANGELOG):
    `runs/perf.json` `ab/none_default/compare` stores `identical: false`, `within_tol: true`, 0 decision differences
    (turn_end, final, partial, primary), `maxdiff` eot 1e-05, vad 0. PERFORMANCE.md's "1311 of 1313 messages
    bit-identical" is consistent with that but is not itself stored (`n_num` 0, `examples` empty). The report, README
@@ -624,6 +624,6 @@ R frontier pilots). "(x-100, sign flipped)" = the JSON stores Silero − ours; t
 | TS-VAD live server RTF (T median 0.34, max 0.50; Th 0.29, max 0.34), peak RSS 1.6 GB | `scratch/e2e_tsvad/runs/pipecat_{T,Th}_*.jsonl` `raw.server_stats` (recomputed: 0.3403 / 0.4982, 0.2858 / 0.3382, 1615.8-1630.7 MB) |
 | served TS-VAD path == offline (max track diff 5.3e-4, turn posterior 4.0e-3, 179 / 179 frames >= 0.997, 1830 frames) | `scratch/improve/serve_check.json` (recomputed: 5.27e-4, 3.96e-3, 179 / 179, 1830) |
 | 48 bulletproof tests | `pytest --collect-only tests/test_bulletproof.py` |
-| on-device runtime study RTF 0.16 (1 thread, random weights) | `research/ONDEVICE.md` (its JSON was lost in a reboot) |
+| on-device runtime study RTF 0.16 (1 thread, random weights) | `research/archive/ONDEVICE.md` (its JSON was lost in a reboot) |
 | distillation package GPU estimate (~6 A100 hours) | `scripts/research/distill_0p6b_to_115m/README.md` (an estimate, not a measurement) |
 | TurnBench / otoSpeech / LID / E2E rows carried from 2026-09-27 | checked above against their JSON |

@@ -2,7 +2,7 @@
 ``ami.py`` (turn windows, floor definition, backchannels, hesitations; ``Dyadic`` subclasses ``ami.AMI``) plus the
 agent-side streams a voice agent really has: the other party's activity and the moments it stops speaking.
 
-Corpora (two channels, one party per channel; ``scripts/research/prepare_dyadic.py`` downloads the slices; research/DYADIC.md):
+Corpora (two channels, one party per channel; ``scripts/research/prepare_dyadic.py`` downloads the slices; research/archive/DYADIC.md):
   behavior_sd  Behavior-SD (Lee, Kim & Kim, NAACL 2025), CC BY 4.0 (code MIT), ungated. 108 K SYNTHETIC full-duplex
                dialogues (CosyVoice TTS, 52 voices, 2,164 h) as HF tar shards of <id>.flac (stereo 22.05 kHz, channel
                k = speaker k: ``channel_check``) + <id>.json. Labels: per-UTTERANCE start / end (exact: the TTS

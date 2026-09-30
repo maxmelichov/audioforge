@@ -33,9 +33,9 @@ One WebSocket session per pipeline, shared by three adapters through an ``Audiof
 Default turn policy: **timeout** - the server's plain silence timeout (1000 ms) on the diarizer's label-free primary
 track; other speakers do not delay it. The server's older rule that also waits for "nobody else active" is its
 ``timeout_quiet`` policy (direct protocol only, not offered here): at n=200 AMI dev turns that rule misses 66-68 %
-at <= 5 % false cutoffs vs 38.4 % for the plain timeout (research/STAGE1.md, oracle-enrolled column;
-research/INTEGRATION_VERIFY.md D1), and the served head misses 69 %. With label-free enrollment every streaming
-system misses more (research/EOT_BENCH_V2.md). The head's probability is exposed as an optional signal (``hub.eot``
+at <= 5 % false cutoffs vs 38.4 % for the plain timeout (research/archive/STAGE1.md, oracle-enrolled column;
+research/archive/INTEGRATION_VERIFY.md D1), and the served head misses 69 %. With label-free enrollment every streaming
+system misses more (research/archive/EOT_BENCH_V2.md). The head's probability is exposed as an optional signal (``hub.eot``
 on every frame event, ``policy="head"`` / ``"both"``) and is not the default.
 
 Pipecat-side semantics to know (not changed here): ``UserTurnController`` never ends a turn while its VAD says the
@@ -44,7 +44,7 @@ someone else talking right after the server's turn_end therefore either holds th
 ``resume_ms`` of speech after the decision) or makes the decision stale (more), and the turn then waits for the
 server's next turn_end. Measured on AMI with examples/pipecat_local_demo.py.
 
-Primary-speaker enrollment (server ``--enroll after_agent | after_agent_arm | explicit``, research/EOT_BENCH_V2.md
+Primary-speaker enrollment (server ``--enroll after_agent | after_agent_arm | explicit``, research/archive/EOT_BENCH_V2.md
 section 9; ``after_agent_arm`` = the same agent_end message, the server then follows the chosen column with its
 causal_dominant rule instead of TitaNet):
 ``AudioforgeSTTService(enroll="after_agent")`` sends {"type": "agent_end"} to the server whenever Pipecat's output
@@ -92,9 +92,9 @@ from pipecat.services.stt_service import WebsocketSTTService
 from pipecat.utils.time import time_now_iso8601
 from websockets.protocol import State
 
-# hybrid* = the server's one-event-per-turn rules (research/INTEGRATION.md section 8): hybrid_dyn / hybrid_silero =
+# hybrid* = the server's one-event-per-turn rules (research/archive/INTEGRATION.md section 8): hybrid_dyn / hybrid_silero =
 # head OR any-speaker Silero silence (dynamic / 2.64 s wait); their turn_end carries the policy name
-POLICIES = ("timeout", "head", "both", "hybrid", "hybrid_silero", "hybrid_dyn")
+POLICIES = ("timeout", "head", "both", "hybrid", "hybrid_silero", "hybrid_dyn", "vad_head")
 ENROLL_MODES = ("after_agent", "after_agent_arm", "explicit")  # the server's --enroll modes (None = its default)
 AGENT_END_MODES = ("after_agent", "after_agent_arm")  # modes armed by {"type": "agent_end"}
 FRAME_MS = 80  # the server's frame clock (one "frame" event per 80 ms of audio)
@@ -207,7 +207,7 @@ class AudioforgeSTTService(WebsocketSTTService):
             timeout_ms / eot_threshold: the server's timeout-policy silence and head threshold (None = the server's
                 default for the policy: 0.98, hybrid_silero 0.99828, hybrid_dyn 0.998283).
             end_timeout: seconds to wait for the flush final + stats after sending {"type": "end"} on EndFrame.
-            final_source: with a server running --final-asr (research/HYBRID_ASR.md): "stream" (default) pushes
+            final_source: with a server running --final-asr (research/archive/HYBRID_ASR.md): "stream" (default) pushes
                 the streaming finals as TranscriptionFrames and ignores the offline ones; "offline" pushes the offline
                 model's finals instead, and the turn analyzer reports COMPLETE only once the turn's offline final
                 (same t) has arrived, so the LLM sees the offline transcript. Finals without "source" (server without

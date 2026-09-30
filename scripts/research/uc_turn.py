@@ -1,4 +1,4 @@
-"""User-channel predictive turn head (research/IMPROVEMENTS.md section 1): features, training, inference, TurnBench.
+"""User-channel predictive turn head (research/archive/IMPROVEMENTS.md section 1): features, training, inference, TurnBench.
 
 The head (scripts/research/uc_turn_head.py) reads the frozen streaming encoder's top layer computed on the USER'S OWN
 channel (the served ASR pass: no extra encoder cost), the user's Silero activity, the agent's activity (the other

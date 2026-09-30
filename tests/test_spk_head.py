@@ -1,5 +1,5 @@
 """Speaker head: single-layer taps (from_layers: [k]), TitaNet distillation loss, teacher attach, head-only
-training from a stage-1 checkpoint (research/SPK_HEAD.md)."""
+training from a stage-1 checkpoint (research/archive/SPK_HEAD.md)."""
 from pathlib import Path
 
 import numpy as np

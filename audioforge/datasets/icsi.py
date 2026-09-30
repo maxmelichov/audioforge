@@ -30,7 +30,7 @@ Speaker ids: ``SPEAKER_OFFSET`` (1000) + index into the sorted ICSI speaker tags
 
 Splits: ICSI has no official partition. We use the Kaldi / lhotse ICSI recipe split (Renals & Swietojanski,
 HSCMA 2014): dev = {Bmr021, Bns001}, eval = {Bmr013, Bmr018, Bro021}, train = the other 70 meetings. It is
-NOT speaker-disjoint (the same research groups meet repeatedly). See research/ICSI.md.
+NOT speaker-disjoint (the same research groups meet repeatedly). See research/archive/ICSI.md.
 """
 from __future__ import annotations
 

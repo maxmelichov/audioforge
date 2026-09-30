@@ -27,6 +27,7 @@ from .constants import (
     DIAR_ENC_LEFT,
     DIAR_LABEL_MODES,
     ENROLL_MODES,
+    POLICIES,
     SHED_DIAR_MODES,
     SILERO_TIMEOUT_MS,
     VOICE_MODES,
@@ -87,7 +88,7 @@ SSINGLE = "#13-single-model-mode---mode-single"
 MODES: dict[str, dict[str, Any]] = {
     "room": {},
     "single": {"turn_input": "tsvad", "diar_off": True, "lid": "head", "enroll": "after_agent_arm",
-               "dyn_wait_ms": "2000,960"},
+               "turn_policy": "vad_head", "dyn_wait_ms": "2000,960"},
 }
 # options that would load a second model; --mode single refuses them (name, why)
 SINGLE_CONFLICTS = (("diar", "a diarizer model"), ("final_asr", "a final-ASR model (Parakeet-TDT v3)"),
@@ -102,8 +103,9 @@ FLAGS: tuple[Flag, ...] = (
          {"choices": ["single", "room"], "default": None}, launcher=True,
          doc_default="`single` (`room` when `--diarizer`, `--diar` or `--final-asr` is given)",
          doc="preset. `single` (the default): everything from the one 115M checkpoint, for a known user: adds `--turn-input tsvad "
-         "--diar-off --lid head --enroll after_agent_arm --dyn-wait-ms 2000,960`, loads no diarizer and no final-ASR "
-         "worker (Silero VAD, 2 MB, when present, for `hybrid_dyn`), and refuses "
+         "--diar-off --lid head --enroll after_agent_arm --turn-policy vad_head --dyn-wait-ms 2000,960`, loads no "
+         "diarizer, no final-ASR worker and no Silero (the default turn rule `vad_head` reads the model's own VAD, turn "
+         "and TS-VAD heads; `hybrid_dyn` needs `--silero`), and refuses "
          "`--diar`, `--diarizer`, `--final-asr`, `--lid ambernet`, `--diar-embed titanet`; the voice print comes from an `enroll` message "
          "with an embedding (store >= 5 s of clean speech, 10 s for meetings), else live after `agent_end`. `room`: "
          "general diarization with NVIDIA Nemotron-3-Diarization (or `--diarizer sortformer`) next to the 115M model "
@@ -166,6 +168,21 @@ FLAGS: tuple[Flag, ...] = (
          doc="`hybrid_dyn`: the Silero-silence wait at head posterior 0 (CAP) and 1 (FLOOR), linear in between (plus "
          "the rule's offset); `--mode single` sets `2000,960` (research/SINGLE_MODEL.md A1)",
          doc_default="the served rule: 6000,1600", section=S4),
+    Flag(("--turn-policy",), "turns", "turn_policy of a session whose config names none (--mode single: vad_head)",
+         {"choices": list(POLICIES), "default": "timeout", "metavar": "POLICY"}, advanced=True,
+         doc="the `turn_policy` of a session whose `config` does not name one (a client's `config` still wins); "
+         "`--mode single` sets `vad_head` (research/EOT_LATENCY.md)", section=S4),
+    Flag(("--vad-wait-ms",), "turns", "vad_head: VAD-head silence for the head path and the fallback, e.g. 160,640",
+         {"metavar": "K,FALLBACK"}, advanced=True,
+         doc="`vad_head` (no Silero): the served VAD head's silence (VAD < 0.4) that the head path needs (K, with the turn "
+         "head p >= theta, default 0.99) and the silence that ends the turn on its own (FALLBACK, 0 = none) "
+         "(research/EOT_LATENCY.md)", doc_default="`160,640`", section=S4),
+    Flag(("--others-wait-ms",), "turns", "vad_head: user's TS-VAD silence + P(other) hold of the others path, e.g. 960,640",
+         {"metavar": "USER_SIL,HOLD"}, advanced=True,
+         doc="`vad_head` with an enrolled TS-VAD track (`--turn-input tsvad`): the turn also ends when the user's own "
+         "silence (P(user) < 0.5) reaches USER_SIL while P(other) >= 0.9 has held for HOLD, i.e. another speaker has the "
+         "floor, without waiting for the room to go quiet (0 = off; research/EOT_LATENCY.md)", doc_default="`960,640`",
+         section=S4),
     # --- transcripts
     Flag(("--final-asr",), "transcripts", "re-transcribe each finished turn: tdt_v3 or a .nemo path",
          {"metavar": "SPEC"}, doc="offline per-turn final ASR: `tdt_v3` (NVIDIA Parakeet-TDT 0.6B v3) or a `.nemo` "
@@ -178,10 +195,16 @@ FLAGS: tuple[Flag, ...] = (
          advanced=True, section=S8),
     Flag(("--asr-lookahead",), "transcripts", "second, text-only ASR pass at attention context [70, R], e.g. 13",
          {"type": int, "metavar": "R"}, advanced=True, doc_default="off", section=S8),
+    Flag(("--asr-chunk-ms",), "transcripts", "streaming chunk of the ASR pass: 160 ([70,1]) or 80 ([70,0], no lookahead)",
+         {"type": int, "choices": [80, 160], "metavar": "MS"}, advanced=True,
+         doc="streaming chunk of the one ASR pass (transcript, VAD, turn and TS-VAD heads): 160 = attention context "
+         "[70,1] (the model's default) or 80 = [70,0], no lookahead (up to 80 ms earlier frames; +0.19 WER on "
+         "LibriSpeech, +1.3 on AMI; the heads were trained at [70,1]; research/LATENCY_BUDGET.md)",
+         doc_default="the model's (160)"),
     Flag(("--asr-vad-gate",), "transcripts", "stop decoding tokens on long non-speech (served VAD <= this)",
          {"type": float, "metavar": "P"}, advanced=True,
          doc="do not decode transducer tokens on frames whose served VAD <= P once `--asr-vad-hangover-ms` of such "
-         "frames have passed (bounds hallucinated text on long non-speech; research/BULLETPROOF.md)",
+         "frames have passed (bounds hallucinated text on long non-speech; research/archive/BULLETPROOF.md)",
          doc_default="off"),
     Flag(("--asr-vad-hangover-ms",), "transcripts", "--asr-vad-gate: decoding continues this long after speech",
          {"type": float, "default": 1200.0, "metavar": "MS"}, advanced=True),
@@ -198,7 +221,7 @@ FLAGS: tuple[Flag, ...] = (
          {"type": float, "default": None, "metavar": "MS"}, advanced=True,
          doc_default="3000 with `--lid head`, else off (0 = off)", section=S9),
     Flag(("--lid-langs",), "lid", "--lid ambernet: comma-separated language codes to choose from",
-         {"metavar": "CODES"}, advanced=True, doc_default="the 17 languages of research/LID.md", section=S9),
+         {"metavar": "CODES"}, advanced=True, doc_default="the 17 languages of research/archive/LID.md", section=S9),
     # --- diarizer tuning
     Flag(("--diar-config",), "diarizer", "Sortformer setting: 0.32 s (low_latency_032) or 1.04 s",
          {"choices": DIAR_CONFIGS, "default": DEFAULT_DIAR_CONFIG}, advanced=True, section=S71),
@@ -227,8 +250,8 @@ FLAGS: tuple[Flag, ...] = (
     Flag(("--perf",), "speed", "CPU fast paths: default (exact) | none | all | list, e.g. default,-linear_t",
          {"default": "default", "metavar": "SPEC"}, advanced=True,
          doc="CPU inference fast paths of `audioforge.perf`: `default` = the exact set (same outputs), `none`, `all` "
-         "(adds float-rounding ones), or a list such as `default,-linear_t` (research/PERFORMANCE.md)", section=S3),
-    Flag(("--device",), "speed", "only cpu is supported (others fall back to cpu)", {"default": "cpu", "metavar": "DEV"},
+         "(adds float-rounding ones), or a list such as `default,-linear_t` (research/archive/PERFORMANCE.md)", section=S3),
+    Flag(("--device",), "speed", "cpu, or mps / cuda / cuda:N (opt-in GPU; others fall back to cpu)", {"default": "cpu", "metavar": "DEV"},
          advanced=True, section=S3),
     Flag(("--no-fast-conv",), "speed", "keep PyTorch's Conv1d path in the conformer convolutions (slower)",
          {"action": "store_true"}, advanced=True, section=S3),
@@ -414,13 +437,14 @@ def load_engine(a):
                        lid_langs=a.lid_langs.split(",") if a.lid_langs else None, lid_max_ms=a.lid_max_ms,
                        final_asr=a.final_asr,
                        final_asr_worker=a.final_asr_worker, final_asr_threads=a.final_asr_threads,
-                       final_asr_device=a.final_asr_device, asr_lookahead=a.asr_lookahead,
+                       final_asr_device=a.final_asr_device, asr_lookahead=a.asr_lookahead, asr_chunk_ms=a.asr_chunk_ms,
                        asr_vad_gate=a.asr_vad_gate, asr_vad_hangover_ms=a.asr_vad_hangover_ms,
                        max_session_s=a.max_session_s, idle_timeout_s=a.idle_timeout_s, log_json=a.log_json,
                        perf=a.perf, tsvad=a.tsvad, tsvad_print_s=a.tsvad_print_s,
                        tsvad_refresh_s=a.tsvad_refresh_s, diar_off=a.diar_off, diar_labels=a.diar_labels,
                        diar_embed=a.diar_embed, shed_diar=a.shed_diar, registry_thr=a.diar_reg_thr,
-                       dyn_wait_ms=a.dyn_wait_ms)
+                       dyn_wait_ms=a.dyn_wait_ms, vad_wait_ms=a.vad_wait_ms, others_wait_ms=a.others_wait_ms,
+                       turn_policy=a.turn_policy)
 
 
 def main(argv: list[str] | None = None) -> int:

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Preflight for the GPU box (research/IMPROVEMENTS.md section 7): GPUs, VRAM, driver / torch / CUDA versions, free disk,
+# Preflight for the GPU box (research/archive/IMPROVEMENTS.md section 7): GPUs, VRAM, driver / torch / CUDA versions, free disk,
 # and whether the download hosts answer. Read-only; run from the repo root (before or after setup.sh):
 #     bash scripts/research/distill_0p6b_to_115m/preflight.sh
 set -u

@@ -1,4 +1,4 @@
-"""TurnHead v3 (research/STAGE1.md, n = 200: with a real streaming diarizer the head misses 69 % of turn ends at <= 5 %
+"""TurnHead v3 (research/archive/STAGE1.md, n = 200: with a real streaming diarizer the head misses 69 % of turn ends at <= 5 %
 false cutoffs vs 38 % for a silence timeout on the same track).
 
 Diagnosis -> change under test:

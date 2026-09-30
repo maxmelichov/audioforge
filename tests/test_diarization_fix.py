@@ -1,4 +1,4 @@
-"""Multi-speaker diarization in the served system (research/DIARIZATION_FIX.md): stable speaker ids on the finals
+"""Multi-speaker diarization in the served system (research/archive/DIARIZATION_FIX.md): stable speaker ids on the finals
 (``--diar-labels registry``, audioforge.speaker_registry) and the last-stable-column rule under load shedding
 (``--shed-diar hold``). Tiny models + scripted diarizers and a scripted voice embedder stand in for the checkpoints.
 Pinned: no speaker-0 collapse under shedding, the same id for the same voice across a column permutation, and the

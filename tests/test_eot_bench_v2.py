@@ -1,4 +1,4 @@
-"""eot-bench v2 (research/EOT_BENCH_V2.md): the leak-free options of conversation.eot_bench and the label-free
+"""eot-bench v2 (research/archive/EOT_BENCH_V2.md): the leak-free options of conversation.eot_bench and the label-free
 enrollment rules of scripts/research/eval_stage1.py. Defaults must reproduce the v1 metric bit for bit."""
 import importlib.util
 from pathlib import Path

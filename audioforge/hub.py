@@ -1,6 +1,6 @@
 """Fetch, verify and convert the checkpoints the server needs (``audioforge-download``).
 
-    audioforge-download                         # single-model mode (the default): served ASR + TS-VAD head + Silero (~0.46 GB)
+    audioforge-download                         # single-model mode (the default): served ASR + TS-VAD head (~0.46 GB)
     audioforge-download --diarizer nemotron3    # + NVIDIA Nemotron-3-Diarization for room mode (OpenMDW-1.1)
     audioforge-download --diarizer sortformer   # + NVIDIA Streaming Sortformer v2 for room mode (CC-BY-4.0)
     audioforge-download --with tdt_v3 titanet ambernet silero
@@ -121,12 +121,14 @@ COMPONENTS: dict[str, Component] = {c.key: c for c in [
     Component("silero", "Silero VAD v5 (v5.1.2 ONNX)", "silero_vad.onnx", 2327524,
               "2623a2953f6ff3d2c1e61740c6cdb7168133479b267dfef114a4a3cc5bdd788f", "MIT",
               "https://github.com/snakers4/silero-vad/blob/master/LICENSE",
-              "turn policies hybrid_silero / hybrid_dyn", "silero_vad_v5.onnx", 2, "keep",
+              "turn policies hybrid_silero / hybrid_dyn (not single mode's default)", "silero_vad_v5.onnx", 2, "keep",
               url="https://github.com/snakers4/silero-vad/raw/v5.1.2/src/silero_vad/data/silero_vad.onnx"),
 ]}
 DIARIZERS = {"sortformer": "sortformer", "nemotron3": "nemotron3"}
 OPTIONAL = ("tdt_v3", "titanet", "ambernet", "lid", "silero")
-SINGLE = ("asr", "tsvad", "silero")  # what single-model mode (the default) needs; + "lid" for language ID when available
+# what single-model mode (the default) needs; + "lid" for language ID when available. No Silero: single mode's turn rule
+# (vad_head, research/EOT_LATENCY.md) reads the model's own heads; --with silero for hybrid_silero / hybrid_dyn
+SINGLE = ("asr", "tsvad")
 
 
 def diarizer_defaults(diarizer: str) -> dict[str, Any]:
@@ -371,7 +373,7 @@ def list_components():
     print(f"{'key':<11} {'download MB':>11} {'on disk MB':>10}  {'licence':<18} used for")
     for c in COMPONENTS.values():
         print(f"{c.key:<11} {c.size / 1e6:>11.0f} {c.output_mb:>10}  {c.license:<18} {c.used_for}")
-    print("\nDefault set (single-model mode): asr + tsvad + lid + silero; --diarizer adds a diarizer for room mode. "
+    print("\nDefault set (single-model mode): asr + tsvad + lid; --diarizer adds a diarizer for room mode. "
           "Peak disk during a default install ~0.9 GB (the .nemo files are deleted after conversion unless --keep-nemo).")
 
 

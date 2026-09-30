@@ -46,6 +46,12 @@ response after a labelled turn end (median / P90 over ends answered within 6 s);
 seconds; a cut-in = a response inside a user turn. AMI: 5 windows / 5 ends, mono. TurnBench dev: 16 clips / 56 ends
 (non-commercial licence, evaluation only). otoSpeech dev: 16 clips / 53 ends.
 
+> **Before posting these drafts (2026-09-29):** use the standard names and numbers of `research/METRICS.md`. Dead air
+> = end-of-turn latency; cut-in = false interruption. The "first text (ms)" columns count from the start of speech
+> (they include the time it takes to say the first word) and must not be presented as STT latency; drop them or
+> replace them with partial latency (word end to word shown, 441 ms median, `runs/stt_latency.json`). Mono-mix rows
+> of "missed@3 s" are a test artifact (the recorded partner answers in the same audio).
+
 | clips | stack | dead air med / P90 (ms) | missed @3 s / @6 s | cut-ins (per min) | WER | first text (ms) |
 |---|---|---|---|---|---|---|
 | AMI mono | Pipecat A: Silero VAD + LocalSmartTurnAnalyzerV3 + faster-whisper small | 2548 / 4605 | 60 % / 20 % | 11 (7.46) | 44 % | 3689 |
@@ -73,7 +79,7 @@ LiveKit D−C dead air **+760 ms [+700, +980]**, cut-ins/clip **−1.0 [−1.6, 
 local baselines. `E2E_FINAL.md` recommends Nemotron-3-Diarization as the diarizer (RTF 0.63–0.65, 1.5 GB RSS, lower
 dead air); it is a server flag, nothing changes in the plugins.
 
-### 1.2 Turn policy options (`research/INTEGRATION.md` §8, 5 AMI windows, `runs/integration_deadair_shipped.json`)
+### 1.2 Turn policy options (`research/archive/INTEGRATION.md` §8, 5 AMI windows, `runs/integration_deadair_shipped.json`)
 
 | policy | Pipecat dead air med / cut-ins | LiveKit dead air med / cut-ins | decision median |
 |---|---|---|---|
@@ -81,10 +87,10 @@ dead air); it is a server flag, nothing changes in the plugins.
 | `hybrid_dyn` (head OR any-speaker Silero silence, 2.0–6.4 s by head probability) | 2662 / 0 | 2425 / 0 | 2240 |
 | `hybrid_silero` (head OR 2.64 s Silero silence) | 2941 / 0 | 2921 / 0 | 2736 |
 
-ICSI held-out (n = 1312 turns, `research/BASELINES.md`): `hybrid_dyn` misses 79.5 % (open-floor 50.5 %) at 1.8 %
+ICSI held-out (n = 1312 turns, `research/archive/BASELINES.md`): `hybrid_dyn` misses 79.5 % (open-floor 50.5 %) at 1.8 %
 false cutoffs per turn vs `hybrid_silero` 81.7 / 62.2 at 2.4 %; paired −2.2 [−3.2, −1.3] / −11.7 [−17.0, −7.0].
 
-### 1.3 Enrollment (`research/EOT_BENCH_V2.md` §9, AMI dev n = 974, ≤ 5 % FC cross-fitted)
+### 1.3 Enrollment (`research/archive/EOT_BENCH_V2.md` §9, AMI dev n = 974, ≤ 5 % FC cross-fitted)
 
 | primary binding | misses @6 s all / open | Δ vs default |
 |---|---|---|
@@ -106,7 +112,7 @@ time was a **label-derived stand-in** for the TTS-end event, not a real TTS even
 Paired AMI −0.147 [−0.170, −0.127]; LibriSpeech not significant. **The serving latency of the offline final
 (`final.latency_ms`) has not been measured.**
 
-### 1.5 TurnBench with its official scorer (`research/DYADIC.md` §4, `runs/turnbench_dev.json`; max recall at fp ≤ 0.10)
+### 1.5 TurnBench with its official scorer (`research/archive/DYADIC.md` §4, `runs/turnbench_dev.json`; max recall at fp ≤ 0.10)
 
 | system | recall / fp / P50 ms |
 |---|---|
@@ -119,7 +125,7 @@ Paired AMI −0.147 [−0.170, −0.127]; LibriSpeech not significant. **The ser
 Caveats: TurnBench is licensed for evaluation only; these inputs were per-speaker channels + Silero tracks, not the
 streaming diarizer the server uses; no LiveKit turn detector was scored by this scorer.
 
-### 1.6 Speed (`research/INTEGRATION.md` §1)
+### 1.6 Speed (`research/archive/INTEGRATION.md` §1)
 
 RTF 0.45–0.52 at 1× on 2 threads with the pretrained heads (0.68–0.81 with the served model and the diarizer);
 frame lag p50 129–136 ms, p95 ≤ 220 ms; first partial 54–59 ms after the audio is sent; peak RSS 3.0–3.6 GB. It keeps
@@ -129,7 +135,7 @@ load (§7 shows it: RTF 1.3, diarizer skipped, `overloaded` notices).
 ### 1.7 Honest limitations (stated in every PR body)
 
 - Turn-taking is "timeout-grade": on label-free speaker tracks the learned turn head is not better than the silence
-  timeout (`research/INTEGRATION.md` §6); the STAGE1 38.4 % figure used an oracle speaker column and does not describe
+  timeout (`research/archive/INTEGRATION.md` §6); the STAGE1 38.4 % figure used an oracle speaker column and does not describe
   the product. Label-free enrollment loses the user: 61.9 % misses vs 28.7 % with an oracle column.
 - English-only streaming ASR; meeting WER ≈ 0.39 on AMI (whisper-small 0.43 in the same runs; 0.10 with `tdt_v3`);
   17 % vs 10 % on the clean TurnBench user channel.
@@ -138,15 +144,15 @@ load (§7 shows it: RTF 1.3, diarizer skipped, `overloaded` notices).
 - The LiveKit turn detector implements the private `_StreamingTurnDetector` protocol; `turn_detection="stt"` is
   the recommended mode. Pipecat's `UserTurnController` never ends a turn while its VAD hears speech ("the user" is
   whoever is audible), which the turn analyzer's `wait_for_silence` gate respects.
-- Known open defects in `research/INTEGRATION.md` §5 (D2: streaming finals can split words at the cut; use
+- Known open defects in `research/archive/INTEGRATION.md` §5 (D2: streaming finals can split words at the cut; use
   `final_source="offline"` with `--final-asr tdt_v3` if the LLM sees the finals).
 
 ### 1.8 Models and licences
 
 | file | how to get it | licence |
 |---|---|---|
-| `runs/stage1_served.afm` (NVIDIA `stt_en_fastconformer_hybrid_large_streaming_multi` encoder + our VAD / turn / speaker heads) | `audioforge-download` (pinned revisions + sha256, rebuilt bit-identical from NVIDIA weights + `assets/served_heads_v0.1.pt`) or `research/NEMO_IMPORT.md` | encoder CC-BY-4.0; heads trained on AMI (CC BY 4.0) |
-| `runs/nemo_sortformer_v2.afm` (NVIDIA Streaming Sortformer 4spk v2) | `audioforge-download` / `research/SORTFORMER_IMPORT.md` | CC-BY-4.0 (v2.1 / v1 are not used: other licences) |
+| `runs/stage1_served.afm` (NVIDIA `stt_en_fastconformer_hybrid_large_streaming_multi` encoder + our VAD / turn / speaker heads) | `audioforge-download` (pinned revisions + sha256, rebuilt bit-identical from NVIDIA weights + `assets/served_heads_v0.1.pt`) or `research/archive/NEMO_IMPORT.md` | encoder CC-BY-4.0; heads trained on AMI (CC BY 4.0) |
+| `runs/nemo_sortformer_v2.afm` (NVIDIA Streaming Sortformer 4spk v2) | `audioforge-download` / `research/archive/SORTFORMER_IMPORT.md` | CC-BY-4.0 (v2.1 / v1 are not used: other licences) |
 | `runs/nemo_nemotron3_diar.afm` (Nemotron-3-Diarization 100M, recommended diarizer) | `audioforge-download` | NVIDIA Open Model License (check before redistribution) |
 | `data/silero/silero_vad_v5.onnx` (`hybrid_dyn` / `hybrid_silero`) | snakers4/silero-vad v5.1.2 | MIT |
 | `data/nemo/parakeet-tdt-0.6b-v3.nemo` (`--final-asr tdt_v3`) | Hugging Face `nvidia/parakeet-tdt-0.6b-v3` | CC-BY-4.0 |
@@ -219,7 +225,7 @@ TurnBench dev (16 two-party clips, evaluation-only licence), user channel: misse
 stack (paired −30 pts [−51, −9]), dead air 1353 / 1617 vs 2099 / 3186 ms; mono mix: cut-ins/min 1.15 vs 2.96.
 Driver RSS 91 MB vs 1.6 GB (the models live in the server: RTF ≈ 0.7–0.8 on 2 CPU threads, 3.6 GB RSS).
 
-## Options and their measured cost (5 AMI windows, server repo `research/INTEGRATION.md` §8)
+## Options and their measured cost (5 AMI windows, server repo `research/archive/INTEGRATION.md` §8)
 
 | option | effect | cost |
 |---|---|---|
@@ -383,7 +389,7 @@ user channel only: 1330 / 1500 ms and missed@3s 23 % vs 1350 / 3080 ms and 36 %.
 models live in the server: RTF ≈ 0.7–0.8 on 2 CPU threads, 3.6 GB RSS). The local stack's first partial arrives
 3.4–11.3 s after speech onset (StreamAdapter + Whisper); ours 0.8–1.2 s.
 
-## Options and their measured cost (5 AMI windows, server repo `research/INTEGRATION.md` §8)
+## Options and their measured cost (5 AMI windows, server repo `research/archive/INTEGRATION.md` §8)
 
 | option | effect | cost |
 |---|---|---|

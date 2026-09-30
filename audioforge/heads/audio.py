@@ -4,7 +4,7 @@
                         trained with the arrival-order *sort loss* (+ optional PIL,
                         exhaustive over permutations, so skipped with a warning above 8 speakers).
 * SpeakerHead         - TitaNet-style attentive-statistics pooling + AAM-softmax.
-* LanguageHead        - causal spoken-language ID: running attentive-stats posterior (research/LID.md).
+* LanguageHead        - causal spoken-language ID: running attentive-stats posterior (research/archive/LID.md).
 * FrameHead           - per-frame classifier (VAD, end-of-utterance, ...).
 * CodecTokenHead      - NEW: predicts FSQ codec tokens per encoder frame. The
                         FastConformer frame rate (80 ms = 12.5 Hz) equals NVIDIA's
@@ -64,7 +64,7 @@ class SortformerHead(Head):
                  out_pre_relu: bool = False, distill: dict | None = None):
         super().__init__()
         self.num_spks, self.pil_weight = num_spks, pil_weight
-        # distill: {key: diar_teacher, weight: w} (research/DIARIZATION_FIX.md section 5): the same PIL + sorted-BCE
+        # distill: {key: diar_teacher, weight: w} (research/archive/DIARIZATION_FIX.md section 5): the same PIL + sorted-BCE
         # loss against a cached teacher diarizer's per-frame posteriors under batch[key] (T, S_t), mixed with the
         # ground-truth loss as (1 - w) * gt + w * teacher; None (default) leaves the head and its loss unchanged
         self.distill = dict(distill) if distill else None
@@ -72,7 +72,7 @@ class SortformerHead(Head):
         # enc[:, :L] (L ~ U[prefix_min, T]); arrival order is causal, so the cropped targets re-sorted are
         # the prefix's correct labels. Needed when the offline head is re-run on growing prefixes
         # (heads/turn.py streaming_diar_act): trained on whole episodes only, it outputs ~0 activity on
-        # short prefixes (research/TURN_ABLATION.md, A).
+        # short prefixes (research/archive/TURN_ABLATION.md, A).
         self.prefix_prob, self.prefix_min = prefix_prob, prefix_min
         # pos_emb: sinusoidal positions over the transformer input sequence. Streaming Sortformer
         # (audioforge/streaming_diar.py) relies on it: the arrival-order speaker cache is laid out
@@ -197,7 +197,7 @@ class AttentiveStatsPool(nn.Module):
 
 class SpeakerHead(Head):
     """Attentive-stats pooling -> ``emb_dim`` unit vector; trained with AAM-softmax over ``num_speakers`` ids
-    (``batch["speaker"]``) and / or distilled onto a teacher embedding (research/SPK_HEAD.md):
+    (``batch["speaker"]``) and / or distilled onto a teacher embedding (research/archive/SPK_HEAD.md):
     ``distill: {target: spk_teacher, weight: 1.0}`` adds ``weight * mean(1 - cos(student, teacher))`` against
     ``batch[target]`` (any dimension: an ``emb_dim``-d unit vector is expected, e.g. TitaNet-L's 192-d) and
     makes ``target`` the head's label key; ``distill.relational_weight`` adds the MSE between the student's and
@@ -264,7 +264,7 @@ class SpeakerHead(Head):
 
 # --------------------------------------------------------------------------- spoken language identification
 class LanguageHead(Head):
-    """Causal spoken-language ID (research/LID.md): per-frame MLP -> attentive-statistics pooling over *all frames so
+    """Causal spoken-language ID (research/archive/LID.md): per-frame MLP -> attentive-statistics pooling over *all frames so
     far* -> classifier, i.e. a running posterior that can be read after any encoder frame.
 
     The pooling weights are per frame and per channel, ``w_t = exp(5 tanh(a(h_t) / 5))`` (bounded, so the running sums
@@ -283,7 +283,7 @@ class LanguageHead(Head):
                  context: int = 0, rnn: int = 0):
         super().__init__()
         self.num_languages, self.min_frames = num_languages, int(min_frames)
-        # ``context`` > 0 (research/LID.md fix pass): a causal depthwise-separable conv over the last ``context`` + 1
+        # ``context`` > 0 (research/archive/LID.md fix pass): a causal depthwise-separable conv over the last ``context`` + 1
         # per-frame features (residual), so each pooled frame sees a short left context; streaming carries the last
         # ``context`` frames. 0 = the original head (no extra tensors).
         self.context = int(context)

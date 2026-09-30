@@ -1,4 +1,4 @@
-# Conversational action tokens in the ASR vocabulary, run 2 (research/YIELD_TOKENS.md): SPEAKER-UNAWARE targets that
+# Conversational action tokens in the ASR vocabulary, run 2 (research/archive/YIELD_TOKENS.md): SPEAKER-UNAWARE targets that
 # mirror what a single-channel EOU model is trained on. <HOLD> = a >= 0.3 s pause inside one speaker's turn (the AMI
 # hesitation label), <YIELD> = the end of every speaker's turn (floor definition, datasets/ami.py), appended to NVIDIA's
 # 1024-piece BPE vocabulary (audioforge/vocab.py: ids 1024 / 1025, blank 1024 -> 1026, every other id and row

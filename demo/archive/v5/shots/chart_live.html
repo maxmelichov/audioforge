@@ -1,0 +1,35 @@
+<!doctype html><html><head><meta charset="utf-8"><link rel="stylesheet" href="common.css">
+<style>svg text { font-family: var(--font); }</style></head><body><script src="common.js"></script><script src="../../../v5/shots/numbers_b.js"></script><script src="charts_b.js"></script><script>
+// Live results on real phone calls (otoSpeech, user channel) inside the real Pipecat and LiveKit pipelines
+// (runs/e2e_final.json table "oto|user|<framework>|<system>" via numbers_b.js). audioforge = system C in the Pipecat
+// pipeline; Pipecat default = A, LiveKit default = B. Three shots, picked with params.frame: answers | interrupts | first.
+// Interruptions are compared with Pipecat's default only. TurnBench values are in the fine print only.
+const n = B.n, s = B.s, r = B.row, C = B.C;
+const FR = {
+  answers: { title: () => "Fewer unanswered turns", unit: " %", q: "unanswered",
+             take: () => `audioforge leaves ${s("live/oto/ours/unanswered")} % of turns unanswered; Pipecat's default leaves ${s("live/oto/pipecat/unanswered")} %`,
+             sys: [["audioforge", "ours"], ["LiveKit default", "livekit"], ["Pipecat default", "pipecat"]] },
+  interrupts: { title: () => `Interrupts ${NB["live/cutins_less"].word} ${s("live/cutins_less")} % less than Pipecat's default`, unit: "", q: "cutins",
+                take: () => `audioforge talks over you ${s("live/oto/ours/cutins")} times a minute; Pipecat's default ${s("live/oto/pipecat/cutins")} times`,
+                sys: [["audioforge", "ours"], ["Pipecat default", "pipecat"]] },
+  first: { title: () => "Your words appear sooner", unit: " s", q: "first",
+           take: () => `Your first words show after ${s("live/oto/ours/first")} s with audioforge, ${s("live/oto/pipecat/first")} s with Pipecat's default`,
+           sys: [["audioforge", "ours"], ["Pipecat default", "pipecat"], ["LiveKit default", "livekit"]] },
+};
+const fill = { ours: C.ours, pipecat: C.pipecat, livekit: C.livekit };
+const key = () => (window.PARAMS && (window.PARAMS.frame || (window.PARAMS.params || {}).frame)) || "answers";
+const frame = () => FR[key()];
+const tb = { unanswered: () => `TurnBench calls: ${s("live/turnbench/ours/unanswered")} % vs ${s("live/turnbench/livekit/unanswered")} % vs ${s("live/turnbench/pipecat/unanswered")} %`,
+             cutins: () => `${s("live/oto/cutins_less")} % fewer here, ${s("live/turnbench/cutins_less")} % on TurnBench calls (${s("live/turnbench/ours/cutins")} vs ${s("live/turnbench/pipecat/cutins")}); LiveKit not compared`,
+             first: () => `TurnBench calls: ${s("live/turnbench/ours/first")} s vs ${s("live/turnbench/pipecat/first")} s vs ${s("live/turnbench/livekit/first")} s` };
+const what = { unanswered: "not answered = no agent reply within 3 s of a turn end", cutins: "an interruption = the agent starts talking while you speak", first: "median time from speech onset to the first words on screen" };
+panelChart({
+  title: () => frame().title(),
+  takeaway: () => frame().take(),
+  setup: () => "Same pipelines, out-of-the-box settings, real phone calls",
+  panels: () => { const F = frame(); return [{ unit: F.unit, bh: S.sq ? 56 : 104, vsize: S.sq ? 120 : 128, lsize: S.sq ? 52 : 60, mode: S.sq ? "above" : "left",
+    rows: F.sys.map(([lab, k]) => r(lab, `live/oto/${k}/${F.q}`, { ours: k === "ours", fill: fill[k] })) }]; },
+  fine: () => `${n("live/oto/clips")} real phone calls (otoSpeech, ${n("live/oto/ends")} turn ends) played live at 1x, user channel; audioforge = system C in the Pipecat pipeline, Pipecat default = A, LiveKit default = B; ${what[frame().q]}; ${tb[frame().q]()} · runs/e2e_final.json`,
+  fineSq: () => `${n("live/oto/clips")} real phone calls, live; audioforge = system C in Pipecat; ${what[frame().q]} · runs/e2e_final.json`,
+});
+</script></body></html>
