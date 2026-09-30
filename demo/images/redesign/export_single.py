@@ -142,6 +142,63 @@ def v9(put, out):
     out["v9/vad/rel"]["raw"] = raw
 
 
+def v10(put, out):
+    """results_v10 (turn head v5, commit 21b55cb): card 1 turn-taking on speech to an agent (smart-turn's 399 public test
+    clips: audioforge --turn-preset assistant vs Pipecat smart-turn v3.2 + Silero), card 2 turn-taking on calls with
+    --turn-preset fast (v5) vs LiveKit (the same 109 turn ends as v8), cards 3-4 unchanged from v9. The served / final rows
+    research/TURN_V5.md quotes (runs/turn_v5.json "final"), cross-checked against the candidate rows they summarise.
+    Relative changes as in v9: from the printed (rounded) bar labels, each > 0 or the export stops. Every key is v10/...."""
+    tv = load("runs/turn_v5.json")
+    fin = tv["final"]["presets"]
+    assert tv["final"]["columns"]["assistant"].startswith("[accuracy %, EOT p50 ms, false fires on incomplete %]")
+    assert tv["final"]["columns"]["calls/ami"].startswith("[EOT p50 ms, p95 ms, FI %, missed %]")
+    # 1. assistant preset, smart-turn's 399 test clips (offline row = what TURN_V5.md's verdict quotes: 92.2 % / 292 ms / 5.4 %)
+    a = fin["assistant_v5_c5"]["assistant_offline"]
+    cand = tv["candidates"]["c5"]["scan_orig"]["assistant_acc90_fastest"]["asst"]
+    assert cand["acc"] == a[0] and cand["ff_inc"] == a[2] and abs(cand["p50"] - a[1]) <= 1, (cand, a)
+    base = "final > presets > assistant_v5_c5 > assistant_offline"
+    put("v10/asst/ours/acc", a[0], 0, "% of smart-turn's 399 test clips decided right (complete answered, incomplete not), audioforge --turn-preset assistant (turn head v5)",
+        "runs/turn_v5.json", base + " > [0]")
+    put("v10/asst/ours/eot", a[1], 0, "end-of-turn latency p50, ms, complete clips, --turn-preset assistant (not on the image)", "runs/turn_v5.json", base + " > [1]")
+    put("v10/asst/ours/ff", a[2], 0, "% of the 224 incomplete clips (unfinished sentences) answered anyway, --turn-preset assistant",
+        "runs/turn_v5.json", base + " > [2]")
+    ea = load("runs/eot_assistant.json")
+    pc = "Pipecat smart-turn v3.2 + Silero (defaults)"
+    put("v10/asst/pipecat/acc", ea["systems"][pc]["accuracy_pct"], 0, f"% of the 399 clips decided right, {pc}", "runs/eot_assistant.json", f"systems > {pc} > accuracy_pct")
+    put("v10/asst/pipecat/eot", ea["systems"][pc]["complete"]["eot_total_ms_p50"], 0, f"end-of-turn latency p50, ms, complete clips, {pc} (not on the image)",
+        "runs/eot_assistant.json", f"systems > {pc} > complete > eot_total_ms_p50")
+    put("v10/asst/pipecat/ff", ea["systems"][pc]["incomplete"]["false_fire_pct"], 0, f"% of the incomplete clips answered anyway, {pc}",
+        "runs/eot_assistant.json", f"systems > {pc} > incomplete > false_fire_pct")
+    assert tv["final"]["smartturn_test_399"] and ea["data"]["n"] == 399
+    put("v10/asst/n", ea["data"]["n"], 0, "smart-turn v3.2 public test clips (human_5_all), the same clips for both", "runs/eot_assistant.json", "data > n")
+    # 2. calls, --turn-preset fast (v5) vs LiveKit, the same 109 turn ends of runs/eot_latency.json (v8/calls/*)
+    c = fin["fast_v5_c5"]["calls"]
+    cc = tv["candidates"]["c5"]["scan_orig"]["fi25_no_cut_ami_free"]["calls"]
+    assert [cc["eot_total_ms_p50"], cc["eot_total_ms_p95"], cc["false_interruption_pct"], cc["missed_pct"]] == c, (cc, c)
+    assert cc["n_turns"] == out["v8/calls/n"]["value"]   # the same turn ends as LiveKit's row
+    base = "final > presets > fast_v5_c5 > calls"
+    put("v10/calls/ours/eot", c[0], 0, "end-of-turn latency p50, ms, calls (user's own channel), audioforge --turn-preset fast (turn head v5)", "runs/turn_v5.json", base + " > [0]")
+    put("v10/calls/ours/fi", c[2], 0, "false-interruption rate, % of user turns, calls, --turn-preset fast", "runs/turn_v5.json", base + " > [2]")
+    put("v10/calls/ours/miss", c[3], 1, "missed turn ends, % of turn ends, calls, --turn-preset fast (one decimal: 5.5 would print as 6)", "runs/turn_v5.json", base + " > [3]")
+    def sh(k):
+        return float(out[k]["shown"])
+    def rel(key, ours, other, lower, what, dec=0):
+        o, b = out[ours], out[other]
+        r = 100 * (1 - sh(ours) / sh(other)) if lower else 100 * (sh(ours) / sh(other) - 1)
+        raw = 100 * (1 - o["value"] / b["value"]) if lower else 100 * (o["value"] / b["value"] - 1)
+        assert r > 0 and raw > 0, (key, o["value"], b["value"])
+        f = f"1 - {o['shown']} / {b['shown']}" if lower else f"{o['shown']} / {b['shown']} - 1"
+        put(key, r, dec, f"% relative {'reduction' if lower else 'increase'}, {what}: {f} (bar labels); raw values = {raw:.2f}",
+            o["source"] + (" + " + b["source"] if b["source"] != o["source"] else ""),
+            f"1 - {ours}.shown / {other}.shown" if lower else f"{ours}.shown / {other}.shown - 1")
+        out[key]["raw"] = raw
+    rel("v10/asst/acc_rel", "v10/asst/ours/acc", "v10/asst/pipecat/acc", False, "accuracy on smart-turn's test clips, assistant preset vs Pipecat smart-turn")
+    rel("v10/asst/ff_rel", "v10/asst/ours/ff", "v10/asst/pipecat/ff", True, "false fires on unfinished sentences, assistant preset vs Pipecat smart-turn")
+    rel("v10/calls/eot_rel", "v10/calls/ours/eot", "v8/calls/livekit/eot", True, "end-of-turn latency p50 on calls, fast preset vs LiveKit")
+    rel("v10/calls/fi_rel", "v10/calls/ours/fi", "v8/calls/livekit/fi", True, "false interruptions on calls, fast preset vs LiveKit")
+    rel("v10/calls/miss_rel", "v10/calls/ours/miss", "v8/calls/livekit/miss", True, "missed turn ends on calls, fast preset vs LiveKit")
+
+
 def main():
     out = {}
 
@@ -317,6 +374,8 @@ def main():
     v8(put, out)
     # ---- results_v9 (the user's mock-up: paired bars, relative change per chart) ----
     v9(put, out)
+    # ---- results_v10 (turn head v5: assistant preset vs Pipecat smart-turn, fast preset vs LiveKit) ----
+    v10(put, out)
     (HERE / "numbers_single.json").write_text(json.dumps(out, indent=1))
     (HERE / "numbers_single.js").write_text("// generated by export_single.py from the run files; do not edit\nwindow.NS = " + json.dumps(out) + ";\n")
     for k, v in out.items():

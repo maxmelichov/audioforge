@@ -1,9 +1,9 @@
 # audioforge
 
-One frozen NVIDIA streaming speech model with five small heads: live words, voice activity, "is it the user?" and
+One frozen NVIDIA streaming speech model with six small heads: live words, voice activity, "is it the user?" and
 "is the turn over?" for a voice agent that talks to one known user, over one WebSocket.
 
-![architecture](demo/images/architecture_v8.png)
+![architecture](demo/images/architecture_v9.png)
 
 A 115M NVIDIA cache-aware FastConformer ([`stt_en_fastconformer_hybrid_large_streaming_multi`](docs/MODELS.md),
 frozen, 160 ms chunks) gives the words (RNNT). The heads read its layers ([`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md)):
@@ -13,7 +13,8 @@ frozen, 160 ms chunks) gives the words (RNNT). The heads read its layers ([`docs
 | VAD | layer 4 | 33K | is anyone speaking? |
 | speaker | layer 4 | 0.5M | a 192-number voice print |
 | TS-VAD | layer 4 + the stored print | 0.26M | is it the user or someone else? |
-| turn | a second, speaker-conditioned pass (GRU) | 0.32M | is the user's turn over? |
+| turn | a second, speaker-conditioned pass (GRU) | 0.32M | is the user's turn over? (`balanced`, `steady`) |
+| turn classifier v5 | layer 8 of the first pass + VAD / TS-VAD + the words so far, at each quiet frame | 2.5M | is the user's turn over? (`fast`, `assistant`) |
 | LID (optional) | layers 8-12 | 0.92M | which language? |
 
 ## What you get
@@ -22,7 +23,8 @@ frozen, 160 ms chunks) gives the words (RNNT). The heads read its layers ([`docs
 - **Voice activity** every 80 ms from the model's own VAD head. No Silero.
 - **Target speaker:** each frame and turn says whether the user or someone else is talking, from the user's stored
   voice print. No diarizer is loaded.
-- **Turn ends** (`turn_end`) from the `vad_head` rule: the VAD and turn heads together.
+- **Turn ends** (`turn_end`) from the `vad_head` rule: the VAD and turn heads together, or the v5 turn classifier
+  (`--turn-preset fast` / `assistant`).
 - **One model, plain PyTorch** (no NeMo), on CPU, Mac GPU (`--device mps`) or CUDA. Pipecat and LiveKit adapters.
 
 ## Quickstart
@@ -35,6 +37,8 @@ pip install -e ".[serve]"
 audioforge-download          # the 115M model + heads, sha256-checked, into ./models
 audioforge-serve             # single mode, ws://127.0.0.1:8765  (--device mps|cuda for a GPU)
 ```
+
+Turn presets: `--turn-preset balanced` (default) `| fast` (calls, turn head v5) `| steady | assistant` (speech to an agent).
 
 In a second terminal, stream the bundled 16 s two-party call ([`examples/audio/two_party_call_16s.wav`](examples/audio),
 otoSpeech, CC BY 4.0) with the user's stored print (`two_party_call_16s.voiceprint.json`):
@@ -81,7 +85,7 @@ small); Pipecat = Pipecat defaults (Silero + smart-turn v3 + Whisper small). Wha
 | missed turn ends | 7 % | 23 % | 25 % | [EOT_LATENCY](research/EOT_LATENCY.md) |
 | end-of-turn p50 / FI / missed with `--turn-preset fast` (turn head v5) | 547 ms / 25 % / 5.5 % | | | [TURN_V5](research/TURN_V5.md) |
 | **Meetings** (AMI, 200 turns) | | | | |
-| end-of-turn latency, p50 | 1326 ms | 1890 ms | 384 ms | [EOT_LATENCY](research/EOT_LATENCY.md) |
+| end-of-turn latency, p50 | 1326 ms | 1890 ms | 385 ms | [EOT_LATENCY](research/EOT_LATENCY.md) |
 | false interruptions | 11 % | 13 % | 28 % | [EOT_LATENCY](research/EOT_LATENCY.md) |
 | missed turn ends | 34 % | 68 % | 45 % | [EOT_LATENCY](research/EOT_LATENCY.md) |
 | **Speech directed at the agent** (smart-turn's 399 test clips, `--turn-preset assistant`) | | | | |
@@ -99,15 +103,19 @@ small); Pipecat = Pipecat defaults (Silero + smart-turn v3 + Whisper small). Wha
 Real-time streams per Mac process: 4 on CPU, 5 on MPS; CPU and MPS give identical events
 ([MPS_115M](research/MPS_115M.md)). The VAD head was trained on AMI labels, so its AMI F1 is in-domain.
 
-![results](demo/images/results_v9.png)
+![results](demo/images/results_v10.png)
 
 ## Where it loses
 
 - **Words are those of a 115M streaming model.** On live calls LiveKit's default (Whisper small) transcribes better,
   23.2 vs 19.3 % WER. For a meeting-grade transcript use room mode with Parakeet-TDT v3.
-- **Not the fastest turn end by default.** LiveKit answers calls sooner (567 vs 956 ms p50) and Pipecat answers
-  meetings sooner (384 vs 1326 ms), at more false interruptions. `--turn-preset fast` (turn head v5) answers calls in
-  547 ms at 25 % false interruptions. In meetings audioforge still misses 34 % of turn ends.
+- **Not the fastest turn end by default.** The default preset (`balanced`) answers calls in 956 ms p50; LiveKit
+  answers sooner (567 ms) and Pipecat answers meetings sooner (385 vs 1326 ms), at more false interruptions.
+  `--turn-preset fast` (turn head v5) answers calls in 547 ms at 25 % false interruptions, but is not the default: it
+  misses the ship bar on false interruptions (25 vs 20 %). In meetings audioforge still misses 34 % of turn ends.
+- **Speech to an agent: smart-turn is faster.** On smart-turn's 399 test clips, Pipecat smart-turn answers finished
+  sentences about 80 ms sooner (211 vs 292 ms p50 with `--turn-preset assistant`), though it answers 40 % of the
+  unfinished ones (audioforge 5 %).
 
 ## Modes and the voice sample
 

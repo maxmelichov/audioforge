@@ -1,3 +1,62 @@
+# results_v10.png and architecture_v9.png: turn head v5
+
+`results_v10.png` (and `_square`, `_notext`, `_square_notext`) is results_v9 in the same style (2 × 2 white cards,
+paired vertical bars, a green bracket with the relative change, footnotes, footer), updated for turn head v5 (commit
+21b55cb, research/TURN_V5.md). The meetings card is replaced by a card on speech to an agent, and the calls card now
+uses `--turn-preset fast` and shows end-of-turn latency as a third bar pair: it is a near-tie with LiveKit now, so it
+is shown. Cards 3 and 4 are unchanged from v9.
+
+**How the numbers get on.** As in v9: every bar value is a key in `redesign/numbers_single.json`, written by
+`export_single.py` from `runs/*.json`. The new keys are `v10/...` (function `v10()`); the LiveKit bars reuse the
+`v8/calls/livekit/*` keys (`runs/eot_latency.json`, the same 109 turn ends). The changes are computed from the printed
+bar labels; the export stops if one is not an improvement. `v10()` also cross-checks the `final` summary rows of
+`runs/turn_v5.json` against the candidate rows they summarise (`candidates > c5 > scan_orig > ...`), and that the
+calls row has the same 109 turn ends as LiveKit's.
+
+| Card | Chart | audioforge | Grey bar | Change (raw) | Source |
+|---|---|---|---|---|---|
+| 1. Turn-taking: speech to an agent | Accuracy, % of clips judged right | 92 (92.2) | Pipecat smart-turn 70 (69.7) | ↑ 31% (32.3) | `runs/turn_v5.json` `final > presets > assistant_v5_c5 > assistant_offline`; `runs/eot_assistant.json` `systems > Pipecat smart-turn v3.2 + Silero (defaults) > accuracy_pct` |
+| | False fires, % of unfinished sentences answered | 5 (5.4) | Pipecat smart-turn 40 (40.2) | ↓ 88% (86.6) | same rows, `[2]` / `incomplete > false_fire_pct` |
+| 2. Turn-taking on calls | End-of-turn latency, median ms | 547 | LiveKit 567 | ↓ 4% (3.5) | `runs/turn_v5.json` `final > presets > fast_v5_c5 > calls`; `runs/eot_latency.json` `table > two_party_user` |
+| | False interruptions, % of your turns | 25 (24.8) | LiveKit 27 (26.6) | ↓ 7% (6.8) | same |
+| | Missed turn ends, % of turn ends | 5.5 | LiveKit 23 (22.9) | ↓ 76% (76.0) | same |
+| 3. Your words when others talk | unchanged from v9 | 40 | no speaker filter 63 | ↓ 37% | `runs/tswer_live.json` @ fe28a9e |
+| 4. Voice activity detection | unchanged from v9 | 0.951 | NVIDIA MarbleNet 0.937 | ↑ 1.5% | `runs/vad_auc.json` |
+
+- **Card 1: Turn-taking: speech to an agent.** audioforge runs `--turn-preset assistant` (the v5 classifier after
+  240 ms of energy-or-VAD quiet, P > 0.9, ~3 s timer). The grey bar is Pipecat smart-turn v3.2 + Silero at its
+  defaults. Footnote: "smart-turn's 399 public test clips · same clips for both". Accuracy counts a complete clip
+  answered and an incomplete clip not answered; a false fire is an incomplete clip (a sentence cut off mid-way)
+  answered anyway. The values are the offline row TURN_V5.md quotes (92.2 % / 292 ms / 5.4 %); the served row is 93.0 %
+  / 317 ms / 5.4 %. Not shown: smart-turn answers complete clips faster (211 vs 292 ms p50).
+- **Card 2: Turn-taking on calls.** `--turn-preset fast` (v5 classifier after 80 ms of VAD < 0.6, re-asked every quiet
+  frame, P > 0.7, 640 ms fallback) against LiveKit EnglishModel + Silero at its defaults. Footnote: "109 turn ends,
+  user's own channel, 32 two-party calls". "lower is better" is said once, on the title row (wide) or legend row
+  (square). Missed turn ends print with one decimal (5.5): rounding to 6 would misstate the value; the LiveKit bar
+  keeps v9's 23. The default preset (balanced) is still 956 ms on these calls; the card says "Fast preset".
+- **Layout.** Row 1 is split 47 / 53 (wide) and 44 / 56 (square) because the calls card carries three charts. Wide
+  cards put names under the bars (bars at 25 % / 77 % of the plot so "Pipecat smart-turn" fits); square cards with two
+  or more charts use the legend row, as in v9. The square card-1 headers are "Accuracy, %" / "False fires, %" with the
+  direction as the unit line.
+- **Checks.** `render.py r10`: the v9 checks (values, bar labels and heights, each change = formula over the printed
+  labels, arrows, plain line, footnote, tWER labelling) with latency words allowed, plus the card set (2 / 3 / 1 / 1
+  charts) and exactly the seven expected changes. Both sizes pass (`redesign/checks.json`).
+
+## architecture_v9.png
+
+architecture_v8 with turn head v5. Verified in `audioforge/server/streams.py` (`ASRStream.attach_seg` / `seg_prob`,
+the segment classifier's inputs: `hid[block - 1]` of the first run, served VAD, TS-VAD P(user) / P(other), the RNNT
+token count and tokens), `audioforge/heads/turn_seg.py`, `audioforge/server/constants.py` (`TURN_PRESETS`) and
+`runs/turn_v5.json` (`final > shipped_model`: c5, block 8, 2 455 301 parameters).
+- **The GRU turn head (0.32M) stays**: `balanced` (the default) still ends turns at VAD quiet ≥ 160 ms + turn head
+  ≥ 0.99, and the head still runs on the second pass under every preset.
+- **The turn-end box** reads two lines: "VAD quiet ≥ 160 ms + turn head ≥ 0.99" / "or classifier at each quiet frame
+  (v5, 2.5M, layer 8 + words)" (square: three lines). The classifier is not drawn as a separate box or wire; the
+  annotation names its inputs.
+- **Subtitle and footer**: "Six small heads"; "109M frozen NVIDIA encoder · 6 small heads · no Silero · no diarizer"
+  (VAD, speaker, TS-VAD, turn GRU, turn classifier v5, LID).
+- Square: the voice-print annotation moved to the left of its stem so the taller turn-end box does not overlap it.
+
 # results_v9.png: the mock-up version
 
 `results_v9.png` (and `_square`, `_notext`, `_square_notext`) follows the user's mock-up. It has four white cards in a

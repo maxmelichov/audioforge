@@ -6,6 +6,15 @@ versions follow [Semantic Versioning](https://semver.org/). Every measured numbe
 
 ## [Unreleased]
 
+### Changed (2026-09-30): public images for turn head v5
+- `demo/images/results_v10.png` (+ `_square`, `_notext`): the v9 style with a speech-to-an-agent card
+  (`--turn-preset assistant` vs Pipecat smart-turn on smart-turn's 399 test clips: 92 vs 70 % accuracy, 5 vs 40 %
+  false fires) and the calls card on `--turn-preset fast` vs LiveKit (547 vs 567 ms p50, 25 vs 27 % false
+  interruptions, 5.5 vs 23 % missed). Numbers from `runs/turn_v5.json`, `runs/eot_assistant.json`,
+  `runs/eot_latency.json` via `demo/images/redesign/export_single.py` (`v10/*` keys); `render.py r10` checks.
+- `demo/images/architecture_v9.png`: the turn-end box names both deciders (GRU turn head under `balanced`, the v5
+  classifier under `fast` / `assistant`); six heads. README points at both.
+
 ### Added (2026-09-30): turn head v5, served heads v0.3, `--turn-preset fast` (v5) / `steady` / `assistant`
 - **Turn head v5** (`audioforge/heads/turn_seg.py`, research/TURN_V5.md): a smart-turn style segment classifier on
   the frozen encoder.

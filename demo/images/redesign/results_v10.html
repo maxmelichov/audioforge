@@ -1,0 +1,170 @@
+<!doctype html><html><head><meta charset="utf-8"><link rel="stylesheet" href="style.css">
+<style>
+:root { --page: #F7F8FA; --cardline: #E2E5E9; --grid: #ECEEF1; --axis: #9AA3AE; --good: #0A5C2B; --ink3: #3F4753; }
+#stage { background: var(--page); }
+.h9 { position: absolute; font-weight: 800; letter-spacing: -0.028em; line-height: 1.05; color: var(--ink); white-space: nowrap; }
+.s9 { position: absolute; font-size: 26px; line-height: 1.25; color: var(--ink3); }
+.f9 { position: absolute; font-size: 22px; line-height: 1.3; color: var(--ink3); }
+.card { position: absolute; background: #FFFFFF; border: 1.5px solid var(--cardline); border-radius: 18px; box-shadow: 0 1px 3px rgba(20, 30, 45, 0.05); }
+.ct { position: absolute; font-weight: 800; letter-spacing: -0.02em; color: var(--ink); white-space: nowrap; line-height: 1.1; }
+.plain { position: absolute; font-size: 22px; color: var(--ink2); line-height: 1.25; }
+.fn { position: absolute; font-size: 22px; color: var(--ink2); line-height: 1.25; }
+.ph { position: absolute; font-size: 22px; font-weight: 700; color: var(--ink); line-height: 1.15; text-align: center; }
+.pu { position: absolute; font-size: 22px; color: var(--ink2); line-height: 1.15; text-align: center; }
+.tick { position: absolute; font-size: 22px; color: var(--ink2); line-height: 1; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.xl { position: absolute; font-size: 22px; color: var(--ink2); line-height: 1.1; white-space: nowrap; }
+.xl.us { color: var(--ink); font-weight: 700; }
+.val { position: absolute; font-size: 24px; color: var(--ink2); line-height: 1; white-space: nowrap; }
+.val.us { color: var(--ink); font-weight: 800; }
+.dl { position: absolute; font-size: 24px; font-weight: 800; color: var(--good); line-height: 1; white-space: nowrap; }
+.lg { position: absolute; font-size: 22px; color: var(--ink2); line-height: 1.1; white-space: nowrap; }
+.lg b { color: var(--ink); }
+.sw { display: inline-block; width: 18px; height: 18px; border-radius: 4px; vertical-align: -2px; margin-right: 8px; }
+</style></head><body><div id="stage"></div><script src="numbers_single.js"></script><script>
+// results_v10 = results_v9 with turn head v5 (commit 21b55cb): card 1 speech to an agent (--turn-preset assistant vs Pipecat
+// smart-turn, smart-turn's 399 test clips), card 2 calls with --turn-preset fast vs LiveKit, now with end-of-turn latency
+// as a bar pair (a near-tie); cards 3-4 unchanged. Cards with 2+ charts use the legend row (no x labels). Numbers are
+// v10/* and v8/* keys (export_single.py v10()); render.py r10 runs the v9 checks with latency allowed.
+// results_v9: the user's mock-up. Four white cards, each a title, one plain-English line, and one or two paired vertical
+// bar charts (audioforge orange vs ONE grey competitor) with a y-axis, a value on every bar and a green bracket with the
+// relative change. Every number is data-key="ns:..." from numbers_single.json (export_single.py, from runs/*.json); the
+// relative changes are v9/* keys computed there from the raw file values. render.py r9 checks values, bar labels, bar
+// heights, that each chart's change equals the formula over the file values, and the label rules.
+const st = document.getElementById("stage"); let svg = [];
+const css = k => getComputedStyle(document.documentElement).getPropertyValue(k).trim();
+const E = k => { const e = NS[k]; if (!e) throw new Error("numbers_single has no " + k); return e; };
+const s = k => E(k).shown ?? String(E(k).value), v = k => E(k).value;
+const N = k => `<span data-key="ns:${k}">${s(k)}</span>`;
+function el(cls, html, x, y, parent = st) { const e = document.createElement("div"); e.className = cls; e.innerHTML = html;
+  Object.assign(e.style, { left: x + "px", top: y + "px" }); parent.appendChild(e); return e; }
+function place(e, x, y, ax = 0, ay = 0) { e.style.left = (x - ax * e.offsetWidth) + "px"; e.style.top = (y - ay * e.offsetHeight) + "px"; return e; }
+function wrap(e, w) { Object.assign(e.style, { whiteSpace: "normal", width: w + "px" }); return e; }
+function line(x1, y1, x2, y2, c, w) { svg.push(`<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="${c}" stroke-width="${w}" stroke-linecap="round"/>`); }
+const GREY = "#C8CDD4";
+
+// Axis: a free axis starts at 0 and ends at the first tick above 1.12 x the taller bar (ticks >= 30 px apart); VAD uses the
+// fixed 0.8-1.0. Above the taller bar sit its value, the bracket and the change (STACK px); what does not fit inside the plot
+// is taken from the plot's height and left as room between the header and the plot.
+// Square single-chart cards set the change on the bracket line (knockout: the span is wide enough), a shorter stack.
+const STACK = 64, STACK_KNOCK = 50;
+function axis(spec, vals, A, stack) {
+  const mx = Math.max(...vals), fit = (lo, hi) => { const f = (mx - lo) / (hi - lo), ph = Math.min(A - 8, (A - stack) / f); return [ph, A - ph]; };
+  if (spec.domain) return [...spec.domain, ...fit(spec.domain[0], spec.domain[1])];
+  for (const step of [1, 2, 5, 10, 20, 25, 50, 100, 200, 250, 500]) { if (step < mx / 6) continue; const hi = Math.ceil(mx * 1.12 / step) * step, [ph, room] = fit(0, hi);
+    if (ph * step / hi >= 30) return [0, hi, step, ph, room]; }
+  throw new Error("no axis for " + spec.name);
+}
+const fmt = (t, step) => step < 1 ? t.toFixed(1) : String(Math.round(t));
+
+// one paired chart in card c at (x, y), w x h. spec: name, unit, lower, ours key, other {label, key}, rel key, domain?
+function chart(c, x, y, w, h, spec, o) {
+  const hn = wrap(el("ph", spec.name, x, y, c), w); hn.dataset.metric = "1";
+  const hu = wrap(el("pu", spec.unit, x, y + hn.offsetHeight, c), w);
+  const hdr = o.hdr ?? (hn.offsetHeight + hu.offsetHeight);
+  const xlH = o.legend ? 14 : 32, pb = y + h - xlH, A = pb - (y + hdr + 6);
+  let [lo, hi, step, ph] = axis(spec, [v(spec.ours), v(spec.other.key)], A, o.knock ? STACK_KNOCK : STACK);
+  if (o.ph) ph = Math.min(ph, o.ph);   // the charts of one card share one plot height (the smaller), so their axes line up
+  if (o.probe) return ph;
+  const pt = pb - ph;
+  const ticks = []; for (let t = lo; t <= hi + 1e-9; t += step) ticks.push(t);
+  const tl = ticks.map(t => el("tick", fmt(t, step), 0, 0, c)), tw = Math.max(...tl.map(e => e.offsetWidth)) + 12;
+  const px0 = x + tw, px1 = x + w - 4, pw = px1 - px0;
+  tl.forEach((e, i) => { const yy = pb - ph * (ticks[i] - lo) / (hi - lo); place(e, px0 - 12, yy, 1, 0.5);
+    if (i) line(px0, yy, px1, yy, css("--grid"), 1.5); });
+  line(px0, pt - 4, px0, pb, css("--axis"), 1.5); line(px0, pb, px1, pb, css("--axis"), 1.5);
+  const bw = Math.min(o.bw, pw * 0.36), cx = o.legend ? [px0 + pw * 0.27, px0 + pw * 0.77] : o.n >= 2 ? [px0 + pw * 0.25, px0 + pw * 0.77] : [px0 + pw * 0.29, px0 + pw * 0.73];
+  const bars = [[spec.ours, "us", "audioforge"], [spec.other.key, "base", spec.other.label]], tops = [];
+  bars.forEach(([k, kind, lab], i) => {
+    const bh = ph * (v(k) - lo) / (hi - lo);
+    svg.push(`<rect x="${cx[i] - bw / 2}" y="${pb - bh}" width="${bw}" height="${bh}" rx="3" fill="${kind === "us" ? css("--ours") : GREY}"/>`);
+    window.BARS.push({ key: k, value: v(k), h: bh, full: ph, lo, hi });
+    const vl = el("val" + (kind === "us" ? " us" : ""), N(k), 0, 0, c); vl.dataset.barval = "1";
+    place(vl, cx[i], pb - bh - 4, 0.5, 1); tops.push(pb - bh - 4 - vl.offsetHeight);
+    if (!o.legend) { const xl = el("xl" + (kind === "us" ? " us" : ""), lab, 0, 0, c); place(xl, cx[i], pb + 6, 0.5, 0); }
+  });
+  // the bracket: legs up from above each value, joined above the higher one, the relative change on top
+  const yb = Math.min(...tops) - 8, g = css("--good");
+  line(cx[0], tops[0] - 2, cx[0], yb, g, 2); line(cx[1], tops[1] - 2, cx[1], yb, g, 2); line(cx[0], yb, cx[1], yb, g, 2);
+  const d = el("dl", `${spec.lower ? "↓" : "↑"} ${N(spec.rel)}%`, 0, 0, c); d.dataset.rel = spec.rel;
+  d.dataset.ours = spec.ours; d.dataset.other = spec.other.key; d.dataset.lower = spec.lower ? "1" : "0";
+  if (o.knock) { Object.assign(d.style, { background: "#FFFFFF", padding: "0 10px" }); place(d, (cx[0] + cx[1]) / 2, yb, 0.5, 0.5); }
+  else place(d, (cx[0] + cx[1]) / 2, yb - 4, 0.5, 1);
+  window.CHARTS++;
+  return hdr;
+}
+
+const CARDS = {
+  asst: { title: "Turn-taking: speech to an agent", plain: sq => sq ? "Assistant preset: right far more often." : "Assistant preset: right more often, rarely answers a sentence mid‑way.",
+    fn: () => `smart‑turn’s ${N("v10/asst/n")} public test clips · same clips for both`, other: "Pipecat smart‑turn",
+    charts: sq => [
+      { name: sq ? "Accuracy, %" : "Accuracy (higher is better)", unit: sq ? "higher is better" : "% of clips judged right", lower: false, domain: [0, 100, 50],
+        ours: "v10/asst/ours/acc", other: { label: "Pipecat smart‑turn", key: "v10/asst/pipecat/acc" }, rel: "v10/asst/acc_rel" },
+      { name: sq ? "False fires, %" : "False fires (lower is better)", unit: sq ? "lower is better" : "% of unfinished sentences", lower: true,
+        ours: "v10/asst/ours/ff", other: { label: "Pipecat smart‑turn", key: "v10/asst/pipecat/ff" }, rel: "v10/asst/ff_rel" }] },
+  calls: { title: "Turn-taking on calls", plain: sq => sq ? "Fast preset: as fast as LiveKit, fewer misses." : "Fast preset: as quick as LiveKit, fewer cut-offs, far fewer missed turn ends.",
+    fn: () => `${N("v8/calls/n")} turn ends, user’s own channel, ${N("v8/calls/sessions")} two‑party calls`, other: "LiveKit", allLower: true,
+    charts: sq => [
+      { name: sq ? "Latency" : "End-of-turn latency", unit: sq ? "median ms" : "median, ms", lower: true,
+        ours: "v10/calls/ours/eot", other: { label: "LiveKit", key: "v8/calls/livekit/eot" }, rel: "v10/calls/eot_rel" },
+      { name: "False interruptions", unit: sq ? "% of turns" : "% of your turns", lower: true,
+        ours: "v10/calls/ours/fi", other: { label: "LiveKit", key: "v8/calls/livekit/fi" }, rel: "v10/calls/fi_rel" },
+      { name: "Missed turn ends", unit: sq ? "% of ends" : "% of turn ends", lower: true,
+        ours: "v10/calls/ours/miss", other: { label: "LiveKit", key: "v8/calls/livekit/miss" }, rel: "v10/calls/miss_rel" }] },
+  twer: { title: "Your words when others talk", plain: "Lower WER — fewer other people’s words transcribed as yours.",
+    fn: () => `${N("v8/twer/calls/n")} calls, both voices in one channel`,
+    charts: sq => [{ name: sq ? "Target-speaker WER (lower is better)" : "Target-speaker WER", unit: sq ? "words wrong per 100 of yours" : "words wrong per 100 of yours (lower is better)", lower: true,
+      ours: "v8/twer/calls/ours", other: { label: "no speaker filter", key: "v8/twer/calls/none" }, rel: "v9/twer/rel" }] },
+  vad: { title: "Voice activity detection", plain: "Higher F1 — better balance of missed and false speech.",
+    fn: () => "AMI meetings, threshold 0.5",
+    charts: sq => [{ name: sq ? "F1 score (higher is better)" : "F1 score", unit: sq ? "" : "higher is better", lower: false, domain: [0.8, 1.0, 0.1],
+      ours: "v8/vad/ours/f1", other: { label: "NVIDIA MarbleNet", key: "v8/vad/marblenet/f1" }, rel: "v9/vad/rel" }] },
+};
+const FOOT = () => `Pipecat ${N("version/pipecat")} / LiveKit Agents ${N("version/livekit")} defaults · turn detectors replayed without waiting for their speech-to-text (in their favour) · ` +
+  `word accuracy is that of a 115M streaming model: ${N("v8/wer/libri/ours")}&nbsp;% WER on LibriSpeech, ${N("v8/wer/live/ours")}&nbsp;% on live calls (LiveKit default ${N("v8/wer/live/livekit")}&nbsp;%)`;
+
+function card(k, x, y, w, h, sq) {
+  const C = CARDS[k], c = el("card", "", x, y); Object.assign(c.style, { width: w + "px", height: h + "px" }); c.dataset.panel = k;
+  const P = sq ? 20 : 30, iw = w - 2 * P, T = sq ? 14 : 18;
+  const t = el("ct", C.title, P, T, c); t.style.fontSize = (sq ? 25 : 30) + "px";
+  const p = wrap(el("plain", typeof C.plain === "function" ? C.plain(sq) : C.plain, P, T + t.offsetHeight + 4, c), iw); p.dataset.plain = "1";
+  const f = wrap(el("fn", C.fn(), P, 0, c), iw); f.style.top = (h - (sq ? 12 : 14) - f.offsetHeight) + "px";
+  let top = p.offsetTop + p.offsetHeight + (sq ? 8 : 10);
+  const charts = C.charts(sq), n = charts.length, two = n >= 2, legend = sq && two;
+  if (C.allLower && !legend) place(el("lg", "lower is better", 0, 0, c), P + iw, t.offsetTop + t.offsetHeight - 3, 1, 1);   // wide: said once, on the title row
+  if (legend) { const lg = el("lg", `<span class="sw" style="background:${css("--ours")}"></span><b>audioforge</b>&nbsp;&nbsp;&nbsp;<span class="sw" style="background:${GREY}"></span>${C.other}`, P, top, c);
+    if (C.allLower) place(el("lg", "lower is better", 0, 0, c), P + iw, top, 1, 0);   // said once when it holds for every chart
+    top += lg.offsetHeight + 4; }
+  const bot = f.offsetTop - (sq ? 8 : 10), gap = n >= 3 ? (sq ? 12 : 30) : (sq ? 20 : 44);
+  const cw = two ? (iw - gap * (n - 1)) / n : Math.min(iw, sq ? iw : 560), x0 = two ? P : P + (iw - cw) / 2;
+  // shared header height so the two plots line up
+  let hdr = 0; charts.forEach(sp => { const a = wrap(el("ph", sp.name, 0, 0, c), cw), b = wrap(el("pu", sp.unit, 0, 0, c), cw); hdr = Math.max(hdr, a.offsetHeight + b.offsetHeight); a.remove(); b.remove(); });
+  const O = { hdr, legend, n, knock: sq && !two, bw: n >= 3 ? (sq ? 40 : 72) : (sq ? 76 : 118) }, probe = document.createElement("div"); c.appendChild(probe);
+  O.ph = Math.min(...charts.map((sp, i) => chart(probe, x0 + i * (cw + gap), top, cw, bot - top, sp, { ...O, probe: true }))); probe.remove();
+  charts.forEach((sp, i) => chart(c, x0 + i * (cw + gap), top, cw, bot - top, sp, O));
+  const sv = document.createElementNS("http://www.w3.org/2000/svg", "svg"); sv.setAttribute("width", w - 4); sv.setAttribute("height", h - 4);
+  Object.assign(sv.style, { position: "absolute", left: 0, top: 0, overflow: "visible" }); sv.innerHTML = svg.join(""); svg = []; c.prepend(sv);
+  return c;
+}
+function build(W, H) {
+  Object.assign(st.style, { width: W + "px", height: H + "px" }); st.innerHTML = ""; svg = [];
+  window.BARS = []; window.CHARTS = 0;
+  const M = 64, sq = H / W > 0.9;
+  const h1 = el("h9", "audioforge: higher quality, fewer mistakes", M, M); h1.style.fontSize = (sq ? 44 : 54) + "px"; h1.style.top = (M + 6) + "px";
+  const sub = wrap(el("s9", "Standard evaluation against LiveKit and Pipecat models, same audio for every system.", M, 0), W - 2 * M);
+  if (sq) sub.style.fontSize = "23px";
+  place(sub, M, h1.offsetTop + h1.offsetHeight + (sq ? 4 : 6));
+  const f = wrap(el("f9 foot", FOOT(), M, 0), W - 2 * M); f.style.top = (H - M - f.offsetHeight) + "px";
+  const top = sub.offsetTop + sub.offsetHeight + (sq ? 14 : 18), bot = f.offsetTop - (sq ? 12 : 14);
+  const gx = sq ? 16 : 30, gy = 14, cw = (W - 2 * M - gx) / 2, r1 = sq ? 0.535 : 0.5;   // square: the turn cards carry more text lines, so row 1 is taller
+  const ch = [(bot - top - gy) * r1, (bot - top - gy) * (1 - r1)];
+  const wa = (W - 2 * M - gx) * (sq ? 0.44 : 0.47), wc = W - 2 * M - gx - wa;   // row 1: the calls card has three charts, so it is wider
+  card("asst", M, top, wa, ch[0], sq); card("calls", M + wa + gx, top, wc, ch[0], sq);
+  [["twer", 0, 1], ["vad", 1, 1]].forEach(([k, i, j]) => card(k, M + i * (cw + gx), top + ch[0] + gy, cw, ch[j], sq));
+  window.BARCOUNT = { bars: window.BARS.length, labels: st.querySelectorAll("[data-barval]").length };
+  if (new URLSearchParams(location.search).get("notext")) notext();
+}
+// removal test: hide the subtitle, plain lines, footnotes and footer; titles, chart headers, axes, bar values and changes stay
+function notext() { const s_ = document.createElement("style"); s_.textContent = "#stage .s9, #stage .plain, #stage .fn, #stage .foot { color: transparent !important; } /* transparent !important */"; document.head.appendChild(s_); }
+window.build = build; window.notext = notext;
+const q = new URLSearchParams(location.search); if (q.get("w")) build(+q.get("w"), +q.get("h"));
+</script></body></html>

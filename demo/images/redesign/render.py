@@ -41,8 +41,10 @@ JOBS = {
     "v8": [("arch_v8.html", "v8", "architecture_v8")],
     "r8": [("results_v8.html", "grid", "results_v8")],
     "r9": [("results_v9.html", "grid", "results_v9")],
+    "r10": [("results_v10.html", "grid", "results_v10")],
+    "v9": [("arch_v9.html", "v9", "architecture_v9")],
 }
-FINAL = {"results_v9"}   # also copied to $DEMO_OUT/images (full size) and demo/images (half size)
+FINAL = {"results_v9", "results_v10", "architecture_v9"}   # also copied to $DEMO_OUT/images (full size) and demo/images (half size)
 # v8 content rules (the user's): standard metric names only, no home-made names, 115M model only
 BANNED_V8 = ["dead air", "cut-in", "cut in", "cutin", "first words", "unanswered", "0.6b", "0.6 b", "parakeet", "talks over",
              "interruptions / call", "per call", "finds your voice", "hears speech"]
@@ -77,7 +79,24 @@ V9 = r"""() => {
 }"""
 
 
-def check_v9(c9):
+# v10: turn head v5; the calls card shows end-of-turn latency again (a near-tie), so latency words are allowed
+BANNED_V10 = BANNED_V8
+V10_CARDS = {"asst": 2, "calls": 3, "twer": 1, "vad": 1}
+
+
+def check_v10(c9, panels):
+    fails = check_v9(c9, banned=BANNED_V10)
+    for k, n in V10_CARDS.items():
+        if panels.get(k) != n:
+            fails.append(f"card {k}: {panels.get(k)} charts, want {n}")
+    want = {"v10/asst/acc_rel", "v10/asst/ff_rel", "v10/calls/eot_rel", "v10/calls/fi_rel", "v10/calls/miss_rel", "v9/twer/rel", "v9/vad/rel"}
+    got = {r["rel"] for r in c9["rels"]}
+    if got != want:
+        fails.append(f"changes {sorted(got ^ want)} differ from the v10 set")
+    return fails
+
+
+def check_v9(c9, banned=None):
     """v9 rules: each change = formula over the bar labels as printed (numbers_single "shown"; so it cannot be typed and a
     reader dividing the labels gets the printed %), arrow matches the
     direction, every bar's height matches its value on its axis."""
@@ -96,7 +115,7 @@ def check_v9(c9):
         want = b["full"] * (b["value"] - b["lo"]) / (b["hi"] - b["lo"])
         if abs(b["h"] - want) > 0.5 or not (b["lo"] <= b["value"] <= b["hi"]):
             fails.append(f"bar {b['key']}: height {b['h']:.1f} != {want:.1f}")
-    fails += [f"banned text '{x}'" for x in BANNED_V9 if x in c9["text"]]
+    fails += [f"banned text '{x}'" for x in (BANNED_V9 if banned is None else banned) if x in c9["text"]]
     return fails
 
 METRICS = r"""() => {
@@ -176,7 +195,7 @@ def main():
                     pg.evaluate("([W, H, l]) => build(W, H, l)", [W, H, layout])
                     png = OUT / f"{name}{suf}.png"
                     pg.screenshot(path=str(png), type="png")
-                    if name.endswith(("_v3", "_v4", "_v5", "_v6", "_v7", "_v8", "_v9")) or name in ("results_v4", "results_v5", "results_v6", "results_v7", "results_v8"):   # the removal test: the same render with every label hidden
+                    if name.endswith(("_v3", "_v4", "_v5", "_v6", "_v7", "_v8", "_v9", "_v10")) or name in ("results_v4", "results_v5", "results_v6", "results_v7", "results_v8"):   # the removal test: the same render with every label hidden
                         pg.evaluate("notext()")
                         nt = OUT / f"{name}{suf}_notext.png"
                         pg.screenshot(path=str(nt), type="png")
@@ -194,8 +213,16 @@ def main():
                             r["fails"].append(f"cards run {c8['overflow']:.0f}px into the footer")
                         if name.startswith("results") and c8["ncards"] < 4:
                             r["fails"].append(f"only {c8['ncards']} cards")
-                    if name.endswith("_v9"):   # the v9 rules
+                    if name == "results_v9":   # the v9 rules
                         r["fails"] += check_v9(pg.evaluate(V9))
+                    if name == "results_v10":   # the v9 rules with latency allowed, plus the v10 card set
+                        panels = pg.evaluate("() => Object.fromEntries([...document.querySelectorAll('[data-panel]')].map(c => [c.dataset.panel, c.querySelectorAll('[data-metric]').length]))")
+                        r["fails"] += check_v10(pg.evaluate(V9), panels)
+                    if name == "architecture_v9":   # the head count and the turn-end box as drawn
+                        t = pg.evaluate("() => document.getElementById('stage').innerText")
+                        for need in ("Six small heads", "6 small heads", "classifier at each quiet frame", "v5, 2.5M, layer 8 + words", "turn head ≥ 0.99", "Turn head", "VAD head", "Is it you?", "Language?", "speaker head"):
+                            if need not in t:
+                                r["fails"].append(f"architecture_v9: missing '{need}'")
                     if errs:
                         r["fails"].insert(0, f"page errors {errs}")
                     im = Image.open(png)

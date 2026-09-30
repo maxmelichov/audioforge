@@ -1004,5 +1004,111 @@
    2160,
    2160
   ]
+ },
+ "results_v10": {
+  "fails": [],
+  "min_edge": 64,
+  "min_contrast": 7.56,
+  "min_size": 22,
+  "values": {
+   "ns:version/pipecat": "1.12",
+   "ns:version/livekit": "1.8",
+   "ns:v8/wer/libri/ours": "2.3",
+   "ns:v8/wer/live/ours": "23.2",
+   "ns:v8/wer/live/livekit": "19.3",
+   "ns:v10/asst/n": "399",
+   "ns:v10/asst/ours/acc": "92",
+   "ns:v10/asst/pipecat/acc": "70",
+   "ns:v10/asst/acc_rel": "31",
+   "ns:v10/asst/ours/ff": "5",
+   "ns:v10/asst/pipecat/ff": "40",
+   "ns:v10/asst/ff_rel": "88",
+   "ns:v8/calls/n": "109",
+   "ns:v8/calls/sessions": "32",
+   "ns:v10/calls/ours/eot": "547",
+   "ns:v8/calls/livekit/eot": "567",
+   "ns:v10/calls/eot_rel": "4",
+   "ns:v10/calls/ours/fi": "25",
+   "ns:v8/calls/livekit/fi": "27",
+   "ns:v10/calls/fi_rel": "7",
+   "ns:v10/calls/ours/miss": "5.5",
+   "ns:v8/calls/livekit/miss": "23",
+   "ns:v10/calls/miss_rel": "76",
+   "ns:v8/twer/calls/n": "16",
+   "ns:v8/twer/calls/ours": "40",
+   "ns:v8/twer/calls/none": "63",
+   "ns:v9/twer/rel": "37",
+   "ns:v8/vad/ours/f1": "0.951",
+   "ns:v8/vad/marblenet/f1": "0.937",
+   "ns:v9/vad/rel": "1.5"
+  },
+  "size_px": [
+   3840,
+   2160
+  ]
+ },
+ "results_v10_square": {
+  "fails": [],
+  "min_edge": 64,
+  "min_contrast": 7.56,
+  "min_size": 22,
+  "values": {
+   "ns:version/pipecat": "1.12",
+   "ns:version/livekit": "1.8",
+   "ns:v8/wer/libri/ours": "2.3",
+   "ns:v8/wer/live/ours": "23.2",
+   "ns:v8/wer/live/livekit": "19.3",
+   "ns:v10/asst/n": "399",
+   "ns:v10/asst/ours/acc": "92",
+   "ns:v10/asst/pipecat/acc": "70",
+   "ns:v10/asst/acc_rel": "31",
+   "ns:v10/asst/ours/ff": "5",
+   "ns:v10/asst/pipecat/ff": "40",
+   "ns:v10/asst/ff_rel": "88",
+   "ns:v8/calls/n": "109",
+   "ns:v8/calls/sessions": "32",
+   "ns:v10/calls/ours/eot": "547",
+   "ns:v8/calls/livekit/eot": "567",
+   "ns:v10/calls/eot_rel": "4",
+   "ns:v10/calls/ours/fi": "25",
+   "ns:v8/calls/livekit/fi": "27",
+   "ns:v10/calls/fi_rel": "7",
+   "ns:v10/calls/ours/miss": "5.5",
+   "ns:v8/calls/livekit/miss": "23",
+   "ns:v10/calls/miss_rel": "76",
+   "ns:v8/twer/calls/n": "16",
+   "ns:v8/twer/calls/ours": "40",
+   "ns:v8/twer/calls/none": "63",
+   "ns:v9/twer/rel": "37",
+   "ns:v8/vad/ours/f1": "0.951",
+   "ns:v8/vad/marblenet/f1": "0.937",
+   "ns:v9/vad/rel": "1.5"
+  },
+  "size_px": [
+   2160,
+   2160
+  ]
+ },
+ "architecture_v9": {
+  "fails": [],
+  "min_edge": 64,
+  "min_contrast": 7.56,
+  "min_size": 22,
+  "values": {},
+  "size_px": [
+   3840,
+   2160
+  ]
+ },
+ "architecture_v9_square": {
+  "fails": [],
+  "min_edge": 64,
+  "min_contrast": 7.56,
+  "min_size": 22,
+  "values": {},
+  "size_px": [
+   2160,
+   2160
+  ]
  }
 }

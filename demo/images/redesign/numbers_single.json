@@ -835,16 +835,16 @@
   "path": "table > two_party_user > LiveKit EnglishModel + Silero (defaults) > missed_pct"
  },
  "v8/calls/pipecat/eot": {
-  "value": 2268,
-  "shown": "2268",
+  "value": 237,
+  "shown": "237",
   "dec": 0,
   "scope": "end-of-turn latency p50, ms, two_party_user, Pipecat smart-turn v3.2 + Silero (defaults)",
   "source": "runs/eot_latency.json",
   "path": "table > two_party_user > Pipecat smart-turn v3.2 + Silero (defaults) > eot_total_ms_p50"
  },
  "v8/calls/pipecat/fi": {
-  "value": 37.6,
-  "shown": "38",
+  "value": 35.8,
+  "shown": "36",
   "dec": 0,
   "scope": "false-interruption rate, % of user turns, two_party_user, Pipecat smart-turn v3.2 + Silero (defaults)",
   "source": "runs/eot_latency.json",
@@ -923,15 +923,15 @@
   "path": "table > ami > LiveKit EnglishModel + Silero (defaults) > missed_pct"
  },
  "v8/ami/pipecat/eot": {
-  "value": 384,
-  "shown": "384",
+  "value": 385,
+  "shown": "385",
   "dec": 0,
   "scope": "end-of-turn latency p50, ms, ami, Pipecat smart-turn v3.2 + Silero (defaults)",
   "source": "runs/eot_latency.json",
   "path": "table > ami > Pipecat smart-turn v3.2 + Silero (defaults) > eot_total_ms_p50"
  },
  "v8/ami/pipecat/fi": {
-  "value": 28.0,
+  "value": 27.5,
   "shown": "28",
   "dec": 0,
   "scope": "false-interruption rate, % of user turns, ami, Pipecat smart-turn v3.2 + Silero (defaults)",
@@ -1168,10 +1168,10 @@
   "value": 60.71428571428572,
   "shown": "61",
   "dec": 0,
-  "scope": "% relative reduction, false interruptions in AMI meetings, audioforge vs Pipecat: 1 - 11 / 28 (bar labels); raw values 1 - 10.5 / 28.0 = 62.50",
+  "scope": "% relative reduction, false interruptions in AMI meetings, audioforge vs Pipecat: 1 - 11 / 28 (bar labels); raw values 1 - 10.5 / 27.5 = 61.82",
   "source": "runs/eot_latency.json",
   "path": "1 - v8/ami/ours/fi.shown / v8/ami/pipecat/fi.shown",
-  "raw": 62.5
+  "raw": 61.81818181818181
  },
  "v9/ami/miss_rel": {
   "value": 24.444444444444446,
@@ -1199,5 +1199,130 @@
   "source": "runs/vad_auc.json (+ runs/vad_single.json, runs/baselines_sd.json agree)",
   "path": "v8/vad/ours/f1.shown / v8/vad/marblenet/f1.shown - 1",
   "raw": 1.5373118394363061
+ },
+ "v10/asst/ours/acc": {
+  "value": 92.2,
+  "shown": "92",
+  "dec": 0,
+  "scope": "% of smart-turn's 399 test clips decided right (complete answered, incomplete not), audioforge --turn-preset assistant (turn head v5)",
+  "source": "runs/turn_v5.json",
+  "path": "final > presets > assistant_v5_c5 > assistant_offline > [0]"
+ },
+ "v10/asst/ours/eot": {
+  "value": 292,
+  "shown": "292",
+  "dec": 0,
+  "scope": "end-of-turn latency p50, ms, complete clips, --turn-preset assistant (not on the image)",
+  "source": "runs/turn_v5.json",
+  "path": "final > presets > assistant_v5_c5 > assistant_offline > [1]"
+ },
+ "v10/asst/ours/ff": {
+  "value": 5.4,
+  "shown": "5",
+  "dec": 0,
+  "scope": "% of the 224 incomplete clips (unfinished sentences) answered anyway, --turn-preset assistant",
+  "source": "runs/turn_v5.json",
+  "path": "final > presets > assistant_v5_c5 > assistant_offline > [2]"
+ },
+ "v10/asst/pipecat/acc": {
+  "value": 69.7,
+  "shown": "70",
+  "dec": 0,
+  "scope": "% of the 399 clips decided right, Pipecat smart-turn v3.2 + Silero (defaults)",
+  "source": "runs/eot_assistant.json",
+  "path": "systems > Pipecat smart-turn v3.2 + Silero (defaults) > accuracy_pct"
+ },
+ "v10/asst/pipecat/eot": {
+  "value": 211,
+  "shown": "211",
+  "dec": 0,
+  "scope": "end-of-turn latency p50, ms, complete clips, Pipecat smart-turn v3.2 + Silero (defaults) (not on the image)",
+  "source": "runs/eot_assistant.json",
+  "path": "systems > Pipecat smart-turn v3.2 + Silero (defaults) > complete > eot_total_ms_p50"
+ },
+ "v10/asst/pipecat/ff": {
+  "value": 40.2,
+  "shown": "40",
+  "dec": 0,
+  "scope": "% of the incomplete clips answered anyway, Pipecat smart-turn v3.2 + Silero (defaults)",
+  "source": "runs/eot_assistant.json",
+  "path": "systems > Pipecat smart-turn v3.2 + Silero (defaults) > incomplete > false_fire_pct"
+ },
+ "v10/asst/n": {
+  "value": 399,
+  "shown": "399",
+  "dec": 0,
+  "scope": "smart-turn v3.2 public test clips (human_5_all), the same clips for both",
+  "source": "runs/eot_assistant.json",
+  "path": "data > n"
+ },
+ "v10/calls/ours/eot": {
+  "value": 547,
+  "shown": "547",
+  "dec": 0,
+  "scope": "end-of-turn latency p50, ms, calls (user's own channel), audioforge --turn-preset fast (turn head v5)",
+  "source": "runs/turn_v5.json",
+  "path": "final > presets > fast_v5_c5 > calls > [0]"
+ },
+ "v10/calls/ours/fi": {
+  "value": 24.8,
+  "shown": "25",
+  "dec": 0,
+  "scope": "false-interruption rate, % of user turns, calls, --turn-preset fast",
+  "source": "runs/turn_v5.json",
+  "path": "final > presets > fast_v5_c5 > calls > [2]"
+ },
+ "v10/calls/ours/miss": {
+  "value": 5.5,
+  "shown": "5.5",
+  "dec": 1,
+  "scope": "missed turn ends, % of turn ends, calls, --turn-preset fast (one decimal: 5.5 would print as 6)",
+  "source": "runs/turn_v5.json",
+  "path": "final > presets > fast_v5_c5 > calls > [3]"
+ },
+ "v10/asst/acc_rel": {
+  "value": 31.428571428571427,
+  "shown": "31",
+  "dec": 0,
+  "scope": "% relative increase, accuracy on smart-turn's test clips, assistant preset vs Pipecat smart-turn: 92 / 70 - 1 (bar labels); raw values = 32.28",
+  "source": "runs/turn_v5.json + runs/eot_assistant.json",
+  "path": "v10/asst/ours/acc.shown / v10/asst/pipecat/acc.shown - 1",
+  "raw": 32.28120516499282
+ },
+ "v10/asst/ff_rel": {
+  "value": 87.5,
+  "shown": "88",
+  "dec": 0,
+  "scope": "% relative reduction, false fires on unfinished sentences, assistant preset vs Pipecat smart-turn: 1 - 5 / 40 (bar labels); raw values = 86.57",
+  "source": "runs/turn_v5.json + runs/eot_assistant.json",
+  "path": "1 - v10/asst/ours/ff.shown / v10/asst/pipecat/ff.shown",
+  "raw": 86.56716417910448
+ },
+ "v10/calls/eot_rel": {
+  "value": 3.527336860670194,
+  "shown": "4",
+  "dec": 0,
+  "scope": "% relative reduction, end-of-turn latency p50 on calls, fast preset vs LiveKit: 1 - 547 / 567 (bar labels); raw values = 3.53",
+  "source": "runs/turn_v5.json + runs/eot_latency.json",
+  "path": "1 - v10/calls/ours/eot.shown / v8/calls/livekit/eot.shown",
+  "raw": 3.527336860670194
+ },
+ "v10/calls/fi_rel": {
+  "value": 7.4074074074074066,
+  "shown": "7",
+  "dec": 0,
+  "scope": "% relative reduction, false interruptions on calls, fast preset vs LiveKit: 1 - 25 / 27 (bar labels); raw values = 6.77",
+  "source": "runs/turn_v5.json + runs/eot_latency.json",
+  "path": "1 - v10/calls/ours/fi.shown / v8/calls/livekit/fi.shown",
+  "raw": 6.766917293233088
+ },
+ "v10/calls/miss_rel": {
+  "value": 76.08695652173914,
+  "shown": "76",
+  "dec": 0,
+  "scope": "% relative reduction, missed turn ends on calls, fast preset vs LiveKit: 1 - 5.5 / 23 (bar labels); raw values = 75.98",
+  "source": "runs/turn_v5.json + runs/eot_latency.json",
+  "path": "1 - v10/calls/ours/miss.shown / v8/calls/livekit/miss.shown",
+  "raw": 75.9825327510917
  }
 }
