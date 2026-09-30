@@ -20,6 +20,11 @@ SMALL = ["trainer.max_steps=3", "trainer.batch_size=4", "trainer.device=cpu",
 
 @pytest.mark.parametrize("recipe", RECIPES, ids=[r.stem for r in RECIPES])
 def test_recipe_smoke(recipe, tmp_path):
+    root = Path(__file__).parent.parent
+    cfg = yaml.safe_load(recipe.read_text())
+    codec = (cfg.get("data") or {}).get("codec_path")
+    if codec and not (root / codec).exists():  # a trained artifact (runs/codec.pt) that a fresh clone does not have
+        pytest.skip(f"{recipe.name} needs {codec}: python -m audioforge.cli train-codec --mel -o {codec}")
     model, metrics = run_recipe(str(recipe), SMALL, out=str(tmp_path / "m.afm"))
     assert metrics, "evaluation produced no metrics"
     loaded = load_model(tmp_path / "m.afm")

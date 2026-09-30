@@ -192,7 +192,8 @@ def test_session_tsvad_explicit_print_feeds_the_turn_head():
 
 
 def test_session_tsvad_hybrid_dyn_uses_its_own_point_and_arm_after_agent():
-    eng = _engine(enroll="after_agent_arm")
+    eng = _engine(enroll="after_agent_arm", silero=__file__)  # any existing path; a stand-in model is injected
+    eng.silero_model = type("FakeSilero", (), {"new_state": lambda self: None})()  # a fresh clone has no Silero file
     s = Session(eng, SessionConfig(turn_policy="hybrid_dyn"))
     eng.silero_model = None
     assert s.cfg.theta == TSVAD_DYN[0] and s.head_pol.thr == TSVAD_DYN[0]
