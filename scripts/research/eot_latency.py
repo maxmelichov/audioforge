@@ -55,7 +55,9 @@ WORK = Path("/Volumes/ExternalSSD/nvidia-audio-models/scratch/eot_latency")
 DUMP = Path("/Volumes/ExternalSSD/nvidia-audio-models/scratch/tswer_fix/eot_dump")
 DUMP_PRE_PRINTFIX = WORK / "dump3"
 DUMP_OLD = WORK / "dump2"
-BASE = WORK / "baselines3"  # rerun on dump3 (LiveKit text on the post-d832fca ASR clock); "baselines" = on dump2
+# baselines4: the Pipecat row from Pipecat's own LocalSmartTurnAnalyzerV3 (scripts/research/smartturn_audit.py);
+# baselines3 = our re-implementation of it (on dump3: LiveKit text on the post-d832fca ASR clock); "baselines" = dump2
+BASE = WORK / "baselines4"
 OUT = ROOT / "runs" / "eot_latency.json"
 N_AMI = 200
 TOL = 0.08  # one frame of label tolerance at the reference end
@@ -464,17 +466,17 @@ def cmd_check(a):
 
 # --------------------------------------------------------------------------- baselines
 def cmd_baselines(a):
-    """Pipecat 1.12 default (Silero VAD confidence 0.7, start / stop 0.2 s; smart-turn v3.2 at each VAD stop on the
-    turn audio from speech start - 0.7 s, <= 8 s; incomplete -> the stop_secs 3 s silence fallback, counted from the
-    VAD stop) and LiveKit agents 1.8 default (Silero plugin VAD activation 0.5, min silence 0.55 s; at each
+    """Pipecat 1.12 default (Silero VAD confidence 0.7, start / stop 0.2 s; smart-turn v3.2 at each VAD stop through
+    Pipecat's own LocalSmartTurnAnalyzerV3 = audioforge.baselines.turn.pipecat_smartturn_replay: turn audio from
+    speech start - 0.7 s (no earlier than the previous turn end, where Pipecat clears its buffer), <= 8 s;
+    incomplete -> the stop_secs 3 s silence fallback, counted from the chunk after the VAD stop) and LiveKit agents 1.8 default (Silero plugin VAD activation 0.5, min silence 0.55 s; at each
     END_OF_SPEECH the EnglishModel EOU on the current turn's transcript = our served streaming ASR text ready by then;
     turn end = max(EOS + compute, speech end + (0.5 s if P >= threshold else 3.0 s)), cancelled by a new
     START_OF_SPEECH). Both read the Silero v5 confidences the served session computed on the same audio (the same
     ONNX model, 512-sample chunks)."""
     from audioforge.baselines import turn as B
     BASE.mkdir(parents=True, exist_ok=True)
-    st = B.SmartTurn(ROOT / ".venv/lib/python3.12/site-packages/pipecat/audio/turn/smart_turn/data/smart-turn-v3.2-cpu.onnx",
-                     threads=2)
+    st = B.pipecat_smartturn_analyzer(stop_secs=3.0)
     lk = B.LiveKitText("en", threads=2)
     dump = load_dump()
     t0, n = time.time(), 0
@@ -488,36 +490,9 @@ def cmd_baselines(a):
         d = dump[ss["key"]]
         x = read_audio(ss)
         conf = np.asarray(d["conf"], float)
-        # ---- Pipecat + smart-turn
-        pv = B.pipecat_vad(conf)  # per-chunk state; stops / starts
-        state = pv["state"]
-        speaking = False
-        seg_start, sil_ms, pc_out, st_ms = None, 0.0, [], []
-        for j in range(len(conf)):
-            prev = state[j - 1] if j else 1
-            t_end = (j + 1) * CHUNK_S
-            if state[j] == 3 and prev in (1, 2):  # VADUserStartedSpeaking
-                speaking = True
-                if seg_start is None:
-                    seg_start = max(0.0, t_end - 0.7)
-            if state[j] == 1 and prev in (3, 4):  # VADUserStoppedSpeaking -> analyze
-                speaking = False
-                sil_ms = 0.0
-                if seg_start is not None:
-                    audio = x[int(seg_start * SR): int(t_end * SR)][-8 * SR:]
-                    tc = time.perf_counter()
-                    p = st.predict(audio)
-                    ms = (time.perf_counter() - tc) * 1000
-                    st_ms.append(ms)
-                    if p > 0.5:
-                        pc_out.append({"t": round(t_end, 4), "path": "model", "p": round(p, 4), "compute_ms": round(ms, 2)})
-                        seg_start = None
-                continue
-            if not speaking and seg_start is not None:  # the stop_secs fallback (silence counted after the VAD stop)
-                sil_ms += CHUNK_S * 1000
-                if sil_ms >= 3000:
-                    pc_out.append({"t": round(t_end, 4), "path": "fallback", "p": None, "compute_ms": 0.0})
-                    seg_start, sil_ms = None, 0.0
+        # ---- Pipecat + smart-turn: Pipecat's own analyzer classes on a simulated clock
+        calls, pc_out = B.pipecat_smartturn_replay(st, x, conf)
+        st_ms = [c["ms"] for c in calls]
         # ---- LiveKit + EnglishModel
         lv = B.livekit_vad(conf)
         sos = set(int(j) for j in lv["sos"])

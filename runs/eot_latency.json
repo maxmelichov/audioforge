@@ -1,5 +1,5 @@
 {
- "generated": "2026-09-30 03:22",
+ "generated": "2026-09-30 10:07",
  "definitions": {
   "eot_total_ms": "first turn_end at/after the reference end - 80 ms (before min(end + 6 s, next user onset)) minus the reference end; decision audio time + measured compute",
   "eot_decision_ms": "the audio time at which the deciding input was complete (ours: the frame's decision-ready time on the served ASR clock, which already holds the chunk + lookahead buffering; baselines: the end of the deciding Silero chunk) minus the reference end = eot_total - compute",
@@ -23,13 +23,13 @@
   "baseline_model_per_decision": {
    "Pipecat smart-turn v3.2 + Silero (defaults)": {
     "calls": 1183,
-    "p50": 15.6,
-    "p95": 18.2
+    "p50": 15.9,
+    "p95": 16.4
    },
    "LiveKit EnglishModel + Silero (defaults)": {
     "calls": 518,
     "p50": 1.1,
-    "p95": 2.9
+    "p95": 2.8
    }
   }
  },
@@ -89808,11 +89808,11 @@
    "Pipecat smart-turn v3.2 + Silero (defaults)": {
     "n_turns": 109,
     "n_answered": 82,
-    "eot_total_ms_p50": 2268,
-    "eot_total_ms_p95": 3226,
-    "eot_decision_ms_p50": 2268,
-    "eot_decision_ms_p95": 3226,
-    "false_interruption_pct": 37.6,
+    "eot_total_ms_p50": 237,
+    "eot_total_ms_p95": 3217,
+    "eot_decision_ms_p50": 221,
+    "eot_decision_ms_p95": 3217,
+    "false_interruption_pct": 35.8,
     "missed_pct": 24.8
    },
    "LiveKit EnglishModel + Silero (defaults)": {
@@ -137730,11 +137730,11 @@
    "Pipecat smart-turn v3.2 + Silero (defaults)": {
     "n_turns": 200,
     "n_answered": 111,
-    "eot_total_ms_p50": 384,
+    "eot_total_ms_p50": 385,
     "eot_total_ms_p95": 3992,
     "eot_decision_ms_p50": 368,
     "eot_decision_ms_p95": 3984,
-    "false_interruption_pct": 28.0,
+    "false_interruption_pct": 27.5,
     "missed_pct": 44.5
    },
    "LiveKit EnglishModel + Silero (defaults)": {

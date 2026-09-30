@@ -76,8 +76,8 @@ small); Pipecat = Pipecat defaults (Silero + smart-turn v3 + Whisper small). Wha
 | metric | audioforge | LiveKit | Pipecat | source |
 |---|---|---|---|---|
 | **Calls** (32 sessions, user channel, 109 turn ends) | | | | |
-| end-of-turn latency, p50 | 956 ms | 567 ms | 2268 ms | [EOT_LATENCY](research/EOT_LATENCY.md) |
-| false interruptions (% of turns) | 20 % | 27 % | 38 % | [EOT_LATENCY](research/EOT_LATENCY.md) |
+| end-of-turn latency, p50 | 956 ms | 567 ms | 237 ms (bimodal: 38 of 82 answered ends wait for the 3 s fallback; p95 3217 ms) | [EOT_LATENCY](research/EOT_LATENCY.md) |
+| false interruptions (% of turns) | 20 % | 27 % | 36 % | [EOT_LATENCY](research/EOT_LATENCY.md) |
 | missed turn ends | 7 % | 23 % | 25 % | [EOT_LATENCY](research/EOT_LATENCY.md) |
 | **Meetings** (AMI, 200 turns) | | | | |
 | end-of-turn latency, p50 | 1326 ms | 1890 ms | 384 ms | [EOT_LATENCY](research/EOT_LATENCY.md) |

@@ -21,7 +21,7 @@ Two-party user-channel sessions (the user's audio alone; 32 sessions, 109 refere
 | today: `hybrid_dyn --dyn-wait-ms 2000,960` (Silero silence OR head p ≥ 0.99748) | 1287 ms | 1923 ms | 22.9 | 7.3 |
 | shipped until fe28a9e: `vad_head` (VAD < 0.4 for ≥ 320 ms AND p ≥ 0.95, OR 800 ms, OR others path) | 881 ms | 1789 ms | 22.9 | 7.3 |
 | previous `vad_head` option (VAD < 0.3 for ≥ 80 ms AND p ≥ 0.95, OR 960 ms) | 774 ms | 1963 ms | 27.5 | 9.2 |
-| Pipecat smart-turn v3.2 + Silero (Pipecat defaults) | 2268 ms | 3226 ms | 37.6 | 24.8 |
+| Pipecat smart-turn v3.2 + Silero (Pipecat defaults; p50 is bimodal, see the audit) | 237 ms | 3217 ms | 35.8 | 24.8 |
 | LiveKit turn detector (EnglishModel) + Silero (LiveKit defaults) | 567 ms | 3127 ms | 26.6 | 22.9 |
 | *after the print fix (fe28a9e dump):* | | | | |
 | today: `hybrid_dyn --dyn-wait-ms 2000,960` | 1290 ms | 1921 ms | 17.4 | 6.4 |
@@ -35,15 +35,97 @@ AMI (200 dev eot-bench v2 turns, meeting audio with the other speakers, one scor
 | today | 1794 ms | 4285 ms | 8.5 | 37.5 |
 | shipped until fe28a9e | 1330 ms | 4160 ms | 10.0 | 33.5 |
 | previous `vad_head` option | 1488 ms | 3992 ms | 10.5 | 51.0 |
-| Pipecat smart-turn v3.2 + Silero | 384 ms | 3992 ms | 28.0 | 44.5 |
+| Pipecat smart-turn v3.2 + Silero | 385 ms | 3992 ms | 27.5 | 44.5 |
 | LiveKit EnglishModel + Silero | 1890 ms | 4295 ms | 12.5 | 67.5 |
 | *after the print fix (fe28a9e dump):* | | | | |
 | today | 1807 ms | 4286 ms | 8.0 | 39.0 |
 | the fe28a9e rule | 1327 ms | 4162 ms | 10.0 | 34.0 |
 | **shipped, after the print fix** | **1326 ms** | **3758 ms** | **10.5** | **33.5** |
 
-The Pipecat and LiveKit rows need no re-run: they read the Silero confidences and the ASR text, which the print fix
-does not touch, on the same clips. The sweep re-scores them from `baselines3` to the same numbers.
+The LiveKit rows need no re-run: they read the Silero confidences and the ASR text, which the print fix does not
+touch, on the same clips. The Pipecat rows were re-run after the smart-turn audit (next section, `baselines4`):
+calls p50 2268 → 237 ms, p95 3226 → 3217 ms, false interruptions 37.6 → 35.8 %; AMI p50 384 → 385 ms, false
+interruptions 28.0 → 27.5 %; misses unchanged.
+
+### Audit of the Pipecat row (smart-turn v3.2)
+
+Question: is the Pipecat row's 2.3 s calls p50 a harness bug? Smart-turn's own compute is 16 ms per call, so a 2.3 s
+median can only come from "incomplete" answers at true ends, which leave the turn to the 3 s `stop_secs` fallback.
+Code: `scripts/research/smartturn_audit.py`. Numbers: `runs/smartturn_audit.json`.
+
+**Verdict: the slow Pipecat answers are real, but the published p50 was fragile.** The harness had small fidelity
+errors, now fixed. They did not cause the slow answers. They flipped a few decisions that sit near p = 0.5, and the
+median moved from one mode of the latency distribution to the other.
+
+- **The harness reproduces smart-turn's published accuracy.** `audioforge.baselines.turn.SmartTurn` on the 399
+  human_5_all clips that are in smart-turn-data-v3.2-test (held out from its training) scores 97.0 % (complete
+  recall 96.6 %, incomplete recall 97.3 %). On 600 train clips it scores 99.5 %.
+- **The inputs are right.**
+  - Audio: 16 kHz, mono, float32 in [-1, 1].
+  - Level: our calls' speech is at -23 dBFS (p50), smart-turn's test clips at -19 dBFS. The smart-turn features are
+    normalised to zero mean and unit variance anyway.
+  - Bandwidth: both are wideband.
+  - Channel: the user's own channel, not the mix.
+  - Silero track: equal to Silero v5 recomputed on the same audio (max difference 0.0).
+  - Model: the bundled `smart-turn-v3.2-cpu.onnx`, the same md5 as in Pipecat 1.12.
+  - Settings: `SmartTurnParams` at their 1.12 defaults (stop_secs 3, pre_speech_ms 500, max_duration_secs 8) and VAD
+    stop_secs 0.2.
+- **What the harness got wrong, and the fix.** The old row re-implemented Pipecat's analyzer (`baselines3`). The Pipecat
+  row now drives Pipecat's own `LocalSmartTurnAnalyzerV3` / `BaseSmartTurn` chunk by chunk, on a simulated clock and
+  in `LLMUserAggregator`'s frame order (`audioforge.baselines.turn.pipecat_smartturn_replay`, into `baselines4`).
+  Three differences with the old re-implementation:
+  - **Pre-speech window.** Pipecat clears its buffer at every turn end. The next turn's 0.7 s pre-speech therefore
+    never reaches back before that end. The old harness took 0.7 s regardless, including the previous turn's tail.
+  - **Speech start.** Pipecat sets the speech start at the chunk after the VAD start frame, one 32 ms chunk later
+    than the old harness.
+  - **Features.** Pipecat 1.12 computes the log-mel with its own numpy code; the old harness used transformers'
+    `WhisperFeatureExtractor`. The two differ by at most 2e-5, but the int8 model turns that into up to 0.13 of p.
+  - 50 of 232 sessions differ between the two harnesses. With transformers features inside the replay, 42 still
+    differ, so the pre-speech window is the main cause.
+- **Why the p50 is fragile.** Pipecat's answered calls ends split into 44 model answers at about 0.2 s and 38
+  fallback answers at about 3.1 s. The median sits at the boundary between the two groups.
+  - A session bootstrap puts the p50's 90 % interval at 196-2784 ms. Only 52 % of answered ends come within 0.5 s.
+  - The p95 (3217 ms), the false interruptions and the misses are the stable numbers.
+- **Smart-turn does say "incomplete" at about half of the true ends** (Pipecat's own classes, defaults):
+  - 93 of the 109 calls ends get a smart-turn call. The first call after the end says "complete" on 45 of 109 (41 %;
+    45 of 93 = 48 %). The p of those first calls is bimodal: 37 below 0.2, 30 above 0.8.
+  - The last call inside each turn's span (the call at its audible end) says "complete" on 52 of 106.
+  - Where the other party then takes the floor for more than 1 s (a clear turn end), it says "complete" on 30 of 68.
+  - The 16 ends without a call: the VAD stop fell more than 80 ms before the labelled end. The labelled end is later
+    than the VAD's speech end by more than 120 ms at 27.5 % of ends. That call then counts as a false interruption
+    and the end as missed; this is the same for every system.
+  - On its own test clips smart-turn is 97 % right, so our clips are the difference. They are human-to-human
+    conversation (TurnBench, otoSpeech), where turns often trail off; smart-turn was trained on speech addressed to
+    an assistant.
+  - The ~25 ms seen in production is the per-call compute (16 ms here). The fastest possible answer after the end of
+    speech is the 0.2 s VAD stop plus that call; the model path here answers at 0.16-0.24 s after the labelled end.
+
+**A tuned Pipecat: `stop_secs` swept** (Pipecat's own classes; everything else at its defaults):
+
+| stop_secs | calls p50 (90 % CI) | calls p95 | calls FI % | calls missed % | first call "complete" | AMI p50 | AMI p95 | AMI FI % | AMI missed % |
+|---|---|---|---|---|---|---|---|---|---|
+| 3.0 (default) | 236 ms (196-2784) | 3217 ms | 35.8 | 24.8 | 45 / 109 | 384 ms | 3992 ms | 27.5 | 44.5 |
+| 2.0 | 1302 ms (226-2042) | 2230 ms | 41.3 | 16.5 | 44 / 109 | 448 ms | 3613 ms | 28.0 | 41.5 |
+| 1.5 | 550 ms (214-1504) | 1751 ms | 45.9 | 11.9 | 48 / 109 | 448 ms | 3600 ms | 30.0 | 39.5 |
+| 1.0 | 232 ms (195-486) | 1237 ms | 52.3 | 11.0 | 54 / 109 | 592 ms | 3594 ms | 33.5 | 35.5 |
+| 0.8 | 227 ms (192-576) | 1013 ms | 55.0 | 11.0 | 53 / 109 | 704 ms | 3403 ms | 36.0 | 32.5 |
+| 0.5 | 194 ms (182-232) | 724 ms | 63.3 | 10.1 | 59 / 109 | 656 ms | 3664 ms | 37.5 | 23.5 |
+
+A shorter fallback cuts the p95 and the misses. It adds false interruptions, because it fires in the pauses where
+smart-turn said "incomplete". With `stop_secs` 0.8 s Pipecat misses 11.0 % of calls ends (shipped `vad_head`:
+7.3 %), with 55 % false interruptions (shipped: 20.2 %).
+
+**LiveKit, checked the same way.** LiveKit Agents 1.8.3's defaults are min_delay 0.5 s and max_delay 3.0 s
+(`livekit.agents.voice.turn`; 6 s was the old default). The harness uses these. Its first answer at the calls ends is
+the 0.5 s path (P ≥ threshold) on 56 of 109, the 3 s path on 28, and missing on 25. Sweeping max_delay, calls
+(p50 / p95 / FI % / missed %):
+- 6.0 s: 544 / 5939 ms / 24.8 / 33.9.
+- 3.0 s: 564 / 3127 ms / 26.6 / 22.9.
+- 1.5 s: 594 / 1639 ms / 25.7 / 12.8.
+- 1.0 s: 594 / 1098 ms / 33.9 / 12.8.
+- 0.8 s: 567 / 940 ms / 37.6 / 12.8.
+
+No harness problem there. Its p50 interval (541-674 ms) is narrow, because its model path dominates.
 
 The next two bullets compare the rule shipped until fe28a9e with today's on the pre-fix dump.
 
@@ -64,7 +146,7 @@ The next two bullets compare the rule shipped until fe28a9e with today's on the 
   - Ours: 31 ms per 160 ms chunk (p50; p95 34 ms) on the Mac CPU with 2 threads. The VAD, TS-VAD and turn heads run
     on every frame anyway.
   - Silero: 0.087 ms per 32 ms chunk.
-  - smart-turn v3.2: 15.6 ms per call (p50), added to its EOT.
+  - smart-turn v3.2: 15.9 ms per call (p50; Pipecat's features + model), added to its EOT.
   - LiveKit EnglishModel: 1.1 ms per call, hidden under its 0.5 s minimum delay.
 
 **What changed in the default.** `MODES["single"]` adds `--turn-policy vad_head`, the server default for a session
@@ -274,11 +356,13 @@ For each reference user turn [s, e] (e = the reference end of the user's speech)
    - (e) / (f) the room-aware family (`sim_room`, previous section).
 
    Families (a), (b), (d), (e) and (f) use no Silero.
-4. **Baselines, run offline on the same audio** (`baselines`; onnx; into `baselines3`). They read the Silero v5
+4. **Baselines, run offline on the same audio** (`baselines`; onnx; into `baselines4`; `baselines3` holds the Pipecat
+   re-implementation used before the smart-turn audit). They read the Silero v5
    confidences the served session computed, which come from the same ONNX model and the same 512-sample chunks.
-   - **Pipecat 1.12 defaults.** VAD: confidence 0.7, start / stop 0.2 s. At each VAD stop, smart-turn v3.2 runs on the
-     turn audio from speech start − 0.7 s (≤ 8 s). "Complete" (p > 0.5) ends the turn. Otherwise it waits for the
-     3 s `stop_secs` fallback.
+   - **Pipecat 1.12 defaults, through Pipecat's own `LocalSmartTurnAnalyzerV3`.** VAD: confidence 0.7, start / stop
+     0.2 s. At each VAD stop, smart-turn v3.2 runs on the turn audio from speech start − 0.7 s (≤ 8 s). The window
+     never reaches back before the previous turn end, where Pipecat clears its buffer. "Complete" (p > 0.5) ends the
+     turn. Otherwise it waits for the 3 s `stop_secs` fallback.
    - **LiveKit agents 1.8 defaults.** Silero plugin: activation 0.5, min silence 0.55 s. At each END_OF_SPEECH, the
      EnglishModel runs on the current turn's transcript. The turn ends at max(EOS + compute, speech end + 0.5 s) when
      P ≥ its threshold (0.0289), otherwise at speech end + 3.0 s. A new START_OF_SPEECH cancels it.
@@ -347,6 +431,7 @@ PYTHONPATH=. .venv/bin/python scripts/research/eot_latency.py check
 PYTHONPATH=. scripts/dev/gate.sh .venv/bin/python scripts/research/eot_latency.py baselines --budget 480
 PYTHONPATH=. scripts/dev/gate.sh .venv/bin/python scripts/research/eot_latency.py served_check   # clip frames first
 PYTHONPATH=. .venv/bin/python scripts/research/eot_latency.py sweep
+PYTHONPATH=. scripts/dev/gate.sh .venv/bin/python scripts/research/smartturn_audit.py inputs    # + replay, livekit, eval
 ```
 
 `dump` writes to `DUMP`, which is now the post-print-fix dump `scratch/tswer_fix/eot_dump`.

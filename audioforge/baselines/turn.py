@@ -15,6 +15,8 @@ What is wrapped (all run offline on the window audio, causally: nothing reads au
   start 0.2 s, stop 0.2 s = 6 chunks each; the min_volume gate is not modelled).
 * ``livekit_vad``: LiveKit's Silero plugin endpointing (activation 0.5, deactivation 0.35, min speech 0.05 s,
   min silence 0.55 s): speech-end times and the end-of-speech events.
+* ``pipecat_smartturn_replay``: Pipecat 1.12's own ``LocalSmartTurnAnalyzerV3`` / ``BaseSmartTurn`` driven chunk by
+  chunk under a simulated clock (what research/EOT_LATENCY.md's Pipecat row runs since the smart-turn audit).
 * ``SmartTurn``: pipecat-ai/smart-turn v3.x ONNX (Whisper-tiny encoder + linear head): last <= 8 s of audio,
   left-padded with zeros to 8 s, Whisper log-mel (transformers ``WhisperFeatureExtractor(chunk_length=8)``,
   do_normalize) -> P(complete). Exactly smart-turn's ``inference.py`` / Pipecat's ``LocalSmartTurnAnalyzerV3``.
@@ -292,6 +294,66 @@ class SmartTurn:
 
     def predict(self, audio: np.ndarray) -> float:
         return float(self.session.run(None, {"input_features": self.features(audio)})[0].reshape(-1)[0])
+
+
+class _SimClock:
+    t = 0.0
+
+
+def pipecat_smartturn_analyzer(stop_secs: float = 3.0, pre_speech_ms: float = 500, max_duration_secs: float = 8,
+                               threads: int = 2):
+    """Pipecat's OWN ``LocalSmartTurnAnalyzerV3`` (bundled smart-turn-v3.2-cpu, Pipecat's vendored log-mel, its
+    ``BaseSmartTurn`` buffering / pre-speech / 8 s cap / ``stop_secs`` silence fallback) on a simulated clock, for
+    ``pipecat_smartturn_replay``. Patches the module's ``time`` so buffer timestamps are audio time (offline use)."""
+    import types
+    import pipecat.audio.turn.smart_turn.base_smart_turn as bst
+    from pipecat.audio.turn.smart_turn.base_smart_turn import SmartTurnParams
+    from pipecat.audio.turn.smart_turn.local_smart_turn_v3 import LocalSmartTurnAnalyzerV3
+    bst.time = types.SimpleNamespace(monotonic=lambda: _SimClock.t, perf_counter=time.perf_counter)
+    an = LocalSmartTurnAnalyzerV3(sample_rate=SR, cpu_count=threads, params=SmartTurnParams(
+        stop_secs=stop_secs, pre_speech_ms=pre_speech_ms, max_duration_secs=max_duration_secs))
+    an.set_sample_rate(SR)
+    return an
+
+
+def pipecat_smartturn_replay(an, audio: np.ndarray, conf: np.ndarray, vad_start_secs: float = 0.2):
+    """Pipecat 1.12 ``TurnAnalyzerUserTurnStopStrategy`` + ``BaseSmartTurn`` on one track, one 512-sample chunk at a
+    time, with the Pipecat VAD state machine on the Silero confidences ``conf``. Frame order as in Pipecat 1.12's
+    ``LLMUserAggregator``: the VADController and then the turn strategy see a chunk's audio; the VAD frame raised on
+    it is ``queue_frame``d, so the strategy gets it after that chunk (the stop chunk is analysed as speech; the
+    fallback's silence starts with the next chunk). ``analyze_end_of_turn`` runs at every VADUserStoppedSpeaking;
+    COMPLETE clears the analyzer (its own ``_clear`` + ``handle_user_turn_stopped``). Returns (calls
+    [{t, p, complete, ms}], turn_ends [{t, path 'model'|'fallback', p, compute_ms}]); t = end of the deciding chunk
+    (s). The STT-transcript wait of a live pipeline is not modelled (optimistic)."""
+    from pipecat.audio.turn.base_turn_analyzer import EndOfTurnState
+    an.clear()
+    _SimClock.t = 0.0
+    sm = PipecatVADState(0.7, vad_start_secs, 0.2)
+    x16 = np.clip(np.round(np.asarray(audio, np.float32) * 32768.0), -32768, 32767).astype(np.int16)
+    speaking = False
+    calls, ends = [], []
+    for j in range(min(len(conf), len(x16) // CHUNK)):
+        _SimClock.t = t = round((j + 1) * CHUNK_SEC, 6)
+        _, stopped, started = sm.step(float(conf[j]))
+        if an.append_audio(x16[j * CHUNK:(j + 1) * CHUNK].tobytes(), speaking) == EndOfTurnState.COMPLETE:
+            ends.append({"t": t, "path": "fallback", "p": None, "compute_ms": 0.0})
+            an.clear()
+        if started:
+            an.update_vad_start_secs(vad_start_secs)
+            speaking = True
+        if stopped:
+            speaking = False
+            tc = time.perf_counter()
+            state, res = an._process_speech_segment(an._audio_buffer)
+            ms = (time.perf_counter() - tc) * 1000
+            if res is None:
+                continue
+            done = state == EndOfTurnState.COMPLETE
+            calls.append({"t": t, "p": round(float(res.probability), 4), "complete": done, "ms": round(ms, 2)})
+            if done:
+                an.clear()
+                ends.append({"t": t, "path": "model", "p": round(float(res.probability), 4), "compute_ms": round(ms, 2)})
+    return calls, ends
 
 
 # --------------------------------------------------------------------------- LiveKit
