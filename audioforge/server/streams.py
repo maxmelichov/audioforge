@@ -63,6 +63,25 @@ class ASRStream(StreamingSession):
         self.tsvad_p = _Ring()  # its [P(target), P(other)] per ASR frame
         self.keep_spk = False  # --diar-labels registry --diar-embed spk: keep the speaker head's input per frame
         self.spk_feats = _Ring()  # (D,) block-4 frame per ASR frame (last 2048), read by Session._embed
+        self.seg = None  # turn head v5 (heads.turn_seg.SegTurnStream, ``attach_seg``): the segment classifier's inputs
+        self.seg_block = None
+        self.pros = None  # heads.prosody.Prosody when the v5 model reads prosody
+        self.pros_frames = _Ring(512)
+
+    def attach_seg(self, model, device="cpu"):
+        """Turn head v5 (research/TURN_V5.md): keep the segment classifier's per-frame inputs (its encoder block of
+        this pass, VAD, P(user) / P(other) when a print is enrolled, the decoded token count, prosody) so
+        ``seg_prob(v)`` can classify the window ending at frame v. No extra encoder work."""
+        from ..heads.turn_seg import SegTurnStream
+        self.seg = SegTurnStream(model, device)
+        self.seg_block = [int(b) for b in str(model.cfg["block"]).split("+")]
+        if model.n_pros:
+            from ..heads.prosody import Prosody
+            self.pros = Prosody()
+
+    def seg_prob(self, v: int) -> float:
+        """P(the user's turn is complete) of the v5 classifier on the window ending at frame v."""
+        return self.seg.prob(v, self.tokens)
 
     def reset_state(self):
         """Drop the recurrent state (encoder caches, transducer prediction state, turn GRU) after a non-finite
@@ -90,6 +109,9 @@ class ASRStream(StreamingSession):
         """Audio samples -> one record ``{"v", "vad", "eot"}`` per newly completed ASR frame (``final`` flushes)."""
         if self.lid is not None and hasattr(self.lid, "feed_audio"):  # the AmberNet backend keeps the raw audio
             self.lid.feed_audio(samples)
+        if self.pros is not None and len(samples):
+            for fr in self.pros.feed(np.asarray(samples, np.float32)):
+                self.pros_frames.append(fr)
         x = torch.as_tensor(np.asarray(samples, np.float32), device=self.dev)
         pe = self.m.preprocessor.preemph
         if len(x):
@@ -132,6 +154,8 @@ class ASRStream(StreamingSession):
             if self.lid is not None:  # same chunk, same per-layer outputs: no extra encoder pass
                 ends = [(self.n_frames + j + 1) * FRAME_MS / 1000 for j in range(n)]
                 self.lid_events += self.lid.feed(enc, hid, vad, ends)
+            if self.seg is not None:
+                seg_x = torch.cat([hid[b - 1] for b in self.seg_block], -1)[0].float().cpu().numpy()
             snaps = []
             for j in range(n):
                 if self.vad_gate is not None:
@@ -152,6 +176,14 @@ class ASRStream(StreamingSession):
                     self.turn_ms += (time.perf_counter() - t0) * 1000
                 snaps.append(snap)
                 self.tok_at.append(len(self.tokens))
+                if self.seg is not None:
+                    v = self.n_frames
+                    en = self.tsvad is not None and getattr(self.tsvad, "enrolled", False) and v < len(self.tsvad_p)
+                    pu, po = (float(self.tsvad_p[v][0]), float(self.tsvad_p[v][1])) if en else (0.0, 0.0)
+                    pr = None
+                    if self.pros is not None:
+                        pr = self.pros_frames[v] if v < len(self.pros_frames) else np.zeros(12, np.float32)
+                    self.seg.push(seg_x[j], float(vad[j]), pu, po, len(self.tokens), pr)
                 out.append({"v": self.n_frames, "vad": float(vad[j]), "eot": eot})
                 self.n_frames += 1
             if self.turn is not None and self.turn_input in ("diar", "tsvad"):

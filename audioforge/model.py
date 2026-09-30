@@ -229,6 +229,9 @@ def build_head(cfg: dict, d_model: int, tokenizer=None) -> nn.Module:
     if t == "tsvad":  # target-speaker VAD conditioned on an enrollment embedding (heads/tsvad.py)
         from .heads.tsvad import TSVADHead
         return TSVADHead(d_model, **cfg)
+    if t == "turn_seg":  # turn head v5: segment end-of-turn classifier on the session's window (heads/turn_seg.py)
+        from .heads.turn_seg import SegTurn
+        return SegTurn(**cfg)
     if t == "completeness":  # utterance completeness, smart-turn's task (heads/completeness.py)
         from .heads.completeness import CompletenessHead
         return CompletenessHead(d_model, **cfg)

@@ -1,0 +1,333 @@
+{
+ "generated": "2026-09-30 11:21",
+ "dump": "/Volumes/ExternalSSD/nvidia-audio-models/scratch/tswer_fix/eot_dump",
+ "n_sessions": 232,
+ "turn_end_rule": "VadHeadPolicy() defaults (served vad_head); others path only with an enrolled print",
+ "vad_head_defaults": {
+  "thr": 0.99,
+  "k": 2,
+  "fb": 8,
+  "vad_thr": 0.4,
+  "others": [
+   12,
+   8
+  ]
+ },
+ "hint_rule": "first frame with served-VAD silence (VAD < 0.4) >= 80 ms and p >= H; cancel on VAD > 0.5 x 2",
+ "replay_equals_eot_latency_sim_room": "232/232 enrolled sessions",
+ "tol_s": 0.08,
+ "horizon_s": 6.0,
+ "table": {
+  "0.7": {
+   "calls": {
+    "n_turns": 109,
+    "n_answered": 101,
+    "n_hints_in_turn_windows": 151,
+    "hint_latency_ms_p50": 446,
+    "hint_latency_ms_p95": 1377,
+    "turn_end_latency_ms_p50": 926,
+    "turn_end_latency_ms_p95": 1888,
+    "precision_pct": 57.6,
+    "confirm_rate_pct": 66.9,
+    "recall_pct": 68.3,
+    "stale_hinted_ends": 3,
+    "wasted_preps_per_turn": 0.459,
+    "false_interruption_pct": 20.2,
+    "missed_pct": 7.3,
+    "prep300": {
+     "response_ms_p50_at_turn_end": 1226,
+     "response_ms_p95_at_turn_end": 2188,
+     "response_ms_p50_at_hint": 962,
+     "response_ms_p95_at_hint": 1918,
+     "mean_saving_ms": 186
+    },
+    "prep600": {
+     "response_ms_p50_at_turn_end": 1526,
+     "response_ms_p95_at_turn_end": 2488,
+     "response_ms_p50_at_hint": 1152,
+     "response_ms_p95_at_hint": 2038,
+     "mean_saving_ms": 301
+    }
+   },
+   "ami": {
+    "n_turns": 200,
+    "n_answered": 133,
+    "n_hints_in_turn_windows": 164,
+    "hint_latency_ms_p50": 656,
+    "hint_latency_ms_p95": 3356,
+    "turn_end_latency_ms_p50": 1296,
+    "turn_end_latency_ms_p95": 3728,
+    "precision_pct": 74.4,
+    "confirm_rate_pct": 57.3,
+    "recall_pct": 46.6,
+    "stale_hinted_ends": 0,
+    "wasted_preps_per_turn": 0.35,
+    "false_interruption_pct": 10.5,
+    "missed_pct": 33.5,
+    "prep300": {
+     "response_ms_p50_at_turn_end": 1596,
+     "response_ms_p95_at_turn_end": 4028,
+     "response_ms_p50_at_hint": 1516,
+     "response_ms_p95_at_hint": 4004,
+     "mean_saving_ms": 127
+    },
+    "prep600": {
+     "response_ms_p50_at_turn_end": 1896,
+     "response_ms_p95_at_turn_end": 4328,
+     "response_ms_p50_at_hint": 1816,
+     "response_ms_p95_at_hint": 4200,
+     "mean_saving_ms": 195
+    }
+   }
+  },
+  "0.8": {
+   "calls": {
+    "n_turns": 109,
+    "n_answered": 101,
+    "n_hints_in_turn_windows": 140,
+    "hint_latency_ms_p50": 446,
+    "hint_latency_ms_p95": 1095,
+    "turn_end_latency_ms_p50": 926,
+    "turn_end_latency_ms_p95": 1888,
+    "precision_pct": 58.6,
+    "confirm_rate_pct": 67.1,
+    "recall_pct": 64.4,
+    "stale_hinted_ends": 2,
+    "wasted_preps_per_turn": 0.422,
+    "false_interruption_pct": 20.2,
+    "missed_pct": 7.3,
+    "prep300": {
+     "response_ms_p50_at_turn_end": 1226,
+     "response_ms_p95_at_turn_end": 2188,
+     "response_ms_p50_at_hint": 976,
+     "response_ms_p95_at_hint": 1918,
+     "mean_saving_ms": 178
+    },
+    "prep600": {
+     "response_ms_p50_at_turn_end": 1526,
+     "response_ms_p95_at_turn_end": 2488,
+     "response_ms_p50_at_hint": 1162,
+     "response_ms_p95_at_hint": 2198,
+     "mean_saving_ms": 284
+    }
+   },
+   "ami": {
+    "n_turns": 200,
+    "n_answered": 133,
+    "n_hints_in_turn_windows": 152,
+    "hint_latency_ms_p50": 736,
+    "hint_latency_ms_p95": 3376,
+    "turn_end_latency_ms_p50": 1296,
+    "turn_end_latency_ms_p95": 3728,
+    "precision_pct": 75.7,
+    "confirm_rate_pct": 59.2,
+    "recall_pct": 44.4,
+    "stale_hinted_ends": 0,
+    "wasted_preps_per_turn": 0.31,
+    "false_interruption_pct": 10.5,
+    "missed_pct": 33.5,
+    "prep300": {
+     "response_ms_p50_at_turn_end": 1596,
+     "response_ms_p95_at_turn_end": 4028,
+     "response_ms_p50_at_hint": 1516,
+     "response_ms_p95_at_hint": 4004,
+     "mean_saving_ms": 120
+    },
+    "prep600": {
+     "response_ms_p50_at_turn_end": 1896,
+     "response_ms_p95_at_turn_end": 4328,
+     "response_ms_p50_at_hint": 1816,
+     "response_ms_p95_at_hint": 4200,
+     "mean_saving_ms": 181
+    }
+   }
+  },
+  "0.9": {
+   "calls": {
+    "n_turns": 109,
+    "n_answered": 101,
+    "n_hints_in_turn_windows": 131,
+    "hint_latency_ms_p50": 446,
+    "hint_latency_ms_p95": 1243,
+    "turn_end_latency_ms_p50": 926,
+    "turn_end_latency_ms_p95": 1888,
+    "precision_pct": 57.3,
+    "confirm_rate_pct": 67.2,
+    "recall_pct": 59.4,
+    "stale_hinted_ends": 2,
+    "wasted_preps_per_turn": 0.394,
+    "false_interruption_pct": 20.2,
+    "missed_pct": 7.3,
+    "prep300": {
+     "response_ms_p50_at_turn_end": 1226,
+     "response_ms_p95_at_turn_end": 2188,
+     "response_ms_p50_at_hint": 1026,
+     "response_ms_p95_at_hint": 2130,
+     "mean_saving_ms": 157
+    },
+    "prep600": {
+     "response_ms_p50_at_turn_end": 1526,
+     "response_ms_p95_at_turn_end": 2488,
+     "response_ms_p50_at_hint": 1188,
+     "response_ms_p95_at_hint": 2328,
+     "mean_saving_ms": 242
+    }
+   },
+   "ami": {
+    "n_turns": 200,
+    "n_answered": 133,
+    "n_hints_in_turn_windows": 132,
+    "hint_latency_ms_p50": 856,
+    "hint_latency_ms_p95": 3376,
+    "turn_end_latency_ms_p50": 1296,
+    "turn_end_latency_ms_p95": 3728,
+    "precision_pct": 75.8,
+    "confirm_rate_pct": 62.1,
+    "recall_pct": 39.1,
+    "stale_hinted_ends": 0,
+    "wasted_preps_per_turn": 0.25,
+    "false_interruption_pct": 10.5,
+    "missed_pct": 33.5,
+    "prep300": {
+     "response_ms_p50_at_turn_end": 1596,
+     "response_ms_p95_at_turn_end": 4028,
+     "response_ms_p50_at_hint": 1516,
+     "response_ms_p95_at_hint": 4004,
+     "mean_saving_ms": 103
+    },
+    "prep600": {
+     "response_ms_p50_at_turn_end": 1896,
+     "response_ms_p95_at_turn_end": 4328,
+     "response_ms_p50_at_hint": 1816,
+     "response_ms_p95_at_hint": 4200,
+     "mean_saving_ms": 142
+    }
+   }
+  },
+  "0.95": {
+   "calls": {
+    "n_turns": 109,
+    "n_answered": 101,
+    "n_hints_in_turn_windows": 111,
+    "hint_latency_ms_p50": 456,
+    "hint_latency_ms_p95": 1227,
+    "turn_end_latency_ms_p50": 926,
+    "turn_end_latency_ms_p95": 1888,
+    "precision_pct": 58.6,
+    "confirm_rate_pct": 69.4,
+    "recall_pct": 49.5,
+    "stale_hinted_ends": 1,
+    "wasted_preps_per_turn": 0.312,
+    "false_interruption_pct": 20.2,
+    "missed_pct": 7.3,
+    "prep300": {
+     "response_ms_p50_at_turn_end": 1226,
+     "response_ms_p95_at_turn_end": 2188,
+     "response_ms_p50_at_hint": 1032,
+     "response_ms_p95_at_hint": 2132,
+     "mean_saving_ms": 130
+    },
+    "prep600": {
+     "response_ms_p50_at_turn_end": 1526,
+     "response_ms_p95_at_turn_end": 2488,
+     "response_ms_p50_at_hint": 1256,
+     "response_ms_p95_at_hint": 2430,
+     "mean_saving_ms": 197
+    }
+   },
+   "ami": {
+    "n_turns": 200,
+    "n_answered": 133,
+    "n_hints_in_turn_windows": 103,
+    "hint_latency_ms_p50": 816,
+    "hint_latency_ms_p95": 3456,
+    "turn_end_latency_ms_p50": 1296,
+    "turn_end_latency_ms_p95": 3728,
+    "precision_pct": 80.6,
+    "confirm_rate_pct": 66.0,
+    "recall_pct": 29.3,
+    "stale_hinted_ends": 0,
+    "wasted_preps_per_turn": 0.175,
+    "false_interruption_pct": 10.5,
+    "missed_pct": 33.5,
+    "prep300": {
+     "response_ms_p50_at_turn_end": 1596,
+     "response_ms_p95_at_turn_end": 4028,
+     "response_ms_p50_at_hint": 1596,
+     "response_ms_p95_at_hint": 4028,
+     "mean_saving_ms": 77
+    },
+    "prep600": {
+     "response_ms_p50_at_turn_end": 1896,
+     "response_ms_p95_at_turn_end": 4328,
+     "response_ms_p50_at_hint": 1896,
+     "response_ms_p95_at_hint": 4328,
+     "mean_saving_ms": 101
+    }
+   }
+  },
+  "0.99": {
+   "calls": {
+    "n_turns": 109,
+    "n_answered": 101,
+    "n_hints_in_turn_windows": 25,
+    "hint_latency_ms_p50": 182,
+    "hint_latency_ms_p95": 517,
+    "turn_end_latency_ms_p50": 926,
+    "turn_end_latency_ms_p95": 1888,
+    "precision_pct": 52.0,
+    "confirm_rate_pct": 64.0,
+    "recall_pct": 6.9,
+    "stale_hinted_ends": 0,
+    "wasted_preps_per_turn": 0.083,
+    "false_interruption_pct": 20.2,
+    "missed_pct": 7.3,
+    "prep300": {
+     "response_ms_p50_at_turn_end": 1226,
+     "response_ms_p95_at_turn_end": 2188,
+     "response_ms_p50_at_hint": 1226,
+     "response_ms_p95_at_hint": 2188,
+     "mean_saving_ms": 12
+    },
+    "prep600": {
+     "response_ms_p50_at_turn_end": 1526,
+     "response_ms_p95_at_turn_end": 2488,
+     "response_ms_p50_at_hint": 1526,
+     "response_ms_p95_at_hint": 2488,
+     "mean_saving_ms": 13
+    }
+   },
+   "ami": {
+    "n_turns": 200,
+    "n_answered": 133,
+    "n_hints_in_turn_windows": 42,
+    "hint_latency_ms_p50": 1456,
+    "hint_latency_ms_p95": 3576,
+    "turn_end_latency_ms_p50": 1296,
+    "turn_end_latency_ms_p95": 3728,
+    "precision_pct": 90.5,
+    "confirm_rate_pct": 76.2,
+    "recall_pct": 12.0,
+    "stale_hinted_ends": 0,
+    "wasted_preps_per_turn": 0.05,
+    "false_interruption_pct": 10.5,
+    "missed_pct": 33.5,
+    "prep300": {
+     "response_ms_p50_at_turn_end": 1596,
+     "response_ms_p95_at_turn_end": 4028,
+     "response_ms_p50_at_hint": 1596,
+     "response_ms_p95_at_hint": 4028,
+     "mean_saving_ms": 25
+    },
+    "prep600": {
+     "response_ms_p50_at_turn_end": 1896,
+     "response_ms_p95_at_turn_end": 4328,
+     "response_ms_p50_at_hint": 1896,
+     "response_ms_p95_at_hint": 4328,
+     "mean_saving_ms": 26
+    }
+   }
+  }
+ },
+ "compute_s": 0.4
+}

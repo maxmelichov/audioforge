@@ -20,7 +20,7 @@ EMB = 192  # the protocol's voice print size
 
 def hub_served():
     from audioforge.hub import SERVED
-    return SERVED  # stage1_served_v2.afm: what audioforge-download builds
+    return SERVED  # stage1_served_v3.afm: what audioforge-download builds
 
 
 def _load(name):
@@ -134,10 +134,10 @@ def test_download_default_set_is_single_model(tmp_path, monkeypatch):
     assert seen["keys"] == ["asr", "tsvad"]  # the LID head is optional (--with lid); Silero only --with silero
     hub.main(["--dir", str(tmp_path), "--yes", "--diarizer", "nemotron3"])
     assert seen["keys"] == ["asr", "tsvad", "nemotron3"]
-    for ver, (name, size, sha, _out) in hub.HEADS.items():  # heads assets: v0.2 ships, v0.1 kept (measured build)
+    for ver, (name, size, sha, _out) in hub.HEADS.items():  # heads assets: v0.3 ships, v0.2 / v0.1 kept
         p = ROOT / "assets" / name
         assert p.stat().st_size == size and hub.sha256_file(p) == sha and hub.heads_path(None, tmp_path, ver) == p
-    assert hub.SERVED == hub.HEADS[hub.HEADS_VERSION][3] == "stage1_served_v2.afm"
+    assert hub.SERVED == hub.HEADS[hub.HEADS_VERSION][3] == "stage1_served_v3.afm"
     for key in ("tsvad", "lid"):  # the shipped head files match their pinned sha256 (lid_distill.pt may be absent)
         c = hub.COMPONENTS[key]
         p = ROOT / "assets" / c.filename

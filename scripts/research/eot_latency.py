@@ -32,6 +32,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import random
 import sys
 import time
@@ -52,13 +53,16 @@ WORK = Path("/Volumes/ExternalSSD/nvidia-audio-models/scratch/eot_latency")
 # re-dumped after the TS-VAD clean-print check + anchored print adaptation (fe28a9e, research/TSWER.md): the TS-VAD
 # columns (P(user) / P(other)) and so the turn head's p changed; dump3 = the dump after the 70 ms chunk-trigger fix
 # (d832fca), before fe28a9e; dump2 = the old clock
-DUMP = Path("/Volumes/ExternalSSD/nvidia-audio-models/scratch/tswer_fix/eot_dump")
+# EOT_DUMP / EOT_OUT / EOT_LABELS (research/TURN_V4.md): score another head's dump, write elsewhere, or score against
+# another reference label set ({session key: [[start, end], ...]} replacing user_turns, e.g. the audible-end labels)
+DUMP = Path(os.environ.get("EOT_DUMP", "/Volumes/ExternalSSD/nvidia-audio-models/scratch/tswer_fix/eot_dump"))
+LABELS = os.environ.get("EOT_LABELS")
 DUMP_PRE_PRINTFIX = WORK / "dump3"
 DUMP_OLD = WORK / "dump2"
 # baselines4: the Pipecat row from Pipecat's own LocalSmartTurnAnalyzerV3 (scripts/research/smartturn_audit.py);
 # baselines3 = our re-implementation of it (on dump3: LiveKit text on the post-d832fca ASR clock); "baselines" = dump2
 BASE = WORK / "baselines4"
-OUT = ROOT / "runs" / "eot_latency.json"
+OUT = Path(os.environ.get("EOT_OUT", ROOT / "runs" / "eot_latency.json"))
 N_AMI = 200
 TOL = 0.08  # one frame of label tolerance at the reference end
 HORIZON = 6.0
@@ -90,6 +94,13 @@ def sessions() -> list[dict]:
             out.append({"key": f"{r['name']}.mono", "set": "ami", "cond": "mono", "wav": str(WORK / "ami" / f"{r['name']}.wav"),
                         "pad_s": 0.0, "user_turns": [tuple(r["user_turn"])], "scored": [True],
                         "next_onset": [r["next_onset"]], "embedding": r["embedding"]})
+    if LABELS:  # another reference label set: same turns, other ends (next onsets unchanged)
+        lab = json.loads(Path(LABELS).read_text())
+        for s in out:
+            if s["key"] in lab:
+                s["user_turns_orig"] = s["user_turns"]
+                s["user_turns"] = [tuple(x) for x in lab[s["key"]]]
+                assert len(s["user_turns"]) == len(s["user_turns_orig"]), s["key"]
     return out
 
 
@@ -102,10 +113,11 @@ def read_audio(s) -> np.ndarray:
 
 
 def cmd_prepare_ami(a):
-    import torch
-    import soundfile as sf
     import eval_stage1 as ES
+    import soundfile as sf
+    import torch
     import tsvad as T
+
     from audioforge.train import load_model
     from audioforge.tsvad_stream import voiceprint
     torch.set_num_threads(2)
@@ -145,6 +157,7 @@ def cmd_prepare_ami(a):
 def cmd_dump(a):
     import torch
     from single_model import single_engine
+
     import audioforge.serve as S
     torch.set_num_threads(2)
     DUMP.mkdir(parents=True, exist_ok=True)
@@ -336,7 +349,9 @@ def sim_room(d: dict, rule: dict) -> list:
     """Room-aware turn rule (no Silero), per 80 ms frame v with the turn head's p, P(user) / P(other) of the TS-VAD
     track and the served VAD head:
       A (head path)     silence on ``src`` >= k frames AND p >= th
-      B (fallback)      silence on ``src`` >= F frames (F None = off)
+      B (fallback)      silence on ``src`` >= F frames (F None = off); B' (dyn-wait, rule["dyn"] = (cap, floor, a)):
+                        silence >= clamp(cap - a * p, floor, cap) frames; E (early, rule["early"] = (vt_e, k_e, th_e)):
+                        p >= th_e after k_e frames of VAD < vt_e, checked before A
       C (others path)   P(other) >= ot (someone else is talking, so the user's turn ended when the user went quiet, no
                         wait for room silence) AND the user's own silence (P(user) < ut) >= kU frames AND p >= thC
                         (kU None = off), or that silence >= FU frames (the others fallback; FU None = off); P(other) >= ot must have
@@ -361,6 +376,15 @@ def sim_room(d: dict, rule: dict) -> list:
     msp = rule.get("min_sp", 0)  # the head path / fallback need >= min_sp speech frames of src since the last firing
     nsp = 0
     k, th, F = rule["k"], rule["th"], rule.get("fallback_f")
+    # dyn-wait (Silero-free hybrid_dyn, research/TURN_V4.md): the silence wait in frames is clamp(cap - a * p, floor,
+    # cap), so a moderately sure head gets a shorter wait than an unsure one; (cap_f, floor_f, a_f) or None
+    dyn = rule.get("dyn")
+    # early head path (research/TURN_V4.md): p >= th_e once the VAD has been below vt_e for k_e frames, even while
+    # src still counts speech (the served VAD's tail); (vt_e, k_e, th_e) or None. One firing per turn: after an early
+    # firing during src speech, nothing fires again until src has gone quiet and heard new speech
+    early = rule.get("early")
+    evad = np.asarray(d["head"]["vad"], float)
+    erun, blocked = 0, False
     kU, ot, thC, FU = rule.get("ku"), rule.get("ot", 0.5), rule.get("th_c", 0.0), rule.get("fu")
     om = max(1, rule.get("om", 1))  # frames in a row with P(other) >= ot
     FW = rule.get("fw", 10 ** 9)  # the others fallback fires only while the user's silence is in [FU, FU + FW]
@@ -377,10 +401,18 @@ def sim_room(d: dict, rule: dict) -> list:
             lastu = v
         silv = v - last if last >= 0 else 0
         silu = v - lastu if lastu >= 0 else 0
+        if early is not None:
+            erun = erun + 1 if evad[v] < early[0] else 0
+            if blocked and not sp[v]:  # the early firing's turn has gone quiet on src: its speech is spent
+                blocked, fired = False, last
         path = None
-        if last >= 0 and last != fired and silv > 0 and (not arm_user or lastu != firedu) and nsp >= msp:
+        if early is not None and not blocked and last >= 0 and last != fired and erun >= early[1] and hp[v] >= early[2]:
+            path = "early"
+        elif last >= 0 and last != fired and silv > 0 and (not arm_user or lastu != firedu) and nsp >= msp:
             if silv >= k and hp[v] >= th:
                 path = "head"
+            elif dyn is not None and silv >= min(max(dyn[0] - dyn[2] * hp[v], dyn[1]), dyn[0]):
+                path = "dyn"
             elif F is not None and silv >= F:
                 path = "fallback"
         orun = orun + 1 if po[v] >= ot else 0
@@ -391,6 +423,7 @@ def sim_room(d: dict, rule: dict) -> list:
                 path = "others_fallback"
         if path is not None:
             fired, firedu, nsp = last, lastu, 0
+            blocked = path == "early" and bool(sp[v])  # fired while src still hears speech: wait for its silence
             out.append((round(float(ht[v]), 4), path))
     return out
 
@@ -461,7 +494,23 @@ def cmd_check(a):
         n2 += len(want)
         bad2 += got != want
     log(f"check: served VadHeadPolicy defaults vs sim_room(CHOSEN): {n2} turn_ends, {bad2} sessions differ")
-    return bad + bad2
+    # --turn-preset fast: the policy built from TURN_PRESETS["fast"] (audioforge.serve.vad_head_params) == sim_room(FAST)
+    from audioforge.serve import vad_head_params
+    k, fb, thr, others = vad_head_params("fast")
+    bad3 = n3 = 0
+    for k_, d in dump.items():
+        h = d["head"]
+        pol = VadHeadPolicy(0.99, k, fb, thr, others=others)
+        got = []
+        for v in range(len(h["p"])):
+            ev = pol.update(h["p"][v], h["vad"][v], h["pu"][v], h["po"][v])
+            if ev is not None:
+                got.append((round(float(h["t"][v]), 4), ev["path"]))
+        want = [(t, "others" if path == "others_fallback" else path) for t, path in sim_room(d, FAST)]
+        n3 += len(want)
+        bad3 += got != want
+    log(f"check: served VadHeadPolicy --turn-preset fast vs sim_room(FAST): {n3} turn_ends, {bad3} sessions differ")
+    return bad + bad2 + bad3
 
 
 # --------------------------------------------------------------------------- baselines
@@ -840,7 +889,7 @@ def cmd_sweep(a):
     # the shipped rule) with calls false interruptions / misses <= the fe28a9e shipped rule's (22.9 / 7.3 %), AMI misses
     # <= its 34.0 % and AMI false interruptions <= its 10.0 % + one turn, and no turn_end inside the clip's user turn
     # under any of the ways a client may deliver the clip (the frames served_check recorded, CLIP_VARIANTS)
-    clipf = WORK / "clip_frames.json"
+    clipf = Path(os.environ.get("EOT_CLIP_FRAMES", WORK / "clip_frames.json"))
     demo = {}
     if clipf.exists():
         cv = json.loads(clipf.read_text())
@@ -905,6 +954,9 @@ CHOSEN = {"family": "room", "src": "vad", "vad_thr": 0.4, "k": 2, "th": 0.99, "f
 # the rule shipped at a8b8c67-fe28a9e (--vad-wait-ms 320,800, VAD < 0.4, theta 0.95, --others-wait-ms 960,640)
 SHIPPED_FE28 = {"family": "room", "src": "vad", "vad_thr": 0.4, "k": 4, "th": 0.95, "fallback_f": 10,
                 "ot": 0.9, "om": 8, "fu": 12, "fw": 0, "ku": None, "th_c": 0.0}
+# --turn-preset fast (research/VAD_TAIL.md, "Turn presets" below): VAD < 0.6 for >= 480 ms AND p >= 0.99, OR 720 ms,
+# others path 640,640 (audioforge.server.constants.TURN_PRESETS["fast"])
+FAST = {**CHOSEN, "vad_thr": 0.6, "k": 6, "fallback_f": 9, "fu": 8}
 CHOSEN_NAME = "(g0) shipped at fe28a9e: ourVAD<0.4 sil>=320ms & p>=0.95 | fallback 800ms | others"
 PREV_VAD_HEAD = {"family": "vad_head", "mode": "any", "vad_thr": 0.3, "k": 1, "th": 0.95, "fallback_f": 12}
 
@@ -930,9 +982,32 @@ CLIP_VARIANTS = {
 }
 
 
-def _clip_session(eng, S, x, emb, pol):
+def sim_served_gate(d: dict, x: np.ndarray, preset: str = "balanced", quiet_db=None) -> list:
+    """The served vad_head WITH the energy gate (--energy-gate on, the default since research/EOT_ASSISTANT.md
+    "Energy gate"): audioforge's VadHeadPolicy + EnergyGate built as Session._vad_head_policy builds them, over the
+    recorded frames d["head"] and the frame energies of the delivered audio x -> [(t, path)]."""
+    import math
+
+    from audioforge.serve import vad_head_params
+    from audioforge.server.constants import ENERGY_GATE as G
+    from audioforge.server.constants import FRAME_MS
+    from audioforge.server.policies import EnergyGate, VadHeadPolicy, frame_db
+    k, fb, thr, others = vad_head_params(preset)
+    pol = VadHeadPolicy(0.99, k, fb, thr, others=others, gate=EnergyGate(
+        quiet_db=quiet_db, onset_db=G["onset_db"], window_s=G["window_s"], pct=G["pct"],
+        warmup_frames=int(math.ceil(G["warmup_ms"] / FRAME_MS))))
+    h, out = d["head"], []
+    for v in range(len(h["p"])):
+        b = min((v + 1) * 1280, int(round(float(h["t"][v]) * SR)))  # the samples known at the decision-ready time
+        ev = pol.update(h["p"][v], h["vad"][v], h["pu"][v], h["po"][v], frame_db(x[v * 1280:b]) if b > v * 1280 else -100.0)
+        if ev is not None:
+            out.append((round(float(h["t"][v]), 4), ev["path"]))
+    return out
+
+
+def _clip_session(eng, S, x, emb, pol, preset=None):
     """The served session on the clip in 20 ms blocks -> (turn_end messages, per-frame signals, session)."""
-    s = S.Session(eng, S.SessionConfig(turn_policy=pol))
+    s = S.Session(eng, S.SessionConfig(turn_policy=pol, turn_preset=preset))
     s.arm_enrollment("enroll", 0, embedding=emb)
     rec = []
     orig = s.asr.run_turn_on_diar
@@ -960,10 +1035,14 @@ def cmd_served_check(a):
     the float clip for contrast."""
     import torch
     from single_model import single_engine
+
     import audioforge.serve as S
     from audioforge.data import load_wav
     torch.set_num_threads(2)
-    eng = single_engine(afm=SERVED_AFM)
+    preset = getattr(a, "preset", "balanced")
+    tmod = getattr(a, "turn_model", "head")  # --turn-model smartturn (research/EOT_ASSISTANT.md): no sim_room twin
+    rule = FAST if preset == "fast" else CHOSEN
+    eng = single_engine(afm=SERVED_AFM, turn_model=tmod)
     eng.warmup()
     wav = ROOT / "examples" / "audio" / "two_party_call_16s.wav"
     x0 = load_wav(str(wav), SR).astype(np.float32)
@@ -974,15 +1053,19 @@ def cmd_served_check(a):
            "user_turn": [s0, e1]}
     frames = {}
     for var, fn in CLIP_VARIANTS.items():
-        for pol in ("vad_head", "hybrid_dyn") if var == "float" else ("vad_head",):
-            te, d, s = _clip_session(eng, S, fn(x0), emb, pol)
-            r = {"served_turn_ends": [{k: m[k] for k in ("t", "p", "silence_ms")} for m in te],
+        for pol in ("vad_head", "hybrid_dyn") if var == "float" and preset == "balanced" and tmod == "head" else ("vad_head",):
+            te, d, s = _clip_session(eng, S, fn(x0), emb, pol, preset if pol == "vad_head" else None)
+            r = {"served_turn_ends": [{k: m.get(k) for k in ("t", "p", "silence_ms", "path", "model_ms") if k in m}
+                                      for m in te],
                  "cuts_user_turn": any(s0 <= m["t"] < e1 - TOL for m in te),
                  "silero_loaded_in_session": s.sil is not None,
                  "chunk_ms_p50": round(float(np.median(list(s.chunk_ms))), 1)}
-            if pol == "vad_head":
-                sim = [t for t, _ in sim_room(d, CHOSEN)]
+            if pol == "vad_head" and tmod == "head":
+                sim_v = [t for t, _ in sim_room(d, rule)]  # the VAD-only rule (--energy-gate off)
+                sim = ([t for t, _ in sim_served_gate(d, fn(x0), preset, eng.energy_quiet_db)] if eng.energy_gate
+                       else sim_v)
                 r["offline_rule_turn_ends"] = sim
+                r["offline_vad_only_rule_turn_ends"] = sim_v
                 r["served_equals_offline"] = [m["t"] for m in te] == [round(t, 3) for t in sim]
                 d.pop("_cache", None)
                 frames[var] = {**d, "turn_ends": r["served_turn_ends"]}
@@ -991,10 +1074,13 @@ def cmd_served_check(a):
             res[pol if var == "float" else f"vad_head [{var}]"] = r
             log(var, pol, r["served_turn_ends"], "cut" if r["cuts_user_turn"] else "no cut",
                 r.get("served_equals_offline"))
-    (WORK / "clip_frames.json").write_text(json.dumps(frames))
+    if preset == "balanced" and tmod == "head":  # the frames are the same under either preset (the rule reads them)
+        (WORK / "clip_frames.json").write_text(json.dumps(frames))
+    res["engine"] = {"energy_gate": eng.energy_gate, "energy_quiet_db": eng.energy_quiet_db, "turn_model": tmod}
     log(json.dumps(res, indent=1))
     prev = json.loads(OUT.read_text()) if OUT.exists() else {}
-    prev["served_check"] = res
+    key = "served_check" if preset == "balanced" else f"served_check_{preset}"
+    prev[key if tmod == "head" else f"{key}_{tmod}"] = res
     OUT.write_text(json.dumps(prev, indent=1, default=float))
 
 
@@ -1008,7 +1094,9 @@ def main():
     b = sub.add_parser("baselines")
     b.add_argument("--budget", type=float, default=540)
     sub.add_parser("sweep")
-    sub.add_parser("served_check")
+    sc = sub.add_parser("served_check")
+    sc.add_argument("--preset", choices=("balanced", "fast"), default="balanced")
+    sc.add_argument("--turn-model", dest="turn_model", choices=("head", "smartturn"), default="head")
     a = p.parse_args()
     globals()[f"cmd_{a.cmd}"](a)
 

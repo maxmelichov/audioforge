@@ -55,13 +55,14 @@ def log(*a):
     print(time.strftime("%H:%M:%S"), *a, flush=True)
 
 
-def single_engine(threads=2, afm=None):
+def single_engine(threads=2, afm=None, **kw):
     """The --mode single engine (no diarizer loaded) with Silero available for the hybrid_dyn variants (``afm``: the
-    ASR + heads checkpoint, default the measured v1 runs/stage1_served.afm)."""
+    ASR + heads checkpoint, default the measured v1 runs/stage1_served.afm; ``kw``: further Engine options, e.g.
+    turn_model="smartturn")."""
     from audioforge.serve import Engine
     from audioforge.server.cli import MODES
     opts = {**MODES["single"], "enroll": "explicit", "tsvad": str(ROOT / "runs" / "tsvad_spk.pt"),
-            "silero": str(ROOT / "data" / "silero" / "silero_vad_v5.onnx"), "preload_silero": True}
+            "silero": str(ROOT / "data" / "silero" / "silero_vad_v5.onnx"), "preload_silero": True, **kw}
     return Engine.load(str(afm or ROOT / "runs" / "stage1_served.afm"), None, "cpu", threads=threads, **opts)
 
 

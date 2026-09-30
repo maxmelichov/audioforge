@@ -44,8 +44,9 @@ class FakeServer:
     diarizer), the head's turn_end when its fake eot crosses the threshold, finals at the cutting turn_end and at
     "end", then stats and close. ``drop_after_s`` closes the socket abruptly."""
 
-    def __init__(self, thr=0.02, lag_s=0.56, drop_after_s=None):
+    def __init__(self, thr=0.02, lag_s=0.56, drop_after_s=None, hints=False):
         self.thr, self.lag_s, self.drop_after_s = thr, lag_s, drop_after_s
+        self.hints = hints  # turn_end_hint on the first silent frame after speech (text = the segment so far)
         self.connections, self.configs, self.samples, self.ends = 0, [], [], 0
         self.controls = []  # (connection index, type, samples received before it)
         self.port = None
@@ -69,8 +70,11 @@ class FakeServer:
             due = [p for p in st["pending"] if p[0] <= t_audio + 1e-9 or final]
             st["pending"] = [p for p in st["pending"] if p not in due]
             for t, pol, sil in due:
-                await ws.send(json.dumps({"type": "turn_end", "t": round(t, 3), "policy": pol,
-                                          "p": 0.99 if pol == "head" else None, "silence_ms": sil}))
+                te = {"type": "turn_end", "t": round(t, 3), "policy": pol, "p": 0.99 if pol == "head" else None,
+                      "silence_ms": sil}
+                if self.hints:
+                    te["hinted_at"], st["hint"] = st.get("hint"), None
+                await ws.send(json.dumps(te))
                 if pol == cut():
                     await ws.send(json.dumps({"type": "final", "t": round(t, 3), "text": text(), "speaker": 0}))
                     st["seg_words"] = 0
@@ -134,6 +138,10 @@ class FakeServer:
                 await ws.send(json.dumps({"type": "frames", "items": items}))
                 if st["words"] and text():
                     await ws.send(json.dumps({"type": "partial", "t": items[-1]["t"], "text": text()}))
+                if self.hints and st["silent"] >= 1 and st["spoke"] and st.get("hint") is None and text():
+                    st["hint"] = items[-1]["t"]
+                    await ws.send(json.dumps({"type": "turn_end_hint", "t": st["hint"], "p": 0.9, "kind": "hint",
+                                              "text": text()}))
             await emit_due(self.samples[idx] / SR)
 
     async def __aenter__(self):
@@ -672,3 +680,67 @@ def test_speech_mapper_final_source_offline_holds_turn_until_offline_final():
     assert [e.type for e in ev] == [SE.FINAL_TRANSCRIPT, SE.END_OF_SPEECH]
     with pytest.raises(ValueError):
         AudioforgeOptions(final_source="bogus")
+
+
+# --------------------------------------------------------------------------- turn_end_hint -> preemptive generation
+def test_speech_mapper_hint_is_a_preflight_transcript_only_when_on():
+    for on in (False, True):
+        m = _SpeechMapper(AudioforgeOptions(turn_policy="vad_head", turn_hints=on))
+        m.on_message({"type": "partial", "t": 0.5, "text": "hello"}, _wall, offset=1.0)
+        ev = m.on_message({"type": "turn_end_hint", "t": 0.9, "p": 0.91, "kind": "hint", "text": "hello there"},
+                          _wall, offset=1.0)
+        if on:
+            assert [e.type for e in ev] == [SE.PREFLIGHT_TRANSCRIPT]
+            d = ev[0].alternatives[0]
+            assert d.text == "hello there" and d.end_time == pytest.approx(1.9)
+            assert d.metadata["audioforge"]["kind"] == "hint" and d.metadata["audioforge"]["p"] == 0.91
+        else:
+            assert ev == []
+        assert m.hint is not None
+        assert m.on_message({"type": "turn_end_hint_cancel", "t": 1.1}, _wall) == [] and m.hint is None
+        m.on_message({"type": "turn_end_hint", "t": 1.5, "p": 0.9, "kind": "hint", "text": "hello there"}, _wall)
+        assert m.on_message({"type": "turn_end", "t": 1.66, "policy": "vad_head", "p": 0.99, "silence_ms": 160,
+                             "hinted_at": 1.5}, _wall) == [] and m.hint is None
+        ev = m.on_message({"type": "final", "t": 1.66, "text": "hello there", "speaker": 0}, _wall)
+        assert [e.type for e in ev] == [SE.FINAL_TRANSCRIPT, SE.END_OF_SPEECH]  # the commit is unchanged
+    # a hint before any START_OF_SPEECH opens the segment first
+    m = _SpeechMapper(AudioforgeOptions(turn_hints=True))
+    ev = m.on_message({"type": "turn_end_hint", "t": 0.9, "p": 0.9, "kind": "hint", "text": "hi"}, _wall)
+    assert [e.type for e in ev] == [SE.START_OF_SPEECH, SE.PREFLIGHT_TRANSCRIPT]
+    assert m.on_message({"type": "turn_end_hint", "t": 0.9, "p": 0.9, "kind": "hint", "text": ""}, _wall) == []
+
+
+@pytest.mark.parametrize("turn_hints", [False, True])
+def test_agent_session_preemptive_generation_on_the_hint(turn_hints):
+    """A real AgentSession (turn_detection="stt"): with turn_hints the hint's PREFLIGHT_TRANSCRIPT starts a
+    preemptive reply that LiveKit uses at the commit (same transcript); without, preemptive generation stays off
+    (the worker's configuration) and the turn commits and is answered as before."""
+    import logging
+    demo = _load_demo()
+    x = speech_silence(((1.0, 0.2), (3.0, 0.0)))
+
+    async def body():
+        async with FakeServer(hints=True) as srv:
+            return await demo.run_agent_session(x, srv.url, mode="stt", speed=4.0, timeout_ms=600, tail_s=0.0,
+                                                turn_hints=turn_hints)
+
+    msgs: list[str] = []
+
+    class _H(logging.Handler):
+        def emit(self, record):
+            msgs.append(record.getMessage())
+
+    lg, h = logging.getLogger("livekit.agents"), _H(level=logging.DEBUG)
+    old = lg.level
+    lg.addHandler(h)
+    lg.setLevel(logging.DEBUG)
+    try:
+        res = asyncio.run(body())
+    finally:
+        lg.removeHandler(h)
+        lg.setLevel(old)
+    users = [e for e in res["events"] if e["kind"] == "user_turn"]
+    assert users and users[0]["text"] == "w0 w1", res["events"]
+    assert any(e["kind"] == "agent_reply" for e in res["events"])
+    used = [m for m in msgs if "using preemptive generation" in m]
+    assert bool(used) == turn_hints, [m for m in msgs if "preemptive" in m]

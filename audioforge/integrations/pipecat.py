@@ -54,6 +54,19 @@ service sees it): the server then binds the primary to the first speaker after t
 server's ``enrolled`` event sets ``hub.enrolled_column``. Default ``enroll=None``: nothing is sent (the server's
 default binding).
 
+Early end-of-turn hints (server ``turn_end_hint`` / ``turn_end_hint_cancel``, docs/PROTOCOL.md 5.11; opt-in here
+with ``AudioforgeSTTService(turn_hints=True)``): Pipecat 1.12's eager end of turn. The STT pushes each hint as an
+``EagerTranscriptionFrame`` (text = the hint's ``text``, what the final would hold if the turn ended then) and each
+cancel as an ``EagerEndOfTurnCancelFrame``; ``AudioforgeEagerTurnStopStrategy`` (a ``TurnAnalyzerUserTurnStopStrategy``
+with Pipecat's ``EagerUserTurnStopStrategy`` speculation logic) starts a speculative LLM inference on the hint
+(``LLMContextFrame(speculation=True)`` against a provisional context), which the LLM service's ``SpeculationGate``
+holds. When the server's ``turn_end`` then ends the turn as before, the held response is released at once if the
+turn's final transcript matches the speculated text (``match_policy``, default Pipecat's ``NormalizedMatch``),
+otherwise it is discarded and inference runs on the final text. A cancel (the user resumed) stops the speculative
+inference and discards its output; the turn stays open. Nothing reaches the user before the server's turn_end, so
+false interruptions are unchanged; a cancelled hint costs one LLM call. With ``turn_hints=False`` (default) the
+hint events are only recorded (``hub.hints``) and the pipeline behaves exactly as before.
+
 Usage::
 
     hub = AudioforgeHub()
@@ -63,6 +76,10 @@ Usage::
         user_turn_strategies=UserTurnStrategies(
             stop=[TurnAnalyzerUserTurnStopStrategy(turn_analyzer=AudioforgeTurnAnalyzer(hub, policy="timeout"))])))
     Pipeline([transport.input(), stt, user, llm, tts, transport.output()])
+
+    # early hints: the reply is prepared from the hint and released at the server's turn_end
+    stt = AudioforgeSTTService(url="ws://127.0.0.1:8765", hub=hub, turn_hints=True)
+    ... stop=[AudioforgeEagerTurnStopStrategy(turn_analyzer=AudioforgeTurnAnalyzer(hub, policy="vad_head"))]
 """
 from __future__ import annotations
 
@@ -89,8 +106,19 @@ from pipecat.metrics.metrics import MetricsData
 from pipecat.processors.frame_processor import FrameDirection
 from pipecat.services.settings import STTSettings
 from pipecat.services.stt_service import WebsocketSTTService
+from pipecat.turns.user_stop import TurnAnalyzerUserTurnStopStrategy
 from pipecat.utils.time import time_now_iso8601
 from websockets.protocol import State
+
+try:  # Pipecat >= 1.12: eager end of turn (speculative inference held by the LLM service's SpeculationGate)
+    from pipecat.frames.frames import EagerEndOfTurnCancelFrame, EagerTranscriptionFrame
+    from pipecat.turns.types import UserTurnSpeculation
+    from pipecat.turns.user_stop import EagerMatchPolicy, NormalizedMatch
+    HAS_EAGER = True
+except ImportError:  # pragma: no cover - older Pipecat: hints are recorded, never acted on
+    EagerEndOfTurnCancelFrame = EagerTranscriptionFrame = UserTurnSpeculation = None
+    EagerMatchPolicy = NormalizedMatch = None
+    HAS_EAGER = False
 
 # hybrid* = the server's one-event-per-turn rules (research/archive/INTEGRATION.md section 8): hybrid_dyn / hybrid_silero =
 # head OR any-speaker Silero silence (dynamic / 2.64 s wait); their turn_end carries the policy name
@@ -111,6 +139,20 @@ class TurnEnd:
     silence_ms: int
     perf: float
     wall: float
+    hinted_at: float | None = None  # the server's turn_end.hinted_at: the turn_end_hint this decision confirms
+
+
+@dataclass
+class TurnHint:
+    """A server ``turn_end_hint`` plus its arrival time; ``outcome`` becomes "confirmed" (the next turn_end) or
+    "cancelled" (``turn_end_hint_cancel``), with ``resolved_perf`` the arrival of that message."""
+
+    t: float
+    p: float
+    text: str
+    perf: float
+    outcome: str | None = None
+    resolved_perf: float | None = None
 
 
 class AudioforgeHub:
@@ -124,6 +166,7 @@ class AudioforgeHub:
         self.policy = policy
         self.final_source = "stream"  # set by AudioforgeSTTService(final_source=...)
         self._turn_listeners: list[Callable[[TurnEnd], None]] = []
+        self._hint_listeners: list[Callable[[TurnHint], None]] = []
         self._frame_listeners: list[Callable[[float, float], None]] = []
         self.reset()
 
@@ -140,6 +183,8 @@ class AudioforgeHub:
         self.frame_arrivals: list[tuple[float, float]] = []  # (t, perf) per frame event
         self.frame_vad: list[tuple[float, float]] = []  # (t, vad) per frame event
         self.turn_ends: list[TurnEnd] = []
+        self.hints: list[TurnHint] = []  # the server's turn_end_hint events (outcome filled in as they resolve)
+        self.pending_hint: TurnHint | None = None
         self.finals: list[dict] = []
         self.offline_final_t: set[float] = set()  # t of the offline finals received (server --final-asr)
         self.partials = 0
@@ -147,12 +192,17 @@ class AudioforgeHub:
         self.errors: list[dict] = []  # the server's 'error' messages (degradations; a fatal one ends the session)
         self.enroll_sent = 0  # agent_end / enroll messages sent
         self.voiceprints: list[dict] = []  # the server's 'voiceprint' events (--turn-input tsvad)
+        self.language: dict | None = None  # the server's latest 'language' event (--lid)
         self._sent = [0]  # cumulative samples sent, at the pipeline rate
         self._sent_perf = [0.0]
         self.sample_rate = 16000
 
     def add_turn_listener(self, fn: Callable[[TurnEnd], None]):
         self._turn_listeners.append(fn)
+
+    def add_hint_listener(self, fn: Callable[[TurnHint], None]):
+        """fn(hint) on every turn_end_hint and again when it resolves (``hint.outcome`` set)."""
+        self._hint_listeners.append(fn)
 
     def add_frame_listener(self, fn: Callable[[float, float], None]):
         """fn(t, vad) on every frame event."""
@@ -183,11 +233,33 @@ class AudioforgeHub:
 
     def on_turn_end(self, m: dict, perf: float | None = None) -> TurnEnd:
         ev = TurnEnd(float(m["t"]), str(m["policy"]), m.get("p"), int(m.get("silence_ms", 0)),
-                     time.perf_counter() if perf is None else perf, time.time())
+                     time.perf_counter() if perf is None else perf, time.time(), m.get("hinted_at"))
         self.turn_ends.append(ev)
+        if self.pending_hint is not None:
+            self._resolve_hint("confirmed", ev.perf)
         for fn in list(self._turn_listeners):
             fn(ev)
         return ev
+
+    def on_turn_hint(self, m: dict, perf: float | None = None) -> TurnHint:
+        h = TurnHint(float(m["t"]), float(m.get("p", 0.0)), str(m.get("text") or ""),
+                     time.perf_counter() if perf is None else perf)
+        self.hints.append(h)
+        self.pending_hint = h
+        for fn in list(self._hint_listeners):
+            fn(h)
+        return h
+
+    def on_turn_hint_cancel(self, m: dict, perf: float | None = None) -> TurnHint | None:
+        return self._resolve_hint("cancelled", time.perf_counter() if perf is None else perf)
+
+    def _resolve_hint(self, outcome: str, perf: float) -> TurnHint | None:
+        h, self.pending_hint = self.pending_hint, None
+        if h is not None:
+            h.outcome, h.resolved_perf = outcome, perf
+            for fn in list(self._hint_listeners):
+                fn(h)
+        return h
 
 
 class AudioforgeSTTService(WebsocketSTTService):
@@ -195,7 +267,8 @@ class AudioforgeSTTService(WebsocketSTTService):
 
     def __init__(self, *, url: str = "ws://127.0.0.1:8765", hub: AudioforgeHub | None = None,
                  turn_policy: str | None = None, timeout_ms: int = 1000, eot_threshold: float | None = None,
-                 end_timeout: float = 5.0, enroll: str | None = None, final_source: str = "stream", **kwargs):
+                 end_timeout: float = 5.0, enroll: str | None = None, final_source: str = "stream",
+                 turn_hints: bool = False, **kwargs):
         """
         Args:
             url: the audioforge server (``python -m audioforge.serve``).
@@ -212,6 +285,10 @@ class AudioforgeSTTService(WebsocketSTTService):
                 model's finals instead, and the turn analyzer reports COMPLETE only once the turn's offline final
                 (same t) has arrived, so the LLM sees the offline transcript. Finals without "source" (server without
                 the flag) are always pushed.
+            turn_hints: push the server's turn_end_hint as an ``EagerTranscriptionFrame`` and its cancel as an
+                ``EagerEndOfTurnCancelFrame`` (Pipecat eager end of turn; pair with
+                ``AudioforgeEagerTurnStopStrategy``). Off by default: every hint then costs an LLM call, including
+                the cancelled ones.
         """
         kwargs.setdefault("settings", STTSettings(model="audioforge", language=None))
         super().__init__(**kwargs)
@@ -232,6 +309,10 @@ class AudioforgeSTTService(WebsocketSTTService):
         self._receive_task: asyncio.Task | None = None
         self._stats_event: asyncio.Event | None = None
         self._pending_controls: list = []  # agent_end / enroll requested before the first connection
+        if turn_hints and not HAS_EAGER:
+            raise ValueError("turn_hints needs Pipecat >= 1.12 (EagerTranscriptionFrame / SpeculationGate)")
+        self._turn_hints = bool(turn_hints)
+        self._eager_pending = False  # an EagerTranscriptionFrame is out and not yet resolved
 
     # ------------------------------------------------------------------ convenience
     def create_vad_analyzer(self, **kw) -> "AudioforgeVADAnalyzer":
@@ -399,7 +480,21 @@ class AudioforgeSTTService(WebsocketSTTService):
                 f.metadata["audioforge"] = {"t": msg.get("t"), "speaker": self.hub.primary, "kind": "partial"}
                 await self.push_frame(f)
         elif typ == "turn_end":
+            self._eager_pending = False  # resolved by the turn end (the stop strategy compares the transcripts)
             self.hub.on_turn_end(msg)
+        elif typ == "turn_end_hint":
+            self.hub.on_turn_hint(msg)
+            text = (msg.get("text") or "").strip()
+            if self._turn_hints and text:
+                f = EagerTranscriptionFrame(text, self._user_id, time_now_iso8601(), result=msg)
+                f.metadata["audioforge"] = {"t": msg.get("t"), "p": msg.get("p"), "kind": "hint"}
+                self._eager_pending = True
+                await self.push_frame(f)
+        elif typ == "turn_end_hint_cancel":
+            self.hub.on_turn_hint_cancel(msg)
+            if self._eager_pending:
+                self._eager_pending = False
+                await self.push_frame(EagerEndOfTurnCancelFrame())
         elif typ == "final":
             self.hub.finals.append(msg)
             src = msg.get("source")
@@ -419,6 +514,8 @@ class AudioforgeSTTService(WebsocketSTTService):
                                f"{msg.get('enroll', 'dominant')!r}; its trigger messages will be ignored")
         elif typ == "enrolled":
             self.hub.enrolled_column = msg.get("column")
+        elif typ == "language":  # server --lid (single mode's default): the spoken-language announcement
+            self.hub.language = msg
         elif typ == "voiceprint":  # server --turn-input tsvad: a new TS-VAD voice print is in use
             self.hub.voiceprints.append(msg)
         elif typ == "stats":
@@ -542,3 +639,102 @@ class AudioforgeTurnAnalyzer(BaseTurnAnalyzer):
     def clear(self):
         self._pending = None
         self._speech = False
+
+
+class AudioforgeEagerTurnStopStrategy(TurnAnalyzerUserTurnStopStrategy):
+    """``TurnAnalyzerUserTurnStopStrategy`` (the server's turn_end ends the turn, as with ``AudioforgeTurnAnalyzer``)
+    plus Pipecat's eager end of turn on the server's hints (``AudioforgeSTTService(turn_hints=True)``): an
+    ``EagerTranscriptionFrame`` starts a speculative inference on the turn text so far; at the turn end the held
+    response is kept when the final transcript matches it (``match_policy``, default ``NormalizedMatch``), else
+    discarded and inference runs again on the final text; an ``EagerEndOfTurnCancelFrame`` (the user resumed), a turn
+    that ends another way, or ``speculation_timeout`` seconds without a turn end discard it. The same logic as
+    Pipecat's ``EagerUserTurnStopStrategy``, which sits on the external-turn strategy instead of a turn analyzer.
+    ``speculated`` / ``kept`` / ``discarded``: (perf_counter, text) per speculation, for measurements."""
+
+    def __init__(self, *, turn_analyzer: BaseTurnAnalyzer, match_policy=None, speculation_timeout: float = 5.0,
+                 **kwargs):
+        if not HAS_EAGER:
+            raise RuntimeError("AudioforgeEagerTurnStopStrategy needs Pipecat >= 1.12")
+        super().__init__(turn_analyzer=turn_analyzer, **kwargs)
+        self._match_policy = match_policy or NormalizedMatch()
+        self._speculation_timeout = float(speculation_timeout)
+        self._speculation = None
+        self._spec_task: asyncio.Task | None = None
+        self._turn_text = ""  # the finals of this turn (what the aggregator writes to the context)
+        self.speculated: list[tuple[float, str]] = []
+        self.kept: list[tuple[float, str]] = []
+        self.discarded: list[tuple[float, str, str]] = []  # (perf, speculated text, why)
+
+    @property
+    def match_policy(self):
+        return self._match_policy
+
+    async def process_frame(self, frame: Frame):
+        if isinstance(frame, EagerTranscriptionFrame):
+            await self._speculate(frame)
+        elif isinstance(frame, EagerEndOfTurnCancelFrame):
+            # the frame itself travels on to the LLM service (stops the inference, the gate discards its output)
+            spec = await self._take()
+            if spec is not None:
+                self.discarded.append((time.perf_counter(), spec.text, "cancel"))
+        elif isinstance(frame, TranscriptionFrame) and frame.text.strip():
+            self._turn_text = f"{self._turn_text} {frame.text.strip()}".strip()
+        return await super().process_frame(frame)
+
+    async def trigger_user_turn_stopped(self, *, enable_user_speaking_frames: bool | None = None):
+        spec = await self._take()
+        if spec is None:
+            await super().trigger_user_turn_stopped(enable_user_speaking_frames=enable_user_speaking_frames)
+            return
+        if self._match_policy.matches(spec.text, self._turn_text):
+            logger.debug(f"{self}: turn_end confirms the hint, keeping the speculative response")
+            self.kept.append((time.perf_counter(), spec.text))
+            await self.trigger_user_turn_finalized(enable_user_speaking_frames=enable_user_speaking_frames,
+                                                   confirms_speculation=True)
+            return
+        logger.debug(f"{self}: final [{self._turn_text}] differs from the hint [{spec.text}]; answering again")
+        self.discarded.append((time.perf_counter(), spec.text, "mismatch"))
+        await self.trigger_user_turn_speculation_cancelled()
+        await super().trigger_user_turn_stopped(enable_user_speaking_frames=enable_user_speaking_frames)
+
+    async def _reset(self):
+        spec = await self._take()
+        self._turn_text = ""
+        await super()._reset()
+        if spec is not None:  # the turn ended another way (watchdog, interruption, session end)
+            self.discarded.append((time.perf_counter(), spec.text, "turn_reset"))
+            await self.trigger_user_turn_speculation_cancelled()
+
+    async def cleanup(self):
+        await self._take()
+        await super().cleanup()
+
+    async def _speculate(self, frame):
+        text = f"{self._turn_text} {frame.text.strip()}".strip()
+        if not text:
+            return
+        old = await self._take()
+        if old is not None:  # a newer hint supersedes (the server sends one at a time; defensive)
+            self.discarded.append((time.perf_counter(), old.text, "superseded"))
+            await self.trigger_user_turn_speculation_cancelled()
+        spec = UserTurnSpeculation(text=text)
+        self._speculation = spec
+        self._spec_task = self.task_manager.create_task(self._timeout(spec), f"{self}::speculation_timeout")
+        self.speculated.append((time.perf_counter(), text))
+        logger.debug(f"{self}: speculating on the server's hint: [{text}]")
+        await self.trigger_user_turn_inference_triggered(speculation=spec)
+
+    async def _timeout(self, spec):
+        await asyncio.sleep(self._speculation_timeout)
+        self._spec_task = None
+        if self._speculation is spec:
+            self._speculation = None
+            self.discarded.append((time.perf_counter(), spec.text, "timeout"))
+            await self.trigger_user_turn_speculation_cancelled()
+
+    async def _take(self):
+        spec, self._speculation = self._speculation, None
+        if self._spec_task is not None:
+            task, self._spec_task = self._spec_task, None
+            await self.task_manager.cancel_task(task)
+        return spec

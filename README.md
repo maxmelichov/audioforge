@@ -79,10 +79,15 @@ small); Pipecat = Pipecat defaults (Silero + smart-turn v3 + Whisper small). Wha
 | end-of-turn latency, p50 | 956 ms | 567 ms | 237 ms (bimodal: 38 of 82 answered ends wait for the 3 s fallback; p95 3217 ms) | [EOT_LATENCY](research/EOT_LATENCY.md) |
 | false interruptions (% of turns) | 20 % | 27 % | 36 % | [EOT_LATENCY](research/EOT_LATENCY.md) |
 | missed turn ends | 7 % | 23 % | 25 % | [EOT_LATENCY](research/EOT_LATENCY.md) |
+| end-of-turn p50 / FI / missed with `--turn-preset fast` (turn head v5) | 547 ms / 25 % / 5.5 % | | | [TURN_V5](research/TURN_V5.md) |
 | **Meetings** (AMI, 200 turns) | | | | |
 | end-of-turn latency, p50 | 1326 ms | 1890 ms | 384 ms | [EOT_LATENCY](research/EOT_LATENCY.md) |
 | false interruptions | 11 % | 13 % | 28 % | [EOT_LATENCY](research/EOT_LATENCY.md) |
 | missed turn ends | 34 % | 68 % | 45 % | [EOT_LATENCY](research/EOT_LATENCY.md) |
+| **Speech directed at the agent** (smart-turn's 399 test clips, `--turn-preset assistant`) | | | | |
+| accuracy (complete answered, incomplete not cut within 3 s) | 92 % (smart-turn bridge `--turn-model smartturn`: 96 %) | 73 % | 70 % | [TURN_V5](research/TURN_V5.md), [EOT_ASSISTANT](research/EOT_ASSISTANT.md) |
+| end-of-turn latency, p50 | 292 ms (bridge: 770 ms) | 547 ms | 211 ms | [TURN_V5](research/TURN_V5.md), [EOT_ASSISTANT](research/EOT_ASSISTANT.md) |
+| false fires on incomplete clips | 5.4 % (bridge: 5.8 %) | 44.6 % | 40.2 % | [EOT_ASSISTANT](research/EOT_ASSISTANT.md) |
 | **Words** | | | | |
 | WER, LibriSpeech test-clean (200 utt.) | 2.3 % | 2.4 % (Whisper small) | 2.4 % | [FINAL_REPORT](research/FINAL_REPORT.md), [MPS_115M](research/MPS_115M.md) |
 | WER, live calls | 23.2 % | 19.3 % | 23.5 % | [METRICS](research/METRICS.md) |
@@ -100,8 +105,9 @@ Real-time streams per Mac process: 4 on CPU, 5 on MPS; CPU and MPS give identica
 
 - **Words are those of a 115M streaming model.** On live calls LiveKit's default (Whisper small) transcribes better,
   23.2 vs 19.3 % WER. For a meeting-grade transcript use room mode with Parakeet-TDT v3.
-- **Not the fastest turn end.** LiveKit answers calls sooner (567 vs 956 ms p50) and Pipecat answers meetings sooner
-  (384 vs 1326 ms), at more false interruptions. In meetings audioforge still misses 34 % of turn ends.
+- **Not the fastest turn end by default.** LiveKit answers calls sooner (567 vs 956 ms p50) and Pipecat answers
+  meetings sooner (384 vs 1326 ms), at more false interruptions. `--turn-preset fast` (turn head v5) answers calls in
+  547 ms at 25 % false interruptions. In meetings audioforge still misses 34 % of turn ends.
 
 ## Modes and the voice sample
 

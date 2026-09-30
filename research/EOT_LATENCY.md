@@ -313,6 +313,104 @@ Sweep, all in numpy on the dumped frames (`sim_room`). 13 142 rules were scored 
   interruptions. 16 rules qualify; the fastest is the shipped one. One rule serves both corpora, so no per-corpus
   flag is needed.
 
+## Audible-end labels and turn head v4 (research/TURN_V4.md)
+
+The same rules re-scored against audible-end reference ends (`runs/turn_v4_labels_eval.json`: the last served-VAD >
+0.5 frame or Silero > 0.5 chunk inside the labelled turn; ends only move earlier; 13 of 109 calls ends and 5 of 200
+AMI ends move). Original-label numbers stay in the tables above.
+
+| rule | labels | calls p50 / p95 | calls FI / missed % | AMI p50 / p95 | AMI FI / missed % |
+|---|---|---|---|---|---|
+| shipped `vad_head` | original | 956 / 1919 | 20.2 / 7.3 | 1326 / 3758 | 10.5 / 33.5 |
+| shipped `vad_head` | audible end | 951 / 1916 | 19.3 / 6.4 | 1326 / 3758 | 10.5 / 33.5 |
+| Pipecat smart-turn v3.2 + Silero | audible end | 237 / 3217 | 35.8 / 24.8 | 384 / 3992 | 27.0 / 44.5 |
+| LiveKit EnglishModel + Silero | audible end | 566 / 3124 | 25.7 / 22.0 | 1890 / 4295 | 12.5 / 67.5 |
+
+- **No faster default.** Under audible-end labels the shipped rule is the only one of 4 860 vad_head variants with
+  FI and missed no worse on both corpora, so the default is unchanged.
+- **Retrained heads.** Turn heads retrained for early confidence did not get a faster rule under the goal either.
+- **Where the time goes.** The served VAD head stays > 0.5 for 240-320 ms (p50) after call turn ends where Silero has
+  already stopped. 65 of 101 answered calls ends then wait for the 640 ms fallback.
+- `sim_room` gained two optional paths, both off by default: dyn-wait (`rule["dyn"]`) and early (`rule["early"]`).
+  The harness also reads `EOT_DUMP` / `EOT_LABELS` / `EOT_OUT` / `EOT_CLIP_FRAMES`.
+
+## Turn presets (research/VAD_TAIL.md)
+
+`--turn-preset balanced | fast` (server flag; `config.turn_preset` per session, before the first audio;
+`MODES["single"]` sets `balanced`) names the `vad_head` constants. `balanced` is the shipped rule above. `fast` =
+`TURN_PRESETS["fast"]` = `FAST` in the script.
+
+**How `fast` was picked** (`scripts/research/vad_tail.py fast_scan`; `runs/vad_tail.json` "fast_scan"):
+- 6 966 vad_head rules were scored: VAD 0.3-0.6, 80-480 ms, θ 0.8-0.995 or none, fallback 240-960 ms, others path
+  640-960 ms.
+- The bar: calls FI ≤ 30 %, calls missed ≤ 7.3 %, AMI FI ≤ 16 %, and no cut under any of the six clip deliveries.
+- The fastest rules that meet the bar (776-814 ms) all cut the clip under 4-6 deliveries. The fastest with no cut is
+  870 ms at 29.4 % / 6.4 %.
+- The shipped `fast` is the runner-up: 16 ms slower, with 4.6 fewer points of FI and 2.7 fewer points of misses.
+
+| preset | labels | calls p50 / p95 | calls FI / missed % | AMI p50 / p95 | AMI FI / missed % |
+|---|---|---|---|---|---|
+| **balanced** (VAD < 0.4 ≥ 160 ms & p ≥ 0.99, OR 640 ms; others 960,640) | original | 956 / 1919 | 20.2 / 7.3 | 1326 / 3758 | 10.5 / 33.5 |
+| balanced | audible end | 951 / 1916 | 19.3 / 6.4 | 1326 / 3758 | 10.5 / 33.5 |
+| **fast** (VAD < 0.6 ≥ 480 ms & p ≥ 0.99, OR 720 ms; others 640,640) | original | 886 / 1434 | 24.8 / 3.7 | 1086 / 3886 | 16.0 / 30.5 |
+| fast | audible end | 886 / 1434 | 24.8 / 3.7 | 1086 / 3886 | 16.0 / 30.5 |
+| LiveKit EnglishModel + Silero (defaults) | original | 567 / 3127 | 26.6 / 22.9 | 1890 / 4295 | 12.5 / 67.5 |
+| Pipecat smart-turn v3.2 + Silero (defaults) | original | 237 / 3217 | 35.8 / 24.8 | 385 / 3992 | 27.5 / 44.5 |
+| **balanced, shipped + energy gate** (default since research/EOT_ASSISTANT.md "Energy gate") | original | 956 / 1919 | 20.2 / 7.3 | 1326 / 3758 | 10.5 / 33.5 |
+| fast + energy gate | original | 886 / 1434 | 24.8 / 3.7 | 1086 / 3886 | 16.0 / 30.5 |
+| balanced + energy-quiet silence X 6 dB (`--energy-quiet-db 6`, not default) | original | 582 / 1115 | 48.6 / 5.5 | 1006 / 3567 | 30.5 / 18.0 |
+| `--turn-model smartturn` balanced (VAD 160 ms trigger, 3 s fallback; opt-in) | original | 629 / 4068 | 19.3 / 23.9 | 1087 / 4429 | 13.0 / 36.5 |
+| `--turn-model smartturn --smartturn-trigger energy` balanced | original | 961 / 1933 | 24.8 / 8.3 | 1247 / 4047 | 18.0 / 33.5 |
+
+The energy gate (onset arming + a 160 ms warm-up guard) leaves every calls / AMI turn_end where it was. Its
+energy-quiet silence, the smart-turn bridge and their assistant-speech numbers are in research/EOT_ASSISTANT.md
+"Energy gate and the smart-turn bridge" (`runs/eot_energy_gate.json`).
+
+**`fast` against `balanced`:**
+- Calls p50 is about 70 ms faster. The session bootstrap's 90 % interval of the difference is −106 to −5 ms (audible
+  end: −102 to −10).
+- Calls p95 is about 490 ms faster (interval −827 to −169 ms).
+- Half the misses (4 vs 8 of 109 ends), for 5 more false interruptions (27 vs 22 of 109). On AMI: 240 ms faster p50,
+  3 points fewer misses, 5.5 points more FI.
+- `runs/vad_tail.json` "presets" holds these numbers.
+
+**Checked:**
+- `check`: `VadHeadPolicy` built from `TURN_PRESETS["fast"]` (`audioforge.serve.vad_head_params`) equals
+  `sim_room(FAST)` on all 519 `turn_end`s of the 232 sessions.
+- `served_check --preset fast`, the real engine on the bundled clip (`runs/eot_latency.json` "served_check_fast"):
+  - No cut under any of the six deliveries.
+  - Served equals offline in all six.
+  - The question's end is answered at 11.616 s (+6 dB: 11.776 s), 816 ms after the 10.8 s reference, against
+    976 ms for `balanced`.
+- `tests/test_turn_preset.py` covers the flag, the config key, the equality with `sim_room(FAST)`, and the recorded
+  clip frames under `fast`.
+
+## Turn head v5 presets (research/TURN_V5.md)
+
+Since served heads v0.3 the `fast` preset is decided by the turn head v5 segment classifier (`heads.turn_seg`: attention
+pooling over the last 8 s of encoder block 8, the RNNT tokens and the served VAD / TS-VAD tracks). The pre-v5 `fast`
+rule above is now `--turn-preset steady`. `assistant` is new and meant for speech directed at the agent. `balanced`
+stays the default. The rows below come from the served policy class (VadHeadPolicy + the energy gate) replayed on
+the dumped frames with the classifier's p; the served engine equals that replay on the bundled clip (all presets,
+all six deliveries) and on the 399 assistant clips.
+
+| preset | labels | calls p50 / p95 | calls FI / missed % | AMI p50 / p95 | AMI FI / missed % | bundled clip |
+|---|---|---|---|---|---|---|
+| balanced | original | 956 / 1919 | 20.2 / 7.3 | 1326 / 3758 | 10.5 / 33.5 | no cut |
+| **fast (v5)**: classifier after 80 ms of VAD < 0.6, again at every quiet frame, P > 0.7; OR 640 ms; others 960,640 | original | **547 / 1862** | 24.8 / 5.5 | 1247 / 4047 | 11.5 / 34.0 | no cut (6 of 6) |
+| fast (v5) | audible end | 629 / 1862 | 23.9 / 4.6 | 1247 / 4047 | 11.5 / 34.0 | no cut |
+| fast (v5), second training seed | original | 586 / 1835 | 26.6 / 5.5 | 1326 | 12.0 / 33.5 | no cut |
+| steady (the pre-v5 fast) | original | 886 / 1434 | 24.8 / 3.7 | 1086 / 3886 | 16.0 / 30.5 | no cut |
+| assistant (v5): after 240 ms of energy-or-VAD quiet, P > 0.9; OR 2960 ms | original | 3232 / 4802 | 5.5 / 33.9 | 1647 | 7.0 / 52.5 | no cut |
+
+- **fast vs balanced, calls p50:** −385 ms, session bootstrap 90 % interval −480 to −190 ms. Audible-end labels:
+  −320 ms, interval −430 to −184 ms.
+- The rule and the block (8) were picked on these eval sessions, as the earlier presets were.
+- `assistant` is for the voice-agent case. On smart-turn's 399 test clips (research/EOT_ASSISTANT.md protocol) it
+  gets 92.2 % accuracy at 292 ms p50, with 5.4 % false fires on incomplete clips. The served dump gives 93.0 % at
+  317 ms: the served replay adds the chunk compute, measured under load at 55.9 ms. On human conversation its ~3 s
+  timer misses a third of the ends.
+
 ## Metrics (defined once)
 
 For each reference user turn [s, e] (e = the reference end of the user's speech):

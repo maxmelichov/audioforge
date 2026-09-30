@@ -20,6 +20,7 @@ from .constants import (
     POLICY_THETA,
     PRIMARY_WINDOW_S,
     SR,
+    TURN_PRESETS,
 )
 
 __all__ = [
@@ -50,9 +51,17 @@ SCHEMA = {  # type -> {key: allowed python types}; None allowed where listed
     "voiceprint": {"t": _NUM, "seconds": _NUM, "source": (str,), "embedding": (list,)},  # --turn-input tsvad only: a new TS-VAD print
     "language": {"t": _NUM, "language": (str,), "confidence": _NUM},  # --lid only
     "error": {"code": (str,), "detail": (str,), "fatal": (bool,)},  # protocol / processing errors and degradations
+    # the early end-of-turn hint (audioforge.server.turn_hint; off with --turn-hint-off): at most one outstanding per
+    # user turn, then confirmed by the next turn_end (turn_end.hinted_at) or withdrawn by turn_end_hint_cancel
+    "turn_end_hint": {"t": _NUM, "p": _NUM, "kind": (str,), "text": (str,)},
+    "turn_end_hint_cancel": {"t": _NUM},
 }
 LID_KEYS = {"stats": {"lang": (str, type(None))}}  # present only with --lid
-OPTIONAL_KEYS = {"stats": {"degraded": (dict,), "speakers_seen": (int,)},  # degraded: only when the session degraded
+OPTIONAL_KEYS = {"stats": {"degraded": (dict,), "speakers_seen": (int,),  # degraded: only when the session degraded
+                           "turn_hints": (dict,), "turn_model": (dict,)},  # turn_hints / turn_end.hinted_at: with turn hints on (default)
+                 # path: vad_head's deciding path (head | fallback | others | model); model_ms: --turn-model
+                 # smartturn's compute for a "model" decision; stats.turn_model: that model's per-session counters
+                 "turn_end": {"hinted_at": _NUM + (type(None),), "path": (str,), "model_ms": _NUM},
                  # speaker_conf / diar_shed: only with --diar-labels registry or --shed-diar hold (DIARIZATION_FIX.md)
                  "final": {"speaker_conf": _NUM + (type(None),), "diar_shed": (bool,)}}
 # present only with --final-asr: every final has "source"; the offline model's finals add start / end / latency_ms
@@ -118,8 +127,12 @@ def validate(msg: dict, debug: bool = False) -> None:
             raise ValueError(f"frame probabilities out of range: {msg}")
         if msg["primary"] is not None and not 0 <= msg["primary"] < len(msg["speakers"]):
             raise ValueError(f"frame.primary out of range: {msg}")
+    if typ == "turn_end_hint" and (msg["kind"] != "hint" or not 0 <= msg["p"] <= 1):
+        raise ValueError(f"turn_end_hint needs kind 'hint' and 0 <= p <= 1: {msg}")
     if typ == "language" and not 0 <= msg["confidence"] <= 1:
         raise ValueError(f"language.confidence out of range: {msg}")
+    if typ == "turn_end" and msg.get("path", "head") not in ("head", "fallback", "others", "model"):
+        raise ValueError(f"turn_end.path must be head|fallback|others|model: {msg}")
     if typ == "turn_end" and msg["policy"] not in ("timeout", "change", "head") + HYBRID_POLICIES:
         raise ValueError(f"turn_end.policy must be timeout|change|head|{'|'.join(HYBRID_POLICIES)}: {msg}")
     if typ == "error" and msg["code"] not in ERROR_CODES:
@@ -138,6 +151,7 @@ class SessionConfig:
     sample_rate: int = SR
     format: str = "int16"  # binary frames: int16 (default) | float32, little-endian
     channels: int = 1  # interleaved channels in the binary frames (averaged to mono)
+    turn_preset: str | None = None  # vad_head's constants (TURN_PRESETS: balanced | fast); None = the server's --turn-preset
 
     @property
     def theta(self) -> float:
@@ -179,6 +193,11 @@ class SessionConfig:
                 self.turn_policy = d["turn_policy"]
             else:
                 warn.append(f"turn_policy {d['turn_policy']!r} ignored (one of {POLICIES})")
+        if "turn_preset" in d:
+            if d["turn_preset"] in TURN_PRESETS:
+                self.turn_preset = d["turn_preset"]
+            else:
+                warn.append(f"turn_preset {d['turn_preset']!r} ignored (one of {tuple(TURN_PRESETS)})")
         if "timeout_ms" in d:  # the primary window is 5 s, so a longer silence cannot be measured
             v = num("timeout_ms", int, FRAME_MS, int(PRIMARY_WINDOW_S * 1000 - 2 * FRAME_MS))
             if v is not None:

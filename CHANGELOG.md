@@ -6,6 +6,116 @@ versions follow [Semantic Versioning](https://semver.org/). Every measured numbe
 
 ## [Unreleased]
 
+### Added (2026-09-30): turn head v5, served heads v0.3, `--turn-preset fast` (v5) / `steady` / `assistant`
+- **Turn head v5** (`audioforge/heads/turn_seg.py`, research/TURN_V5.md): a smart-turn style segment classifier on
+  the frozen encoder.
+  - Attention pooling over the last 8 s of encoder block 8 (already computed by the ASR pass), the served VAD /
+    TS-VAD tracks and the RNNT tokens so far; smart-turn's MLP head; 2.46M parameters.
+  - Trained offline on oto / AMI / ICSI turn ends vs in-turn pauses, 7 626 utterances cut at word boundaries, and
+    smart-turn's human_5_all train clips, with smart-turn v3.2 soft targets and an LM-completeness target
+    (Qwen2.5-7B-Instruct) as auxiliaries.
+  - Smart-turn's 399 test clips: 99.0 % (smart-turn v3.2: 97.0 %; the v2 turn head: 63 %).
+  - Served: `ASRStream.attach_seg` / `seg_prob`, equal to the offline classifier to 3.5e-4; 1.0-1.7 ms per call,
+    about +1.5 ms per 160 ms chunk.
+- **`--turn-preset fast` is now v5.** The classifier is asked after 80 ms of VAD < 0.6 and again at every quiet
+  frame (`VadHeadPolicy(model_reask=True)`); it ends the turn at P(complete) > 0.7, with the 640 ms fallback.
+  - Two-party calls: 547 ms p50 (balanced 956), 24.8 % FI, 5.5 % missed. AMI: 1247 ms, 11.5 % / 34.0 %.
+  - No cut of the bundled clip under any of the six deliveries.
+  - A second training seed: 586 ms, 26.6 % / 5.5 %.
+- **`--turn-preset steady`** = the pre-v5 `fast` rule, unchanged: 886 / 1434 ms, 24.8 / 3.7 %. It keeps the best
+  calls p95 and misses.
+- **`--turn-preset assistant`** is for speech directed at the agent. v5 is asked after 240 ms of energy-or-VAD
+  quiet, ends the turn at P > 0.9, and a 2.96 s timer backs it up.
+  - Smart-turn's 399 test clips: 92.2 % accuracy, 292 ms p50, 5.4 % false fires. Served: 93.0 % / 317 ms.
+  - The smart-turn bridge gives 95.7 % / 770 ms, Pipecat 69.7 % / 211 ms.
+  - Not for human conversation: the timer misses 34 % of call ends.
+- `turn_end_hint` under a v5 preset reads the classifier's p at quiet frames (threshold 0.5, `V5_HINT_P`).
+- **Served heads v0.3** (`assets/served_heads_v0.3.pt`, 29.4 MB, `hub.HEADS["0.3"]`, `HEADS_VERSION` 0.3) builds
+  `stage1_served_v3.afm` = `stage1_served_v2.afm` + `heads.turn_seg`; every v0.2 tensor is unchanged, so
+  `balanced` / `steady` are bit-identical. `--heads-version 0.2` still builds v2 (the v5 presets need v0.3).
+- `balanced` stays the default. The ship bar for replacing it (>= 150 ms faster at <= 20.2 % FI / <= 7.3 % missed
+  and AMI <= 10.5 / 33.5 %) was not met.
+
+### Added (2026-09-30): `vad_head` energy gate (default) and `--turn-model smartturn` (opt-in bridge)
+- **Energy gate** (`--energy-gate on|off`, default on; `audioforge.server.policies.EnergyGate`,
+  `constants.ENERGY_GATE`).
+  - A per-session noise floor: the 10th percentile of the 80 ms frame log energies over 3 s.
+  - A user turn is armed only by an onset (VAD > 0.5 AND energy > floor + 6 dB).
+  - No `turn_end` / `turn_end_hint` before 160 ms of onsets.
+  - Served on smart-turn's 399 assistant test clips: turn_ends before the user spoke 137 -> 0, early fires on complete
+    clips 6.3 -> 0 %, accuracy 41.1 -> 43.9 %.
+  - Two-party calls, AMI and the bundled clip (six deliveries) are unchanged: 956 ms / 20.2 % / 7.3 % and 1326 ms /
+    10.5 % / 33.5 %.
+- **`--energy-quiet-db X`** (off by default): frames below floor + X dB count as silence. Assistant EOT 1218 -> 611 ms
+  at X = 6, but calls false interruptions 20.2 -> 48.6 %. No X in 3..12 dB (fallback 640-1280 ms) holds calls / AMI:
+  mid-turn pauses are room tone too.
+- **`--turn-model smartturn`** (+ `--smartturn-onnx`, `--smartturn-trigger vad|energy`; audioforge/server/smartturn.py).
+  - Pipecat's smart-turn v3.2 ONNX (BSD-2-Clause) runs inside `vad_head` at our quiet trigger, with Pipecat's exact
+    input preparation.
+  - It is a second model and opt-in: a bridge until turn head v5.
+  - Assistant clips (served): 770 / 1004 ms, 5.8 % false fires on incomplete clips, 95.7 % accuracy (Pipecat + Silero:
+    211 ms, 40.2 %, 69.7 %); ~20 ms per call.
+  - Calls: 629 ms / 19.3 % FI / 23.9 % missed. AMI: 1087 ms / 13.0 % / 36.5 %.
+- **Protocol:** `turn_end.path` (`head` | `fallback` | `others` | `model`) under `vad_head`; `turn_end.model_ms` and
+  `stats.turn_model` with smartturn.
+- Measured by `scripts/research/eot_energy_gate.py` -> `runs/eot_energy_gate.json`; research/EOT_ASSISTANT.md "Energy
+  gate and the smart-turn bridge".
+
+### Added (2026-09-30): `--turn-preset balanced | fast`
+- **Server:** `--turn-preset` (and `config.turn_preset`, per session, before the first audio) names `vad_head`'s
+  constants (`TURN_PRESETS` in audioforge/server/constants.py). `balanced` is the current rule and the default
+  (`MODES["single"]`). `fast` = VAD < 0.6 for ≥ 480 ms AND p ≥ 0.99, OR 720 ms, others path 640,640.
+  `--vad-wait-ms` / `--others-wait-ms` still override a preset.
+- **Measured** (scripts/research/vad_tail.py `presets`, `runs/vad_tail.json`). Calls, `fast` vs `balanced`:
+  - EOT p50 886 vs 956 ms (only ~70 ms faster);
+  - p95 1434 vs 1919 ms (~490 ms faster);
+  - missed 3.7 vs 7.3 %;
+  - false interruptions 24.8 vs 20.2 % (LiveKit defaults: 26.6 %).
+
+  AMI, `fast` vs `balanced`: 1086 vs 1326 ms, 16.0 vs 10.5 % FI, 30.5 vs 33.5 % missed. Neither preset cuts the
+  bundled clip under the six deliveries (`served_check --preset fast`). Tables: docs/CONFIGURATION.md §4 "Turn
+  presets", research/EOT_LATENCY.md "Turn presets".
+
+### Research (2026-09-30): the VAD tail is a hangover, and removing it does not help (research/VAD_TAIL.md)
+- The served VAD head (block 4) stays above 0.5 for 212 ms after call-turn ends (p50) and above 0.4 for 320 ms, where
+  Silero has already stopped. About 40 ms of that is the 80 ms frame grid. The rest is the head: it shows the same tail
+  against its own AMI training labels, and block 4 has no lookahead delay.
+- The tail is the same at mid-turn pauses (368 vs 416 ms after Silero's end) and it bridges 67 % of pauses ≥ 160 ms.
+  Today's 20 % false-interruption rate depends on it.
+- Tail-free alternatives were scored with the harness: a backdated silence clock; an oracle tail-free VAD (Silero on
+  the frame grid) with 0-320 ms of hangover; a tail-free VAD on the head path only. None meets the goal. The oracle
+  needs 1176-1216 ms of calls p50 for ≤ 20.2 % FI. No VAD head was retrained and served_heads_v0.2 is unchanged.
+
+### Added (2026-09-30): early end-of-turn hints (`turn_end_hint`)
+- **Server:** new events `turn_end_hint` `{t, p, kind: "hint", text}` (once per user turn, on 80 ms of served-VAD
+  silence with turn-head p >= `--turn-hint-p`, default 0.8) and `turn_end_hint_cancel` `{t}` (the user resumed:
+  VAD > 0.5 on 2 frames); the next `turn_end` confirms the hint in its new `hinted_at` field; `stats.turn_hints`
+  counts sent / confirmed / cancelled and each outcome is logged. `turn_end` is unchanged; `--turn-hint-off`
+  restores the previous protocol exactly (docs/PROTOCOL.md §5.11, audioforge/server/turn_hint.py).
+- **Pipecat:** `AudioforgeSTTService(turn_hints=True)` + `AudioforgeEagerTurnStopStrategy`: the hint drives Pipecat
+  1.12's eager end of turn (speculative inference held by the LLM service's `SpeculationGate`, released at the
+  `turn_end` if the final matches the hint's text, discarded on cancel). The STT now also records `language` events
+  instead of warning about them.
+- **LiveKit:** `AudioforgeFrontend(turn_hints=True)`: the hint becomes a `PREFLIGHT_TRANSCRIPT`, which LiveKit 1.8's
+  preemptive generation answers; the worker enables `preemptive_generation` only with hints on
+  (`AUDIOFORGE_TURN_HINTS=1`). Both adapters are opt-in; defaults unchanged.
+- **Measured** (scripts/research/turn_hint.py, `runs/turn_hint.json`, stored dumps): at H 0.8 the reply could start
+  250 / 364 ms earlier at the p50 on calls with 300 / 600 ms of LLM + TTS prep (1226 -> 976, 1526 -> 1162 ms after
+  the true end), 80 ms on AMI; recall 64 % (calls) / 44 % (AMI), 0.42 / 0.31 discarded preps per turn, false
+  interruptions unchanged. Live on the bundled clip: hint 160 ms before the `turn_end`; Pipecat demo with a mock LLM:
+  reply 1342 -> 1173 ms (300 ms prep), 1642 -> 1477 ms (600 ms prep) after the true end.
+
+### Research (2026-09-30): turn head v4, not shipped
+- Audible-end reference labels for the EOT sessions (`runs/turn_v4_labels_eval.json`). Under them the shipped
+  `vad_head` rule gives 951 ms, 19.3 % false interruptions and 6.4 % missed on calls; AMI is unchanged. No faster rule
+  meets the goal, so the default is unchanged.
+- The turn head was retrained heads-only for early confidence, on cached served pass-2 inputs (otoSpeech, 12 AMI and
+  12 ICSI train meetings, smart-turn human_5_all train). No head plus rule beat today's calls p50 by 150 ms at equal
+  or better FI and misses, so nothing ships. The best new head reaches calls 989 ms at 15.6 / 7.3 %, and AMI
+  1167 ms at 10.5 / 33.5 %.
+- The limit is the served VAD head's 240-320 ms tail after call ends. Details: research/TURN_V4.md,
+  `runs/turn_v4.json`, `scripts/research/turn_v4.py`.
+
 ### Results (2026-09-30): where single mode stands after today's changes
 - **Turn rule:** single mode's default is `vad_head` (VAD head < 0.4 for ≥ 160 ms and turn head p ≥ 0.99, or 640 ms
   of silence). Calls: EOT p50 956 ms, 20 % false interruptions, 7 % missed; AMI: 1326 ms, 11 %, 34 %

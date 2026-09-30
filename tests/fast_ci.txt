@@ -50,6 +50,7 @@ tests/test_train_fixes.py
 tests/test_tsvad.py
 tests/test_turn.py
 tests/test_turn_dyadic_feats.py
+tests/test_turn_hint.py
 tests/test_turn_v3.py
 tests/test_turn_v5.py
 tests/test_vad_layers.py

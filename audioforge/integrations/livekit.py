@@ -48,6 +48,24 @@ after_agent | after_agent_arm``): ``fe.agent_end()`` when the agent's TTS finish
 sent, so the server arms at that audio position) or ``fe.attach(session)`` to send it on every ``agent_state_changed``
 speaking -> listening; ``fe.enroll()`` for ``--enroll explicit``.
 
+Early end-of-turn hints (server ``turn_end_hint``, docs/PROTOCOL.md 5.11; opt-in with ``turn_hints=True``):
+LiveKit's preemptive generation. Each hint becomes a ``PREFLIGHT_TRANSCRIPT`` (the text a final would hold if the
+turn ended at the hint), which LiveKit 1.8 answers with a preemptive reply (``AgentActivity.on_preemptive_generation``:
+LLM, and TTS with ``preemptive_tts``, run but nothing is scheduled). The server's ``turn_end`` then commits the turn
+exactly as before (FINAL_TRANSCRIPT + END_OF_SPEECH under ``turn_detection="stt"``), and LiveKit plays the preemptive
+reply if the committed transcript equals the preflight one, else discards it and generates again. A
+``turn_end_hint_cancel`` (the user resumed) has no LiveKit counterpart and is not forwarded: the stale preemptive
+reply is superseded by the next preflight or discarded at the commit, because the transcript has grown (its LLM
+tokens are spent). Keep preemptive generation on (LiveKit's default)::
+
+    fe = AudioforgeFrontend("ws://127.0.0.1:8765", turn_policy="vad_head", turn_hints=True)
+    session = AgentSession(stt=fe.stt(), vad=fe.vad(), llm=..., tts=...,
+                           turn_handling={"turn_detection": "stt", "endpointing": {"min_delay": 0.0},
+                                          "interruption": {"mode": "vad"},
+                                          "preemptive_generation": {"enabled": True}})
+
+With ``turn_hints=False`` (default) the hints are only recorded (``fe.hints``) and nothing changes.
+
 Sharing. The STT, VAD and turn detector of one ``AudioforgeFrontend`` share one WebSocket session (one server
 session = one ASR + one diarizer pass); LiveKit pushes the same audio into each of them, the first stream that
 pushes audio feeds the server and the others only read events. Speaker identities (diarizer columns) persist for
@@ -103,6 +121,8 @@ class AudioforgeOptions:
     # FINAL_TRANSCRIPT + END_OF_SPEECH are emitted when the turn's offline final (same t) arrives. Servers without
     # --final-asr send no "source" and every final is used, whatever this says.
     final_source: str = "stream"
+    # the server's turn_end_hint -> PREFLIGHT_TRANSCRIPT (LiveKit preemptive generation); off = hints only recorded
+    turn_hints: bool = False
 
     def __post_init__(self):
         if self.turn_policy not in POLICIES:
@@ -350,11 +370,11 @@ class AudioforgeFrontend:
 
     def __init__(self, url: str = DEFAULT_URL, *, turn_policy: str = "timeout", timeout_ms: int = 1000,
                  eot_threshold: float | None = None, language: str = "en", connect_timeout: float = 10.0,
-                 end_timeout: float = 10.0, final_source: str = "stream"):
+                 end_timeout: float = 10.0, final_source: str = "stream", turn_hints: bool = False):
         self.opts = AudioforgeOptions(url=url, turn_policy=turn_policy, timeout_ms=timeout_ms,
                                       eot_threshold=eot_threshold, language=language,
                                       connect_timeout=connect_timeout, end_timeout=end_timeout,
-                                      final_source=final_source)
+                                      final_source=final_source, turn_hints=turn_hints)
         self._link: _Link | None = None
         self._owners: set = set()
         self._lock: asyncio.Lock | None = None
@@ -362,6 +382,7 @@ class AudioforgeFrontend:
         self.sessions_opened = 0
         self.last_stats: dict | None = None
         self.turn_ends: list[dict] = []  # every server turn_end seen by an STT stream, + "arrival" wall time
+        self.hints: list[dict] = []  # every turn_end_hint / turn_end_hint_cancel seen by an STT stream, + "arrival"
         self.controls: list[tuple[str, float]] = []  # agent_end / enroll sent: (type, audio seconds before it)
         self._pending_controls: list = []
 
@@ -475,6 +496,7 @@ class _SpeechMapper:
         self.turn_end_by_t: dict[float, dict] = {}  # final_source "offline": the cutting turn_end of each held turn
         self.last_interim = ""
         self.request_id = ""
+        self.hint: dict | None = None  # the outstanding turn_end_hint
 
     def _ev(self, typ, **kw) -> stt.SpeechEvent:
         return stt.SpeechEvent(type=typ, request_id=self.request_id, **kw)
@@ -506,7 +528,19 @@ class _SpeechMapper:
                 out.append(self._ev(stt.SpeechEventType.INTERIM_TRANSCRIPT,
                                     alternatives=[self._data(text, msg["t"], offset,
                                                              speaker=self.primary)]))
+        elif typ == "turn_end_hint":
+            text = (msg.get("text") or "").strip()
+            self.hint = msg
+            if self.opts.turn_hints and text:
+                if not self.in_speech:
+                    out.append(self._start(msg["t"] - FRAME_S, wall_of))
+                meta = {"kind": "hint", "t": msg["t"], "p": msg.get("p"), "speaker": self.primary}
+                out.append(self._ev(stt.SpeechEventType.PREFLIGHT_TRANSCRIPT,
+                                    alternatives=[self._data(text, msg["t"], offset, meta, self.primary)]))
+        elif typ == "turn_end_hint_cancel":
+            self.hint = None  # no LiveKit counterpart: the preemptive reply is superseded or discarded at commit
         elif typ == "turn_end":
+            self.hint = None
             if msg.get("policy") == self.opts.cut_policy:
                 self.pending_turn_end = msg
                 self.turn_end_by_t[msg["t"]] = msg
@@ -606,6 +640,8 @@ class AudioforgeSpeechStream(stt.RecognizeStream):
                 msg, arrived = item
                 if msg.get("type") == "turn_end":
                     fe.turn_ends.append({**msg, "arrival": arrived})
+                elif msg.get("type") in ("turn_end_hint", "turn_end_hint_cancel"):
+                    fe.hints.append({**msg, "arrival": arrived})
                 for ev in mapper.on_message(msg, lk.wall_of, self.start_time_offset, lk.audio_s):
                     self._event_ch.send_nowait(ev)
                 if msg.get("type") == "stats":

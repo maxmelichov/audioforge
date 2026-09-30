@@ -632,3 +632,127 @@ def test_stt_final_source_with_final_asr_server(final_source):
     assert states == ([C, C] if final_source == "stream" else [I, C])
     with pytest.raises(ValueError):
         AudioforgeSTTService(url="ws://unused", final_source="bogus")
+
+
+# ------------------------------------------------------------------------------------------ turn_end_hint (eager EOT)
+def test_stt_hint_events_off_by_default_and_eager_frames_when_on():
+    from pipecat.frames.frames import EagerEndOfTurnCancelFrame, EagerTranscriptionFrame
+
+    for on in (False, True):
+        stt = AudioforgeSTTService(url="ws://unused", turn_policy="vad_head", turn_hints=on)
+        pushed = []
+
+        async def fake_push(frame, direction=FrameDirection.DOWNSTREAM, _p=pushed):
+            _p.append(frame)
+
+        stt.push_frame = fake_push
+
+        async def go(stt=stt):
+            await stt.handle_server_message({"type": "turn_end_hint", "t": 1.2, "p": 0.9, "kind": "hint",
+                                             "text": "hi there"})
+            await stt.handle_server_message({"type": "turn_end_hint_cancel", "t": 1.4})
+            await stt.handle_server_message({"type": "turn_end_hint_cancel", "t": 1.5})  # nothing outstanding
+            await stt.handle_server_message({"type": "turn_end_hint", "t": 2.0, "p": 0.95, "kind": "hint",
+                                             "text": "hi there you"})
+            await stt.handle_server_message({"type": "turn_end", "t": 2.16, "policy": "vad_head", "p": 0.99,
+                                             "silence_ms": 160, "hinted_at": 2.0})
+
+        with LogCapture() as cap:
+            asyncio.run(go())
+        assert cap.records == []  # known message types, no warnings
+        h = stt.hub.hints
+        assert [(x.t, x.outcome) for x in h] == [(1.2, "cancelled"), (2.0, "confirmed")]
+        assert stt.hub.turn_ends[0].hinted_at == 2.0 and stt.hub.pending_hint is None
+        kinds = [type(f) for f in pushed]
+        if on:
+            assert kinds == [EagerTranscriptionFrame, EagerEndOfTurnCancelFrame, EagerTranscriptionFrame]
+            assert pushed[0].text == "hi there" and pushed[0].metadata["audioforge"]["kind"] == "hint"
+        else:
+            assert kinds == []
+
+
+def hint_script(v, rms, cfg, st):
+    """energy_script (timeout policy: turn_end after 6 silent frames) plus the hint: turn_end_hint on the first
+    silent frame of a speech segment (text = the segment so far, or ``st["hint_text"]``), turn_end_hint_cancel after
+    2 speech frames following an outstanding hint; turn_end carries hinted_at."""
+    out = energy_script(v, rms, cfg, st)
+    if v is None:
+        return out
+    t = round((v + 1) * 0.08, 3)
+    speech = rms > 0.01
+    st["run"] = st.get("run", 0) + 1 if speech else 0
+    if speech:
+        st["hint_armed"] = st.get("hint_armed", True) or st["run"] >= 2
+        if st.get("hint") is not None and st["run"] >= 2:
+            out.append({"type": "turn_end_hint_cancel", "t": t})
+            st["hint"], st["hint_armed"] = None, True
+    elif st.get("sil") == 1 and st.get("hint_armed", True) and st.get("hint") is None and st.get("seg"):
+        st["hint"], st["hint_armed"] = t, False
+        out.append({"type": "turn_end_hint", "t": t, "p": 0.9, "kind": "hint",
+                    "text": st.get("hint_text", st["seg"])})
+    for m in out:
+        if m["type"] == "turn_end":
+            m["hinted_at"], st["hint"] = st.get("hint"), None
+    return out
+
+
+def _hint_run(x, *, turn_hints, llm_ms=100, script=hint_script):
+    demo = _demo()
+    fake = FakeAudioforge(script=script)
+
+    async def body(url):
+        return await demo.run_pipeline(x, url=url, policy="timeout", pad_s=0.5, speed=2.0, turn_hints=turn_hints,
+                                       llm_ms=llm_ms)
+
+    with LogCapture() as cap:
+        raw = asyncio.run(with_fake_server(fake, body))
+    assert raw["finished"] == ["EndFrame"] and raw["pipeline_errors"] == [] and raw["violations"] == []
+    assert [r for r in cap.records if "differs from the recommended" not in r] == []
+    at = lambda p: (p - raw["t0"]) * raw["speed"]  # noqa: E731
+    return raw, at
+
+
+@pytest.mark.parametrize("turn_hints", [False, True])
+def test_local_pipeline_hint_prepares_the_reply_and_releases_it_at_the_turn_end(turn_hints):
+    """1.2 s speech: hint at 1.28 s, timeout turn_end at 1.68 s; the mock LLM needs 100 ms wall (0.2 s audio at 2x).
+    Without hints the reply starts ~0.2 s after the decision; with hints it was prepared from the hint (speculative
+    inference, held by the SpeculationGate) and is released at the decision, with no second inference."""
+    raw, at = _hint_run(tone(1.2, 1.5), turn_hints=turn_hints)
+    te = raw["server_turn_ends"][0]
+    assert te["t"] == pytest.approx(1.68) and te["hinted_at"] == pytest.approx(1.28)
+    assert len(raw["responses"]) == 1 and len(raw["decisions"]) == 1
+    dec, resp = at(raw["decisions"][0]), at(raw["responses"][0])
+    runs = [sp for _, sp, _ in raw["llm_runs"]]
+    if turn_hints:
+        assert runs == [True] and len(raw["spec_kept"]) == 1 and raw["spec_discarded"] == []
+        assert at(raw["llm_runs"][0][0]) < te["t"] and resp == pytest.approx(dec, abs=0.12)
+    else:
+        assert runs == [False] and raw["speculated"] == []
+        assert resp - dec == pytest.approx(0.2, abs=0.12)
+    assert resp >= te["t"]  # never before the server's turn_end
+    assert [h["outcome"] for h in raw["hints"]] == ["confirmed"]
+
+
+def test_local_pipeline_hint_cancelled_by_resumed_speech():
+    """speech 1.0 s, pause 0.24 s, speech 0.8 s: the pause's hint starts a speculative inference that the cancel
+    discards (nothing is spoken); the real end gets a new hint whose reply is released at the turn_end: one reply."""
+    x = np.concatenate([tone(1.0, 0.24), tone(0.8, 1.5)])
+    raw, at = _hint_run(x, turn_hints=True, llm_ms=300)
+    assert [h["outcome"] for h in raw["hints"]] == ["cancelled", "confirmed"]
+    assert [d[2] for d in raw["spec_discarded"]] == ["cancel"] and len(raw["spec_kept"]) == 1
+    assert [sp for _, sp, _ in raw["llm_runs"]] == [True, True]
+    assert len(raw["responses"]) == 1 and at(raw["responses"][0]) >= raw["server_turn_ends"][0]["t"]
+    assert len(raw["decisions"]) == 1
+
+
+def test_local_pipeline_hint_text_mismatch_answers_the_final():
+    """The final transcript differs from the hinted text: the held reply is discarded and inference runs again on
+    the final text (the reply comes late, but it answers what was said)."""
+    def script(v, rms, cfg, st):
+        st["hint_text"] = "hello"
+        return hint_script(v, rms, cfg, st)
+
+    raw, at = _hint_run(tone(1.2, 1.5), turn_hints=True, script=script)
+    assert [d[2] for d in raw["spec_discarded"]] == ["mismatch"] and raw["spec_kept"] == []
+    assert [sp for _, sp, _ in raw["llm_runs"]] == [True, False]
+    assert raw["llm_runs"][1][2] == "hello world again and" and len(raw["responses"]) == 1

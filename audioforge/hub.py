@@ -12,12 +12,14 @@ is rejected. Model weights are NVIDIA's (or Silero's) and keep their own licence
 asks you to accept it before downloading (``--yes`` or ``AUDIOFORGE_ACCEPT_LICENSES=1`` to accept non-interactively).
 
 The served ASR model is NVIDIA's ``stt_en_fastconformer_hybrid_large_streaming_multi`` (every one of its 654 tensors
-unchanged) plus this project's trained heads (VAD, EOU, turn, speaker, diar; 104 tensors, 19.6 MB), shipped as
-``assets/served_heads_v0.2.pt``. ``build_served`` merges the two and checks the result's tensor hash against the
-hash recorded when the heads were exported from ``runs/stage1_served_v2.afm`` (the VAD head reads block 4 only,
-research/VAD_SINGLE.md; every other tensor is that of ``runs/stage1_served.afm``), so the rebuilt model is
-bit-identical to the shipped one. ``--heads-version 0.1`` rebuilds ``stage1_served.afm`` from
-``assets/served_heads_v0.1.pt``, the 2026-09-27 checkpoint most numbers in research/ were measured with.
+unchanged) plus this project's trained heads (VAD, EOU, turn, speaker, diar, and the turn head v5 segment classifier
+``turn_seg``; 190 tensors, 29.4 MB), shipped as ``assets/served_heads_v0.3.pt``. ``build_served`` merges the two and
+checks the result's tensor hash against the hash recorded when the heads were exported from
+``runs/stage1_served_v3.afm`` (= ``stage1_served_v2.afm`` + heads.turn_seg, research/TURN_V5.md; the VAD head reads
+block 4 only, research/VAD_SINGLE.md), so the rebuilt model is bit-identical to the shipped one.
+``--heads-version 0.2`` rebuilds ``stage1_served_v2.afm`` (no v5 classifier: ``--turn-preset fast`` / ``assistant``
+need v0.3) and ``--heads-version 0.1`` ``stage1_served.afm``, the 2026-09-27 checkpoint most numbers in research/ were
+measured with.
 
 Output directory: ``--dir``, else ``$AUDIOFORGE_HOME``, else ``<repo>/models`` in a source checkout, else
 ``~/.cache/audioforge``. ``audioforge-serve`` looks there.
@@ -42,16 +44,20 @@ __all__ = [
     "models_dir", "OPTIONAL", "RELEASE_URL", "SERVED", "SINGLE", "sha256_file", "state_hash", "HEADS", "HEADS_VERSION",
 ]
 
-# the heads asset: v0.2 ships (block-4 VAD head); v0.1 stays for reproducing the research measurements
-HEADS = {"0.2": ("served_heads_v0.2.pt", 19629563, "cb5aa06974f27576c0f66b9453868701106969dea5d5ad100b06b2b779f121d2",
+# the heads asset: v0.3 ships (v0.2 + heads.turn_seg, the turn head v5 segment classifier of --turn-preset fast /
+# assistant, research/TURN_V5.md; every v0.2 tensor unchanged); v0.2 (block-4 VAD head) and v0.1 stay for reproducing
+# the research measurements
+HEADS = {"0.3": ("served_heads_v0.3.pt", 29481643, "ea1e8331fa9b9efdee76f1b44d4352f9e1660f34e3da6491b5655ce56ab18848",
+                 "stage1_served_v3.afm"),
+         "0.2": ("served_heads_v0.2.pt", 19629563, "cb5aa06974f27576c0f66b9453868701106969dea5d5ad100b06b2b779f121d2",
                  "stage1_served_v2.afm"),
          "0.1": ("served_heads_v0.1.pt", 19629955, "834f3e94467bc4110555d8d4cbdbe0ce75254a80d8ca203ecd975d4f007286f5",
                  "stage1_served.afm")}
-HEADS_VERSION = "0.2"
+HEADS_VERSION = "0.3"
 HEADS_FILE = HEADS[HEADS_VERSION][0]
 RELEASE_URL = "https://github.com/maxmelichov/audioforge/releases/download/v0.1.0"
 HEADS_URL = f"{RELEASE_URL}/{HEADS_FILE}"
-SERVED = HEADS[HEADS_VERSION][3]  # what ships: stage1_served_v2.afm (runs/stage1_served.afm = the measured v1)
+SERVED = HEADS[HEADS_VERSION][3]  # what ships: stage1_served_v3.afm (= v2 + heads.turn_seg; runs/stage1_served.afm = v1)
 
 
 @dataclass(frozen=True)

@@ -308,13 +308,15 @@ class _StubChunked(tts.ChunkedStream):
 
 async def run_agent_session(x: np.ndarray, url: str, mode: str = "stt", speed: float = 1.0, timeout_ms: int = 1000,
                             tail_s: float = 2.5, quiet: bool = True, policy: str = "timeout",
-                            eot_threshold: float | None = None, agent_end_s: float | None = None) -> dict:
+                            eot_threshold: float | None = None, agent_end_s: float | None = None,
+                            turn_hints: bool = False) -> dict:
     """Drive a room-less AgentSession with our STT + VAD (+ turn detector). Returns the recorded events, each with
     wall and audio time (audio seconds pushed when it happened)."""
     sys.path.insert(0, str(Path(__file__).resolve().parent))
     from livekit_agent_worker import build_session  # the exact configuration the room worker uses
-    fe = AudioforgeFrontend(url, turn_policy=policy, timeout_ms=timeout_ms, eot_threshold=eot_threshold)
-    session = build_session(fe, mode)
+    fe = AudioforgeFrontend(url, turn_policy=policy, timeout_ms=timeout_ms, eot_threshold=eot_threshold,
+                            turn_hints=turn_hints)
+    session = build_session(fe, mode)  # turn_hints: preemptive generation on the server's turn_end_hint
     audio = np.concatenate([x, np.zeros(int(tail_s * SR), np.float32)])
     inp = WavAudioInput(audio, speed, at=(agent_end_s, fe.agent_end) if agent_end_s is not None else None)
     session.input.audio = inp

@@ -1,0 +1,243 @@
+{
+ "generated": "2026-09-30 14:00",
+ "data": {
+  "source": "pipecat-ai/human_5_all (BSD-2-Clause), smart-turn-data-v3.2-test ids",
+  "n": 399,
+  "n_complete": 175,
+  "pad_s": 3.0,
+  "clip_s_p50": 4.32,
+  "clip_end_minus_audible_end_ms_p50_p90": [
+   240,
+   789
+  ],
+  "other_assistant_directed_sets_local": "none (data/: calls, meetings, TTS dialogue only)"
+ },
+ "protocol": "research/EOT_ASSISTANT.md: end-of-turn speed and accuracy on assistant-directed speech (smart-turn's own test clips).\n\nData: the 399 pipecat-ai/human_5_all clips (BSD-2-Clause) in smart-turn-data-v3.2-test (data/smartturn, the split of\naudioforge.datasets.smartturn.split_indices; 175 complete, 224 incomplete). Each clip is one utterance spoken to a\nvoice assistant that ends either at a real end (\"complete\") or at a mid-utterance cut (\"incomplete\"). Every clip is\npadded with PAD_S = 3 s of digital silence so a decision can fire after it.\n\nReference point e: the clip's audible end (``speech_end``: the later of the last Silero chunk > 0.5 and the energy-VAD\nutterance end, clipped to the clip end; median 256 / 427 ms before the clip end on complete / incomplete clips). Not\nturn_v4's ``audible_end``: that also reads our served VAD head, whose tail puts the end at the clip end on 90 % of\nthese clips (it would call Pipecat's correct stops \"early\"). The decision window is the padded clip, [0, clip end + 3 s).\n\nSystems (the same audio, the same harness as scripts/research/eot_latency.py):\n  * ours, balanced: the served --mode single engine (audioforge.serve.Session, stage1_served_v2.afm, turn_policy\n    vad_head with its shipped defaults), the clip alone as the user channel, NO voice print (the TS-VAD others path\n    needs another talker, and there is none here, so it never fires); its own turn_end messages.\n  * ours, fast: the --turn-preset fast rule (VAD < 0.6 for >= 480 ms AND p >= 0.99, OR 720 ms) applied by\n    eot_latency.sim_room to the per-frame signals of the same served session (``check``: sim_room(CHOSEN) reproduces\n    the served balanced turn_ends exactly, so the frames are what the server reads).\n  * the turn_end_hint (p >= 0.8 after 80 ms of VAD silence) of the served balanced session.\n  * Pipecat smart-turn v3.2 + Silero (Pipecat 1.12 defaults) and LiveKit EnglishModel + Silero (0.5 / 3.0 s): the\n    replay of eot_latency.cmd_baselines unchanged (Silero v5 confidences of the padded clip, LiveKit text = our served\n    streaming ASR's text ready at each end of speech).\nTimes: decision audio time + measured compute (eot_latency's ``total``: ours + the session's chunk p50, Pipecat + the\nsmart-turn call).",
+ "voice_print": "none: the clip alone as the user channel, no enrollment; the TS-VAD others path cannot fire",
+ "fast_rule": {
+  "family": "room",
+  "src": "vad",
+  "vad_thr": 0.6,
+  "k": 6,
+  "th": 0.99,
+  "fallback_f": 9,
+  "ot": 0.9,
+  "om": 8,
+  "fu": 8,
+  "fw": 0,
+  "ku": null,
+  "th_c": 0.0
+ },
+ "check_sim_equals_served_balanced": {
+  "n_clips": 399,
+  "n_differ": 0
+ },
+ "compute_ms": {
+  "ours_chunk_p50_median": 36.7
+ },
+ "systems": {
+  "ours balanced (shipped)": {
+   "complete": {
+    "n": 175,
+    "eot_total_ms_p50": 1218,
+    "eot_total_ms_p95": 1581,
+    "eot_decision_ms_p50": 1184,
+    "eot_decision_ms_p95": 1546,
+    "answered_within_500ms_pct": 1.1,
+    "answered_within_1s_pct": 19.4,
+    "missed_pct": 0.0,
+    "early_fire_pct": 6.3,
+    "correct_pct": 93.7,
+    "eot_from_clip_end_ms_p50": 990
+   },
+   "incomplete": {
+    "n": 224,
+    "false_fire_pct": 100.0,
+    "fired_before_cut_pct": 5.8,
+    "fired_anywhere_in_padded_clip_pct": 100.0,
+    "fired_by_cut+0.5s_pct": 6.7,
+    "fired_by_cut+1s_pct": 18.3,
+    "fired_by_cut+2s_pct": 99.6,
+    "fired_by_cut+3s_pct": 100.0
+   },
+   "accuracy_pct": 41.1,
+   "clips_with_pre_speech_turn_end": 137,
+   "pre_speech_turn_ends_dropped": true
+  },
+  "ours fast (--turn-preset fast)": {
+   "complete": {
+    "n": 175,
+    "eot_total_ms_p50": 1156,
+    "eot_total_ms_p95": 1420,
+    "eot_decision_ms_p50": 1120,
+    "eot_decision_ms_p95": 1386,
+    "answered_within_500ms_pct": 1.7,
+    "answered_within_1s_pct": 24.0,
+    "missed_pct": 0.0,
+    "early_fire_pct": 2.3,
+    "correct_pct": 97.7,
+    "eot_from_clip_end_ms_p50": 971
+   },
+   "incomplete": {
+    "n": 224,
+    "false_fire_pct": 100.0,
+    "fired_before_cut_pct": 4.9,
+    "fired_anywhere_in_padded_clip_pct": 100.0,
+    "fired_by_cut+0.5s_pct": 7.6,
+    "fired_by_cut+1s_pct": 19.6,
+    "fired_by_cut+2s_pct": 100.0,
+    "fired_by_cut+3s_pct": 100.0
+   },
+   "accuracy_pct": 42.9,
+   "clips_with_pre_speech_turn_end": 93,
+   "pre_speech_turn_ends_dropped": true
+  },
+  "Pipecat smart-turn v3.2 + Silero (defaults)": {
+   "complete": {
+    "n": 175,
+    "eot_total_ms_p50": 211,
+    "eot_total_ms_p95": 242,
+    "eot_decision_ms_p50": 192,
+    "eot_decision_ms_p95": 218,
+    "answered_within_500ms_pct": 84.6,
+    "answered_within_1s_pct": 84.6,
+    "missed_pct": 13.1,
+    "early_fire_pct": 17.1,
+    "correct_pct": 82.3,
+    "eot_from_clip_end_ms_p50": -7
+   },
+   "incomplete": {
+    "n": 224,
+    "false_fire_pct": 40.2,
+    "fired_before_cut_pct": 21.0,
+    "fired_anywhere_in_padded_clip_pct": 84.4,
+    "fired_by_cut+0.5s_pct": 25.0,
+    "fired_by_cut+1s_pct": 25.0,
+    "fired_by_cut+2s_pct": 25.4,
+    "fired_by_cut+3s_pct": 40.2
+   },
+   "accuracy_pct": 69.7,
+   "clips_with_pre_speech_turn_end": 0,
+   "pre_speech_turn_ends_dropped": true
+  },
+  "LiveKit EnglishModel + Silero (0.5 / 3.0 s)": {
+   "complete": {
+    "n": 175,
+    "eot_total_ms_p50": 547,
+    "eot_total_ms_p95": 3016,
+    "eot_decision_ms_p50": 547,
+    "eot_decision_ms_p95": 3016,
+    "answered_within_500ms_pct": 14.3,
+    "answered_within_1s_pct": 62.3,
+    "missed_pct": 4.6,
+    "early_fire_pct": 2.9,
+    "correct_pct": 94.9,
+    "eot_from_clip_end_ms_p50": 462
+   },
+   "incomplete": {
+    "n": 224,
+    "false_fire_pct": 44.6,
+    "fired_before_cut_pct": 2.7,
+    "fired_anywhere_in_padded_clip_pct": 92.0,
+    "fired_by_cut+0.5s_pct": 5.4,
+    "fired_by_cut+1s_pct": 15.6,
+    "fired_by_cut+2s_pct": 17.0,
+    "fired_by_cut+3s_pct": 44.6
+   },
+   "accuracy_pct": 72.7,
+   "clips_with_pre_speech_turn_end": 0,
+   "pre_speech_turn_ends_dropped": true
+  }
+ },
+ "ours_answering_path": {
+  "balanced complete": {
+   "fallback": 172,
+   "head": 3
+  },
+  "balanced incomplete": {
+   "fallback": 223,
+   "head": 1
+  },
+  "fast complete": {
+   "fallback": 172,
+   "head": 3
+  },
+  "fast incomplete": {
+   "fallback": 223,
+   "head": 1
+  }
+ },
+ "systems_raw_incl_pre_speech_turn_ends": {
+  "ours balanced (shipped)": {
+   "complete": {
+    "n": 175,
+    "eot_total_ms_p50": 1218,
+    "eot_total_ms_p95": 1581,
+    "eot_decision_ms_p50": 1184,
+    "eot_decision_ms_p95": 1546,
+    "answered_within_500ms_pct": 1.1,
+    "answered_within_1s_pct": 19.4,
+    "missed_pct": 0.0,
+    "early_fire_pct": 38.9,
+    "correct_pct": 61.1,
+    "eot_from_clip_end_ms_p50": 990
+   },
+   "incomplete": {
+    "n": 224,
+    "false_fire_pct": 100.0,
+    "fired_before_cut_pct": 41.5,
+    "fired_anywhere_in_padded_clip_pct": 100.0,
+    "fired_by_cut+0.5s_pct": 42.0,
+    "fired_by_cut+1s_pct": 46.9,
+    "fired_by_cut+2s_pct": 99.6,
+    "fired_by_cut+3s_pct": 100.0
+   },
+   "accuracy_pct": 26.8,
+   "clips_with_pre_speech_turn_end": 137,
+   "pre_speech_turn_ends_dropped": false
+  },
+  "ours fast (--turn-preset fast)": {
+   "complete": {
+    "n": 175,
+    "eot_total_ms_p50": 1156,
+    "eot_total_ms_p95": 1420,
+    "eot_decision_ms_p50": 1120,
+    "eot_decision_ms_p95": 1386,
+    "answered_within_500ms_pct": 1.7,
+    "answered_within_1s_pct": 24.0,
+    "missed_pct": 0.0,
+    "early_fire_pct": 24.6,
+    "correct_pct": 75.4,
+    "eot_from_clip_end_ms_p50": 971
+   },
+   "incomplete": {
+    "n": 224,
+    "false_fire_pct": 100.0,
+    "fired_before_cut_pct": 28.1,
+    "fired_anywhere_in_padded_clip_pct": 100.0,
+    "fired_by_cut+0.5s_pct": 30.8,
+    "fired_by_cut+1s_pct": 38.8,
+    "fired_by_cut+2s_pct": 100.0,
+    "fired_by_cut+3s_pct": 100.0
+   },
+   "accuracy_pct": 33.1,
+   "clips_with_pre_speech_turn_end": 93,
+   "pre_speech_turn_ends_dropped": false
+  }
+ },
+ "turn_end_hint (balanced session, p >= 0.8)": {
+  "hints_sent": 67,
+  "precision_pct": 53.7,
+  "recall_complete_pct": 20.0,
+  "fired_on_incomplete_pct": 12.5,
+  "latency_total_ms_p50": 803,
+  "latency_total_ms_p95": 1238,
+  "note": "precision = hints in [e - 80 ms, clip end + 3 s) of a complete clip / all hints; a hint on an incomplete clip or before a complete clip's end counts against it"
+ },
+ "smart_turn_classifier_alone": {
+  "accuracy_pct": 96.99,
+  "recall_complete_pct": 96.57,
+  "recall_incomplete_pct": 97.32,
+  "note": "one smart-turn call on the unpadded clip, p > 0.5 (no VAD, no timing)"
+ }
+}

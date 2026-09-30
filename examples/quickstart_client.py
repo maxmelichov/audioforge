@@ -65,7 +65,12 @@ async def main(a) -> None:
             if typ == "partial":
                 print(f"{m['t']:6.2f}s  partial   {m['text']}")
             elif typ == "turn_end":
-                print(f"{m['t']:6.2f}s  turn_end  policy={m['policy']} silence_ms={m.get('silence_ms')}")
+                hint = f" hinted_at={m['hinted_at']}" if m.get("hinted_at") is not None else ""
+                print(f"{m['t']:6.2f}s  turn_end  policy={m['policy']} silence_ms={m.get('silence_ms')}{hint}")
+            elif typ == "turn_end_hint":  # early: start preparing the reply, speak it only at the turn_end
+                print(f"{m['t']:6.2f}s  hint      p={m['p']:.3f} {m['text']!r}")
+            elif typ == "turn_end_hint_cancel":  # the user went on: drop what the hint started
+                print(f"{m['t']:6.2f}s  hint cancelled")
             elif typ == "final":
                 print(f"{m['t']:6.2f}s  final     speaker={m.get('speaker')} {m['text']!r}")
             elif typ == "voiceprint":

@@ -144,6 +144,7 @@ def test_session_vad_head_fires_on_the_head_or_the_fallback_without_silero(bias,
     """1.0 s speech + 2.0 s silence: speech frames 0..12. p ~ 1 -> the head path after 160 ms of silence (frame
     12 + 2); p ~ 0 -> the 640 ms fallback (frame 12 + 8). Decided when the frame's 160 ms chunk is ready."""
     eng = H._engine(bias)
+    eng.energy_gate = False  # constant-level synthetic speech from t = 0 (tests/test_energy_gate.py covers the gate)
     eng.silero_model = None  # vad_head must never ask for Silero
     x = H.H._speech_silence(((1.0, 0.2), (2.0, 0.0)))
     s = Session(eng, SessionConfig(turn_policy="vad_head"))

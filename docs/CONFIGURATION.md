@@ -86,10 +86,12 @@ The module can also be run directly, with explicit model paths:
 ```bash
 python -m audioforge.serve --asr models/stage1_served.afm --diar models/nemo_sortformer_v2.afm [flags]
 # source checkout without installing:
-PYTHONPATH=. .venv/bin/python -m audioforge.serve --asr runs/stage1_served_v2.afm --diar runs/nemo_sortformer_v2.afm
+PYTHONPATH=. .venv/bin/python -m audioforge.serve --asr runs/stage1_served_v3.afm --diar runs/nemo_sortformer_v2.afm
 ```
 
-**`stage1_served_v2.afm` is what ships** (built by `audioforge-download` from `assets/served_heads_v0.2.pt`). It is
+**`stage1_served_v3.afm` is what ships** (built by `audioforge-download` from `assets/served_heads_v0.3.pt`): it is
+`stage1_served_v2.afm` plus heads.turn_seg, the turn head v5 classifier that `--turn-preset fast` / `assistant` use
+(research/TURN_V5.md); every other tensor is identical. `stage1_served_v2.afm` (`--heads-version 0.2`) is
 `stage1_served.afm` with the VAD head reading block 4 only; every other tensor is identical (research/VAD_SINGLE.md:
 AMI VAD F1 0.951 vs 0.949). On the quickstart clip every partial, `turn_end` and final is identical between the two;
 the LID announcement comes 160 ms later, because LID pools the VAD's speech frames. The numbers on this page were
@@ -119,7 +121,7 @@ linked in the last column explain each group and what was measured about it.
 | `--models-dir DIR` | `$AUDIOFORGE_HOME`, else `<repo>/models`, else `~/.cache/audioforge` | where audioforge-download put the models (`audioforge-serve` only) | [§1](#1-launching) |
 | `--mode {single,room}` | `single` (`room` when `--diarizer`, `--diar` or `--final-asr` is given) | preset. `single` (the default): everything from the one 115M checkpoint, for a known user: adds `--turn-input tsvad --diar-off --lid head --enroll after_agent_arm --turn-policy vad_head --dyn-wait-ms 2000,960`, loads no diarizer, no final-ASR worker and no Silero (the default turn rule `vad_head` reads the model's own VAD, turn and TS-VAD heads; `hybrid_dyn` needs `--silero`), and refuses `--diar`, `--diarizer`, `--final-asr`, `--lid ambernet`, `--diar-embed titanet`; the voice print comes from an `enroll` message with an embedding (store >= 5 s of clean speech, 10 s for meetings), else live after `agent_end`. `room`: general diarization with NVIDIA Nemotron-3-Diarization (or `--diarizer sortformer`) next to the 115M model ([§7](#7-diarizer)). Flags you pass yourself win (`audioforge-serve` only) | [§13](#13-single-model-mode---mode-single) |
 | `--diarizer {nemotron3,sortformer}` | room mode: `nemotron3` if downloaded, else `sortformer` | room mode: which downloaded diarizer to pass as `--diar`; `nemotron3` also adds `--diar-pool max --diar-left 1`. For either diarizer the launcher adds `--shed-diar hold`; flags you pass yourself win (`audioforge-serve` only) | [§7.3](#73-nemotron-3-diarization-as-the-diarizer) |
-| `--asr PATH` | required (`audioforge-serve`: from the models directory) | ASR + heads `.afm` (`stage1_served_v2.afm`, the block-4 VAD build; `stage1_served.afm` = the measured v1) | [§3](#3-models-threads-and-speed) |
+| `--asr PATH` | required (`audioforge-serve`: from the models directory) | ASR + heads `.afm` (`stage1_served_v3.afm` = the block-4 VAD build `stage1_served_v2.afm` + the turn head v5 classifier; `stage1_served.afm` = the measured v1) | [§3](#3-models-threads-and-speed) |
 | `--diar PATH` | required unless `--diar-off` (`audioforge-serve`: from the models directory; none with `--mode single`) | diarizer `.afm`: the Streaming Sortformer v2 or the Nemotron-3-Diarization import | [§7](#7-diarizer) |
 
 **server**
@@ -148,7 +150,15 @@ linked in the last column explain each group and what was measured about it.
 | `--dyn-wait-ms CAP,FLOOR` | the served rule: 6000,1600 | `hybrid_dyn`: the Silero-silence wait at head posterior 0 (CAP) and 1 (FLOOR), linear in between (plus the rule's offset); `--mode single` sets `2000,960` (research/SINGLE_MODEL.md A1) (advanced) | [§4](#4-turn-policies-configturn_policy) |
 | `--turn-policy {timeout,timeout_quiet,timeout_any,head,both,hybrid,hybrid_silero,hybrid_dyn,vad_head}` | `timeout` | the `turn_policy` of a session whose `config` does not name one (a client's `config` still wins); `--mode single` sets `vad_head` (research/EOT_LATENCY.md) (advanced) | [§4](#4-turn-policies-configturn_policy) |
 | `--vad-wait-ms K,FALLBACK` | `160,640` | `vad_head` (no Silero): the served VAD head's silence (VAD < 0.4) that the head path needs (K, with the turn head p >= theta, default 0.99) and the silence that ends the turn on its own (FALLBACK, 0 = none) (research/EOT_LATENCY.md) (advanced) | [§4](#4-turn-policies-configturn_policy) |
+| `--turn-preset {balanced,fast,steady,assistant}` | `balanced` | `vad_head`'s constants as one named trade-off (a client's `config.turn_preset` wins for its session). `balanced` = VAD < 0.4 for >= 160 ms AND p >= 0.99, OR 640 ms, others path 960,640. `fast` (turn head v5, served heads v0.3) = the v5 segment classifier asked after 80 ms of VAD < 0.6 and at every further quiet frame ends the turn at P(complete) > 0.7, OR 640 ms of VAD < 0.4, others path 960,640: on two-party calls 547 vs 956 ms p50 at 24.8 vs 20.2 % false interruptions and 5.5 vs 7.3 % missed (AMI 1247 vs 1326 ms, 11.5 vs 10.5 % FI, 34.0 vs 33.5 % missed). `steady` = the fast rule before v5 (VAD < 0.6 for >= 480 ms AND p >= 0.99, OR 720 ms, others path 640,640): 886 ms p50 but the best p95 (1434 ms) and misses (3.7 %). `assistant` = v5 asked after 240 ms of energy-or-VAD quiet, P(complete) > 0.9, OR 2960 ms of VAD silence: for speech directed at the agent (smart-turn's 399 test clips: 92 % accuracy at 291 ms p50), not for human conversation. `--vad-wait-ms` / `--others-wait-ms` override the preset's values (research/TURN_V5.md, research/EOT_LATENCY.md "Turn presets") | [§4](#4-turn-policies-configturn_policy) |
 | `--others-wait-ms USER_SIL,HOLD` | `960,640` | `vad_head` with an enrolled TS-VAD track (`--turn-input tsvad`): the turn also ends when the user's own silence (P(user) < 0.5) reaches USER_SIL while P(other) >= 0.9 has held for HOLD, i.e. another speaker has the floor, without waiting for the room to go quiet (0 = off; research/EOT_LATENCY.md) (advanced) | [§4](#4-turn-policies-configturn_policy) |
+| `--turn-hint-p P` | `0.8` | the early end-of-turn hint (`turn_end_hint`, docs/PROTOCOL.md 5.11): sent once per user turn on the first frame with 80 ms of served-VAD silence (VAD < 0.4) and turn-head p >= P, then confirmed by the next `turn_end` (`hinted_at`) or withdrawn by `turn_end_hint_cancel` when the user resumes (VAD > 0.5 on 2 frames); a voice agent starts preparing its reply on it (Pipecat eager end of turn, LiveKit preemptive generation). `turn_end` itself is unchanged (advanced) | [§4](#4-turn-policies-configturn_policy) |
+| `--turn-hint-off` | off | no turn_end_hint / turn_end_hint_cancel events (and no turn_end.hinted_at) (advanced) | [§4](#4-turn-policies-configturn_policy) |
+| `--energy-gate {on,off}` | `on` | `vad_head`'s energy gate (research/EOT_ASSISTANT.md "Energy gate"): a per-session noise floor (10th percentile of the 80 ms frame log energies of the last 3 s); a user turn is armed only by an onset frame (VAD > 0.5 AND energy > floor + 6 dB), and no `turn_end` / `turn_end_hint` is sent before 160 ms of onset frames in the session. It removes the turn_ends the served VAD head (~0.55 on a fresh session's first frames, ~0.66 on room tone) fired before the user spoke: 137 -> 0 of 399 assistant clips; calls / AMI / the bundled clip unchanged. `off` = the VAD-only rule (advanced) | [§4](#4-turn-policies-configturn_policy) |
+| `--energy-quiet-db X` | off | with `--energy-gate on`: a frame whose energy is below the noise floor + X dB is silence whatever the VAD says, so the silence starts at the audible end instead of at the end of the VAD head's tail. Off by default: on the assistant set it answers 400-600 ms sooner (X 6: 611 vs 1218 ms p50), but on two-party calls and AMI mid-turn pauses are room tone too, and false interruptions rise at every X in 3..12 dB (calls 20.2 -> 25-60 %, AMI 10.5 -> 11-40 %) even with the fallback re-tuned (research/EOT_ASSISTANT.md) (advanced) | [§4](#4-turn-policies-configturn_policy) |
+| `--turn-model {head,smartturn}` | `head` | `head` = the turn head's p (the shipped rule). `smartturn` = Pipecat's smart-turn v3.2 ONNX (pipecat-ai/smart-turn, BSD-2-Clause; a second model, 8.7 MB, ~22 ms per call on 2 CPU threads) asked once per silence run after 160 ms of VAD silence, on the turn's last <= 8 s with 0.5 s of pre-speech audio, prepared exactly as Pipecat's LocalSmartTurnAnalyzerV3; complete -> `turn_end` (`path: model`), incomplete -> wait for the next silence run or the preset's 3 s fallback. A bridge on assistant-directed speech while the native classifier (turn head v5) is trained; see research/EOT_ASSISTANT.md for its numbers on all three benchmarks (on human-to-human calls it misses more turn ends than the default) (advanced) | [§4](#4-turn-policies-configturn_policy) |
+| `--smartturn-trigger {vad,energy}` | `vad` | `vad`: after 160 ms of VAD silence (VAD < the preset's threshold), fallback 3 s (the accurate setting). `energy`: two clocks, the classifier after 240 ms of energy-or-VAD quiet (energy < noise floor + 6 dB) ending the turn at P(complete) > 0.97, the fallback timer on the VAD's own silence at the preset's 640 / 720 ms (the fast setting; every mid-utterance stop longer than the timer still ends the turn). Numbers: research/EOT_ASSISTANT.md (advanced) | [§4](#4-turn-policies-configturn_policy) |
+| `--smartturn-onnx PATH` | the smart-turn-v3.2-cpu.onnx bundled in the installed `pipecat-ai` package | the smart-turn ONNX for `--turn-model smartturn` (advanced) | [§4](#4-turn-policies-configturn_policy) |
 
 **transcripts**
 
@@ -272,7 +282,7 @@ the diarizer column with the most activity (sum of probabilities) over the last 
 | `hybrid` | primary-silence timeout OR head ≥ `eot_threshold`. One `turn_end` per turn, at the earlier of the two decision times, tagged `hybrid`; the later path's firing for the same turn is dropped | `timeout_ms`, `eot_threshold` (0.98) | the hybrid event |
 | `hybrid_silero` | head ≥ θ OR **any-speaker Silero VAD v5 silence** ≥ `--silero-timeout-ms` (2640 ms). Silero runs on 32 ms chunks through Pipecat's VAD state machine (confidence 0.7, start / stop 0.2 s). One firing per silence run | `eot_threshold` (default θ 0.99828); `timeout_ms` is not used | the hybrid event |
 | `hybrid_dyn` | head ≥ θ OR Silero silence ≥ clamp(80 − 55 p, 7, 80) frames, where p is the head's posterior on the same frame: 6.4 s at p = 0, 4.24 s at p = 0.5, 2.48 s at p = 0.9, 2.0 s at p = 1 | `eot_threshold` (default θ 0.998283); `timeout_ms` is not used | the hybrid event |
-| `vad_head` | **`--mode single`'s default** (`--turn-policy vad_head`), no Silero: the served VAD head below 0.4 for ≥ K frames AND the turn head p ≥ θ, OR that silence ≥ FALLBACK (`--vad-wait-ms K,FALLBACK`, default `160,640`), OR, with an enrolled TS-VAD track, the user's own silence (P(user) < 0.5) reaching USER_SIL while P(other) ≥ 0.9 has held for HOLD: someone else has the floor, so the turn does not wait for the room to go quiet (`--others-wait-ms USER_SIL,HOLD`, default `960,640`, 0 = off). One `turn_end` per user turn, tagged `vad_head`. Two-party calls: EOT p50 956 ms vs 1290 ms for `hybrid_dyn 2000,960`, false interruptions 20.2 % vs 17.4 %, missed 7.3 % vs 6.4 %; AMI: EOT p50 1326 vs 1807 ms, missed 33.5 % vs 39.0 %, false interruptions 10.5 % vs 8.0 % (research/EOT_LATENCY.md, after the TS-VAD print fix) | `eot_threshold` (default θ 0.99) | the vad_head event |
+| `vad_head` | **`--mode single`'s default** (`--turn-policy vad_head`), no Silero: the served VAD head below 0.4 for ≥ K frames AND the turn head p ≥ θ, OR that silence ≥ FALLBACK (`--vad-wait-ms K,FALLBACK`, default `160,640`; `--turn-preset fast` swaps in a faster-p95 set, see [Turn presets](#turn-presets---turn-preset-configturn_preset)), OR, with an enrolled TS-VAD track, the user's own silence (P(user) < 0.5) reaching USER_SIL while P(other) ≥ 0.9 has held for HOLD: someone else has the floor, so the turn does not wait for the room to go quiet (`--others-wait-ms USER_SIL,HOLD`, default `960,640`, 0 = off). One `turn_end` per user turn, tagged `vad_head`. Two-party calls: EOT p50 956 ms vs 1290 ms for `hybrid_dyn 2000,960`, false interruptions 20.2 % vs 17.4 %, missed 7.3 % vs 6.4 %; AMI: EOT p50 1326 vs 1807 ms, missed 33.5 % vs 39.0 %, false interruptions 10.5 % vs 8.0 % (research/EOT_LATENCY.md, after the TS-VAD print fix) | `eot_threshold` (default θ 0.99) | the vad_head event |
 
 Notes:
 
@@ -285,6 +295,67 @@ Notes:
   (`audioforge[serve]`).
 - Setting `eot_threshold` in the config replaces the frozen θ of `hybrid_silero` / `hybrid_dyn`.
 - `--silero-timeout-ms` is a server-wide flag, not a per-session config key.
+
+### Turn presets (`--turn-preset`, `config.turn_preset`)
+
+`vad_head` comes in two presets, one named trade-off each. `balanced` is the default (`--mode single` sets it); `fast`
+is opt-in, per server (`--turn-preset fast`) or per session (`"turn_preset": "fast"` in the first `config`).
+`--vad-wait-ms` / `--others-wait-ms` still override a preset's waits. θ is 0.99 in both.
+
+| preset / system | rule | calls EOT p50 / p95 | calls false int. / missed | AMI EOT p50 / p95 | AMI false int. / missed |
+|---|---|---|---|---|---|
+| **`balanced`** (default) | VAD < 0.4 for ≥ 160 ms AND p ≥ 0.99, OR 640 ms; others path 960,640 | **956 / 1919 ms** | **20.2 % / 7.3 %** | 1326 / 3758 ms | 10.5 % / 33.5 % |
+| **`fast`** | VAD < 0.6 for ≥ 480 ms AND p ≥ 0.99, OR 720 ms; others path 640,640 | **886 / 1434 ms** | **24.8 % / 3.7 %** | 1086 / 3886 ms | 16.0 % / 30.5 % |
+| `hybrid_dyn 2000,960` (Silero) | for reference | 1290 / 1921 ms | 17.4 % / 6.4 % | 1807 / 4286 ms | 8.0 % / 39.0 % |
+| LiveKit turn detector (EnglishModel) + Silero, LiveKit defaults | baseline | 567 / 3127 ms | 26.6 % / 22.9 % | 1890 / 4295 ms | 12.5 % / 67.5 % |
+| Pipecat smart-turn v3.2 + Silero, Pipecat defaults | baseline | 237 / 3217 ms (bimodal p50) | 35.8 % / 24.8 % | 385 / 3992 ms | 27.5 % / 44.5 % |
+
+**What `fast` buys:**
+- It is only about 70 ms faster at p50 (886 vs 956 ms). The session-bootstrap 90 % interval of that difference is
+  −106 to −5 ms.
+- It is about 490 ms faster at p95 (1434 vs 1919 ms) and misses half as many ends (3.7 vs 7.3 %).
+- The cost is 4.6 more points of false interruptions on calls (24.8 vs 20.2 %; LiveKit: 26.6 %) and 5.5 more on AMI
+  (16.0 vs 10.5 %).
+
+Pick `fast` when a late or missing answer hurts more than an occasional interruption. Neither preset cuts the bundled
+clip under any of the six deliveries checked.
+
+Where the numbers come from: two-party user channels (32 sessions, 109 turn ends) and AMI dev (200 turns), scored by
+`scripts/research/eot_latency.py` ([research/EOT_LATENCY.md](../research/EOT_LATENCY.md) "Turn presets").
+[research/VAD_TAIL.md](../research/VAD_TAIL.md) explains why no rule or VAD change gets below ~900 ms at ≤ 20 % false
+interruptions on these recordings.
+
+### Energy gate and `--turn-model smartturn` (`vad_head`)
+
+**Energy gate** (`--energy-gate on`, the default). The served VAD head reads about 0.55 on a fresh session's first
+frames and about 0.66 on room tone, so the plain rule could end an empty turn before the user spoke (137 of 399
+assistant clips).
+- The gate keeps a per-session noise floor: the 10th percentile of the 80 ms frame log energies of the last 3 s.
+- A user turn is armed only by an onset: VAD > 0.5 AND energy > floor + 6 dB.
+- No `turn_end` or `turn_end_hint` is sent before 160 ms of onsets in the session.
+- Result: calls, AMI and the bundled clip keep exactly the numbers above; the pre-speech turn_ends are gone (0 of 399
+  served).
+- `--energy-quiet-db X` also counts frames below floor + X as silence. This cuts the VAD head's tail: assistant speech
+  answers in 611 instead of 1218 ms at X = 6. On human-to-human calls it raises false interruptions (48.6 % at X = 6,
+  ≥ 24.8 % at every X in 3..12 dB even with a fallback of up to 1280 ms), so it is off by default.
+
+**`--turn-model smartturn`** (opt-in, a bridge). This runs Pipecat's smart-turn v3.2 classifier (a second model:
+8.7 MB ONNX, BSD-2-Clause, the copy bundled with `pipecat-ai` or `--smartturn-onnx`) inside `vad_head`, in place of
+the turn head's p. It is asked once per silence run, and its input is prepared exactly as Pipecat's
+LocalSmartTurnAnalyzerV3 prepares it. Compute: ~20 ms per call on 2 CPU threads, about 1.1 calls per assistant turn.
+`turn_end.path` is `"model"`, `turn_end.model_ms` its compute, `stats.turn_model` the counters.
+
+| setting | assistant EOT p50 / p95 | false fires on incomplete | accuracy | calls p50 / FI / missed | AMI p50 / FI / missed |
+|---|---|---|---|---|---|
+| default (`--turn-model head`, energy gate) | 1240 / 1628 ms | 100 % | 43.9 % | 956 ms / 20.2 % / 7.3 % | 1326 ms / 10.5 % / 33.5 % |
+| `--turn-model smartturn` (`--smartturn-trigger vad`: 160 ms of VAD silence, 3 s fallback) | 770 / 1004 ms | 5.8 % | 95.7 % | 629 ms / 19.3 % / 23.9 % | 1087 ms / 13.0 % / 36.5 % |
+| `--turn-model smartturn --smartturn-trigger energy` (240 ms energy-or-VAD quiet, P > 0.97, the preset's VAD fallback) | 290 / 1267 ms | 100 % | 37.6 % | 961 ms / 24.8 % / 8.3 % | 1247 ms / 18.0 % / 33.5 % |
+| Pipecat smart-turn v3.2 + Silero (defaults), for reference | 211 / 242 ms | 40.2 % | 69.7 % | 237 ms / 35.8 % / 24.8 % | 385 ms / 27.5 % / 44.5 % |
+
+Use it for assistant-directed speech, where it tells a finished request from a mid-sentence stop. Do not use it for
+human-to-human calls: its 3 s fallback answers "incomplete" turn ends late, so it misses about 3x more turn ends.
+Sources: [research/EOT_ASSISTANT.md](../research/EOT_ASSISTANT.md) "Energy gate and the smart-turn bridge",
+`runs/eot_energy_gate.json`.
 
 ### 4.1 Measured tradeoffs
 

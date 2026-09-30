@@ -57,6 +57,7 @@ from .server.constants import (
     DYN_OFFSET,
     DYN_T0,
     DYN_TMIN,
+    ENERGY_GATE,
     ENROLL_MODES,
     ENROLL_TRIGGER,
     ERROR_CODES,
@@ -91,19 +92,32 @@ from .server.constants import (
     SHED_WINDOW_S,
     SILERO_POLICIES,
     SILERO_TIMEOUT_MS,
+    SMARTTURN_ENERGY,
+    V5_HINT_P,
+    SMARTTURN_QUIET_MS,
+    SMARTTURN_TRIGGERS,
     SR,
     STAT_KEEP,
     TSVAD_DYN,
-    VAD_HEAD_OTHERS_MS,
+    TURN_MODELS,
+    TURN_PRESET_DEFAULT,
+    TURN_PRESETS,
     VAD_HEAD_OTHERS_P,
     VAD_HEAD_SIL_THR,
     VAD_HEAD_USER_P,
-    VAD_HEAD_WAIT_MS,
     VOICE_MODES,
     diar_lag_ms,
     diar_preset,
 )
-from .server.policies import AnySpeakerTimeout, HeadPolicy, SileroSilence, TimeoutPolicy, VadHeadPolicy
+from .server.policies import (
+    AnySpeakerTimeout,
+    EnergyGate,
+    HeadPolicy,
+    SileroSilence,
+    TimeoutPolicy,
+    VadHeadPolicy,
+    frame_db,
+)
 from .server.protocol import (
     DEBUG_KEYS,
     ENROLL_KEYS,
@@ -118,6 +132,7 @@ from .server.protocol import (
     validate,
 )
 from .server.streams import ASRStream, LookaheadStream, Resampler, fast_conv
+from .server.turn_hint import TURN_HINT_P, TurnHintLedger, TurnHintTracker
 from .server.util import _pct, _Ring, peak_rss_mb, rss_mb
 
 log = logging.getLogger(__name__)
@@ -208,6 +223,8 @@ __all__ = [
     "STAT_KEEP",
     "TimeoutPolicy",
     "TSVAD_DYN",
+    "TURN_PRESET_DEFAULT",
+    "TURN_PRESETS",
     "validate",
     "VOICE_MODES",
     "VoiceBinder",
@@ -220,6 +237,27 @@ def gpu_available(device) -> bool:
     GPU)."""
     d = str(device)
     return (d.startswith("cuda") and torch.cuda.is_available()) or (d == "mps" and torch.backends.mps.is_available())
+
+
+def vad_head_params(preset: str, vad_wait_ms: str | tuple | None = None, others_wait_ms: str | tuple | None = None):
+    """turn_policy vad_head's (k frames, fallback frames or None, VAD threshold, others (user-silence frames, hold
+    frames) or None) for ``--turn-preset`` ``preset``, with ``--vad-wait-ms K,FALLBACK`` (0 = no fallback) and
+    ``--others-wait-ms USER_SIL,HOLD`` (0 = off) overriding the preset's values when given."""
+    pr = TURN_PRESETS[preset]
+    k_ms, fb_ms = ((float(x) for x in (vad_wait_ms.split(",") if isinstance(vad_wait_ms, str) else vad_wait_ms))
+                   if vad_wait_ms else pr["vad_wait_ms"])
+    if not (k_ms > 0 and (fb_ms == 0 or fb_ms >= k_ms)):
+        raise ValueError(f"--vad-wait-ms {vad_wait_ms!r}: needs K > 0 and FALLBACK = 0 or >= K")
+    k = max(1, int(round(k_ms / FRAME_MS)))
+    fb = int(round(fb_ms / FRAME_MS)) if fb_ms else None
+    ou = ([float(x) for x in (others_wait_ms.split(",") if isinstance(others_wait_ms, str) else others_wait_ms)]
+          if others_wait_ms is not None else list(pr["others_wait_ms"]))
+    if len(ou) == 1:
+        ou.append(pr["others_wait_ms"][1] if ou[0] else 0.0)
+    if len(ou) != 2 or ou[0] < 0 or ou[1] < 0 or (ou[0] and ou[0] < FRAME_MS):
+        raise ValueError(f"--others-wait-ms {others_wait_ms!r}: needs USER_SIL,HOLD in ms (USER_SIL 0 = off)")
+    others = (int(round(ou[0] / FRAME_MS)), max(1, int(round(ou[1] / FRAME_MS)))) if ou[0] else None
+    return k, fb, float(pr["vad_thr"]), others
 
 
 class Engine:
@@ -241,8 +279,31 @@ class Engine:
                  diar_labels: str = "column", diar_embed: str = "spk", shed_diar: str = "vad",
                  registry_thr: float | None = None, dyn_wait_ms: str | tuple | None = None,
                  vad_wait_ms: str | tuple | None = None, others_wait_ms: str | tuple | None = None,
-                 turn_policy: str = "timeout"):
+                 turn_policy: str = "timeout", turn_hint_p: float | None = TURN_HINT_P,
+                 turn_preset: str = TURN_PRESET_DEFAULT, energy_gate: bool = True,
+                 energy_quiet_db: float | None = ENERGY_GATE["quiet_db"], turn_model: str = "head",
+                 smartturn_onnx: str | None = None, smartturn_trigger: str = "vad"):
         self.threads = threads
+        # --energy-gate / --energy-quiet-db: vad_head's energy-aware gate (policies.EnergyGate, constants.ENERGY_GATE)
+        if energy_quiet_db is not None and not 0.0 < float(energy_quiet_db) <= 40.0:
+            raise ValueError(f"--energy-quiet-db {energy_quiet_db!r}: needs 0 < X <= 40 dB (0 / unset = off)")
+        self.energy_gate = bool(energy_gate)
+        self.energy_quiet_db = None if energy_quiet_db is None else float(energy_quiet_db)
+        # --turn-model head | smartturn (audioforge.server.smartturn): what decides vad_head's early path
+        if turn_model not in TURN_MODELS:
+            raise ValueError(f"--turn-model {turn_model!r}: one of {TURN_MODELS}")
+        self.turn_model = turn_model
+        if smartturn_trigger not in SMARTTURN_TRIGGERS:
+            raise ValueError(f"--smartturn-trigger {smartturn_trigger!r}: one of {SMARTTURN_TRIGGERS}")
+        self.smartturn_trigger = smartturn_trigger
+        self.smartturn = None
+        if turn_model == "smartturn":
+            from .server.smartturn import SmartTurnModel
+            self.smartturn = SmartTurnModel(smartturn_onnx, threads=max(1, int(threads or 1)))
+        # --turn-hint-p / --turn-hint-off: the early turn_end_hint (audioforge.server.turn_hint); None = no hints
+        if turn_hint_p is not None and not 0.0 < float(turn_hint_p) <= 1.0:
+            raise ValueError(f"--turn-hint-p {turn_hint_p!r}: needs 0 < P <= 1")
+        self.turn_hint_p = None if turn_hint_p is None else float(turn_hint_p)
         self.asr_lookahead = int(asr_lookahead) if asr_lookahead else None
         self.asr_vad_gate = None if asr_vad_gate is None else float(asr_vad_gate)
         self.asr_vad_hangover = max(1, int(round(float(asr_vad_hangover_ms) / FRAME_MS)))
@@ -319,22 +380,20 @@ class Engine:
             if not 0 < floor <= cap:
                 raise ValueError(f"--dyn-wait-ms {dyn_wait_ms!r}: needs 0 < FLOOR <= CAP")
             self.dyn_t0, self.dyn_a = cap / FRAME_MS, (cap - floor) / FRAME_MS
-        # --vad-wait-ms K,FALLBACK: turn_policy vad_head's VAD-head silence for the head path / the fallback (0 = none)
-        k_ms, fb_ms = ((float(x) for x in (vad_wait_ms.split(",") if isinstance(vad_wait_ms, str) else vad_wait_ms))
-                       if vad_wait_ms else VAD_HEAD_WAIT_MS)
-        if not (k_ms > 0 and (fb_ms == 0 or fb_ms >= k_ms)):
-            raise ValueError(f"--vad-wait-ms {vad_wait_ms!r}: needs K > 0 and FALLBACK = 0 or >= K")
-        self.vad_head_k = max(1, int(round(k_ms / FRAME_MS)))
-        self.vad_head_fb = int(round(fb_ms / FRAME_MS)) if fb_ms else None
-        # --others-wait-ms USER_SIL,HOLD: vad_head's others path (the user's TS-VAD silence reaching USER_SIL while
-        # P(other) >= 0.9 has held for HOLD; 0 = off)
-        ou = ([float(x) for x in (others_wait_ms.split(",") if isinstance(others_wait_ms, str) else others_wait_ms)]
-              if others_wait_ms is not None else list(VAD_HEAD_OTHERS_MS))
-        if len(ou) == 1:
-            ou.append(VAD_HEAD_OTHERS_MS[1] if ou[0] else 0.0)
-        if len(ou) != 2 or ou[0] < 0 or ou[1] < 0 or (ou[0] and ou[0] < FRAME_MS):
-            raise ValueError(f"--others-wait-ms {others_wait_ms!r}: needs USER_SIL,HOLD in ms (USER_SIL 0 = off)")
-        self.vad_head_others = (int(round(ou[0] / FRAME_MS)), max(1, int(round(ou[1] / FRAME_MS)))) if ou[0] else None
+        # --turn-preset (balanced | fast): turn_policy vad_head's constants as one named trade-off (TURN_PRESETS);
+        # --vad-wait-ms / --others-wait-ms, when given, override the preset's values
+        if turn_preset not in TURN_PRESETS:
+            raise ValueError(f"--turn-preset {turn_preset!r}: one of {tuple(TURN_PRESETS)}")
+        self.turn_preset = turn_preset
+        # turn head v5 (research/TURN_V5.md; heads.turn_seg, served heads v0.3): the presets whose turn_model is "v5"
+        # (fast, assistant) need it in the ASR model
+        self.seg_name = next((k for k, v in asr_model.head_cfg.items() if v["type"] == "turn_seg"), None)
+        if TURN_PRESETS[turn_preset].get("turn_model") and self.seg_name is None:
+            raise ValueError(f"--turn-preset {turn_preset} needs the turn head v5 classifier (served heads v0.3: "
+                             f"audioforge-download --heads-version 0.3); this model has none")
+        self.vad_wait_ms, self.others_wait_ms = vad_wait_ms, others_wait_ms
+        self.vad_head_k, self.vad_head_fb, self.vad_head_thr, self.vad_head_others = vad_head_params(
+            turn_preset, vad_wait_ms, others_wait_ms)
         # --turn-policy: the policy of a session whose config does not name one (--mode single: vad_head)
         if turn_policy not in POLICIES:
             raise ValueError(f"--turn-policy {turn_policy!r}: one of {POLICIES}")
@@ -664,8 +723,17 @@ class Session:
                         else TimeoutPolicy(self.cfg.timeout_ms, e.num_spks,
                                            require_quiet=self.cfg.turn_policy == "timeout_quiet"))
         self.head_pol = HeadPolicy(self.cfg.theta)
-        self.vh_pol = VadHeadPolicy(self.cfg.theta, e.vad_head_k, e.vad_head_fb, VAD_HEAD_SIL_THR,  # turn_policy vad_head
-                                    others=e.vad_head_others, others_p=VAD_HEAD_OTHERS_P, user_p=VAD_HEAD_USER_P)
+        self.st_trig = None  # --turn-model smartturn: the SmartTurnTrigger of this session's vad_head
+        self._stbuf, self._stbuf0 = np.zeros(0, np.float32), 0  # recent audio (energy gate, smart-turn), from _stbuf0
+        self.vh_pol = self._vad_head_policy()  # turn_policy vad_head (the engine's --turn-preset, or config.turn_preset)
+        # the early turn_end_hint (docs/PROTOCOL.md 5.11): candidates per head frame, one outstanding hint per turn
+        self.hint_tr = (TurnHintTracker(e.turn_hint_p, vad_thr=VAD_HEAD_SIL_THR)
+                        if e.turn_hint_p is not None and e.turn_name is not None else None)
+        self.hint_led = TurnHintLedger()
+        # turn head v5 presets (fast / assistant): the hint reads the segment classifier's p at quiet frames (>= 0.5)
+        self.hint_v5 = self.hint_tr is not None and self.asr.seg is not None
+        if self.hint_v5:
+            self.hint_tr.p = min(self.hint_tr.p, V5_HINT_P)
         self.resampler = Resampler(self.cfg.sample_rate) if self.cfg.sample_rate != SR else None
         self.S = e.num_spks
         self.rows = _Ring()  # finalized diarizer columns (the last 2048 = 164 s; len() counts all)
@@ -768,6 +836,10 @@ class Session:
             self._notice("bad_config", f"turn_policy {cfg.turn_policy} ignored after the first audio (send it in the "
                                        f"first config); keeping {self.cfg.turn_policy}")
             cfg.turn_policy = self.cfg.turn_policy
+        if cfg.turn_preset != self.cfg.turn_preset:  # the vad_head rule is built with the session
+            self._notice("bad_config", f"turn_preset {cfg.turn_preset} ignored after the first audio (send it in the "
+                                       f"first config); keeping {self.cfg.turn_preset or self.e.turn_preset}")
+            cfg.turn_preset = self.cfg.turn_preset
         self.cfg = cfg
         self._tsvad_theta()
         self.timeout.timeout_ms = cfg.timeout_ms
@@ -775,6 +847,100 @@ class Session:
             self.timeout.require_quiet = cfg.turn_policy == "timeout_quiet"
         self.head_pol.thr = cfg.theta
         self.vh_pol.thr = cfg.theta
+
+    def _vad_head_policy(self) -> VadHeadPolicy:
+        """turn_policy vad_head with the session's preset: config.turn_preset if the client set one (that preset's
+        values as they are), else the engine's (--turn-preset with any --vad-wait-ms / --others-wait-ms)."""
+        e, pr = self.e, self.cfg.turn_preset
+        k, fb, thr, others = ((e.vad_head_k, e.vad_head_fb, e.vad_head_thr, e.vad_head_others)
+                              if pr is None or pr == e.turn_preset else vad_head_params(pr))
+        st_energy = e.smartturn is not None and e.smartturn_trigger == "energy"
+        gate, quiet_db = None, (SMARTTURN_ENERGY["quiet_db"] if st_energy else e.energy_quiet_db)
+        if e.energy_gate or st_energy:  # constants.ENERGY_GATE: onset arming + warm-up guard (+ --energy-quiet-db)
+            g = ENERGY_GATE
+            gate = EnergyGate(quiet_db=quiet_db, onset_db=g["onset_db"], window_s=g["window_s"], pct=g["pct"],
+                              warmup_frames=int(math.ceil(g["warmup_ms"] / FRAME_MS)))
+        tm, st = None, {}
+        v5 = TURN_PRESETS[pr or e.turn_preset].get("turn_model")
+        if v5 is not None and e.smartturn is None:  # turn head v5 (fast / assistant): the segment classifier decides
+            if e.seg_name is None:
+                self._notice("bad_config", f"turn_preset {pr} needs the turn head v5 classifier (served heads v0.3); "
+                                           f"using {e.turn_preset}")
+                self.cfg.turn_preset = pr = None
+                k, fb, thr, others = e.vad_head_k, e.vad_head_fb, e.vad_head_thr, e.vad_head_others
+                v5 = TURN_PRESETS[e.turn_preset].get("turn_model")
+        if v5 is not None and e.smartturn is None:
+            if self.asr.seg is None:
+                self.asr.attach_seg(e.asr.heads[e.seg_name])
+            tm = self._seg_model
+            if v5.get("quiet_db") is not None:
+                quiet_db = v5["quiet_db"]
+                g = ENERGY_GATE
+                gate = EnergyGate(quiet_db=quiet_db, onset_db=g["onset_db"], window_s=g["window_s"], pct=g["pct"],
+                                  warmup_frames=int(math.ceil(g["warmup_ms"] / FRAME_MS)))
+            st = {"model_quiet_only": quiet_db is not None, "model_vad_thr": v5["vad_thr"], "model_p": v5["p"],
+                  "model_reask": bool(v5.get("reask"))}
+        if e.smartturn is not None:  # --turn-model smartturn (audioforge.server.smartturn)
+            from .server.smartturn import SmartTurnTrigger
+            tm = self.st_trig = SmartTurnTrigger(e.smartturn, self._st_audio, self._ready_sample)
+            if st_energy:  # two clocks: the classifier on energy-or-VAD quiet, the fallback on the VAD's silence
+                k = max(1, int(round(SMARTTURN_ENERGY["quiet_ms"] / FRAME_MS)))
+                st = {"model_quiet_only": True, "model_p": SMARTTURN_ENERGY["p"]}
+            else:  # asked at SMARTTURN_QUIET_MS of VAD silence, the preset's smart-turn fallback (3 s)
+                k = max(1, int(round(SMARTTURN_QUIET_MS / FRAME_MS)))
+                fb = int(round(TURN_PRESETS[pr or e.turn_preset]["smartturn_fallback_ms"] / FRAME_MS))
+        return VadHeadPolicy(self.cfg.theta, k, fb, thr, others=others, others_p=VAD_HEAD_OTHERS_P,
+                             user_p=VAD_HEAD_USER_P, gate=gate, turn_model=tm, **st)
+
+    def _seg_model(self, v: int, onset_v: int):
+        """turn head v5's answer for frame v as a VadHeadPolicy turn_model: (P(complete), ms)."""
+        import time as _t
+        t0 = _t.perf_counter()
+        return self.asr.seg_prob(v), (_t.perf_counter() - t0) * 1000
+
+    # ---- per-frame energy (the energy gate) and the recent audio (--turn-model smartturn)
+    def _energy(self, v: int) -> float:
+        """Log energy (dBFS) of 80 ms frame v as far as it is known at the frame's decision-ready time: samples
+        [1280 v, min(1280 (v + 1), ready sample)) (an ASR frame can be ready before its 80 ms of audio are complete;
+        none: -100). Independent of how the client blocks its audio."""
+        a, b = v * FRAME_SAMPLES, min((v + 1) * FRAME_SAMPLES, self._ready_sample(v))
+        return frame_db(self._st_audio(a, b)) if b > a else -100.0
+
+    def _feed_energy(self, x: np.ndarray) -> None:
+        """Keep the last ST_KEEP_S of audio: the energy gate's frames and smart-turn's turn segment."""
+        self._stbuf = np.concatenate([self._stbuf, x])
+        drop = max(0, len(self._stbuf) - int(self.ST_KEEP_S * SR))
+        self._stbuf, self._stbuf0 = self._stbuf[drop:], self._stbuf0 + drop
+
+    ST_KEEP_S = 10.0  # > smart-turn's 8 s window
+
+    def _st_audio(self, a: int, b: int) -> np.ndarray:
+        return self._stbuf[max(0, a - self._stbuf0): max(0, b - self._stbuf0)]
+
+    def _ready_sample(self, v: int) -> int:
+        """The decision-ready sample of ASR frame v (``_asr_ready_t`` in samples)."""
+        return min(self.asr.frame_ready_samples(v), self.samples)
+
+    def _hint_update(self, p: float, vad: float, v: int | None = None) -> list[dict]:
+        """The hint tracker on the frame vad_head just read: under vad_head with the energy gate, an energy-quiet
+        frame counts as VAD silence (as for the rule) and no candidate is made before the gate is warm."""
+        g = self.vh_pol.gate if self.cfg.turn_policy == "vad_head" else None
+        if g is not None and g.last_quiet:
+            vad = 0.0
+        if self.hint_v5 and v is not None:  # v5: its p on quiet frames only (the tracker reads p there alone)
+            p = self.asr.seg_prob(v) if vad < self.hint_tr.vad_thr else 0.0
+        if g is not None and not g.warm:  # no hint before the warm-up (the tracker still sees the VAD)
+            p = 0.0
+        return self.hint_tr.update(p, vad)
+
+    def _vad_head_update(self, v: int, p: float, vad: float, pu=None, po=None):
+        """vad_head on frame v -> the turn-end event or None; tells the smart-turn trigger where a turn ended."""
+        ev = self.vh_pol.update(p, vad, pu, po, self._energy(v) if self.vh_pol.gate is not None else None)
+        if ev is not None and self.st_trig is not None:
+            self.st_trig.turn_ended(self._ready_sample(v))
+        if ev is not None and ev.get("path") == "model":
+            ev["model_ms"] = round(self.vh_pol.model_calls[-1]["ms"], 2)
+        return ev
 
     def _tsvad_theta(self):
         """--turn-input tsvad: the head threshold of hybrid_dyn / hybrid defaults to TSVAD_DYN's (a config
@@ -802,6 +968,12 @@ class Session:
     def _seg_text(self) -> str:
         tok = self.e.asr.tokenizer
         return tok.decode(self.asr.tokens[self.seg_tok:]) if tok is not None else ""
+
+    def _text_upto(self, f: int) -> str:
+        """The current segment's text through ASR frame f (exclusive): what a final cut at f would hold."""
+        tok = self.e.asr.tokenizer
+        cut = max(self.seg_tok, self.asr.tok_at[f - 1] if f > 0 else 0)
+        return tok.decode(self.asr.tokens[self.seg_tok:cut]) if tok is not None else ""
 
     def _cut(self, pol: str) -> bool:
         tp = self.cfg.turn_policy
@@ -926,6 +1098,12 @@ class Session:
     def _turn_end(self, pol: str, ev: dict, frame_v: int, t_dec: float, out: list):
         msg = {"type": "turn_end", "t": round(t_dec, 3), "policy": "change" if ev.get("change") else pol,
                "p": ev.get("p"), "silence_ms": int(ev["silence_ms"])}
+        if "path" in ev:  # vad_head: head | fallback | others | model (--turn-model smartturn)
+            msg["path"] = ev["path"]
+        if "model_ms" in ev:  # --turn-model smartturn: the classifier's compute for this decision
+            msg["model_ms"] = ev["model_ms"]
+        if self.hint_tr is not None:  # the hint this decision confirms (None: no hint outstanding)
+            msg["hinted_at"] = self.hint_led.turn_end(t_dec, frame_v)
         if self.e.debug:
             msg["frame_t"] = round((frame_v + 1) * FRAME_MS / 1000, 3)
         out.append(msg)
@@ -1171,6 +1349,8 @@ class Session:
         x = self._sanitize(samples)
         lvl = self._shed_level(shed, backlog_ms)
         self.samples += len(x)
+        if self.vh_pol.gate is not None or self.st_trig is not None:
+            self._feed_energy(x)
         if backlog_ms is not None:
             self.backlog_ms.append(backlog_ms)
             self.backlog_ms_max = max(self.backlog_ms_max, backlog_ms)
@@ -1249,6 +1429,7 @@ class Session:
         self.asr_ms.append((t1 - t0) * 1000)
         self.diar_ms.append((t2 - t1) * 1000)
         events: list[tuple[float, str, dict, int]] = []
+        hints: list[tuple[float, dict]] = []  # turn_end_hint candidates (decision time, TurnHintTracker candidate)
         enrolled_msgs = []
         for row in drows:
             v = len(self.rows)
@@ -1290,9 +1471,11 @@ class Session:
                     pu = po = None  # the others path reads the enrolled user's TS-VAD track of the same frame
                     if tsv and self.tsvad is not None and self.tsvad.enrolled and v < len(self.asr.tsvad_p):
                         pu, po = (float(x) for x in self.asr.tsvad_p[v][:2])
-                    ev = self.vh_pol.update(p, vad, pu, po)
+                    ev = self._vad_head_update(v, p, vad, pu, po)
                     if ev is not None:
                         events.append((t_rdy, "vad_head", ev, v))
+                if self.hint_tr is not None:
+                    hints += [(t_rdy, c) for c in self._hint_update(p, vad, v)]
         out = self.take_notices()
         row, spk_v = self._latest_row(), len(self.rows) - 1
         fr_msgs = []
@@ -1306,9 +1489,11 @@ class Session:
                 if ev is not None and self._fires("head"):
                     events.append((self._asr_ready_t(f["v"]), "head", ev, f["v"]))
                 if self.cfg.turn_policy == "vad_head":
-                    ev = self.vh_pol.update(f["eot"], f["vad"])
+                    ev = self._vad_head_update(f["v"], f["eot"], f["vad"])
                     if ev is not None:
                         events.append((self._asr_ready_t(f["v"]), "vad_head", ev, f["v"]))
+                if self.hint_tr is not None:
+                    hints += [(self._asr_ready_t(f["v"]), c) for c in self._hint_update(f["eot"], f["vad"], f["v"])]
             m = {"type": "frame", "t": round((f["v"] + 1) * FRAME_MS / 1000, 3), "vad": round(f["vad"], 4),
                  "eot": None if self.last_eot is None else round(self.last_eot, 5),
                  "speakers": [round(min(max(float(p), 0.0), 1.0), 4) for p in row], "primary": self.timeout.primary}
@@ -1335,8 +1520,23 @@ class Session:
         events = sorted(events, key=lambda e: e[0])
         if self.cfg.turn_policy in HYBRID_POLICIES:
             events = self._hybrid(events)
-        for t_dec, pol, ev, v in events:
-            self._turn_end(pol, ev, v, t_dec, out)
+        if hints:  # merged in decision-time order; at equal times the turn_end first (it closes the hint's turn)
+            merged = sorted([(t, 0, e) for t, *e in events] + [(t, 1, c) for t, c in hints], key=lambda r: r[:2])
+            for t_dec, kind, x in merged:
+                if kind == 0:
+                    pol, ev, v = x
+                    self._turn_end(pol, ev, v, t_dec, out)
+                elif x["kind"] == "cancel":
+                    m = self.hint_led.cancel(t_dec)
+                    if m is not None:
+                        out.append(m)
+                else:
+                    m = self.hint_led.hint(t_dec, x, self._text_upto(self._asr_frames_at(t_dec)))
+                    if m is not None:
+                        out.append(m)
+        else:
+            for t_dec, pol, ev, v in events:
+                self._turn_end(pol, ev, v, t_dec, out)
         if self.asr.n_frames - self.seg_frame0 >= MAX_SEGMENT_S * 1000 / FRAME_MS and not final:
             # no policy cut this segment for MAX_SEGMENT_S: cut it with a final (no turn_end) so the partial and
             # the segment text stay bounded
@@ -1406,6 +1606,18 @@ class Session:
              "first_partial_ms": self.first_partial_ms, "peak_rss_mb": peak_rss_mb()}
         if self.degraded:
             m["degraded"] = dict(sorted(self.degraded.items()))
+        if self.hint_tr is not None:
+            m["turn_hints"] = self.hint_led.stats()
+        if self.st_trig is not None:  # --turn-model smartturn: calls, complete answers, compute per call
+            c = self.st_trig.calls
+            ms = [x["ms"] for x in c]
+            m["turn_model"] = {"model": "smartturn", "calls": len(c), "complete": sum(x["p"] > self.vh_pol.model_p for x in c),
+                               "ms_p50": _pct(ms, 50), "ms_p95": _pct(ms, 95)}
+        elif self.asr.seg is not None and self.cfg.turn_policy == "vad_head":  # turn head v5 (fast / assistant)
+            c = self.vh_pol.model_calls
+            ms = [x["ms"] for x in c]
+            m["turn_model"] = {"model": "v5", "calls": len(c), "complete": sum(x["complete"] for x in c),
+                               "ms_p50": _pct(ms, 50), "ms_p95": _pct(ms, 95)}
         if self.registry is not None:
             m["speakers_seen"] = len(self.registry)
         if self.binder is None and self.tsvad is not None and self.e.enroll != "dominant":

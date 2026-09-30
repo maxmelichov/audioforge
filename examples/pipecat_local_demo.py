@@ -26,6 +26,11 @@ Scoring (after the pipeline has finished; the labels never reach the pipeline). 
   another speaker's turn in the window's lead-in). ``answers`` classifies the LLMContextFrame moments the same way.
 * WER: all TranscriptionFrames (finals, including the end flush) vs all speakers' words in the window, both through
   ``audioforge.teachers.normalize_text``.
+* with ``--llm-ms MS`` a ``MockLLMService`` (a real ``pipecat`` ``LLMService``, so its ``SpeculationGate`` applies)
+  answers every ``LLMContextFrame`` after MS ms (LLM + TTS time to first audio); ``response_after_end_ms`` = the first
+  released ``LLMFullResponseStartFrame`` at or after the true end, minus that end: what the caller hears. With
+  ``--turn-hints`` the STT forwards the server's ``turn_end_hint`` as Pipecat's eager end of turn and the stop
+  strategy is ``AudioforgeEagerTurnStopStrategy``: the reply is prepared from the hint and released at the turn end.
 * Pipecat semantics: loguru WARNING/ERROR records and Python warnings from pipecat during the run, plus ordering
   checks at the tap and the mock (StartFrame first; UserStarted/UserStopped and VADUserStarted/Stopped alternate;
   finals are finalized and non-empty; nothing after EndFrame).
@@ -53,6 +58,9 @@ from pipecat.frames.frames import (  # noqa: E402
     InputAudioRawFrame,
     InterimTranscriptionFrame,
     LLMContextFrame,
+    LLMFullResponseEndFrame,
+    LLMFullResponseStartFrame,
+    LLMTextFrame,
     StartFrame,
     TranscriptionFrame,
     UserStartedSpeakingFrame,
@@ -68,6 +76,8 @@ from pipecat.processors.aggregators.llm_response_universal import (  # noqa: E40
     LLMUserAggregatorParams,
 )
 from pipecat.processors.frame_processor import FrameDirection, FrameProcessor  # noqa: E402
+from pipecat.services.llm_service import LLMService  # noqa: E402
+from pipecat.services.settings import LLMSettings  # noqa: E402
 from pipecat.transports.base_input import BaseInputTransport  # noqa: E402
 from pipecat.transports.base_transport import TransportParams  # noqa: E402
 from pipecat.turns.user_start import TranscriptionUserTurnStartStrategy, VADUserTurnStartStrategy  # noqa: E402
@@ -78,6 +88,7 @@ from pipecat.workers.runner import WorkerRunner  # noqa: E402
 from audioforge.integrations.pipecat import (  # noqa: E402
     ENROLL_MODES,
     POLICIES,
+    AudioforgeEagerTurnStopStrategy,
     AudioforgeHub,
     AudioforgeSTTService,
     AudioforgeTurnAnalyzer,
@@ -206,6 +217,36 @@ class TranscriptTap(FrameProcessor):
         await self.push_frame(frame, direction)
 
 
+class MockLLMService(LLMService):
+    """Stands in for a streaming LLM + TTS as a real ``LLMService`` (so Pipecat's ``SpeculationGate`` holds a
+    speculative reply until the turn is confirmed): every ``LLMContextFrame`` is answered ``prep_s`` seconds later
+    (time to the first audio) with LLMFullResponseStart / LLMText / LLMFullResponseEnd. An eager-end-of-turn cancel
+    or an interruption cancels the wait (``LLMService`` restarts its processing task)."""
+
+    def __init__(self, prep_s: float, **kw):
+        super().__init__(settings=LLMSettings(
+            model="mock", system_instruction=None, temperature=None, max_tokens=None, top_p=None, top_k=None,
+            frequency_penalty=None, presence_penalty=None, seed=None, filter_incomplete_user_turns=False,
+            user_turn_completion_config=None), **kw)
+        self.prep_s = float(prep_s)
+        self.runs: list[tuple[float, bool, str]] = []  # (perf, speculative, user text) per inference started
+        self.done: list[tuple[float, bool]] = []  # (perf, speculative) per reply produced (held or not)
+
+    async def process_frame(self, frame: Frame, direction: FrameDirection):
+        await super().process_frame(frame, direction)
+        if not isinstance(frame, LLMContextFrame):
+            await self.push_frame(frame, direction)
+            return
+        msgs = frame.context.messages
+        text = msgs[-1].get("content", "") if msgs else ""
+        self.runs.append((time.perf_counter(), bool(frame.speculation), str(text)))
+        await asyncio.sleep(self.prep_s)
+        self.done.append((time.perf_counter(), bool(frame.speculation)))
+        await self.push_frame(LLMFullResponseStartFrame())
+        await self.push_frame(LLMTextFrame(f"(reply to: {str(text)[:40]})"))
+        await self.push_frame(LLMFullResponseEndFrame())
+
+
 class MockLLMTTS(FrameProcessor):
     """Stands in for LLM + TTS: logs when the bot WOULD start answering and records every turn frame."""
 
@@ -215,6 +256,7 @@ class MockLLMTTS(FrameProcessor):
         self.starts: list[float] = []
         self.decisions: list[float] = []
         self.contexts: list[tuple[float, str]] = []
+        self.responses: list[float] = []  # LLMFullResponseStartFrame arrivals (with --llm-ms: released replies)
         self.checks = _OrderChecks("mock")
         self._in_turn = False
 
@@ -239,6 +281,9 @@ class MockLLMTTS(FrameProcessor):
                 text = msgs[-1].get("content", "") if msgs else ""
                 self.contexts.append((now, text if isinstance(text, str) else str(text)))
                 logger.info(f"[mock-llm] audio t={self.clock(now):7.2f}s would answer: {str(text)[:90]!r}")
+            elif isinstance(frame, LLMFullResponseStartFrame):
+                self.responses.append(now)
+                logger.info(f"[mock-llm] audio t={self.clock(now):7.2f}s reply starts (released)")
         await self.push_frame(frame, direction)
 
 
@@ -246,18 +291,26 @@ class MockLLMTTS(FrameProcessor):
 async def run_pipeline(audio: np.ndarray, *, url: str, policy: str, pad_s: float = 3.0, timeout_ms: int = 1000,
                        eot_threshold: float | None = None, speed: float = 1.0, max_wall_s: float | None = None,
                        wait_for_silence: bool = True, resume_ms: int = 240, enroll: str | None = None,
-                       agent_end_s: float | None = None) -> dict:
+                       agent_end_s: float | None = None, turn_hints: bool = False, llm_ms: float | None = None,
+                       voiceprint: list | None = None) -> dict:
     """Run the local pipeline once over ``audio`` (16 kHz float). Returns raw timings (perf_counter based).
-    ``enroll`` / ``agent_end_s``: the STT's enrollment mode and the audio time of the stand-in TTS-end event."""
+    ``enroll`` / ``agent_end_s``: the STT's enrollment mode and the audio time of the stand-in TTS-end event.
+    ``turn_hints``: Pipecat eager end of turn on the server's turn_end_hint; ``llm_ms``: a ``MockLLMService`` with
+    that time to first audio (None = no LLM, the mock only logs); ``voiceprint``: a stored print sent as ``enroll``."""
     hub = AudioforgeHub()
-    stt = AudioforgeSTTService(url=url, hub=hub, timeout_ms=timeout_ms, eot_threshold=eot_threshold, enroll=enroll)
+    stt = AudioforgeSTTService(url=url, hub=hub, timeout_ms=timeout_ms, eot_threshold=eot_threshold, enroll=enroll,
+                               turn_hints=turn_hints)
+    if voiceprint is not None:
+        await stt.enroll(voiceprint)  # queued: sent right after the config
     vad = AudioforgeVADAnalyzer(hub)
     turn = AudioforgeTurnAnalyzer(hub, policy=policy, wait_for_silence=wait_for_silence, resume_ms=resume_ms)
+    stop = (AudioforgeEagerTurnStopStrategy(turn_analyzer=turn) if turn_hints
+            else TurnAnalyzerUserTurnStopStrategy(turn_analyzer=turn))
     agg = LLMUserAggregator(LLMContext(), params=LLMUserAggregatorParams(
         vad_analyzer=vad,
         user_turn_strategies=UserTurnStrategies(
             start=[VADUserTurnStartStrategy(), TranscriptionUserTurnStartStrategy()],
-            stop=[TurnAnalyzerUserTurnStopStrategy(turn_analyzer=turn)])))
+            stop=[stop])))
     done = asyncio.Event()
     transport = WavInputTransport(audio, pad_s=pad_s, speed=speed, on_done=done.set, agent_end_s=agent_end_s)
     clock = (lambda p: (p - transport.t0) * speed if transport.t0 is not None else float("nan"))
@@ -274,7 +327,8 @@ async def run_pipeline(audio: np.ndarray, *, url: str, policy: str, pad_s: float
     async def _stop_timeout(_agg):
         watchdog.append(time.perf_counter())
 
-    worker = PipelineWorker(Pipeline([transport, stt, tap, agg, mock]),
+    llm = MockLLMService(llm_ms / 1000.0) if llm_ms is not None else None
+    worker = PipelineWorker(Pipeline([transport, stt, tap, agg] + ([llm] if llm else []) + [mock]),
                             params=PipelineParams(audio_in_sample_rate=SR), enable_rtvi=False,
                             cancel_on_idle_timeout=False, idle_timeout_secs=None)
     errors: list[str] = []
@@ -314,7 +368,11 @@ async def run_pipeline(audio: np.ndarray, *, url: str, policy: str, pad_s: float
             "pipeline_errors": errors, "finished": finished, "policy": policy,
             "agent_end_s": agent_end_s, "agent_end_audio_t": clock(transport.agent_end_perf)
             if transport.agent_end_perf is not None else None, "enroll_sent": hub.enroll_sent,
-            "enrolled_column": hub.enrolled_column}
+            "enrolled_column": hub.enrolled_column, "turn_hints": turn_hints, "llm_ms": llm_ms,
+            "responses": mock.responses, "hints": [h.__dict__ for h in hub.hints],
+            "llm_runs": llm.runs if llm else [], "llm_done": llm.done if llm else [],
+            "speculated": getattr(stop, "speculated", []), "spec_kept": getattr(stop, "kept", []),
+            "spec_discarded": getattr(stop, "discarded", [])}
 
 
 # ------------------------------------------------------------------------------------------ scoring
@@ -351,6 +409,10 @@ def score(raw: dict, ref: dict) -> dict:
         pip_over = round((p_dec - srv0["perf"]) * 1000) if srv0 else None
     hyp = " ".join(f["text"] for f in raw["finals"])
     lags = raw["frame_lag_ms"]
+    responses = classify(raw.get("responses", []))  # released replies (with --llm-ms)
+    resp_after = [r["t"] for r in responses if r["kind"] == "after_end"]
+    hints = [{"t": h["t"], "p": round(h["p"], 3), "outcome": h["outcome"], "arrival_t": round(at(h["perf"]), 3),
+              "text": h["text"]} for h in raw.get("hints", [])]
     return {
         "dead_air_ms": dead_air,
         "no_decision_within_ms": None if after else round((raw["total_s"] - true_end) * 1000),
@@ -368,7 +430,15 @@ def score(raw: dict, ref: dict) -> dict:
         "stopped_by": [s[1] for s in raw["stopped"] if s[0] <= end_cut],
         "watchdog_stops": sum(p <= end_cut for p in raw["watchdog"]),
         "transcript": hyp,
-        "wer_all_speakers": round(float(wer([normalize_text(ref["all_text"])], [normalize_text(hyp)])), 4),
+        "wer_all_speakers": (round(float(wer([normalize_text(ref["all_text"])], [normalize_text(hyp)])), 4)
+                             if ref.get("all_text") else None),
+        "response_after_end_ms": round((resp_after[0] - true_end) * 1000) if resp_after else None,
+        "responses": responses,
+        "response_interruptions": sum(r["kind"] in ("interruption", "early") for r in responses),
+        "hints": hints,
+        "speculations": len(raw.get("speculated", [])), "speculations_kept": len(raw.get("spec_kept", [])),
+        "speculations_discarded": [d[2] for d in raw.get("spec_discarded", [])],
+        "llm_runs": [{"t": round(at(p), 3), "speculative": sp} for p, sp, _ in raw.get("llm_runs", [])],
         "n_finals": len(raw["finals"]), "n_interims": raw["interims"],
         "final_speakers": [f.get("speaker") for f in raw["finals"]],
         "vad_events": [(k, round(at(p), 2)) for k, p in raw["vad"]],
@@ -461,6 +531,7 @@ def run_files(a) -> list[dict]:
         x, sr = sf.read(str(wav), dtype="float32", always_2d=True)
         x = x.mean(1)
         assert sr == SR, f"{wav}: {sr} Hz (prepare writes 16 kHz)"
+        vp = json.loads(Path(a.voiceprint).read_text()) if getattr(a, "voiceprint", None) else None
         agent_end = getattr(a, "agent_end", None) or {}
         ae = agent_end.get(wav.stem) if isinstance(agent_end, dict) else None
         for policy in a.policy:
@@ -472,11 +543,14 @@ def run_files(a) -> list[dict]:
                 raw = asyncio.run(run_pipeline(x, url=a.url, policy=policy, pad_s=a.pad_s, timeout_ms=a.timeout_ms,
                                                eot_threshold=a.eot_threshold, speed=a.speed,
                                                wait_for_silence=not a.no_wait_for_silence, resume_ms=a.resume_ms,
-                                               enroll=getattr(a, "enroll", None), agent_end_s=ae))
+                                               enroll=getattr(a, "enroll", None), agent_end_s=ae,
+                                               turn_hints=getattr(a, "turn_hints", False),
+                                               llm_ms=getattr(a, "llm_ms", None), voiceprint=vp))
             logger.remove(hid)
             pywarn = [f"{w.category.__name__}: {str(w.message)[:200]} ({Path(w.filename).name})" for w in wrec
                       if "pipecat" in w.filename or "integrations" in w.filename]
             res = {"file": wav.name, "policy": policy, "audio_s": raw["audio_s"], "pad_s": a.pad_s,
+                   "turn_hints": raw["turn_hints"], "llm_ms": raw["llm_ms"],
                    "wait_for_silence": not a.no_wait_for_silence, "resume_ms": a.resume_ms,
                    "pipeline_finished": raw["finished"], "pipeline_errors": raw["pipeline_errors"],
                    "violations": raw["violations"], "order_notes": raw["order_notes"], "log_warnings": cap.records,
@@ -491,7 +565,8 @@ def run_files(a) -> list[dict]:
                 "file", "policy", "dead_air_ms", "no_decision_within_ms", "interruptions", "early", "pre_onset",
                 "answer_interruptions",
                 "server_turn_end_t_minus_true_end_ms", "pipecat_after_server_turn_end_ms", "wer_all_speakers",
-                "stopped_by", "violations")} | {"n_warn": len(cap.records), "n_pywarn": len(pywarn)}), flush=True)
+                "turn_hints", "llm_ms", "response_after_end_ms", "response_interruptions", "speculations",
+                "speculations_kept", "speculations_discarded", "stopped_by", "violations")} | {"n_warn": len(cap.records), "n_pywarn": len(pywarn)}), flush=True)
             results.append(res)
             if a.out:
                 Path(a.out).write_text(json.dumps(results, indent=1, default=str))
@@ -521,6 +596,11 @@ def main(argv=None):
                    help="turn analyzer reports COMPLETE even while Pipecat's VAD hears speech")
     r.add_argument("--resume-ms", type=int, default=240,
                    help="drop a turn_end after this much server-VAD speech past its decision time (0 = never)")
+    r.add_argument("--turn-hints", action="store_true",
+                   help="Pipecat eager end of turn on the server's turn_end_hint (AudioforgeEagerTurnStopStrategy)")
+    r.add_argument("--llm-ms", type=float, default=None,
+                   help="add a MockLLMService answering after this many ms (LLM + TTS to first audio)")
+    r.add_argument("--voiceprint", default=None, help="JSON list of 192 numbers sent as the user's stored print")
     r.add_argument("--out", help="results JSON")
     r.add_argument("--raw-dir", help="also dump raw per-run timings here")
     r.add_argument("--log-level", default="INFO")

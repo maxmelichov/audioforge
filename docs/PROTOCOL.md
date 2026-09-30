@@ -61,7 +61,7 @@ client                                   server
 
 1. **Connect.** The server sends `ready` at once.
 2. **Configure (optional).** Send one `config` text message before the first audio frame. `sample_rate`,
-   `format` and `channels` are honoured only before the first binary frame. `turn_policy` values `hybrid_silero` and `hybrid_dyn` are honoured
+   `format` and `channels` are honoured only before the first binary frame. `turn_policy` values `hybrid_silero` and `hybrid_dyn`, and `turn_preset`, are honoured
    only if the session has not started yet: the Silero chunk grid starts with the stream. The server creates the
    session at the first audio block or at the first `agent_end` / `enroll`. The other fields (`turn_policy` other
    than the two Silero policies, `timeout_ms`, `eot_threshold`) may be changed later; a later `config` is applied to
@@ -157,6 +157,7 @@ config message never ends the session.
 |---|---|---|---|---|
 | `type` | string | | `"config"` | |
 | `turn_policy` | string | the server's `--turn-policy`: `"vad_head"` in single mode (the default), `"timeout"` in room mode | `timeout`, `timeout_quiet`, `timeout_any`, `head`, `both`, `hybrid`, `hybrid_silero`, `hybrid_dyn`, `vad_head` | end-of-turn rule; see [CONFIGURATION.md §4](CONFIGURATION.md#4-turn-policies-configturn_policy). An unknown value is ignored (the current policy stays). `hybrid_silero` / `hybrid_dyn` / `timeout_any` must be set before the session starts. `timeout_any` (multi-party rooms, [CONFIGURATION.md §7.4](CONFIGURATION.md#74-multi-speaker-rooms---diar-labels---shed-diar-timeout_any)) ends *every* speaker's turn: `timeout_ms` of nobody talking, or a speaker change (`turn_end.policy: "change"`) |
+| `turn_preset` | string | the server's `--turn-preset` (`"balanced"`) | `balanced`, `fast`; must be set before the session starts | `vad_head`'s constants as one named trade-off: `balanced` = VAD < 0.4 for ≥ 160 ms AND p ≥ 0.99, OR 640 ms; `fast` = VAD < 0.6 for ≥ 480 ms AND p ≥ 0.99, OR 720 ms (others path 640,640). `fast` is ~70 ms faster at p50 and ~490 ms faster at p95 on two-party calls with half the missed ends, for 4.6 points more false interruptions ([CONFIGURATION.md §4](CONFIGURATION.md#4-turn-policies-configturn_policy)). An unknown value, or a change after the session started, is ignored with `bad_config` |
 | `timeout_ms` | integer (number accepted) | `1000` | clamped to [80, 4840] | primary-column silence that ends a turn for `timeout`, `timeout_quiet`, `both`, `hybrid`. Upper bound = 5 s primary window minus 160 ms. Not used by `hybrid_silero` / `hybrid_dyn` |
 | `eot_threshold` | number | policy-dependent: `0.99828` for `hybrid_silero`, `0.998283` for `hybrid_dyn`, `0.99` for `vad_head`, else `0.98` | clamped to [0, 1] | turn-head threshold for `head`, `both`, `hybrid*`. Setting it overrides the Silero policies' frozen thresholds |
 | `sample_rate` | integer | `16000` | 8000-192000; only before the first audio frame | input sample rate of the binary frames; other values are ignored |
@@ -273,6 +274,13 @@ Sent when a turn policy fires.
 | `policy` | string | `timeout`, `head`, `hybrid`, `hybrid_silero`, `hybrid_dyn` or `vad_head`. `timeout_quiet` fires are tagged `timeout`; with `both` each path is tagged with its own name. `timeout_any` fires are tagged `timeout` (nobody talking for `timeout_ms`) or `change` (another speaker took over; `silence_ms` = the previous speaker's silence) | always |
 | `p` | number or null | the turn head's probability. `head` path: the value that crossed the threshold. `timeout` under `timeout` / `timeout_quiet` / `both`: `null`. Under `hybrid*`: the head value used by the firing path, or for a timeout / Silero firing the latest head value ready by `t` (`null` without a turn head) | always |
 | `silence_ms` | int | the firing path's silence in ms. timeout: silence of the diarizer primary column; head: frames since the VAD head last exceeded 0.5, times 80; Silero paths: Silero any-speaker silence; `vad_head`: the served VAD head's silence (head path / fallback) or the user's TS-VAD silence (others path) | always |
+| `hinted_at` | number or null | the `t` of the `turn_end_hint` this decision confirms ([§5.11](#511-turn_end_hint-and-turn_end_hint_cancel)); `null` when no hint was outstanding | with turn hints on (the default; not with `--turn-hint-off`). Added 2026-09-30 |
+| `path` | string | which `vad_head` path fired: `head` (turn head p >= theta after K ms of silence), `fallback` (the silence timeout), `others` (another speaker has the floor) or `model` (`--turn-model smartturn`: smart-turn said complete; `p` is then smart-turn's P(complete)) | `policy: "vad_head"`. Added 2026-09-30 |
+| `model_ms` | number | wall time of the smart-turn call that decided (features + ONNX, ms); the reply can start `model_ms` after the audio time `t` at the earliest | `path: "model"` (`--turn-model smartturn`). Added 2026-09-30 |
+
+Under `vad_head` the server's energy gate (`--energy-gate`, on by default; CONFIGURATION.md §4) sends no `turn_end`
+and no `turn_end_hint` before 160 ms of speech onsets in the session, and arms each user turn only on an onset (VAD >
+0.5 AND frame energy > the session's noise floor + 6 dB): leading room tone no longer ends an empty turn.
 
 Which fires cut a `final` (the "cutting policy"): `timeout` fires for `timeout`, `timeout_quiet` and `both`; `head`
 fires for `head`; the single merged fire for `hybrid`, `hybrid_silero`, `hybrid_dyn`, `vad_head`. Under `both`, `head` fires
@@ -352,6 +360,8 @@ The last message of a session, after the end-of-stream `final` (and after every 
 | `final_asr_rss_mb` | number or null | peak RSS of the offline final-ASR worker process, MB; `null` in `--final-asr-worker thread` mode or with only `--asr-lookahead` | with `final_asr` |
 | `lang` | string or null | the last announced language, `null` if none | `--lid` |
 | `degraded` | object | counters by code of every degradation or repair in this session (for example `{"overloaded": 1, "shed_diar_frames": 120}`) | only when the session degraded |
+| `turn_model` | object | `{"model": "smartturn", "calls", "complete", "ms_p50", "ms_p95"}`: the session's smart-turn calls, how many said complete, and their compute (ms) | `--turn-model smartturn` |
+| `turn_hints` | object | `{"sent", "confirmed", "cancelled", "open", "lead_ms_p50"}`: the session's `turn_end_hint`s and how they resolved (`open`: 1 if one was outstanding at the end; `lead_ms_p50`: median `turn_end.t - hint t` of the confirmed ones, `null` if none) | with turn hints on (the default) and a turn head |
 
 The enrollment keys (`enroll`, `enrolled`, `primary_column`) come together or not at all, and so do the final-ASR
 keys; `validate()` enforces this.
@@ -380,6 +390,71 @@ Sent whenever the session starts following a new voice print. `t` is the audio t
 how much live speech it was taken from (0 for a stored print). `source` is `explicit` (an `enroll` with an
 embedding), `arm` (the speech after `agent_end` / `enroll`) or `refresh` (`--tsvad-refresh-s`). `embedding` is the
 print itself (192 numbers, added 2026-09-29): store it and send it back with `enroll` next session.
+
+### 5.11 `turn_end_hint` and `turn_end_hint_cancel`
+
+Added 2026-09-30; on by default, off with `--turn-hint-off`; the threshold is `--turn-hint-p` (default 0.8). Needs a
+turn head. Clients that do not know these types may ignore them: `turn_end` itself is unchanged.
+
+```json
+{"type": "turn_end_hint", "t": 11.616, "p": 0.87774, "kind": "hint", "text": "so um what value guides your life what values do you live by"}
+{"type": "turn_end_hint_cancel", "t": 9.216}
+```
+
+An early, cheap guess that the user's turn is ending, for a voice agent to **start preparing its reply** (LLM, and
+maybe TTS) before the real `turn_end` and to **throw that work away** if the user goes on: what LiveKit Agents calls
+preemptive generation and Pipecat an eager end of turn.
+
+| field | type | meaning |
+|---|---|---|
+| `t` | number | decision time, s: the end of the ASR chunk holding the deciding frame (the head path's clock, [§3](#3-time-semantics)) |
+| `p` | number in [0, 1] | the turn head's probability on that frame |
+| `kind` | string | always `hint` |
+| `text` | string | the current segment's text through the ASR frames available at `t`: what the `final` would hold if the turn were cut at `t` |
+
+Rules, per session (audioforge/server/turn_hint.py):
+
+- A hint is sent on the first frame with at least 80 ms of served-VAD silence (VAD < 0.4, the `vad_head` silence)
+  and turn-head p >= `--turn-hint-p`, provided the user spoke after the last `turn_end` and no hint is outstanding:
+  at most one per user turn. The shipped `vad_head` rule needs 160 ms of silence and p >= 0.99, or 640 ms of silence.
+- It is **confirmed** by the next `turn_end`, which carries its `t` as `hinted_at`, or **withdrawn** by a
+  `turn_end_hint_cancel` (`t` = the decision time of the frame that showed it) when the user resumes: served VAD >
+  0.5 on 2 frames in a row. After a cancel the next silence can hint again.
+- A hint that would come at the same decision time as the `turn_end` is not sent (the `turn_end` already says it).
+- Each outcome is logged (`[turn_hint] confirmed ...` / `cancelled ...`) and counted in `stats.turn_hints`.
+
+Client contract: do not **speak** on a hint. Prepare, then release the prepared reply at the `turn_end` if its
+`hinted_at` matches (and the `final` text equals the hint's `text`), discard it on `turn_end_hint_cancel`. False
+interruptions are then exactly those of `turn_end`; a cancelled hint costs one discarded LLM call. The Pipecat
+adapter (`AudioforgeSTTService(turn_hints=True)` + `AudioforgeEagerTurnStopStrategy`) and the LiveKit adapter
+(`AudioforgeFrontend(turn_hints=True)`, hint -> `PREFLIGHT_TRANSCRIPT`) do this; both are opt-in.
+
+Measured (scripts/research/turn_hint.py -> runs/turn_hint.json: the server's hint tracker and `vad_head` replayed on
+the stored per-frame dumps of research/EOT_LATENCY.md, decision clock, compute excluded; calls = 109 TurnBench +
+one-to-one user turns, AMI = 200 dev turns; `turn_end` unchanged: 20.2 % / 10.5 % false interruptions, 7.3 % /
+33.5 % missed). Hint latency = the confirmed hint of each hinted end minus the reference end; precision = hints
+inside a reference turn window that came at or after its end (the user did not resume in that turn); recall = ends
+whose answering `turn_end` carried such a hint; response = when the reply could start if the LLM + TTS need `prep`
+ms: `max(hint + prep, turn_end)` vs `turn_end + prep`, minus the end (p50 / p95, ms):
+
+| H | corpus | hint p50 / p95 | precision | confirmed | recall | cancelled / turn | prep 300: at turn_end -> at hint | prep 600: at turn_end -> at hint |
+|---|---|---|---|---|---|---|---|---|
+| 0.7 | calls | 446 / 1377 | 57.6 % | 66.9 % | 68.3 % | 0.46 | 1226 / 2188 -> 962 / 1918 | 1526 / 2488 -> 1152 / 2038 |
+| 0.7 | AMI | 656 / 3356 | 74.4 % | 57.3 % | 46.6 % | 0.35 | 1596 / 4028 -> 1516 / 4004 | 1896 / 4328 -> 1816 / 4200 |
+| **0.8** | calls | 446 / 1095 | 58.6 % | 67.1 % | 64.4 % | 0.42 | 1226 / 2188 -> 976 / 1918 | 1526 / 2488 -> 1162 / 2198 |
+| **0.8** | AMI | 736 / 3376 | 75.7 % | 59.2 % | 44.4 % | 0.31 | 1596 / 4028 -> 1516 / 4004 | 1896 / 4328 -> 1816 / 4200 |
+| 0.9 | calls | 446 / 1243 | 57.3 % | 67.2 % | 59.4 % | 0.39 | 1226 / 2188 -> 1026 / 2130 | 1526 / 2488 -> 1188 / 2328 |
+| 0.9 | AMI | 856 / 3376 | 75.8 % | 62.1 % | 39.1 % | 0.25 | 1596 / 4028 -> 1516 / 4004 | 1896 / 4328 -> 1816 / 4200 |
+| 0.95 | calls | 456 / 1227 | 58.6 % | 69.4 % | 49.5 % | 0.31 | 1226 / 2188 -> 1032 / 2132 | 1526 / 2488 -> 1256 / 2430 |
+| 0.95 | AMI | 816 / 3456 | 80.6 % | 66.0 % | 29.3 % | 0.18 | 1596 / 4028 -> 1596 / 4028 | 1896 / 4328 -> 1896 / 4328 |
+
+Mean saving at H 0.8: 178 / 284 ms (calls, prep 300 / 600), 120 / 181 ms (AMI). Live on the bundled clip
+(examples/audio/two_party_call_16s.wav, user turn ends 10.8 s, single mode, real time): hints at 7.78 and 8.74 s
+(pauses inside the turn) were cancelled at 8.10 / 9.22 s; the hint at 11.616 s (p 0.878, text equal to the final)
+arrived 34 ms after its `t` and was confirmed by the `turn_end` at 11.776 s (`hinted_at` 11.616), a 160 ms lead.
+Through examples/pipecat_local_demo.py with a mock LLM (`--llm-ms`), the reply started 1342 -> 1173 ms (300 ms prep)
+and 1642 -> 1477 ms (600 ms prep) after the true end with `--turn-hints`, no reply before the `turn_end`, two
+speculative inferences discarded.
 
 ## 6. Keys added by `--debug-fields`
 
@@ -416,7 +491,8 @@ Within one processed block of audio the server sends, in this order:
 3. `enrolled` messages;
 4. `language` messages;
 5. for each turn event in decision-time order: `turn_end`, then its `final` when the policy cuts (with
-   `--final-asr` / `--asr-lookahead` that `final` has `source: "stream"`);
+   `--final-asr` / `--asr-lookahead` that `final` has `source: "stream"`), interleaved in the same order with
+   `turn_end_hint` / `turn_end_hint_cancel` (a `turn_end` before a hint of the same decision time);
 6. a `segment_cap` `error` and a `final` without `turn_end`, if the segment has been open for 300 s;
 7. `final` messages with `source: "lookahead"` whose frames are now decoded;
 8. `partial`, if the segment text changed (not under load shedding level 2).

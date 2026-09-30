@@ -2,7 +2,9 @@
 
 Everything `audioforge-download` (`audioforge/hub.py`) can fetch, with the pinned source, size, what it becomes on
 disk, and its licence. audioforge's only model weights of its own are in `assets/`:
-- `served_heads_v0.2.pt`: the heads merged into the served model (104 tensors, 19.6 MB; the VAD head reads block 4).
+- `served_heads_v0.3.pt`: the heads merged into the served model (190 tensors, 29.4 MB): v0.2's heads (the VAD head
+  reads block 4) + `turn_seg`, the turn head v5 segment classifier of `--turn-preset fast` / `assistant`
+  (research/TURN_V5.md). `served_heads_v0.2.pt` (104 tensors, 19.6 MB) is kept: `--heads-version 0.2`.
 - `tsvad_spk.pt`: the target-speaker head (1.0 MB).
 - `lid_distill.pt`: the language-ID head (3.7 MB).
 - `served_heads_v0.1.pt`: the 2026-09-27 measured heads, kept for reproducibility. The download command shows the licences of the components it is
@@ -21,7 +23,7 @@ audioforge-download --list
 
 | key | model | source (pinned) | download | on disk (`$AUDIOFORGE_HOME`) | licence | used for |
 |---|---|---|---|---|---|---|
-| `asr` | NVIDIA FastConformer hybrid streaming (114M) + audioforge heads | [nvidia/stt_en_fastconformer_hybrid_large_streaming_multi](https://huggingface.co/nvidia/stt_en_fastconformer_hybrid_large_streaming_multi) @ `ae9814333369` | `stt_en_fastconformer_hybrid_large_streaming_multi.nemo`, 460 MB | `stage1_served_v2.afm` (443 MB; `--heads-version 0.1`: `stage1_served.afm`) | [CC-BY-4.0](https://creativecommons.org/licenses/by/4.0/) | streaming ASR, VAD, turn and speaker heads (required) |
+| `asr` | NVIDIA FastConformer hybrid streaming (114M) + audioforge heads | [nvidia/stt_en_fastconformer_hybrid_large_streaming_multi](https://huggingface.co/nvidia/stt_en_fastconformer_hybrid_large_streaming_multi) @ `ae9814333369` | `stt_en_fastconformer_hybrid_large_streaming_multi.nemo`, 460 MB | `stage1_served_v3.afm` (453 MB; `--heads-version 0.2`: `stage1_served_v2.afm`, `0.1`: `stage1_served.afm`) | [CC-BY-4.0](https://creativecommons.org/licenses/by/4.0/) | streaming ASR, VAD, turn and speaker heads (required) |
 | `sortformer` | NVIDIA Streaming Sortformer 4spk v2 (117M) | [nvidia/diar_streaming_sortformer_4spk-v2](https://huggingface.co/nvidia/diar_streaming_sortformer_4spk-v2) @ `84edd514b8ef` | `diar_streaming_sortformer_4spk-v2.nemo`, 471 MB | `nemo_sortformer_v2.afm` (436 MB) | [CC-BY-4.0](https://creativecommons.org/licenses/by/4.0/) | speaker activity / diarizer (default --diar) |
 | `nemotron3` | NVIDIA Nemotron-3-Diarization | [nvidia/Nemotron-3-Diarization](https://huggingface.co/nvidia/Nemotron-3-Diarization) @ `f667ed73aee5` | `Nemotron-3-Diarization.nemo`, 199 MB | `nemo_nemotron3_diar.afm` (177 MB) | [OpenMDW-1.1](https://huggingface.co/nvidia/Nemotron-3-Diarization) | alternative diarizer (--diarizer nemotron3) |
 | `tdt_v3` | NVIDIA Parakeet-TDT 0.6B v3 | [nvidia/parakeet-tdt-0.6b-v3](https://huggingface.co/nvidia/parakeet-tdt-0.6b-v3) @ `541d1f99c6b0` | `parakeet-tdt-0.6b-v3.nemo`, 2509 MB | `nemo/parakeet-tdt-0.6b-v3.nemo` (2393 MB) | [CC-BY-4.0](https://creativecommons.org/licenses/by/4.0/) | offline per-turn final ASR (serve --final-asr tdt_v3) |
@@ -61,10 +63,11 @@ you run is therefore bit-identical to the checkpoint the heads came from.
 | `silero` | `silero_vad.onnx` | 2327524 | `2623a2953f6ff3d2c1e61740c6cdb7168133479b267dfef114a4a3cc5bdd788f` |
 | `tsvad` | `tsvad_spk.pt` | 1048542 | `dbc6230d8d722bad65aaf598dce69569995bd96bc002da40a2069d664c427683` |
 | `lid` | `lid_distill.pt` | 3704886 | `07de4e4da5444ecae250b4c5ef0172372451ba2da9ea7ae492e42b1759f1d487` |
-| heads v0.2 (ships) | `served_heads_v0.2.pt` | 19629563 | `cb5aa06974f27576c0f66b9453868701106969dea5d5ad100b06b2b779f121d2` |
+| heads v0.3 (ships) | `served_heads_v0.3.pt` | 29481643 | `ea1e8331fa9b9efdee76f1b44d4352f9e1660f34e3da6491b5655ce56ab18848` |
+| heads v0.2 | `served_heads_v0.2.pt` | 19629563 | `cb5aa06974f27576c0f66b9453868701106969dea5d5ad100b06b2b779f121d2` |
 | heads v0.1 (measured) | `served_heads_v0.1.pt` | 19629955 | `834f3e94467bc4110555d8d4cbdbe0ce75254a80d8ca203ecd975d4f007286f5` |
 
-The heads file (`--heads-version`, default 0.2) is looked up in the checkout's `assets/` first, then in the models
+The heads file (`--heads-version`, default 0.3) is looked up in the checkout's `assets/` first, then in the models
 directory, then fetched from `https://github.com/maxmelichov/audioforge/releases/download/v0.1.0/<file>`.
 Its size and sha256 are checked.
 

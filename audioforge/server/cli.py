@@ -30,6 +30,8 @@ from .constants import (
     POLICIES,
     SHED_DIAR_MODES,
     SILERO_TIMEOUT_MS,
+    TURN_PRESET_DEFAULT,
+    TURN_PRESETS,
     VOICE_MODES,
 )
 
@@ -88,7 +90,8 @@ SSINGLE = "#13-single-model-mode---mode-single"
 MODES: dict[str, dict[str, Any]] = {
     "room": {},
     "single": {"turn_input": "tsvad", "diar_off": True, "lid": "head", "enroll": "after_agent_arm",
-               "turn_policy": "vad_head", "dyn_wait_ms": "2000,960"},
+               "turn_policy": "vad_head", "dyn_wait_ms": "2000,960",
+               "turn_preset": "balanced"},
 }
 # options that would load a second model; --mode single refuses them (name, why)
 SINGLE_CONFLICTS = (("diar", "a diarizer model"), ("final_asr", "a final-ASR model (Parakeet-TDT v3)"),
@@ -117,7 +120,7 @@ FLAGS: tuple[Flag, ...] = (
          "For either diarizer the launcher adds `--shed-diar hold`; flags you pass yourself win",
          section=S73),
     Flag(("--asr",), "models", "ASR + heads .afm (audioforge-serve: from the models directory)",
-         {"metavar": "PATH"}, doc="ASR + heads `.afm` (`stage1_served_v2.afm`, the block-4 VAD build; `stage1_served.afm` = the measured v1)",
+         {"metavar": "PATH"}, doc="ASR + heads `.afm` (`stage1_served_v3.afm` = the block-4 VAD build `stage1_served_v2.afm` + the turn head v5 classifier; `stage1_served.afm` = the measured v1)",
          doc_default="required (`audioforge-serve`: from the models directory)", section=S3),
     Flag(("--diar",), "models", "diarizer .afm (audioforge-serve: from the models directory)",
          {"metavar": "PATH"}, doc="diarizer `.afm`: the Streaming Sortformer v2 or the Nemotron-3-Diarization import",
@@ -177,12 +180,71 @@ FLAGS: tuple[Flag, ...] = (
          doc="`vad_head` (no Silero): the served VAD head's silence (VAD < 0.4) that the head path needs (K, with the turn "
          "head p >= theta, default 0.99) and the silence that ends the turn on its own (FALLBACK, 0 = none) "
          "(research/EOT_LATENCY.md)", doc_default="`160,640`", section=S4),
+    Flag(("--turn-preset",), "turns", "vad_head's trade-off: balanced (default), fast, steady or assistant (see docs)",
+         {"choices": list(TURN_PRESETS), "default": TURN_PRESET_DEFAULT, "metavar": "PRESET"},
+         doc="`vad_head`'s constants as one named trade-off (a client's `config.turn_preset` wins for its session). "
+         "`balanced` = VAD < 0.4 for >= 160 ms AND p >= 0.99, OR 640 ms, others path 960,640. `fast` (turn head v5, "
+         "served heads v0.3) = the v5 segment classifier asked after 80 ms of VAD < 0.6 and at every further quiet "
+         "frame ends the turn at P(complete) > 0.7, OR 640 ms of VAD < 0.4, others path 960,640: on two-party calls "
+         "547 vs 956 ms p50 at 24.8 vs 20.2 % false interruptions and 5.5 vs 7.3 % missed (AMI 1247 vs 1326 ms, "
+         "11.5 vs 10.5 % FI, 34.0 vs 33.5 % missed). `steady` = the fast rule before v5 (VAD < 0.6 for >= 480 ms AND "
+         "p >= 0.99, OR 720 ms, others path 640,640): 886 ms p50 but the best p95 (1434 ms) and misses (3.7 %). "
+         "`assistant` = v5 asked after 240 ms of energy-or-VAD quiet, P(complete) > 0.9, OR 2960 ms of VAD silence: "
+         "for speech directed at the agent (smart-turn's 399 test clips: 92 % accuracy at 291 ms p50), not for human "
+         "conversation. `--vad-wait-ms` / `--others-wait-ms` override the preset's values (research/TURN_V5.md, "
+         "research/EOT_LATENCY.md \"Turn presets\")", doc_default="`balanced`", section=S4),
     Flag(("--others-wait-ms",), "turns", "vad_head: user's TS-VAD silence + P(other) hold of the others path, e.g. 960,640",
          {"metavar": "USER_SIL,HOLD"}, advanced=True,
          doc="`vad_head` with an enrolled TS-VAD track (`--turn-input tsvad`): the turn also ends when the user's own "
          "silence (P(user) < 0.5) reaches USER_SIL while P(other) >= 0.9 has held for HOLD, i.e. another speaker has the "
          "floor, without waiting for the room to go quiet (0 = off; research/EOT_LATENCY.md)", doc_default="`960,640`",
          section=S4),
+    Flag(("--turn-hint-p",), "turns", "turn_end_hint: turn-head posterior (with 80 ms of VAD silence) for the early hint",
+         {"type": float, "default": 0.8, "metavar": "P"}, advanced=True,
+         doc="the early end-of-turn hint (`turn_end_hint`, docs/PROTOCOL.md 5.11): sent once per user turn on the first "
+         "frame with 80 ms of served-VAD silence (VAD < 0.4) and turn-head p >= P, then confirmed by the next `turn_end` "
+         "(`hinted_at`) or withdrawn by `turn_end_hint_cancel` when the user resumes (VAD > 0.5 on 2 frames); a voice "
+         "agent starts preparing its reply on it (Pipecat eager end of turn, LiveKit preemptive generation). "
+         "`turn_end` itself is unchanged", section=S4),
+    Flag(("--turn-hint-off",), "turns", "no turn_end_hint / turn_end_hint_cancel events (and no turn_end.hinted_at)",
+         {"action": "store_true"}, advanced=True, section=S4),
+    Flag(("--energy-gate",), "turns", "vad_head: energy-aware onset arming + warm-up guard (on | off)",
+         {"choices": ["on", "off"], "default": "on"}, advanced=True,
+         doc="`vad_head`'s energy gate (research/EOT_ASSISTANT.md \"Energy gate\"): a per-session noise floor (10th "
+         "percentile of the 80 ms frame log energies of the last 3 s); a user turn is armed only by an onset frame "
+         "(VAD > 0.5 AND energy > floor + 6 dB), and no `turn_end` / `turn_end_hint` is sent before 160 ms of onset "
+         "frames in the session. It removes the turn_ends the served VAD head (~0.55 on a fresh session's first "
+         "frames, ~0.66 on room tone) fired before the user spoke: 137 -> 0 of 399 assistant clips; calls / AMI / the "
+         "bundled clip unchanged. `off` = the VAD-only rule", doc_default="`on`", section=S4),
+    Flag(("--energy-quiet-db",), "turns", "vad_head: also count frames below floor + X dB as silence (default off)",
+         {"type": float, "default": None, "metavar": "X"}, advanced=True,
+         doc="with `--energy-gate on`: a frame whose energy is below the noise floor + X dB is silence whatever the "
+         "VAD says, so the silence starts at the audible end instead of at the end of the VAD head's tail. Off by "
+         "default: on the assistant set it answers 400-600 ms sooner (X 6: 611 vs 1218 ms p50), but on two-party "
+         "calls and AMI mid-turn pauses are room tone too, and false interruptions rise at every X in 3..12 dB (calls "
+         "20.2 -> 25-60 %, AMI 10.5 -> 11-40 %) even with the fallback re-tuned (research/EOT_ASSISTANT.md)",
+         doc_default="off", section=S4),
+    Flag(("--turn-model",), "turns", "vad_head's end-of-turn classifier: head (default) | smartturn (opt-in bridge)",
+         {"choices": ["head", "smartturn"], "default": "head"}, advanced=True,
+         doc="`head` = the turn head's p (the shipped rule). `smartturn` = Pipecat's smart-turn v3.2 ONNX "
+         "(pipecat-ai/smart-turn, BSD-2-Clause; a second model, 8.7 MB, ~22 ms per call on 2 CPU threads) asked once "
+         "per silence run after 160 ms of VAD silence, on the turn's last <= 8 s with 0.5 s of pre-speech audio, "
+         "prepared exactly as Pipecat's LocalSmartTurnAnalyzerV3; complete -> `turn_end` (`path: model`), "
+         "incomplete -> wait for the next silence run or the preset's 3 s fallback. A bridge on assistant-directed "
+         "speech while the native classifier (turn head v5) is trained; see research/EOT_ASSISTANT.md for its "
+         "numbers on all three benchmarks (on human-to-human calls it misses more turn ends than the default)",
+         doc_default="`head`", section=S4),
+    Flag(("--smartturn-trigger",), "turns", "--turn-model smartturn: when it is asked: vad (default) | energy",
+         {"choices": ["vad", "energy"], "default": "vad"}, advanced=True,
+         doc="`vad`: after 160 ms of VAD silence (VAD < the preset's threshold), fallback 3 s (the accurate "
+         "setting). `energy`: two clocks, the classifier after 240 ms of energy-or-VAD quiet (energy < noise floor + 6 "
+         "dB) ending the turn at P(complete) > 0.97, the fallback timer on the VAD's own silence at the preset's "
+         "640 / 720 ms (the fast setting; every mid-utterance stop longer than the timer still ends the turn). "
+         "Numbers: research/EOT_ASSISTANT.md", doc_default="`vad`", section=S4),
+    Flag(("--smartturn-onnx",), "turns", "--turn-model smartturn: the smart-turn v3.x ONNX file",
+         {"metavar": "PATH"}, advanced=True,
+         doc="the smart-turn ONNX for `--turn-model smartturn`", doc_default="the smart-turn-v3.2-cpu.onnx bundled "
+         "in the installed `pipecat-ai` package", section=S4),
     # --- transcripts
     Flag(("--final-asr",), "transcripts", "re-transcribe each finished turn: tdt_v3 or a .nemo path",
          {"metavar": "SPEC"}, doc="offline per-turn final ASR: `tdt_v3` (NVIDIA Parakeet-TDT 0.6B v3) or a `.nemo` "
@@ -444,7 +506,10 @@ def load_engine(a):
                        tsvad_refresh_s=a.tsvad_refresh_s, diar_off=a.diar_off, diar_labels=a.diar_labels,
                        diar_embed=a.diar_embed, shed_diar=a.shed_diar, registry_thr=a.diar_reg_thr,
                        dyn_wait_ms=a.dyn_wait_ms, vad_wait_ms=a.vad_wait_ms, others_wait_ms=a.others_wait_ms,
-                       turn_policy=a.turn_policy)
+                       turn_policy=a.turn_policy, turn_hint_p=None if a.turn_hint_off else a.turn_hint_p,
+                       turn_preset=a.turn_preset, energy_gate=a.energy_gate == "on",
+                       energy_quiet_db=a.energy_quiet_db or None, turn_model=a.turn_model,
+                       smartturn_onnx=a.smartturn_onnx, smartturn_trigger=a.smartturn_trigger)
 
 
 def main(argv: list[str] | None = None) -> int:

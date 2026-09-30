@@ -13,6 +13,7 @@
 Environment: AUDIOFORGE_URL (default ws://127.0.0.1:8765), AUDIOFORGE_TURN = "stt" (default: LiveKit commits the
 turn on our END_OF_SPEECH = the server's silence timeout on the diarizer's primary track) or "detector"
 (AudioforgeTurnDetector through LiveKit's audio turn-detector protocol), AUDIOFORGE_TIMEOUT_MS (1000),
+AUDIOFORGE_TURN_HINTS=1 (LiveKit preemptive generation on the server's turn_end_hint; default off),
 AUDIOFORGE_LOG (JSONL of every session event with wall-clock times), AUDIOFORGE_IDLE_PROCS (prewarmed job
 processes, default 1).
 
@@ -43,7 +44,8 @@ def build_session(fe: AudioforgeFrontend, turn: str = "stt") -> AgentSession:
     """The AgentSession configuration used in a room (and, room-less, by examples/livekit_offline_demo.py)."""
     th = {"endpointing": {"min_delay": 0.0, "max_delay": 3.0},  # the server already waited timeout_ms
           "interruption": {"mode": "vad"},                     # barge-in from our VAD frames (no cloud model)
-          "preemptive_generation": {"enabled": False},
+          # preemptive generation on the server's turn_end_hint (PREFLIGHT_TRANSCRIPT) only with turn hints on
+          "preemptive_generation": {"enabled": fe.opts.turn_hints},
           "turn_detection": "stt" if turn == "stt" else fe.turn_detector()}
     return AgentSession(stt=fe.stt(), vad=fe.vad(), llm=StubLLM(), tts=StubTTS(), turn_handling=th,
                         user_away_timeout=None)
@@ -75,7 +77,8 @@ server = AgentServer(num_idle_processes=int(os.environ.get("AUDIOFORGE_IDLE_PROC
 @server.rtc_session()
 async def entrypoint(ctx: JobContext):
     fe = AudioforgeFrontend(os.environ.get("AUDIOFORGE_URL", "ws://127.0.0.1:8765"),
-                            timeout_ms=int(os.environ.get("AUDIOFORGE_TIMEOUT_MS", "1000")))
+                            timeout_ms=int(os.environ.get("AUDIOFORGE_TIMEOUT_MS", "1000")),
+                            turn_hints=os.environ.get("AUDIOFORGE_TURN_HINTS", "0") == "1")
     session = build_session(fe, os.environ.get("AUDIOFORGE_TURN", "stt"))
     f = attach_logger(session, os.environ.get("AUDIOFORGE_LOG"))
 

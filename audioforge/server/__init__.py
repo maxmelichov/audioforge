@@ -3,6 +3,7 @@
 * ``constants``: the frame clock, policy constants, diarizer presets, robustness limits
 * ``protocol``: message schema and ``validate``, the ``error`` message, ``SessionConfig``, PCM decoding
 * ``policies``: end-of-turn policies (silence timeouts, head threshold, Silero silence)
+* ``turn_hint``: the early ``turn_end_hint`` / ``turn_end_hint_cancel`` (tracker, ledger, offline replay)
 * ``binding``: primary-speaker binding for ``--enroll``
 * ``streams``: the ASR model's streaming passes, the CPU convolution fast path, the resampler
 * ``cli``: the server's command-line flags

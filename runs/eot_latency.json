@@ -142023,18 +142023,24 @@
     {
      "t": 11.776,
      "p": 0.8750677108764648,
-     "silence_ms": 640
+     "silence_ms": 640,
+     "path": "fallback"
     },
     {
      "t": 15.296,
      "p": 0.9985840320587158,
-     "silence_ms": 160
+     "silence_ms": 160,
+     "path": "head"
     }
    ],
    "cuts_user_turn": false,
    "silero_loaded_in_session": false,
-   "chunk_ms_p50": 30.3,
+   "chunk_ms_p50": 50.7,
    "offline_rule_turn_ends": [
+    11.776,
+    15.296
+   ],
+   "offline_vad_only_rule_turn_ends": [
     11.776,
     15.296
    ],
@@ -142056,7 +142062,7 @@
    ],
    "cuts_user_turn": false,
    "silero_loaded_in_session": true,
-   "chunk_ms_p50": 30.9,
+   "chunk_ms_p50": 50.7,
    "eot_decision_audio_ms_after_10.8": 1296
   },
   "vad_head [int16_trunc (quickstart_client)]": {
@@ -142064,18 +142070,24 @@
     {
      "t": 11.776,
      "p": 0.9165877103805542,
-     "silence_ms": 640
+     "silence_ms": 640,
+     "path": "fallback"
     },
     {
      "t": 15.296,
      "p": 0.9985957741737366,
-     "silence_ms": 160
+     "silence_ms": 160,
+     "path": "head"
     }
    ],
    "cuts_user_turn": false,
    "silero_loaded_in_session": false,
-   "chunk_ms_p50": 31.2,
+   "chunk_ms_p50": 49.5,
    "offline_rule_turn_ends": [
+    11.776,
+    15.296
+   ],
+   "offline_vad_only_rule_turn_ends": [
     11.776,
     15.296
    ],
@@ -142087,18 +142099,24 @@
     {
      "t": 11.776,
      "p": 0.8750665187835693,
-     "silence_ms": 640
+     "silence_ms": 640,
+     "path": "fallback"
     },
     {
      "t": 15.296,
      "p": 0.9985840320587158,
-     "silence_ms": 160
+     "silence_ms": 160,
+     "path": "head"
     }
    ],
    "cuts_user_turn": false,
    "silero_loaded_in_session": false,
-   "chunk_ms_p50": 30.5,
+   "chunk_ms_p50": 48.2,
    "offline_rule_turn_ends": [
+    11.776,
+    15.296
+   ],
+   "offline_vad_only_rule_turn_ends": [
     11.776,
     15.296
    ],
@@ -142110,18 +142128,24 @@
     {
      "t": 11.776,
      "p": 0.7814174294471741,
-     "silence_ms": 640
+     "silence_ms": 640,
+     "path": "fallback"
     },
     {
      "t": 15.296,
      "p": 0.9984605312347412,
-     "silence_ms": 160
+     "silence_ms": 160,
+     "path": "head"
     }
    ],
    "cuts_user_turn": false,
    "silero_loaded_in_session": false,
-   "chunk_ms_p50": 30.5,
+   "chunk_ms_p50": 47.9,
    "offline_rule_turn_ends": [
+    11.776,
+    15.296
+   ],
+   "offline_vad_only_rule_turn_ends": [
     11.776,
     15.296
    ],
@@ -142131,25 +142155,26 @@
   "vad_head [gain_2.0_int16_trunc]": {
    "served_turn_ends": [
     {
-     "t": 1.856,
-     "p": 0.00275058439001441,
-     "silence_ms": 640
-    },
-    {
      "t": 11.776,
      "p": 0.5169050097465515,
-     "silence_ms": 640
+     "silence_ms": 640,
+     "path": "fallback"
     },
     {
      "t": 15.296,
      "p": 0.9983934760093689,
-     "silence_ms": 160
+     "silence_ms": 160,
+     "path": "head"
     }
    ],
    "cuts_user_turn": false,
    "silero_loaded_in_session": false,
-   "chunk_ms_p50": 30.4,
+   "chunk_ms_p50": 49.2,
    "offline_rule_turn_ends": [
+    11.776,
+    15.296
+   ],
+   "offline_vad_only_rule_turn_ends": [
     1.856,
     11.776,
     15.296
@@ -142160,31 +142185,374 @@
   "vad_head [dither_-70dBFS_int16_round]": {
    "served_turn_ends": [
     {
-     "t": 2.016,
-     "p": 0.0031626669224351645,
-     "silence_ms": 640
-    },
-    {
      "t": 11.616,
      "p": 0.34377557039260864,
-     "silence_ms": 640
+     "silence_ms": 640,
+     "path": "fallback"
     },
     {
      "t": 15.456,
      "p": 0.9970217347145081,
-     "silence_ms": 160
+     "silence_ms": 160,
+     "path": "head"
     }
    ],
    "cuts_user_turn": false,
    "silero_loaded_in_session": false,
-   "chunk_ms_p50": 30.4,
+   "chunk_ms_p50": 49.7,
    "offline_rule_turn_ends": [
+    11.616,
+    15.456
+   ],
+   "offline_vad_only_rule_turn_ends": [
     2.016,
     11.616,
     15.456
    ],
    "served_equals_offline": true,
    "eot_decision_audio_ms_after_10.8": 816
+  },
+  "engine": {
+   "energy_gate": true,
+   "energy_quiet_db": null,
+   "turn_model": "head"
+  }
+ },
+ "served_check_fast": {
+  "clip": "examples/audio/two_party_call_16s.wav",
+  "reference_user_turn_ends": [
+   10.8
+  ],
+  "user_turn": [
+   3.9,
+   10.8
+  ],
+  "vad_head": {
+   "served_turn_ends": [
+    {
+     "t": 11.616,
+     "p": 0.8280175924301147,
+     "silence_ms": 720,
+     "path": "fallback"
+    },
+    {
+     "t": 15.456,
+     "p": 0.9986410737037659,
+     "silence_ms": 480,
+     "path": "head"
+    }
+   ],
+   "cuts_user_turn": false,
+   "silero_loaded_in_session": false,
+   "chunk_ms_p50": 49.6,
+   "offline_rule_turn_ends": [
+    11.616,
+    15.456
+   ],
+   "offline_vad_only_rule_turn_ends": [
+    11.616,
+    15.456
+   ],
+   "served_equals_offline": true,
+   "eot_decision_audio_ms_after_10.8": 816
+  },
+  "vad_head [int16_trunc (quickstart_client)]": {
+   "served_turn_ends": [
+    {
+     "t": 11.616,
+     "p": 0.8764512538909912,
+     "silence_ms": 720,
+     "path": "fallback"
+    },
+    {
+     "t": 15.456,
+     "p": 0.9986475110054016,
+     "silence_ms": 480,
+     "path": "head"
+    }
+   ],
+   "cuts_user_turn": false,
+   "silero_loaded_in_session": false,
+   "chunk_ms_p50": 49.7,
+   "offline_rule_turn_ends": [
+    11.616,
+    15.456
+   ],
+   "offline_vad_only_rule_turn_ends": [
+    11.616,
+    15.456
+   ],
+   "served_equals_offline": true,
+   "eot_decision_audio_ms_after_10.8": 816
+  },
+  "vad_head [int16_round]": {
+   "served_turn_ends": [
+    {
+     "t": 11.616,
+     "p": 0.8280112743377686,
+     "silence_ms": 720,
+     "path": "fallback"
+    },
+    {
+     "t": 15.456,
+     "p": 0.9986410737037659,
+     "silence_ms": 480,
+     "path": "head"
+    }
+   ],
+   "cuts_user_turn": false,
+   "silero_loaded_in_session": false,
+   "chunk_ms_p50": 49.1,
+   "offline_rule_turn_ends": [
+    11.616,
+    15.456
+   ],
+   "offline_vad_only_rule_turn_ends": [
+    11.616,
+    15.456
+   ],
+   "served_equals_offline": true,
+   "eot_decision_audio_ms_after_10.8": 816
+  },
+  "vad_head [gain_0.5_int16_trunc]": {
+   "served_turn_ends": [
+    {
+     "t": 11.616,
+     "p": 0.7421417236328125,
+     "silence_ms": 720,
+     "path": "fallback"
+    },
+    {
+     "t": 15.456,
+     "p": 0.9985657334327698,
+     "silence_ms": 480,
+     "path": "head"
+    }
+   ],
+   "cuts_user_turn": false,
+   "silero_loaded_in_session": false,
+   "chunk_ms_p50": 51.1,
+   "offline_rule_turn_ends": [
+    11.616,
+    15.456
+   ],
+   "offline_vad_only_rule_turn_ends": [
+    11.616,
+    15.456
+   ],
+   "served_equals_offline": true,
+   "eot_decision_audio_ms_after_10.8": 816
+  },
+  "vad_head [gain_2.0_int16_trunc]": {
+   "served_turn_ends": [
+    {
+     "t": 11.776,
+     "p": 0.5169050097465515,
+     "silence_ms": 720,
+     "path": "fallback"
+    },
+    {
+     "t": 15.616,
+     "p": 0.9986170530319214,
+     "silence_ms": 480,
+     "path": "head"
+    }
+   ],
+   "cuts_user_turn": false,
+   "silero_loaded_in_session": false,
+   "chunk_ms_p50": 50.1,
+   "offline_rule_turn_ends": [
+    11.776,
+    15.616
+   ],
+   "offline_vad_only_rule_turn_ends": [
+    11.776,
+    15.616
+   ],
+   "served_equals_offline": true,
+   "eot_decision_audio_ms_after_10.8": 976
+  },
+  "vad_head [dither_-70dBFS_int16_round]": {
+   "served_turn_ends": [
+    {
+     "t": 11.616,
+     "p": 0.32594478130340576,
+     "silence_ms": 720,
+     "path": "fallback"
+    },
+    {
+     "t": 15.456,
+     "p": 0.9972054362297058,
+     "silence_ms": 480,
+     "path": "head"
+    }
+   ],
+   "cuts_user_turn": false,
+   "silero_loaded_in_session": false,
+   "chunk_ms_p50": 49.8,
+   "offline_rule_turn_ends": [
+    11.616,
+    15.456
+   ],
+   "offline_vad_only_rule_turn_ends": [
+    1.856,
+    11.616,
+    15.456
+   ],
+   "served_equals_offline": true,
+   "eot_decision_audio_ms_after_10.8": 816
+  },
+  "engine": {
+   "energy_gate": true,
+   "energy_quiet_db": null,
+   "turn_model": "head"
+  }
+ },
+ "served_check_smartturn": {
+  "clip": "examples/audio/two_party_call_16s.wav",
+  "reference_user_turn_ends": [
+   10.8
+  ],
+  "user_turn": [
+   3.9,
+   10.8
+  ],
+  "vad_head": {
+   "served_turn_ends": [
+    {
+     "t": 11.296,
+     "p": 0.7580885291099548,
+     "silence_ms": 160,
+     "path": "model",
+     "model_ms": 17.25
+    },
+    {
+     "t": 15.296,
+     "p": 0.9075815677642822,
+     "silence_ms": 160,
+     "path": "model",
+     "model_ms": 17.44
+    }
+   ],
+   "cuts_user_turn": false,
+   "silero_loaded_in_session": false,
+   "chunk_ms_p50": 49.9,
+   "eot_decision_audio_ms_after_10.8": 496
+  },
+  "vad_head [int16_trunc (quickstart_client)]": {
+   "served_turn_ends": [
+    {
+     "t": 11.296,
+     "p": 0.7580885291099548,
+     "silence_ms": 160,
+     "path": "model",
+     "model_ms": 16.75
+    },
+    {
+     "t": 15.296,
+     "p": 0.9170267581939697,
+     "silence_ms": 160,
+     "path": "model",
+     "model_ms": 16.62
+    }
+   ],
+   "cuts_user_turn": false,
+   "silero_loaded_in_session": false,
+   "chunk_ms_p50": 49.8,
+   "eot_decision_audio_ms_after_10.8": 496
+  },
+  "vad_head [int16_round]": {
+   "served_turn_ends": [
+    {
+     "t": 11.296,
+     "p": 0.7580885291099548,
+     "silence_ms": 160,
+     "path": "model",
+     "model_ms": 16.79
+    },
+    {
+     "t": 15.296,
+     "p": 0.9255857467651367,
+     "silence_ms": 160,
+     "path": "model",
+     "model_ms": 16.8
+    }
+   ],
+   "cuts_user_turn": false,
+   "silero_loaded_in_session": false,
+   "chunk_ms_p50": 49.5,
+   "eot_decision_audio_ms_after_10.8": 496
+  },
+  "vad_head [gain_0.5_int16_trunc]": {
+   "served_turn_ends": [
+    {
+     "t": 11.296,
+     "p": 0.6957479119300842,
+     "silence_ms": 160,
+     "path": "model",
+     "model_ms": 16.69
+    },
+    {
+     "t": 15.296,
+     "p": 0.8857588768005371,
+     "silence_ms": 160,
+     "path": "model",
+     "model_ms": 17.03
+    }
+   ],
+   "cuts_user_turn": false,
+   "silero_loaded_in_session": false,
+   "chunk_ms_p50": 48.4,
+   "eot_decision_audio_ms_after_10.8": 496
+  },
+  "vad_head [gain_2.0_int16_trunc]": {
+   "served_turn_ends": [
+    {
+     "t": 11.296,
+     "p": 0.8498003482818604,
+     "silence_ms": 160,
+     "path": "model",
+     "model_ms": 16.76
+    },
+    {
+     "t": 15.296,
+     "p": 0.9333261251449585,
+     "silence_ms": 160,
+     "path": "model",
+     "model_ms": 17.14
+    }
+   ],
+   "cuts_user_turn": false,
+   "silero_loaded_in_session": false,
+   "chunk_ms_p50": 48.2,
+   "eot_decision_audio_ms_after_10.8": 496
+  },
+  "vad_head [dither_-70dBFS_int16_round]": {
+   "served_turn_ends": [
+    {
+     "t": 11.136,
+     "p": 0.8447034358978271,
+     "silence_ms": 160,
+     "path": "model",
+     "model_ms": 16.97
+    },
+    {
+     "t": 15.456,
+     "p": 0.9619386196136475,
+     "silence_ms": 160,
+     "path": "model",
+     "model_ms": 16.75
+    }
+   ],
+   "cuts_user_turn": false,
+   "silero_loaded_in_session": false,
+   "chunk_ms_p50": 48.0,
+   "eot_decision_audio_ms_after_10.8": 336
+  },
+  "engine": {
+   "energy_gate": true,
+   "energy_quiet_db": null,
+   "turn_model": "smartturn"
   }
  }
 }
