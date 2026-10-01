@@ -4,7 +4,7 @@ Lab notes behind audioforge: model surveys, imports of NVIDIA checkpoints, bench
 **Layout.** The current reports sit here at the top: [METRICS.md](METRICS.md), [FINAL_REPORT.md](FINAL_REPORT.md)
 (+ `.html`), [SINGLE_MODEL.md](SINGLE_MODEL.md), [EOT_LATENCY.md](EOT_LATENCY.md), [TSWER.md](TSWER.md),
 [VAD_SINGLE.md](VAD_SINGLE.md), [LATENCY_BUDGET.md](LATENCY_BUDGET.md), [IMPROVE_115M.md](IMPROVE_115M.md),
-[MPS_115M.md](MPS_115M.md) (Mac GPU), [E2E_FINAL.md](E2E_FINAL.md), [EARLY_RESULTS.md](EARLY_RESULTS.md),
+[MPS_115M.md](MPS_115M.md) (Mac GPU), [BARGEIN.md](BARGEIN.md) (barge-in eval set + baselines), [E2E_FINAL.md](E2E_FINAL.md), [EARLY_RESULTS.md](EARLY_RESULTS.md),
 [ANALYSIS.md](ANALYSIS.md) and [VERIFICATION_2026-09-28.md](VERIFICATION_2026-09-28.md). Every other note (superseded,
 negative or background) moved unchanged to [`archive/`](archive/) on 2026-09-30, with the raw Hugging Face pulls in
 `archive/raw/`; the tables below index both, one line per doc. Training recipes are in [`recipes/`](recipes/README.md).
@@ -31,6 +31,8 @@ Dates come from the doc header or git history (first commit → last change wher
 
 | doc | what it answers | key number | date |
 |---|---|---|---|
+| [CORE_0P6B.md](CORE_0P6B.md) | nemotron-speech-streaming-en-0.6b as a second served core (`--core 0.6b`), every head retrained, side by side with the 115M on the same benchmarks | meeting WER 24.4 → 11.2 % (AMI), live calls 22.5 → 13.7 %; speaker EER 17.4 → 13.6 %; end of turn not better (calls miss 11.0 vs 7.3 %); 96 vs 30 ms per chunk on CPU, 1 vs 4 streams | 2026-10-01 |
+| [LAYER_SWEEP_0P6B.md](LAYER_SWEEP_0P6B.md) | which of the 0.6B's 24 blocks each head should read (every block, the mix, the top-3 concat; held-out selection) | speaker / TS-VAD best at blocks 4-6 (moved from 11), v5 classifier mid (12), LID deep (18-20); VAD peaks differ by corpus (AMI 13-14, ICSI 2-4) | 2026-10-01 |
 | [METRICS.md](METRICS.md) | the standard scorecard: WER, partial / final latency, end-of-turn latency, false interruptions, response rate, TurnBench F1, VAD AUC, target-speaker DER, compute | partial latency 441 ms p50; false interruptions 17.4 % of turns vs 23.9 % LiveKit default; end-of-turn latency 1382 vs 1350 ms (a tie) | 2026-09-29 |
 | [INTERIM_SCORECARD.md](archive/INTERIM_SCORECARD.md) | every committed, source-verified result in one place | ASR AMI dev WER 20.63 % ours (streaming @160ms) vs 14.14 % Parakeet-CTC 0.6B offline (+5.11 [+3.4, +7.1] pts); equal on LibriSpeech (2.27 % vs 1.63 %) | 2026-09-27 |
 | [FINAL_REPORT.md](FINAL_REPORT.md) | single-document final report (supersedes INTERIM_SCORECARD): 14-row scorecard vs measured and published systems, per-task tables, product results, recommended stack, negative results, unfinished items, limitations | better than every streaming VAD and every dedicated turn detector on AMI / ICSI all-ends (hybrid 61.9 % vs Silero timeout 72.7 % missed, n=974, 6 s); worse at meeting ASR (24.4 % vs 19.3 %; hybrid TDT v3 per turn 9.7 %), speaker, diarization, LID | 2026-09-27 |

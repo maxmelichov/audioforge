@@ -134,6 +134,37 @@ which tracks the user worse ([`research/SINGLE_MODEL.md`](research/SINGLE_MODEL.
 **Room mode** (`audioforge-download --diarizer nemotron3`, then `audioforge-serve --mode room`) is opt-in: NVIDIA
 Nemotron-3-Diarization labels everyone in the room, and `--final-asr tdt_v3` rewrites each turn with Parakeet-TDT v3.
 
+## A bigger core: `--core 0.6b`
+
+```bash
+audioforge-download --core 0.6b          # NVIDIA nemotron-speech-streaming-en-0.6b + its heads (2.5 GB download)
+audioforge-serve --core 0.6b --device mps
+```
+
+The same server and protocol on NVIDIA's 618M streaming model
+([`nemotron-speech-streaming-en-0.6b`](https://huggingface.co/nvidia/nemotron-speech-streaming-en-0.6b), NVIDIA Open
+Model License). Every head is retrained on it (VAD, speaker, TS-VAD, both turn heads, LID). The 115M stays the default.
+Voice prints belong to one core, so re-enroll after switching. Numbers on the same benchmarks
+([`research/CORE_0P6B.md`](research/CORE_0P6B.md)):
+
+| | 115M (default) | 0.6B |
+|---|---:|---:|
+| WER, AMI / ICSI meetings | 24.4 / 27.3 % | **11.2 / 14.4 %** |
+| WER, live two-party calls (all words / user channel) | 22.5 / 17.1 % | **13.7 / 7.7 %** |
+| target-speaker WER, AMI / ICSI | 62.1 / 37.1 % | 63.2 / **31.7 %** |
+| speaker EER within a meeting, AMI / ICSI | 19.8 / 7.0 % | **13.6 / 3.6 %** |
+| VAD F1, AMI / ICSI | 0.951 / 0.898 | 0.951 / **0.906** |
+| turn end, calls (`balanced`): p50, false interruptions, missed | 956 ms, 20.2 %, **7.3 %** | 920 ms, 20.2 %, 11.0 % |
+| turn end, AMI (`balanced`): p50, false interruptions, missed | 1326 ms, **10.5 %**, 33.5 % | **1176 ms**, 13.0 %, **28.0 %** |
+| speech to an agent (`assistant`): accuracy, p50 | **92.2 %, 292 ms** | 91.2 %, 374 ms |
+| compute per 160 ms chunk, CPU 2 threads / Apple GPU | **30 / 29 ms** | 96 / 39 ms |
+| real-time streams, CPU 2 threads / Apple GPU | **4 / 5** | 1 / 3 |
+| memory | **1.1 GB** | 5.0 GB (+3.3 GB GPU) |
+
+What you gain: transcripts at about half the error, a better voice print, better ICSI tracking. What it costs: 3× the
+CPU per chunk, a quarter of the streams, 4× the memory, and a less permissive licence. End of turn is not better:
+fewer misses in meetings, more on calls, and `fast` interrupts more (33.9 vs 24.8 % on calls).
+
 ## Integrations
 
 - **Pipecat:** `pip install -e ".[pipecat]"`, `audioforge.integrations.pipecat` (VAD, STT and turn analyzer);

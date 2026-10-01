@@ -444,6 +444,45 @@ class FrameHead(Head):
         return z.sigmoid() if self.num_classes == 1 else z.softmax(-1)
 
 
+class FrameGRUHead(Head):
+    """Causal per-frame classifier with a small recurrent state (``type: frame_gru``; the 0.6B core's VAD head,
+    research/CORE_0P6B.md): Linear(d_model, hidden)-SiLU-GRU(hidden)-Linear(hidden, 1). ``forward`` runs a whole
+    sequence from a zero state; ``init_stream`` / ``step`` run the same GRU chunk by chunk (equal to ``forward`` on
+    the concatenation), so a streaming session keeps one hidden vector per head."""
+
+    def __init__(self, d_model: int, key: str = "vad", hidden: int = 64, pos_weight: float = 1.0):
+        super().__init__()
+        self.key, self.num_classes, self.pos_weight = key, 1, pos_weight
+        self.inp = nn.Linear(d_model, hidden)
+        self.rnn = nn.GRU(hidden, hidden, batch_first=True)
+        self.out = nn.Linear(hidden, 1)
+
+    def forward(self, enc, state=None):
+        h, hn = self.rnn(F.silu(self.inp(enc)), None if state is None else state.get("h"))
+        if state is not None:
+            state["h"] = hn
+        return self.out(h).squeeze(-1)
+
+    def init_stream(self, batch: int = 1):
+        return {"h": None}
+
+    def step(self, enc, state):
+        """enc (B, t, D) of the next frames -> logits (B, t); updates ``state`` in place."""
+        return self(enc, state)
+
+    def loss(self, enc, enc_len, batch):
+        z = self(enc).float()
+        tgt = _match_len(batch[self.key], z.shape[1])
+        valid = _pad_mask(enc, enc_len)
+        pw = torch.tensor(self.pos_weight, device=z.device)
+        l = F.binary_cross_entropy_with_logits(z, tgt.float(), reduction="none", pos_weight=pw)
+        return (l * valid).sum() / valid.sum()
+
+    @torch.no_grad()
+    def decode(self, enc, enc_len, **_):
+        return self(enc).sigmoid()
+
+
 class CodecTokenHead(Head):
     """Non-autoregressive prediction of K codebook indices per frame.
 

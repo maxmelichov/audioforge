@@ -119,7 +119,7 @@ class Frontend:
 
 def load(diarizer: str | None = None, models_dir: str | Path | None = None, *, asr: str | None = None,
          diar: str | None = None, threads: int = 2, warmup: bool = True, mode: str | None = None,
-         device: str = "cpu", **engine_options: Any) -> Frontend:
+         device: str = "cpu", core: str = "115m", **engine_options: Any) -> Frontend:
     """Load the served models (as ``audioforge-serve`` does) and return a ``Frontend``.
 
     ``mode``: ``single`` (the default, as ``audioforge-serve``) or ``room``; without ``mode``, a ``diarizer``, ``diar``
@@ -131,7 +131,9 @@ def load(diarizer: str | None = None, models_dir: str | Path | None = None, *, a
     ``audioforge.serve.Engine.load`` keyword arguments (the server flags with underscores, e.g. ``enroll``,
     ``final_asr``, ``diar_labels``). ``mode="single"`` is ``audioforge-serve --mode single``: the one 115M model
     for a known user (TS-VAD turn input, no diarizer loaded, the distilled LID head, no final ASR); pass the user's
-    voice print with ``Session.enroll(embedding)`` or let it be taken after ``Session.agent_end()``.
+    voice print with ``Session.enroll(embedding)`` or let it be taken after ``Session.agent_end()``. ``core``:
+    ``115m`` (default) or ``0.6b`` (``audioforge-serve --core 0.6b``: nemotron-speech-streaming-en-0.6b with its own
+    heads, research/CORE_0P6B.md; use a GPU / ``device="mps"``).
     """
     import torch
 
@@ -142,25 +144,33 @@ def load(diarizer: str | None = None, models_dir: str | Path | None = None, *, a
         p = hub.find_model(key, models_dir)
         if p is None:
             raise FileNotFoundError(f"model '{key}' not found in {hub.models_dir(models_dir)}; run: audioforge-download"
-                                    + (f" --diarizer {key}" if key in hub.DIARIZERS else ""))
+                                    + (f" --diarizer {key}" if key in hub.DIARIZERS else "")
+                                    + (f" --core {core}" if core != hub.CORE_DEFAULT else ""))
         return str(p)
+
+    asr_key, _, lid_key = hub.core_keys(core)
 
     torch.set_num_threads(threads)
     if mode is None:
         mode = "room" if (diarizer or diar or engine_options.get("final_asr")) else "single"
     if mode == "single":
-        from .launch import TSVAD_FILE, find_head
+        from .launch import core_files, find_head
         from .server.cli import MODES, SINGLE_CONFLICTS
+        tsvad_file, lid_file = core_files(core)
         bad = [k for k, _ in SINGLE_CONFLICTS if engine_options.get(k) not in (None, False, "spk")] + (["diar"] if diar else [])
         if bad:
             raise ValueError(f"mode='single' loads one model; drop {bad}")
         opts = {**MODES["single"], **engine_options}
         if opts.get("tsvad") is None:
-            p = find_head(TSVAD_FILE, models_dir)
+            p = find_head(tsvad_file, models_dir)
             if p is None:
-                raise FileNotFoundError(f"mode='single' needs the TS-VAD head {TSVAD_FILE}; run: audioforge-download")
+                raise FileNotFoundError(f"mode='single' needs the TS-VAD head {tsvad_file}; run: audioforge-download"
+                                        + (f" --core {core}" if core != hub.CORE_DEFAULT else ""))
             opts["tsvad"] = str(p)
-        engine = Engine.load(asr or need("asr"), None, device, threads=threads, **opts)
+        if core != hub.CORE_DEFAULT and opts.get("lid") == "head" and "lid" not in engine_options:
+            p = find_head(lid_file, models_dir)  # the core's own LID head ("head" = the 115M file)
+            opts["lid"] = str(p) if p is not None else None
+        engine = Engine.load(asr or need(asr_key), None, device, threads=threads, **opts)
         if warmup:
             engine.warmup()
         return Frontend(engine)
@@ -175,7 +185,7 @@ def load(diarizer: str | None = None, models_dir: str | Path | None = None, *, a
         p = hub.find_model("tdt_v3", models_dir)
         if p is not None:
             os.environ["AUDIOFORGE_TDT_V3"] = str(p)
-    engine = Engine.load(asr or need("asr"), diar or need(diarizer), device, threads=threads, **opts)
+    engine = Engine.load(asr or need(asr_key), diar or need(diarizer), device, threads=threads, **opts)
     if warmup:
         engine.warmup()
     return Frontend(engine)
@@ -195,14 +205,17 @@ def _voiceprint(model, audio, sample_rate: int = 16000) -> list[float]:
     return [round(float(v), 6) for v in vp(model, x)]
 
 
-def voiceprint(audio, sample_rate: int = 16000, models_dir: str | Path | None = None, asr: str | None = None
-               ) -> list[float]:
-    """A voice print without loading the whole server stack: only the served ASR model (see Frontend.voiceprint)."""
+def voiceprint(audio, sample_rate: int = 16000, models_dir: str | Path | None = None, asr: str | None = None,
+               core: str = "115m") -> list[float]:
+    """A voice print without loading the whole server stack: only the served ASR model (see Frontend.voiceprint).
+    Prints belong to one core (``core``: 115m | 0.6b): a 115M print does not match the 0.6B's speaker head."""
     from . import hub
     from .train import load_model
-    path = asr or hub.find_model("asr", models_dir)
+    key = hub.core_keys(core)[0]
+    path = asr or hub.find_model(key, models_dir)
     if path is None:
-        raise FileNotFoundError("model 'asr' not found; run: audioforge-download")
+        raise FileNotFoundError(f"model '{key}' not found; run: audioforge-download"
+                                + (f" --core {core}" if core != hub.CORE_DEFAULT else ""))
     return _voiceprint(load_model(str(path), "cpu").eval(), audio, sample_rate)
 
 

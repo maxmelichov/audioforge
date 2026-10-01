@@ -1,6 +1,7 @@
 """``audioforge-serve``: start the server with the models ``audioforge-download`` installed.
 
     audioforge-serve                                  # single-model mode (default): the one 115M model, known user
+    audioforge-serve --core 0.6b --device mps         # the second core: nemotron-speech-streaming-en-0.6b + its heads
     audioforge-serve --mode room                      # + Nemotron-3-Diarization (max pooling, all 8 columns)
     audioforge-serve --mode room --diarizer sortformer  # + Streaming Sortformer v2
     audioforge-serve --config serve.yaml              # any flag from a YAML / JSON file (flags on the line win)
@@ -27,10 +28,24 @@ import sys
 from . import hub
 from .server import cli
 
-__all__ = ["TSVAD_FILE", "find_head", "pick_mode", "resolve_models", "serve_main"]
+__all__ = ["CORE_FILES", "TSVAD_FILE", "core_files", "find_head", "pick_mode", "resolve_models", "serve_main"]
 
 TSVAD_FILE = "tsvad_spk.pt"  # the TS-VAD head of research/IMPROVE_115M.md part A (serve --turn-input tsvad)
 LID_FILE = "lid_distill.pt"  # the distilled language-ID head (serve --lid head); optional, see docs/MODELS.md
+# --core 0.6b (research/CORE_0P6B.md): the same roles on nemotron-speech-streaming-en-0.6b (heads retrained on it)
+CORE_FILES = {"115m": (TSVAD_FILE, LID_FILE), "0.6b": ("tsvad_0p6b.pt", "lid_0p6b.pt")}
+
+
+def core_files(core: str) -> tuple[str, str]:
+    """(TS-VAD head file, LID head file) of a core; exits with the choices on an unknown core."""
+    if core not in CORE_FILES:
+        sys.exit(f"audioforge-serve: --core {core!r}: one of {', '.join(CORE_FILES)}")
+    return CORE_FILES[core]
+
+
+def _dl_hint(core: str, models_dir: str | None) -> str:
+    return ("audioforge-download" + ("" if core == hub.CORE_DEFAULT else f" --core {core}")
+            + (f" --dir {models_dir}" if models_dir else ""))
 
 
 def _in_argv(argv: list[str], flag: str) -> bool:
@@ -67,7 +82,8 @@ def find_head(name: str, models_dir: str | None = None):
                  if p.exists()), None)
 
 
-def _single(argv: list[str], models_dir: str | None, config: dict, diarizer_given: bool) -> list[str]:
+def _single(argv: list[str], models_dir: str | None, config: dict, diarizer_given: bool,
+            core: str = "115m") -> list[str]:
     """--mode single: the preset's options unless given; exits on an option that would load a second model."""
     def given(dest: str):
         v = _argv_value(argv, "--" + dest.replace("_", "-"))
@@ -79,24 +95,33 @@ def _single(argv: list[str], models_dir: str | None, config: dict, diarizer_give
     lid = given("lid")
     if lid is not None and (lid == "ambernet" or str(lid).endswith(".nemo")):
         bad.append("--lid ambernet (AmberNet)")
+    tsvad_file, lid_file = core_files(core)
     if bad:
-        sys.exit("audioforge-serve: --mode single runs the one 115M model; drop " + ", ".join(bad)
+        sys.exit("audioforge-serve: --mode single runs the one core model; drop " + ", ".join(bad)
                  + " (or use --mode room)")
     for dest, val in cli.MODES["single"].items():
         flag = "--" + dest.replace("_", "-")
         if _in_argv(argv, flag) or dest in config:
             continue
-        if dest == "lid" and val == "head" and find_head(LID_FILE, models_dir) is None:
-            print(f"audioforge-serve: {LID_FILE} not found, language ID is off "
-                  "(audioforge-download --only lid, or --lid ambernet in --mode room)", file=sys.stderr)
-            continue
+        if dest == "lid" and val == "head":
+            p = find_head(lid_file, models_dir)
+            if p is None:
+                print(f"audioforge-serve: {lid_file} not found, language ID is off "
+                      f"(audioforge-download --only {hub.core_keys(core)[2]}, or --lid ambernet in --mode room)",
+                      file=sys.stderr)
+                continue
+            if core != "115m":  # serve's "head" means the 115M file; name the core's own head explicitly
+                argv += [flag, str(p)]
+                continue
         argv += [flag] if val is True else [flag, str(val)]
     if not (_in_argv(argv, "--tsvad") or "tsvad" in config):
-        p = find_head(TSVAD_FILE, models_dir)
+        p = find_head(tsvad_file, models_dir)
         if p is None:
-            sys.exit(f"audioforge-serve: single-model mode needs the TS-VAD head {TSVAD_FILE}, not found in "
-                     f"{hub.models_dir(models_dir)}.\n  run: audioforge-download --only tsvad lid"
-                     + (f" --dir {models_dir}" if models_dir else "") + "   (or pass --tsvad PATH, or --mode room)")
+            sys.exit(f"audioforge-serve: single-model mode needs the TS-VAD head {tsvad_file}, not found in "
+                     f"{hub.models_dir(models_dir)}.\n  run: "
+                     + (f"audioforge-download --only tsvad lid" + (f" --dir {models_dir}" if models_dir else "")
+                        if core == "115m" else _dl_hint(core, models_dir))
+                     + "   (or pass --tsvad PATH, or --mode room)")
         argv += ["--tsvad", str(p)]
     return argv
 
@@ -111,7 +136,8 @@ def pick_mode(argv: list[str], config: dict, mode: str | None, diarizer: str | N
 
 
 def resolve_models(argv: list[str], models_dir: str | None = None, diarizer: str | None = None,
-                   config: dict | None = None, mode: str | None = None, diarizer_given: bool = False) -> list[str]:
+                   config: dict | None = None, mode: str | None = None, diarizer_given: bool = False,
+                   core: str = "115m") -> list[str]:
     """argv for audioforge.serve with the model paths filled in; exits with a hint when a model is missing.
     ``config`` holds the options of the ``--config`` file: an option set there counts as given. ``mode`` is the
     ``--mode`` preset (None: ``pick_mode``; ``single``: no diarizer, see ``_single``; ``room``: + a diarizer,
@@ -120,13 +146,19 @@ def resolve_models(argv: list[str], models_dir: str | None = None, diarizer: str
     config = config or {}
     diarizer_given = diarizer_given or diarizer is not None
     mode = pick_mode(argv, config, mode, diarizer)
+    core_files(core)  # exits on an unknown core
+    asr_key = hub.core_keys(core)[0]
+    if core != "115m" and not (_in_argv(argv, "--device") or "device" in config):
+        print(f"[serve] --core {core} on CPU: ~96 ms of compute per 160 ms chunk on 2 threads, one real-time stream "
+              "per process (the 115M holds 4; research/CORE_0P6B.md); --device mps / cuda for more", file=sys.stderr,
+              flush=True)
     if mode == "single":
-        argv = _single(argv, models_dir, config, diarizer_given)
+        argv = _single(argv, models_dir, config, diarizer_given, core)
         if not (_in_argv(argv, "--asr") or "asr" in config):
-            p = hub.find_model("asr", models_dir)
+            p = hub.find_model(asr_key, models_dir)
             if p is None:
-                sys.exit(f"audioforge-serve: the server needs the 'asr' model, not found in {hub.models_dir(models_dir)}."
-                         f"\n  run: audioforge-download" + (f" --dir {models_dir}" if models_dir else ""))
+                sys.exit(f"audioforge-serve: the server needs the '{asr_key}' model, not found in "
+                         f"{hub.models_dir(models_dir)}.\n  run: {_dl_hint(core, models_dir)}")
             argv += ["--asr", str(p)]
         # no Silero: the default turn rule (vad_head) reads the model's own heads; a session that asks for
         # hybrid_silero / hybrid_dyn loads serve's default Silero path lazily, or pass --silero
@@ -148,7 +180,10 @@ def resolve_models(argv: list[str], models_dir: str | None = None, diarizer: str
         return str(p)
 
     if not _has(argv, "--asr"):
-        argv += ["--asr", need("asr", "the server")]
+        if core != "115m" and hub.find_model(asr_key, models_dir) is None:
+            sys.exit(f"audioforge-serve: --core {core} needs the '{asr_key}' model, not found in "
+                     f"{hub.models_dir(models_dir)}.\n  run: {_dl_hint(core, models_dir)}")
+        argv += ["--asr", need(asr_key, "the server")]
     if diarizer is None:  # room mode: Nemotron-3 (the measured room / product default), else Sortformer v2
         diarizer = "nemotron3" if hub.find_model("nemotron3", models_dir) or not hub.find_model("sortformer", models_dir) \
             else "sortformer"
@@ -186,12 +221,14 @@ def serve_main(argv: list[str] | None = None) -> int:
     a = cli.parse_args(argv, prog="audioforge-serve", launcher=True)  # help, config file and value checks
     config = cli.load_config(a.config) if a.config else {}
     from . import serve
-    rest = _strip(argv, ("--models-dir", "--diarizer", "--mode"))
+    rest = _strip(argv, ("--models-dir", "--diarizer", "--mode", "--core"))
     mode = pick_mode(rest, config, a.mode, a.diarizer)
     if a.mode is None and mode == "room":
         print("[serve] room mode (a diarizer / --diar / --final-asr was given); the default is single-model mode",
               file=sys.stderr, flush=True)
-    serve.main(resolve_models(rest, a.models_dir, a.diarizer, config, mode=mode, diarizer_given=a.diarizer is not None))
+    core = a.core or config.get("core") or hub.CORE_DEFAULT
+    serve.main(resolve_models(rest, a.models_dir, a.diarizer, config, mode=mode, diarizer_given=a.diarizer is not None,
+                              core=core))
     return 0
 
 

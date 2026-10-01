@@ -6,6 +6,34 @@ versions follow [Semantic Versioning](https://semver.org/). Every measured numbe
 
 ## [Unreleased]
 
+### Added (2026-10-01): a second core, `--core 0.6b` (nemotron-speech-streaming-en-0.6b), every head retrained
+- `audioforge-download --core 0.6b` / `audioforge-serve --core 0.6b` / `audioforge.load(core="0.6b")` /
+  `audioforge.voiceprint(core="0.6b")`.
+  - Hub component `asr_0p6b`: `nvidia/nemotron-speech-streaming-en-0.6b` at revision `ebe59e5a`, sha256-pinned,
+    NVIDIA Open Model License.
+  - Heads assets `assets/served_heads_0p6b_v0.1.pt` (rebuilt bit-identically by `hub.build_served`),
+    `assets/tsvad_0p6b.pt`, `assets/lid_0p6b.pt`.
+  - Clear errors when a 0.6B file is missing; the launcher states the CPU cost (one real-time stream per process).
+  - The 115M stays the default.
+- Heads on the 0.6B (`scripts/research/core_0p6b_heads.py`, research/CORE_0P6B.md):
+  - VAD: causal GRU frame head on a block mix, SpecAugment views, room-tone negatives, frame-centre labels.
+  - Speaker and TS-VAD at block 5: TitaNet distillation; simulated conversations and an overlap-weighted loss.
+  - Turn classifier v5 (block 12), and a pass-1 per-frame turn head: the 0.6B has no speaker-kernel pass.
+  - LID distilled from AmberNet.
+  - Results (all in `runs/core_0p6b.json`; the WER rows are in `runs/hybrid_asr.json`):
+    - meeting WER halved (AMI 24.4 → 11.2 %);
+    - live-call WER 22.5 → 13.7 %;
+    - AMI within-meeting speaker EER 17.4 → 13.6 % (same recipe);
+    - end of turn not better (calls miss 11.0 vs 7.3 %);
+    - 96 vs 30 ms per chunk on CPU, 1 vs 4 real-time CPU streams, 5 GB RSS.
+- Layer sweeps per head on the 0.6B (research/LAYER_SWEEP_0P6B.md): every block, the mix and the top-3 concat,
+  selected on held-out meetings / speakers. They moved the speaker and TS-VAD heads to block 5.
+- Serving:
+  - `frame_gru` head type (recurrent frame head with per-session state).
+  - Per-model turn-preset constants (`cfg["turn_presets"]`; the 0.6B's `assistant` waits 320 ms and needs p > 0.99).
+- Fixed: the turn head v5 classifier is attached on the model's device. A `--device mps|cuda` session with
+  `--turn-preset fast` / `assistant` passed CPU tensors to the GPU model.
+
 ### Changed (2026-09-30): public images for turn head v5
 - `demo/images/results_v10.png` (+ `_square`, `_notext`): the v9 style with a speech-to-an-agent card
   (`--turn-preset assistant` vs Pipecat smart-turn on smart-turn's 399 test clips: 92 vs 70 % accuracy, 5 vs 40 %

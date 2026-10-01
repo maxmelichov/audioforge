@@ -239,11 +239,27 @@ def gpu_available(device) -> bool:
     return (d.startswith("cuda") and torch.cuda.is_available()) or (d == "mps" and torch.backends.mps.is_available())
 
 
-def vad_head_params(preset: str, vad_wait_ms: str | tuple | None = None, others_wait_ms: str | tuple | None = None):
+def model_presets(asr_model) -> dict:
+    """TURN_PRESETS with the served model's own constants merged in: a model may carry ``cfg["turn_presets"]`` (e.g.
+    the 0.6B core's assistant preset, tuned for its heads, research/CORE_0P6B.md); a nested ``turn_model`` merges key
+    by key. Models without it get TURN_PRESETS unchanged."""
+    over = (getattr(asr_model, "cfg", None) or {}).get("turn_presets") or {}
+    out = {}
+    for name, pr in TURN_PRESETS.items():
+        o = over.get(name) or {}
+        m = {**pr, **{k: v for k, v in o.items() if k != "turn_model"}}
+        if "turn_model" in o and pr.get("turn_model") is not None:
+            m["turn_model"] = {**pr["turn_model"], **o["turn_model"]}
+        out[name] = m
+    return out
+
+
+def vad_head_params(preset: str, vad_wait_ms: str | tuple | None = None, others_wait_ms: str | tuple | None = None,
+                    presets: dict | None = None):
     """turn_policy vad_head's (k frames, fallback frames or None, VAD threshold, others (user-silence frames, hold
     frames) or None) for ``--turn-preset`` ``preset``, with ``--vad-wait-ms K,FALLBACK`` (0 = no fallback) and
     ``--others-wait-ms USER_SIL,HOLD`` (0 = off) overriding the preset's values when given."""
-    pr = TURN_PRESETS[preset]
+    pr = (presets or TURN_PRESETS)[preset]
     k_ms, fb_ms = ((float(x) for x in (vad_wait_ms.split(",") if isinstance(vad_wait_ms, str) else vad_wait_ms))
                    if vad_wait_ms else pr["vad_wait_ms"])
     if not (k_ms > 0 and (fb_ms == 0 or fb_ms >= k_ms)):
@@ -362,7 +378,7 @@ class Engine:
             self.diar_head, self.num_spks = None, 4
         self.turn_name = next((k for k, v in asr_model.head_cfg.items() if v["type"] == "turn"), None)
         self.vad_name = next((k for k, v in asr_model.head_cfg.items()
-                              if v["type"] == "frame" and v.get("key") == "vad"), None)
+                              if v["type"] in ("frame", "frame_gru") and v.get("key") == "vad"), None)
         h = asr_model.heads[self.turn_name] if self.turn_name else None
         needs_diar = h is not None and (getattr(h, "needs_act", getattr(h, "concat", False))
                                         or getattr(h, "needs_cols", False))
@@ -388,12 +404,13 @@ class Engine:
         # turn head v5 (research/TURN_V5.md; heads.turn_seg, served heads v0.3): the presets whose turn_model is "v5"
         # (fast, assistant) need it in the ASR model
         self.seg_name = next((k for k, v in asr_model.head_cfg.items() if v["type"] == "turn_seg"), None)
-        if TURN_PRESETS[turn_preset].get("turn_model") and self.seg_name is None:
+        self.presets = model_presets(asr_model)
+        if self.presets[turn_preset].get("turn_model") and self.seg_name is None:
             raise ValueError(f"--turn-preset {turn_preset} needs the turn head v5 classifier (served heads v0.3: "
                              f"audioforge-download --heads-version 0.3); this model has none")
         self.vad_wait_ms, self.others_wait_ms = vad_wait_ms, others_wait_ms
         self.vad_head_k, self.vad_head_fb, self.vad_head_thr, self.vad_head_others = vad_head_params(
-            turn_preset, vad_wait_ms, others_wait_ms)
+            turn_preset, vad_wait_ms, others_wait_ms, self.presets)
         # --turn-policy: the policy of a session whose config does not name one (--mode single: vad_head)
         if turn_policy not in POLICIES:
             raise ValueError(f"--turn-policy {turn_policy!r}: one of {POLICIES}")
@@ -853,7 +870,7 @@ class Session:
         values as they are), else the engine's (--turn-preset with any --vad-wait-ms / --others-wait-ms)."""
         e, pr = self.e, self.cfg.turn_preset
         k, fb, thr, others = ((e.vad_head_k, e.vad_head_fb, e.vad_head_thr, e.vad_head_others)
-                              if pr is None or pr == e.turn_preset else vad_head_params(pr))
+                              if pr is None or pr == e.turn_preset else vad_head_params(pr, presets=e.presets))
         st_energy = e.smartturn is not None and e.smartturn_trigger == "energy"
         gate, quiet_db = None, (SMARTTURN_ENERGY["quiet_db"] if st_energy else e.energy_quiet_db)
         if e.energy_gate or st_energy:  # constants.ENERGY_GATE: onset arming + warm-up guard (+ --energy-quiet-db)
@@ -861,17 +878,18 @@ class Session:
             gate = EnergyGate(quiet_db=quiet_db, onset_db=g["onset_db"], window_s=g["window_s"], pct=g["pct"],
                               warmup_frames=int(math.ceil(g["warmup_ms"] / FRAME_MS)))
         tm, st = None, {}
-        v5 = TURN_PRESETS[pr or e.turn_preset].get("turn_model")
+        v5 = e.presets[pr or e.turn_preset].get("turn_model")
         if v5 is not None and e.smartturn is None:  # turn head v5 (fast / assistant): the segment classifier decides
             if e.seg_name is None:
                 self._notice("bad_config", f"turn_preset {pr} needs the turn head v5 classifier (served heads v0.3); "
                                            f"using {e.turn_preset}")
                 self.cfg.turn_preset = pr = None
                 k, fb, thr, others = e.vad_head_k, e.vad_head_fb, e.vad_head_thr, e.vad_head_others
-                v5 = TURN_PRESETS[e.turn_preset].get("turn_model")
+                v5 = e.presets[e.turn_preset].get("turn_model")
         if v5 is not None and e.smartturn is None:
             if self.asr.seg is None:
-                self.asr.attach_seg(e.asr.heads[e.seg_name])
+                head = e.asr.heads[e.seg_name]
+                self.asr.attach_seg(head, next(head.parameters()).device)  # the model's device (cpu / mps / cuda)
             tm = self._seg_model
             if v5.get("quiet_db") is not None:
                 quiet_db = v5["quiet_db"]
@@ -888,7 +906,7 @@ class Session:
                 st = {"model_quiet_only": True, "model_p": SMARTTURN_ENERGY["p"]}
             else:  # asked at SMARTTURN_QUIET_MS of VAD silence, the preset's smart-turn fallback (3 s)
                 k = max(1, int(round(SMARTTURN_QUIET_MS / FRAME_MS)))
-                fb = int(round(TURN_PRESETS[pr or e.turn_preset]["smartturn_fallback_ms"] / FRAME_MS))
+                fb = int(round(e.presets[pr or e.turn_preset]["smartturn_fallback_ms"] / FRAME_MS))
         return VadHeadPolicy(self.cfg.theta, k, fb, thr, others=others, others_p=VAD_HEAD_OTHERS_P,
                              user_p=VAD_HEAD_USER_P, gate=gate, turn_model=tm, **st)
 

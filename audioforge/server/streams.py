@@ -42,6 +42,8 @@ class ASRStream(StreamingSession):
         self.lid_events: list[dict] = []
         self.frame_events = {}  # not used (records are returned instead)
         self.vad_name = vad if vad in model.heads else None
+        vh = model.heads[self.vad_name] if self.vad_name else None
+        self.vad_state = vh.init_stream(1) if vh is not None and hasattr(vh, "init_stream") else None
         self.turn_name = turn if turn in model.heads else None
         self.turn = model.heads[self.turn_name] if self.turn_name else None
         self.turn_state = self.turn.init_stream(1) if self.turn is not None else None
@@ -89,6 +91,8 @@ class ASRStream(StreamingSession):
         with a cold cache instead of carrying a NaN forever."""
         self.enc_state, self.cstate = StreamState(), StreamState()
         self.pred, self.skip = None, 0
+        if self.vad_state is not None:
+            self.vad_state = self.m.heads[self.vad_name].init_stream(1)
         if self.turn is not None:
             self.turn_state = self.turn.init_stream(1)
         self.n_resets += 1
@@ -142,8 +146,12 @@ class ASRStream(StreamingSession):
             if n == 0:
                 continue
             f_asr = self.m.head_input(self.head_name, enc, hid)[0]
-            vad = (self.m.heads[self.vad_name](self.m.head_input(self.vad_name, enc, hid)).sigmoid()[0].tolist()
-                   if self.vad_name else [0.0] * n)
+            if self.vad_name and self.vad_state is not None:  # a recurrent VAD head (frame_gru): carry its state
+                vad = self.m.heads[self.vad_name].step(self.m.head_input(self.vad_name, enc, hid),
+                                                       self.vad_state).sigmoid()[0].tolist()
+            else:
+                vad = (self.m.heads[self.vad_name](self.m.head_input(self.vad_name, enc, hid)).sigmoid()[0].tolist()
+                       if self.vad_name else [0.0] * n)
             e_turn = self.m.head_input(self.turn_name, enc, hid) if self.turn is not None else None
             if self.keep_spk:  # the speaker head's tap of this chunk (no extra encoder pass): per-turn voice ids
                 for fr in self.m.head_input("spk", enc, hid)[0].float().cpu().numpy():

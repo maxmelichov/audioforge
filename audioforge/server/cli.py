@@ -113,6 +113,15 @@ FLAGS: tuple[Flag, ...] = (
          "with an embedding (store >= 5 s of clean speech, 10 s for meetings), else live after `agent_end`. `room`: "
          "general diarization with NVIDIA Nemotron-3-Diarization (or `--diarizer sortformer`) next to the 115M model "
          "([§7](#7-diarizer)). Flags you pass yourself win", section=SSINGLE),
+    Flag(("--core",), "models", "streaming core: 115m (default) | 0.6b (nemotron-speech-streaming-en-0.6b; GPU)",
+         {"choices": ["115m", "0.6b"], "default": None}, launcher=True, doc_default="`115m`",
+         doc="which streaming core the launcher loads from the models directory: `115m` (NVIDIA FastConformer 114M + "
+         "our heads, real time on 2 CPU threads) or `0.6b` (NVIDIA nemotron-speech-streaming-en-0.6b, NVIDIA Open Model "
+         "License, with every head retrained on it: `served_0p6b_v0.1.afm`, `tsvad_0p6b.pt`, `lid_0p6b.pt`; about half the "
+         "meeting WER, but ~96 ms of CPU per 160 ms chunk on 2 threads: one real-time stream per process against the 115M's 4, "
+         "3 on an Apple GPU with `--device mps`, 5 GB RSS). Voice prints "
+         "belong to one core: re-enroll after switching. Install with `audioforge-download --core 0.6b`; "
+         "research/CORE_0P6B.md has every number side by side", section="#1-launching"),
     Flag(("--diarizer",), "models", "room mode: which downloaded diarizer to run (implies --mode room)",
          {"choices": ["nemotron3", "sortformer"], "default": None}, launcher=True,
          doc_default="room mode: `nemotron3` if downloaded, else `sortformer`",

@@ -83,6 +83,7 @@ repository root with `PYTHONPATH=.`, or through pytest (`tests/conftest.py` puts
 | `diar_fix.py` | Multi-speaker diarization in the served system: reproduce, diagnose, measure (research/archive/DIARIZATION_FIX.md). |
 | `tsvad_serve_check.py` | research/archive/IMPROVEMENTS.md section 1: does the served --turn-input tsvad path reproduce the offline benchmark? |
 | `core_0p6b.py` | research/archive/IMPROVEMENTS.md section 6: nemotron-speech-streaming-en-0.6b as the GPU streaming core (the user's request: 22.5 % AMI WER for the streaming partials is too high, production is GPU). |
+| `core_0p6b_heads.py` | research/CORE_0P6B.md + LAYER_SWEEP_0P6B.md: the 0.6B as a second served core; caches, head training (VAD, TS-VAD, turn v5, per-frame turn, LID), layer sweeps, build of `served_heads_0p6b_v0.1.pt`, the end-of-turn / tWER / cost evaluations -> runs/core_0p6b.json. |
 | `enc0p6b.py` | nvidia/nemotron-speech-streaming-en-0.6b as a voice-agent front-end encoder (research/archive/ENC_0P6B.md). |
 
 ## Drafts and pilots (not served; kept because a note or test cites them)

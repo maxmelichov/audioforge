@@ -221,6 +221,9 @@ def build_head(cfg: dict, d_model: int, tokenizer=None) -> nn.Module:
         return LanguageHead(d_model, **cfg)
     if t == "frame":
         return FrameHead(d_model, **cfg)
+    if t == "frame_gru":  # causal GRU frame head (the 0.6B core's VAD, heads/audio.py FrameGRUHead)
+        from .heads.audio import FrameGRUHead
+        return FrameGRUHead(d_model, **cfg)
     if t == "codec_tokens":
         return CodecTokenHead(d_model, **cfg)
     if t == "turn":  # speaker-aware end-of-turn (heads/turn.py)

@@ -1,0 +1,8016 @@
+{
+ "data": {
+  "events_file": "/Volumes/ExternalSSD/nvidia-audio-models/scratch/bargein/events.json",
+  "n_events": 10192,
+  "counts": {
+   "ami": {
+    "train": {
+     "ambiguous": 564,
+     "backchannel": 696,
+     "interruption": 154,
+     "noise": 22
+    },
+    "subtypes_train": {
+     "ambiguous/short_agent_stops": 16,
+     "backchannel/bc_lex": 651,
+     "ambiguous/mid_duration": 135,
+     "ambiguous/long_agent_keeps_talking": 133,
+     "interruption/yield": 154,
+     "ambiguous/short_non_bc_words": 176,
+     "backchannel/laugh": 45,
+     "ambiguous/sound_other": 30,
+     "ambiguous/laugh": 74,
+     "noise/sound:cough": 22
+    },
+    "eval": {
+     "noise": 11,
+     "ambiguous": 115,
+     "interruption": 52,
+     "backchannel": 124
+    },
+    "subtypes_eval": {
+     "noise/sound:cough": 10,
+     "ambiguous/mid_duration": 29,
+     "interruption/yield": 52,
+     "backchannel/bc_lex": 117,
+     "ambiguous/short_non_bc_words": 37,
+     "ambiguous/laugh": 11,
+     "ambiguous/long_agent_keeps_talking": 27,
+     "ambiguous/short_agent_stops": 6,
+     "backchannel/laugh": 7,
+     "ambiguous/sound_other": 5,
+     "noise/sound:whistling": 1
+    },
+    "test": {
+     "ambiguous": 121,
+     "noise": 5,
+     "backchannel": 227,
+     "interruption": 29
+    },
+    "subtypes_test": {
+     "ambiguous/short_agent_stops": 6,
+     "noise/sound:cough": 4,
+     "backchannel/bc_lex": 218,
+     "backchannel/laugh": 9,
+     "ambiguous/sound_other": 8,
+     "interruption/yield": 29,
+     "ambiguous/mid_duration": 22,
+     "ambiguous/short_non_bc_words": 45,
+     "ambiguous/long_agent_keeps_talking": 29,
+     "ambiguous/laugh": 11,
+     "noise/sound:sigh": 1
+    }
+   },
+   "icsi": {
+    "train": {
+     "interruption": 158,
+     "backchannel": 629,
+     "ambiguous": 308
+    },
+    "subtypes_train": {
+     "interruption/yield": 158,
+     "backchannel/bc_lex": 629,
+     "ambiguous/mid_duration": 80,
+     "ambiguous/short_non_bc_words": 181,
+     "ambiguous/long_agent_keeps_talking": 21,
+     "ambiguous/short_agent_stops": 26
+    },
+    "eval": {
+     "interruption": 29,
+     "backchannel": 71,
+     "ambiguous": 63
+    },
+    "subtypes_eval": {
+     "interruption/yield": 29,
+     "backchannel/bc_lex": 71,
+     "ambiguous/mid_duration": 16,
+     "ambiguous/short_non_bc_words": 41,
+     "ambiguous/short_agent_stops": 4,
+     "ambiguous/long_agent_keeps_talking": 2
+    },
+    "test": {
+     "backchannel": 142,
+     "ambiguous": 79,
+     "interruption": 42
+    },
+    "subtypes_test": {
+     "backchannel/bc_lex": 142,
+     "ambiguous/mid_duration": 23,
+     "ambiguous/short_non_bc_words": 42,
+     "interruption/yield": 42,
+     "ambiguous/long_agent_keeps_talking": 6,
+     "ambiguous/short_agent_stops": 8
+    }
+   },
+   "oto": {
+    "train": {
+     "backchannel": 3882,
+     "ambiguous": 1106,
+     "interruption": 1122
+    },
+    "subtypes_train": {
+     "backchannel/bc_vad": 3882,
+     "ambiguous/mid_duration": 530,
+     "interruption/yield": 1122,
+     "ambiguous/long_agent_keeps_talking": 365,
+     "ambiguous/short_agent_stops": 211
+    },
+    "eval": {
+     "backchannel": 319,
+     "interruption": 59,
+     "ambiguous": 63
+    },
+    "subtypes_eval": {
+     "backchannel/bc_vad": 319,
+     "interruption/yield": 59,
+     "ambiguous/long_agent_keeps_talking": 14,
+     "ambiguous/mid_duration": 38,
+     "ambiguous/short_agent_stops": 11
+    }
+   }
+  },
+  "rejected_candidates": {
+   "ami": {
+    "agent_not_speaking": 5354,
+    "third_party": 3265,
+    "no_pre_silence": 170
+   },
+   "icsi": {
+    "third_party": 1644,
+    "agent_not_speaking": 18774,
+    "no_pre_silence": 1793,
+    "zone": 838
+   },
+   "oto": {
+    "agent_not_speaking": 56310,
+    "no_pre_silence": 4698,
+    "zone": 71
+   }
+  },
+  "conversations": {
+   "ami": {
+    "train": 12,
+    "eval": 4,
+    "test": 4
+   },
+   "icsi": {
+    "train": 12,
+    "eval": 2,
+    "test": 3
+   },
+   "oto": {
+    "train": 188,
+    "eval": 16
+   }
+  },
+  "eval_ids": {
+   "ami": [
+    "ES2011b",
+    "IB4002",
+    "IS1008b",
+    "TS3004b"
+   ],
+   "icsi": [
+    "Bmr021",
+    "Bns001"
+   ],
+   "oto": [
+    "0be3180d399e8624b96b2fc545b8dd59",
+    "1d3cff3bea6cd86d2b9505270ae700bb",
+    "2d279851ee7fbb9d1dd4bd7321a81cc7",
+    "30059024c18cc428bbb6064fbd9de247",
+    "3664de3358dd01ae0445d3ceca5a8738",
+    "3f40c7c2a606fff075cf3a21cbac2fc7",
+    "5bc1e19ecd43cc6d45d0c1b9b78be5aa",
+    "5f9148c5dfff61031a7c9ef711020cad",
+    "60019edb26c7ef23125c8f8c16060418",
+    "629ad1f171c186ab92ccaf1d71f641fb",
+    "7342c0192cfc7ec241574ae320b46aba",
+    "8eadd289ac73b01dfebfeff8d4addf20",
+    "9ba6497b3efd43ade7c941dba70bf247",
+    "b49a3e43a039db495da6d043c86ae60b",
+    "f2aaa6476baf617ea458accea6ae1464",
+    "f619bed328134a054bbd860d0e753862"
+   ]
+  },
+  "test_reserved_ids": {
+   "ami": [
+    "EN2002a",
+    "ES2004b",
+    "IS1009b",
+    "TS3003b"
+   ],
+   "icsi": [
+    "Bmr013",
+    "Bmr018",
+    "Bro021"
+   ],
+   "oto": []
+  },
+  "top_short_texts": [
+   [
+    "bac",
+    "yeah",
+    588
+   ],
+   [
+    "bac",
+    "mm hmm",
+    447
+   ],
+   [
+    "bac",
+    "mm",
+    122
+   ],
+   [
+    "bac",
+    "right",
+    116
+   ],
+   [
+    "bac",
+    "okay",
+    89
+   ],
+   [
+    "bac",
+    "yep",
+    66
+   ],
+   [
+    "bac",
+    "hmm",
+    65
+   ],
+   [
+    "bac",
+    "ok",
+    62
+   ],
+   [
+    "bac",
+    "<laugh>",
+    61
+   ],
+   [
+    "amb",
+    "<other>",
+    33
+   ],
+   [
+    "amb",
+    "no",
+    31
+   ],
+   [
+    "bac",
+    "uh huh",
+    28
+   ],
+   [
+    "bac",
+    "oh",
+    27
+   ],
+   [
+    "bac",
+    "yes",
+    25
+   ],
+   [
+    "amb",
+    "yeah",
+    21
+   ],
+   [
+    "amb",
+    "well",
+    17
+   ],
+   [
+    "bac",
+    "yeah yeah",
+    17
+   ],
+   [
+    "bac",
+    "mmm",
+    17
+   ],
+   [
+    "amb",
+    "um",
+    13
+   ],
+   [
+    "amb",
+    "uh",
+    12
+   ],
+   [
+    "amb",
+    "mm hmm",
+    11
+   ],
+   [
+    "amb",
+    "so",
+    10
+   ],
+   [
+    "bac",
+    "oh yeah",
+    9
+   ],
+   [
+    "bac",
+    "sure",
+    8
+   ],
+   [
+    "bac",
+    "alright",
+    7
+   ],
+   [
+    "amb",
+    "and",
+    7
+   ],
+   [
+    "bac",
+    "'kay",
+    6
+   ],
+   [
+    "bac",
+    "oh ok",
+    6
+   ],
+   [
+    "bac",
+    "huh",
+    5
+   ],
+   [
+    "bac",
+    "yeah yeah yeah",
+    5
+   ],
+   [
+    "amb",
+    "but",
+    5
+   ],
+   [
+    "bac",
+    "i see",
+    5
+   ],
+   [
+    "amb",
+    "right",
+    5
+   ],
+   [
+    "bac",
+    "yeah sure",
+    4
+   ],
+   [
+    "amb",
+    "mm",
+    4
+   ],
+   [
+    "bac",
+    "mm yeah",
+    4
+   ],
+   [
+    "bac",
+    "yeah right",
+    4
+   ],
+   [
+    "bac",
+    "mm hmm mm hmm",
+    4
+   ],
+   [
+    "bac",
+    "good",
+    4
+   ],
+   [
+    "bac",
+    "oh i see",
+    4
+   ]
+  ],
+  "rules": {
+   "BRIDGE": 0.3,
+   "PRE_SIL": 1.0,
+   "AGENT_MIN": 1.0,
+   "BC_MAX": 1.0,
+   "BC_RESUME": 1.0,
+   "INT_MIN": 1.5,
+   "INT_YIELD": 0.5,
+   "AGENT_BC_MAX": 1.0,
+   "NOISE_MAX": 1.5,
+   "THIRD_GUARD": 1.0
+  }
+ },
+ "train_coverage": {
+  "with_frames": {
+   "ami": {
+    "backchannel": 696,
+    "interruption": 154,
+    "noise": 22
+   },
+   "icsi": {
+    "interruption": 158,
+    "backchannel": 629
+   },
+   "oto": {
+    "backchannel": 3882,
+    "interruption": 1122
+   }
+  },
+  "from_turn_v5_cache": 2052,
+  "missing": 0,
+  "eval_events_with_frames": 665
+ },
+ "baselines": {
+  "n_eval": 665,
+  "systems": {
+   "vad_only": {
+    "rule": "every user onset while the agent speaks stops the agent (decision at the VAD onset)",
+    "all": {
+     "n": 665,
+     "per_class": {
+      "backchannel": {
+       "p": 0.0,
+       "r": 0.0,
+       "f1": 0.0,
+       "support": 514
+      },
+      "interruption": {
+       "p": 0.2105,
+       "r": 1.0,
+       "f1": 0.3478,
+       "support": 140
+      },
+      "noise": {
+       "p": 0.0,
+       "r": 0.0,
+       "f1": 0.0,
+       "support": 11
+      }
+     },
+     "macro_f1": 0.1159,
+     "false_stop_rate": 1.0,
+     "vad_bargeins_rejected": 0.0,
+     "latency_ms_p50_true_stops": 0.0
+    },
+    "ami": {
+     "n": 187,
+     "per_class": {
+      "backchannel": {
+       "p": 0.0,
+       "r": 0.0,
+       "f1": 0.0,
+       "support": 124
+      },
+      "interruption": {
+       "p": 0.2781,
+       "r": 1.0,
+       "f1": 0.4351,
+       "support": 52
+      },
+      "noise": {
+       "p": 0.0,
+       "r": 0.0,
+       "f1": 0.0,
+       "support": 11
+      }
+     },
+     "macro_f1": 0.145,
+     "false_stop_rate": 1.0,
+     "vad_bargeins_rejected": 0.0,
+     "latency_ms_p50_true_stops": 0.0
+    },
+    "icsi": {
+     "n": 100,
+     "per_class": {
+      "backchannel": {
+       "p": 0.0,
+       "r": 0.0,
+       "f1": 0.0,
+       "support": 71
+      },
+      "interruption": {
+       "p": 0.29,
+       "r": 1.0,
+       "f1": 0.4496,
+       "support": 29
+      },
+      "noise": {
+       "p": 0.0,
+       "r": 0.0,
+       "f1": 0.0,
+       "support": 0
+      }
+     },
+     "macro_f1": 0.2248,
+     "false_stop_rate": 1.0,
+     "vad_bargeins_rejected": 0.0,
+     "latency_ms_p50_true_stops": 0.0
+    },
+    "oto": {
+     "n": 378,
+     "per_class": {
+      "backchannel": {
+       "p": 0.0,
+       "r": 0.0,
+       "f1": 0.0,
+       "support": 319
+      },
+      "interruption": {
+       "p": 0.1561,
+       "r": 1.0,
+       "f1": 0.27,
+       "support": 59
+      },
+      "noise": {
+       "p": 0.0,
+       "r": 0.0,
+       "f1": 0.0,
+       "support": 0
+      }
+     },
+     "macro_f1": 0.135,
+     "false_stop_rate": 1.0,
+     "vad_bargeins_rejected": 0.0,
+     "latency_ms_p50_true_stops": 0.0
+    }
+   },
+   "duration_0ms": {
+    "rule": "stop if the user's VAD run (gaps <= 0.3 s bridged) lasts > 0 ms",
+    "all": {
+     "n": 665,
+     "per_class": {
+      "backchannel": {
+       "p": 0.0,
+       "r": 0.0,
+       "f1": 0.0,
+       "support": 514
+      },
+      "interruption": {
+       "p": 0.2105,
+       "r": 1.0,
+       "f1": 0.3478,
+       "support": 140
+      },
+      "noise": {
+       "p": 0.0,
+       "r": 0.0,
+       "f1": 0.0,
+       "support": 11
+      }
+     },
+     "macro_f1": 0.1159,
+     "false_stop_rate": 1.0,
+     "vad_bargeins_rejected": 0.0,
+     "latency_ms_p50_true_stops": 0.0
+    },
+    "ami": {
+     "n": 187,
+     "per_class": {
+      "backchannel": {
+       "p": 0.0,
+       "r": 0.0,
+       "f1": 0.0,
+       "support": 124
+      },
+      "interruption": {
+       "p": 0.2781,
+       "r": 1.0,
+       "f1": 0.4351,
+       "support": 52
+      },
+      "noise": {
+       "p": 0.0,
+       "r": 0.0,
+       "f1": 0.0,
+       "support": 11
+      }
+     },
+     "macro_f1": 0.145,
+     "false_stop_rate": 1.0,
+     "vad_bargeins_rejected": 0.0,
+     "latency_ms_p50_true_stops": 0.0
+    },
+    "icsi": {
+     "n": 100,
+     "per_class": {
+      "backchannel": {
+       "p": 0.0,
+       "r": 0.0,
+       "f1": 0.0,
+       "support": 71
+      },
+      "interruption": {
+       "p": 0.29,
+       "r": 1.0,
+       "f1": 0.4496,
+       "support": 29
+      },
+      "noise": {
+       "p": 0.0,
+       "r": 0.0,
+       "f1": 0.0,
+       "support": 0
+      }
+     },
+     "macro_f1": 0.2248,
+     "false_stop_rate": 1.0,
+     "vad_bargeins_rejected": 0.0,
+     "latency_ms_p50_true_stops": 0.0
+    },
+    "oto": {
+     "n": 378,
+     "per_class": {
+      "backchannel": {
+       "p": 0.0,
+       "r": 0.0,
+       "f1": 0.0,
+       "support": 319
+      },
+      "interruption": {
+       "p": 0.1561,
+       "r": 1.0,
+       "f1": 0.27,
+       "support": 59
+      },
+      "noise": {
+       "p": 0.0,
+       "r": 0.0,
+       "f1": 0.0,
+       "support": 0
+      }
+     },
+     "macro_f1": 0.135,
+     "false_stop_rate": 1.0,
+     "vad_bargeins_rejected": 0.0,
+     "latency_ms_p50_true_stops": 0.0
+    }
+   },
+   "duration_240ms": {
+    "rule": "stop if the user's VAD run (gaps <= 0.3 s bridged) lasts > 240 ms",
+    "all": {
+     "n": 665,
+     "per_class": {
+      "backchannel": {
+       "p": 0.9787,
+       "r": 0.0895,
+       "f1": 0.164,
+       "support": 514
+      },
+      "interruption": {
+       "p": 0.2265,
+       "r": 1.0,
+       "f1": 0.3694,
+       "support": 140
+      },
+      "noise": {
+       "p": 0.0,
+       "r": 0.0,
+       "f1": 0.0,
+       "support": 11
+      }
+     },
+     "macro_f1": 0.1778,
+     "false_stop_rate": 0.9105,
+     "vad_bargeins_rejected": 0.0707,
+     "latency_ms_p50_true_stops": 240.0
+    },
+    "ami": {
+     "n": 187,
+     "per_class": {
+      "backchannel": {
+       "p": 0.9655,
+       "r": 0.2258,
+       "f1": 0.366,
+       "support": 124
+      },
+      "interruption": {
+       "p": 0.3291,
+       "r": 1.0,
+       "f1": 0.4952,
+       "support": 52
+      },
+      "noise": {
+       "p": 0.0,
+       "r": 0.0,
+       "f1": 0.0,
+       "support": 11
+      }
+     },
+     "macro_f1": 0.2871,
+     "false_stop_rate": 0.7852,
+     "vad_bargeins_rejected": 0.1551,
+     "latency_ms_p50_true_stops": 240.0
+    },
+    "icsi": {
+     "n": 100,
+     "per_class": {
+      "backchannel": {
+       "p": 1.0,
+       "r": 0.2535,
+       "f1": 0.4045,
+       "support": 71
+      },
+      "interruption": {
+       "p": 0.3537,
+       "r": 1.0,
+       "f1": 0.5225,
+       "support": 29
+      },
+      "noise": {
+       "p": 0.0,
+       "r": 0.0,
+       "f1": 0.0,
+       "support": 0
+      }
+     },
+     "macro_f1": 0.4635,
+     "false_stop_rate": 0.7465,
+     "vad_bargeins_rejected": 0.18,
+     "latency_ms_p50_true_stops": 240.0
+    },
+    "oto": {
+     "n": 378,
+     "per_class": {
+      "backchannel": {
+       "p": 0.0,
+       "r": 0.0,
+       "f1": 0.0,
+       "support": 319
+      },
+      "interruption": {
+       "p": 0.1561,
+       "r": 1.0,
+       "f1": 0.27,
+       "support": 59
+      },
+      "noise": {
+       "p": 0.0,
+       "r": 0.0,
+       "f1": 0.0,
+       "support": 0
+      }
+     },
+     "macro_f1": 0.135,
+     "false_stop_rate": 1.0,
+     "vad_bargeins_rejected": 0.0,
+     "latency_ms_p50_true_stops": 240.0
+    }
+   },
+   "duration_400ms": {
+    "rule": "stop if the user's VAD run (gaps <= 0.3 s bridged) lasts > 400 ms",
+    "all": {
+     "n": 665,
+     "per_class": {
+      "backchannel": {
+       "p": 0.9752,
+       "r": 0.4591,
+       "f1": 0.6243,
+       "support": 514
+      },
+      "interruption": {
+       "p": 0.331,
+       "r": 1.0,
+       "f1": 0.4973,
+       "support": 140
+      },
+      "noise": {
+       "p": 0.0,
+       "r": 0.0,
+       "f1": 0.0,
+       "support": 11
+      }
+     },
+     "macro_f1": 0.3739,
+     "false_stop_rate": 0.539,
+     "vad_bargeins_rejected": 0.3639,
+     "latency_ms_p50_true_stops": 400.0
+    },
+    "ami": {
+     "n": 187,
+     "per_class": {
+      "backchannel": {
+       "p": 0.9189,
+       "r": 0.5484,
+       "f1": 0.6869,
+       "support": 124
+      },
+      "interruption": {
+       "p": 0.4602,
+       "r": 1.0,
+       "f1": 0.6303,
+       "support": 52
+      },
+      "noise": {
+       "p": 0.0,
+       "r": 0.0,
+       "f1": 0.0,
+       "support": 11
+      }
+     },
+     "macro_f1": 0.4391,
+     "false_stop_rate": 0.4519,
+     "vad_bargeins_rejected": 0.3957,
+     "latency_ms_p50_true_stops": 400.0
+    },
+    "icsi": {
+     "n": 100,
+     "per_class": {
+      "backchannel": {
+       "p": 1.0,
+       "r": 0.7183,
+       "f1": 0.8361,
+       "support": 71
+      },
+      "interruption": {
+       "p": 0.5918,
+       "r": 1.0,
+       "f1": 0.7436,
+       "support": 29
+      },
+      "noise": {
+       "p": 0.0,
+       "r": 0.0,
+       "f1": 0.0,
+       "support": 0
+      }
+     },
+     "macro_f1": 0.7898,
+     "false_stop_rate": 0.2817,
+     "vad_bargeins_rejected": 0.51,
+     "latency_ms_p50_true_stops": 400.0
+    },
+    "oto": {
+     "n": 378,
+     "per_class": {
+      "backchannel": {
+       "p": 1.0,
+       "r": 0.3668,
+       "f1": 0.5367,
+       "support": 319
+      },
+      "interruption": {
+       "p": 0.2261,
+       "r": 1.0,
+       "f1": 0.3688,
+       "support": 59
+      },
+      "noise": {
+       "p": 0.0,
+       "r": 0.0,
+       "f1": 0.0,
+       "support": 0
+      }
+     },
+     "macro_f1": 0.4527,
+     "false_stop_rate": 0.6332,
+     "vad_bargeins_rejected": 0.3095,
+     "latency_ms_p50_true_stops": 400.0
+    }
+   },
+   "duration_500ms": {
+    "rule": "stop if the user's VAD run (gaps <= 0.3 s bridged) lasts > 500 ms",
+    "all": {
+     "n": 665,
+     "per_class": {
+      "backchannel": {
+       "p": 0.9792,
+       "r": 0.6401,
+       "f1": 0.7741,
+       "support": 514
+      },
+      "interruption": {
+       "p": 0.4255,
+       "r": 1.0,
+       "f1": 0.597,
+       "support": 140
+      },
+      "noise": {
+       "p": 0.0,
+       "r": 0.0,
+       "f1": 0.0,
+       "support": 11
+      }
+     },
+     "macro_f1": 0.457,
+     "false_stop_rate": 0.36,
+     "vad_bargeins_rejected": 0.5053,
+     "latency_ms_p50_true_stops": 500.0
+    },
+    "ami": {
+     "n": 187,
+     "per_class": {
+      "backchannel": {
+       "p": 0.9286,
+       "r": 0.7339,
+       "f1": 0.8198,
+       "support": 124
+      },
+      "interruption": {
+       "p": 0.5843,
+       "r": 1.0,
+       "f1": 0.7376,
+       "support": 52
+      },
+      "noise": {
+       "p": 0.0,
+       "r": 0.0,
+       "f1": 0.0,
+       "support": 11
+      }
+     },
+     "macro_f1": 0.5191,
+     "false_stop_rate": 0.2741,
+     "vad_bargeins_rejected": 0.5241,
+     "latency_ms_p50_true_stops": 500.0
+    },
+    "icsi": {
+     "n": 100,
+     "per_class": {
+      "backchannel": {
+       "p": 1.0,
+       "r": 0.8451,
+       "f1": 0.916,
+       "support": 71
+      },
+      "interruption": {
+       "p": 0.725,
+       "r": 1.0,
+       "f1": 0.8406,
+       "support": 29
+      },
+      "noise": {
+       "p": 0.0,
+       "r": 0.0,
+       "f1": 0.0,
+       "support": 0
+      }
+     },
+     "macro_f1": 0.8783,
+     "false_stop_rate": 0.1549,
+     "vad_bargeins_rejected": 0.6,
+     "latency_ms_p50_true_stops": 500.0
+    },
+    "oto": {
+     "n": 378,
+     "per_class": {
+      "backchannel": {
+       "p": 1.0,
+       "r": 0.558,
+       "f1": 0.7163,
+       "support": 319
+      },
+      "interruption": {
+       "p": 0.295,
+       "r": 1.0,
+       "f1": 0.4556,
+       "support": 59
+      },
+      "noise": {
+       "p": 0.0,
+       "r": 0.0,
+       "f1": 0.0,
+       "support": 0
+      }
+     },
+     "macro_f1": 0.5859,
+     "false_stop_rate": 0.442,
+     "vad_bargeins_rejected": 0.4709,
+     "latency_ms_p50_true_stops": 500.0
+    }
+   },
+   "duration_560ms": {
+    "rule": "stop if the user's VAD run (gaps <= 0.3 s bridged) lasts > 560 ms",
+    "all": {
+     "n": 665,
+     "per_class": {
+      "backchannel": {
+       "p": 0.9797,
+       "r": 0.6576,
+       "f1": 0.787,
+       "support": 514
+      },
+      "interruption": {
+       "p": 0.4375,
+       "r": 1.0,
+       "f1": 0.6087,
+       "support": 140
+      },
+      "noise": {
+       "p": 0.0,
+       "r": 0.0,
+       "f1": 0.0,
+       "support": 11
+      }
+     },
+     "macro_f1": 0.4652,
+     "false_stop_rate": 0.3429,
+     "vad_bargeins_rejected": 0.5188,
+     "latency_ms_p50_true_stops": 560.0
+    },
+    "ami": {
+     "n": 187,
+     "per_class": {
+      "backchannel": {
+       "p": 0.9327,
+       "r": 0.7823,
+       "f1": 0.8509,
+       "support": 124
+      },
+      "interruption": {
+       "p": 0.6265,
+       "r": 1.0,
+       "f1": 0.7704,
+       "support": 52
+      },
+      "noise": {
+       "p": 0.0,
+       "r": 0.0,
+       "f1": 0.0,
+       "support": 11
+      }
+     },
+     "macro_f1": 0.5404,
+     "false_stop_rate": 0.2296,
+     "vad_bargeins_rejected": 0.5561,
+     "latency_ms_p50_true_stops": 560.0
+    },
+    "icsi": {
+     "n": 100,
+     "per_class": {
+      "backchannel": {
+       "p": 1.0,
+       "r": 0.8873,
+       "f1": 0.9403,
+       "support": 71
+      },
+      "interruption": {
+       "p": 0.7838,
+       "r": 1.0,
+       "f1": 0.8788,
+       "support": 29
+      },
+      "noise": {
+       "p": 0.0,
+       "r": 0.0,
+       "f1": 0.0,
+       "support": 0
+      }
+     },
+     "macro_f1": 0.9096,
+     "false_stop_rate": 0.1127,
+     "vad_bargeins_rejected": 0.63,
+     "latency_ms_p50_true_stops": 560.0
+    },
+    "oto": {
+     "n": 378,
+     "per_class": {
+      "backchannel": {
+       "p": 1.0,
+       "r": 0.558,
+       "f1": 0.7163,
+       "support": 319
+      },
+      "interruption": {
+       "p": 0.295,
+       "r": 1.0,
+       "f1": 0.4556,
+       "support": 59
+      },
+      "noise": {
+       "p": 0.0,
+       "r": 0.0,
+       "f1": 0.0,
+       "support": 0
+      }
+     },
+     "macro_f1": 0.5859,
+     "false_stop_rate": 0.442,
+     "vad_bargeins_rejected": 0.4709,
+     "latency_ms_p50_true_stops": 560.0
+    }
+   },
+   "duration_800ms": {
+    "rule": "stop if the user's VAD run (gaps <= 0.3 s bridged) lasts > 800 ms",
+    "all": {
+     "n": 665,
+     "per_class": {
+      "backchannel": {
+       "p": 0.9814,
+       "r": 0.9261,
+       "f1": 0.953,
+       "support": 514
+      },
+      "interruption": {
+       "p": 0.7778,
+       "r": 1.0,
+       "f1": 0.875,
+       "support": 140
+      },
+      "noise": {
+       "p": 0.0,
+       "r": 0.0,
+       "f1": 0.0,
+       "support": 11
+      }
+     },
+     "macro_f1": 0.6093,
+     "false_stop_rate": 0.0762,
+     "vad_bargeins_rejected": 0.7293,
+     "latency_ms_p50_true_stops": 800.0
+    },
+    "ami": {
+     "n": 187,
+     "per_class": {
+      "backchannel": {
+       "p": 0.9286,
+       "r": 0.9435,
+       "f1": 0.936,
+       "support": 124
+      },
+      "interruption": {
+       "p": 0.8525,
+       "r": 1.0,
+       "f1": 0.9204,
+       "support": 52
+      },
+      "noise": {
+       "p": 0.0,
+       "r": 0.0,
+       "f1": 0.0,
+       "support": 11
+      }
+     },
+     "macro_f1": 0.6188,
+     "false_stop_rate": 0.0667,
+     "vad_bargeins_rejected": 0.6738,
+     "latency_ms_p50_true_stops": 800.0
+    },
+    "icsi": {
+     "n": 100,
+     "per_class": {
+      "backchannel": {
+       "p": 1.0,
+       "r": 0.9718,
+       "f1": 0.9857,
+       "support": 71
+      },
+      "interruption": {
+       "p": 0.9355,
+       "r": 1.0,
+       "f1": 0.9667,
+       "support": 29
+      },
+      "noise": {
+       "p": 0.0,
+       "r": 0.0,
+       "f1": 0.0,
+       "support": 0
+      }
+     },
+     "macro_f1": 0.9762,
+     "false_stop_rate": 0.0282,
+     "vad_bargeins_rejected": 0.69,
+     "latency_ms_p50_true_stops": 800.0
+    },
+    "oto": {
+     "n": 378,
+     "per_class": {
+      "backchannel": {
+       "p": 1.0,
+       "r": 0.9091,
+       "f1": 0.9524,
+       "support": 319
+      },
+      "interruption": {
+       "p": 0.6705,
+       "r": 1.0,
+       "f1": 0.8027,
+       "support": 59
+      },
+      "noise": {
+       "p": 0.0,
+       "r": 0.0,
+       "f1": 0.0,
+       "support": 0
+      }
+     },
+     "macro_f1": 0.8776,
+     "false_stop_rate": 0.0909,
+     "vad_bargeins_rejected": 0.7672,
+     "latency_ms_p50_true_stops": 800.0
+    }
+   },
+   "duration_1000ms": {
+    "rule": "stop if the user's VAD run (gaps <= 0.3 s bridged) lasts > 1000 ms",
+    "all": {
+     "n": 665,
+     "per_class": {
+      "backchannel": {
+       "p": 0.9809,
+       "r": 1.0,
+       "f1": 0.9904,
+       "support": 514
+      },
+      "interruption": {
+       "p": 0.9929,
+       "r": 1.0,
+       "f1": 0.9964,
+       "support": 140
+      },
+      "noise": {
+       "p": 0.0,
+       "r": 0.0,
+       "f1": 0.0,
+       "support": 11
+      }
+     },
+     "macro_f1": 0.6623,
+     "false_stop_rate": 0.0019,
+     "vad_bargeins_rejected": 0.788,
+     "latency_ms_p50_true_stops": 1000.0
+    },
+    "ami": {
+     "n": 187,
+     "per_class": {
+      "backchannel": {
+       "p": 0.9254,
+       "r": 1.0,
+       "f1": 0.9612,
+       "support": 124
+      },
+      "interruption": {
+       "p": 0.9811,
+       "r": 1.0,
+       "f1": 0.9905,
+       "support": 52
+      },
+      "noise": {
+       "p": 0.0,
+       "r": 0.0,
+       "f1": 0.0,
+       "support": 11
+      }
+     },
+     "macro_f1": 0.6506,
+     "false_stop_rate": 0.0074,
+     "vad_bargeins_rejected": 0.7166,
+     "latency_ms_p50_true_stops": 1000.0
+    },
+    "icsi": {
+     "n": 100,
+     "per_class": {
+      "backchannel": {
+       "p": 1.0,
+       "r": 1.0,
+       "f1": 1.0,
+       "support": 71
+      },
+      "interruption": {
+       "p": 1.0,
+       "r": 1.0,
+       "f1": 1.0,
+       "support": 29
+      },
+      "noise": {
+       "p": 0.0,
+       "r": 0.0,
+       "f1": 0.0,
+       "support": 0
+      }
+     },
+     "macro_f1": 1.0,
+     "false_stop_rate": 0.0,
+     "vad_bargeins_rejected": 0.71,
+     "latency_ms_p50_true_stops": 1000.0
+    },
+    "oto": {
+     "n": 378,
+     "per_class": {
+      "backchannel": {
+       "p": 1.0,
+       "r": 1.0,
+       "f1": 1.0,
+       "support": 319
+      },
+      "interruption": {
+       "p": 1.0,
+       "r": 1.0,
+       "f1": 1.0,
+       "support": 59
+      },
+      "noise": {
+       "p": 0.0,
+       "r": 0.0,
+       "f1": 0.0,
+       "support": 0
+      }
+     },
+     "macro_f1": 1.0,
+     "false_stop_rate": 0.0,
+     "vad_bargeins_rejected": 0.8439,
+     "latency_ms_p50_true_stops": 1000.0
+    }
+   },
+   "duration_1200ms": {
+    "rule": "stop if the user's VAD run (gaps <= 0.3 s bridged) lasts > 1200 ms",
+    "all": {
+     "n": 665,
+     "per_class": {
+      "backchannel": {
+       "p": 0.9809,
+       "r": 1.0,
+       "f1": 0.9904,
+       "support": 514
+      },
+      "interruption": {
+       "p": 0.9929,
+       "r": 1.0,
+       "f1": 0.9964,
+       "support": 140
+      },
+      "noise": {
+       "p": 0.0,
+       "r": 0.0,
+       "f1": 0.0,
+       "support": 11
+      }
+     },
+     "macro_f1": 0.6623,
+     "false_stop_rate": 0.0019,
+     "vad_bargeins_rejected": 0.788,
+     "latency_ms_p50_true_stops": 1200.0
+    },
+    "ami": {
+     "n": 187,
+     "per_class": {
+      "backchannel": {
+       "p": 0.9254,
+       "r": 1.0,
+       "f1": 0.9612,
+       "support": 124
+      },
+      "interruption": {
+       "p": 0.9811,
+       "r": 1.0,
+       "f1": 0.9905,
+       "support": 52
+      },
+      "noise": {
+       "p": 0.0,
+       "r": 0.0,
+       "f1": 0.0,
+       "support": 11
+      }
+     },
+     "macro_f1": 0.6506,
+     "false_stop_rate": 0.0074,
+     "vad_bargeins_rejected": 0.7166,
+     "latency_ms_p50_true_stops": 1200.0
+    },
+    "icsi": {
+     "n": 100,
+     "per_class": {
+      "backchannel": {
+       "p": 1.0,
+       "r": 1.0,
+       "f1": 1.0,
+       "support": 71
+      },
+      "interruption": {
+       "p": 1.0,
+       "r": 1.0,
+       "f1": 1.0,
+       "support": 29
+      },
+      "noise": {
+       "p": 0.0,
+       "r": 0.0,
+       "f1": 0.0,
+       "support": 0
+      }
+     },
+     "macro_f1": 1.0,
+     "false_stop_rate": 0.0,
+     "vad_bargeins_rejected": 0.71,
+     "latency_ms_p50_true_stops": 1200.0
+    },
+    "oto": {
+     "n": 378,
+     "per_class": {
+      "backchannel": {
+       "p": 1.0,
+       "r": 1.0,
+       "f1": 1.0,
+       "support": 319
+      },
+      "interruption": {
+       "p": 1.0,
+       "r": 1.0,
+       "f1": 1.0,
+       "support": 59
+      },
+      "noise": {
+       "p": 0.0,
+       "r": 0.0,
+       "f1": 0.0,
+       "support": 0
+      }
+     },
+     "macro_f1": 1.0,
+     "false_stop_rate": 0.0,
+     "vad_bargeins_rejected": 0.8439,
+     "latency_ms_p50_true_stops": 1200.0
+    }
+   },
+   "duration_1500ms": {
+    "rule": "stop if the user's VAD run (gaps <= 0.3 s bridged) lasts > 1500 ms",
+    "all": {
+     "n": 665,
+     "per_class": {
+      "backchannel": {
+       "p": 0.9698,
+       "r": 1.0,
+       "f1": 0.9847,
+       "support": 514
+      },
+      "interruption": {
+       "p": 1.0,
+       "r": 0.9643,
+       "f1": 0.9818,
+       "support": 140
+      },
+      "noise": {
+       "p": 0.0,
+       "r": 0.0,
+       "f1": 0.0,
+       "support": 11
+      }
+     },
+     "macro_f1": 0.6555,
+     "false_stop_rate": 0.0,
+     "vad_bargeins_rejected": 0.797,
+     "latency_ms_p50_true_stops": 1500.0
+    },
+    "ami": {
+     "n": 187,
+     "per_class": {
+      "backchannel": {
+       "p": 0.9185,
+       "r": 1.0,
+       "f1": 0.9575,
+       "support": 124
+      },
+      "interruption": {
+       "p": 1.0,
+       "r": 1.0,
+       "f1": 1.0,
+       "support": 52
+      },
+      "noise": {
+       "p": 0.0,
+       "r": 0.0,
+       "f1": 0.0,
+       "support": 11
+      }
+     },
+     "macro_f1": 0.6525,
+     "false_stop_rate": 0.0,
+     "vad_bargeins_rejected": 0.7219,
+     "latency_ms_p50_true_stops": 1500.0
+    },
+    "icsi": {
+     "n": 100,
+     "per_class": {
+      "backchannel": {
+       "p": 1.0,
+       "r": 1.0,
+       "f1": 1.0,
+       "support": 71
+      },
+      "interruption": {
+       "p": 1.0,
+       "r": 1.0,
+       "f1": 1.0,
+       "support": 29
+      },
+      "noise": {
+       "p": 0.0,
+       "r": 0.0,
+       "f1": 0.0,
+       "support": 0
+      }
+     },
+     "macro_f1": 1.0,
+     "false_stop_rate": 0.0,
+     "vad_bargeins_rejected": 0.71,
+     "latency_ms_p50_true_stops": 1500.0
+    },
+    "oto": {
+     "n": 378,
+     "per_class": {
+      "backchannel": {
+       "p": 0.9846,
+       "r": 1.0,
+       "f1": 0.9922,
+       "support": 319
+      },
+      "interruption": {
+       "p": 1.0,
+       "r": 0.9153,
+       "f1": 0.9558,
+       "support": 59
+      },
+      "noise": {
+       "p": 0.0,
+       "r": 0.0,
+       "f1": 0.0,
+       "support": 0
+      }
+     },
+     "macro_f1": 0.974,
+     "false_stop_rate": 0.0,
+     "vad_bargeins_rejected": 0.8571,
+     "latency_ms_p50_true_stops": 1500.0
+    }
+   },
+   "min_words_1_560ms": {
+    "rule": "stop once >= 1 words are transcribed within 560 ms of the onset (oto: our streaming RNNT on the user channel; AMI / ICSI: reference words at their end time, no ASR delay = an upper bound)",
+    "all": {
+     "n": 665,
+     "per_class": {
+      "backchannel": {
+       "p": 0.8077,
+       "r": 0.6537,
+       "f1": 0.7226,
+       "support": 514
+      },
+      "interruption": {
+       "p": 0.2851,
+       "r": 0.5071,
+       "f1": 0.365,
+       "support": 140
+      },
+      "noise": {
+       "p": 0.0,
+       "r": 0.0,
+       "f1": 0.0,
+       "support": 11
+      }
+     },
+     "macro_f1": 0.3625,
+     "false_stop_rate": 0.339,
+     "vad_bargeins_rejected": 0.6256,
+     "latency_ms_p50_true_stops": 190.00000000005457
+    },
+    "ami": {
+     "n": 187,
+     "per_class": {
+      "backchannel": {
+       "p": 0.4524,
+       "r": 0.1532,
+       "f1": 0.2289,
+       "support": 124
+      },
+      "interruption": {
+       "p": 0.2759,
+       "r": 0.7692,
+       "f1": 0.4061,
+       "support": 52
+      },
+      "noise": {
+       "p": 0.0,
+       "r": 0.0,
+       "f1": 0.0,
+       "support": 11
+      }
+     },
+     "macro_f1": 0.2117,
+     "false_stop_rate": 0.7778,
+     "vad_bargeins_rejected": 0.2246,
+     "latency_ms_p50_true_stops": 189.99999999994088
+    },
+    "icsi": {
+     "n": 100,
+     "per_class": {
+      "backchannel": {
+       "p": 0.7778,
+       "r": 0.0986,
+       "f1": 0.175,
+       "support": 71
+      },
+      "interruption": {
+       "p": 0.2967,
+       "r": 0.931,
+       "f1": 0.45,
+       "support": 29
+      },
+      "noise": {
+       "p": 0.0,
+       "r": 0.0,
+       "f1": 0.0,
+       "support": 0
+      }
+     },
+     "macro_f1": 0.3125,
+     "false_stop_rate": 0.9014,
+     "vad_bargeins_rejected": 0.09,
+     "latency_ms_p50_true_stops": 190.00000000005457
+    },
+    "oto": {
+     "n": 378,
+     "per_class": {
+      "backchannel": {
+       "p": 0.8493,
+       "r": 0.9718,
+       "f1": 0.9064,
+       "support": 319
+      },
+      "interruption": {
+       "p": 0.3077,
+       "r": 0.0678,
+       "f1": 0.1111,
+       "support": 59
+      },
+      "noise": {
+       "p": 0.0,
+       "r": 0.0,
+       "f1": 0.0,
+       "support": 0
+      }
+     },
+     "macro_f1": 0.5088,
+     "false_stop_rate": 0.0282,
+     "vad_bargeins_rejected": 0.9656,
+     "latency_ms_p50_true_stops": 360.00000000001364
+    }
+   },
+   "min_words_1_nonbc_560ms": {
+    "rule": "stop once >= 1 non-backchannel words are transcribed within 560 ms of the onset (oto: our streaming RNNT on the user channel; AMI / ICSI: reference words at their end time, no ASR delay = an upper bound)",
+    "all": {
+     "n": 665,
+     "per_class": {
+      "backchannel": {
+       "p": 0.8472,
+       "r": 0.9922,
+       "f1": 0.914,
+       "support": 514
+      },
+      "interruption": {
+       "p": 0.9365,
+       "r": 0.4214,
+       "f1": 0.5813,
+       "support": 140
+      },
+      "noise": {
+       "p": 0.0,
+       "r": 0.0,
+       "f1": 0.0,
+       "support": 11
+      }
+     },
+     "macro_f1": 0.4984,
+     "false_stop_rate": 0.0076,
+     "vad_bargeins_rejected": 0.9053,
+     "latency_ms_p50_true_stops": 190.00000000050932
+    },
+    "ami": {
+     "n": 187,
+     "per_class": {
+      "backchannel": {
+       "p": 0.8,
+       "r": 1.0,
+       "f1": 0.8889,
+       "support": 124
+      },
+      "interruption": {
+       "p": 1.0,
+       "r": 0.6154,
+       "f1": 0.7619,
+       "support": 52
+      },
+      "noise": {
+       "p": 0.0,
+       "r": 0.0,
+       "f1": 0.0,
+       "support": 11
+      }
+     },
+     "macro_f1": 0.5503,
+     "false_stop_rate": 0.0,
+     "vad_bargeins_rejected": 0.8289,
+     "latency_ms_p50_true_stops": 189.99999999994088
+    },
+    "icsi": {
+     "n": 100,
+     "per_class": {
+      "backchannel": {
+       "p": 0.9211,
+       "r": 0.9859,
+       "f1": 0.9524,
+       "support": 71
+      },
+      "interruption": {
+       "p": 0.9583,
+       "r": 0.7931,
+       "f1": 0.8679,
+       "support": 29
+      },
+      "noise": {
+       "p": 0.0,
+       "r": 0.0,
+       "f1": 0.0,
+       "support": 0
+      }
+     },
+     "macro_f1": 0.9102,
+     "false_stop_rate": 0.0141,
+     "vad_bargeins_rejected": 0.76,
+     "latency_ms_p50_true_stops": 190.00000000005457
+    },
+    "oto": {
+     "n": 378,
+     "per_class": {
+      "backchannel": {
+       "p": 0.8518,
+       "r": 0.9906,
+       "f1": 0.9159,
+       "support": 319
+      },
+      "interruption": {
+       "p": 0.5714,
+       "r": 0.0678,
+       "f1": 0.1212,
+       "support": 59
+      },
+      "noise": {
+       "p": 0.0,
+       "r": 0.0,
+       "f1": 0.0,
+       "support": 0
+      }
+     },
+     "macro_f1": 0.5186,
+     "false_stop_rate": 0.0094,
+     "vad_bargeins_rejected": 0.9815,
+     "latency_ms_p50_true_stops": 360.00000000001364
+    }
+   },
+   "min_words_1_1000ms": {
+    "rule": "stop once >= 1 words are transcribed within 1000 ms of the onset (oto: our streaming RNNT on the user channel; AMI / ICSI: reference words at their end time, no ASR delay = an upper bound)",
+    "all": {
+     "n": 665,
+     "per_class": {
+      "backchannel": {
+       "p": 0.8519,
+       "r": 0.4922,
+       "f1": 0.6239,
+       "support": 514
+      },
+      "interruption": {
+       "p": 0.2908,
+       "r": 0.7643,
+       "f1": 0.4213,
+       "support": 140
+      },
+      "noise": {
+       "p": 0.0,
+       "r": 0.0,
+       "f1": 0.0,
+       "support": 11
+      }
+     },
+     "macro_f1": 0.3484,
+     "false_stop_rate": 0.4971,
+     "vad_bargeins_rejected": 0.4466,
+     "latency_ms_p50_true_stops": 290.0000000000773
+    },
+    "ami": {
+     "n": 187,
+     "per_class": {
+      "backchannel": {
+       "p": 0.2917,
+       "r": 0.0565,
+       "f1": 0.0946,
+       "support": 124
+      },
+      "interruption": {
+       "p": 0.2822,
+       "r": 0.8846,
+       "f1": 0.4279,
+       "support": 52
+      },
+      "noise": {
+       "p": 0.0,
+       "r": 0.0,
+       "f1": 0.0,
+       "support": 11
+      }
+     },
+     "macro_f1": 0.1742,
+     "false_stop_rate": 0.8667,
+     "vad_bargeins_rejected": 0.1283,
+     "latency_ms_p50_true_stops": 234.99999999989996
+    },
+    "icsi": {
+     "n": 100,
+     "per_class": {
+      "backchannel": {
+       "p": 0.0,
+       "r": 0.0,
+       "f1": 0.0,
+       "support": 71
+      },
+      "interruption": {
+       "p": 0.29,
+       "r": 1.0,
+       "f1": 0.4496,
+       "support": 29
+      },
+      "noise": {
+       "p": 0.0,
+       "r": 0.0,
+       "f1": 0.0,
+       "support": 0
+      }
+     },
+     "macro_f1": 0.2248,
+     "false_stop_rate": 1.0,
+     "vad_bargeins_rejected": 0.0,
+     "latency_ms_p50_true_stops": 190.00000000005457
+    },
+    "oto": {
+     "n": 378,
+     "per_class": {
+      "backchannel": {
+       "p": 0.9011,
+       "r": 0.7712,
+       "f1": 0.8311,
+       "support": 319
+      },
+      "interruption": {
+       "p": 0.3048,
+       "r": 0.5424,
+       "f1": 0.3902,
+       "support": 59
+      },
+      "noise": {
+       "p": 0.0,
+       "r": 0.0,
+       "f1": 0.0,
+       "support": 0
+      }
+     },
+     "macro_f1": 0.6106,
+     "false_stop_rate": 0.2288,
+     "vad_bargeins_rejected": 0.7222,
+     "latency_ms_p50_true_stops": 840.0000000000318
+    }
+   },
+   "min_words_1_nonbc_1000ms": {
+    "rule": "stop once >= 1 non-backchannel words are transcribed within 1000 ms of the onset (oto: our streaming RNNT on the user channel; AMI / ICSI: reference words at their end time, no ASR delay = an upper bound)",
+    "all": {
+     "n": 665,
+     "per_class": {
+      "backchannel": {
+       "p": 0.8933,
+       "r": 0.9125,
+       "f1": 0.9028,
+       "support": 514
+      },
+      "interruption": {
+       "p": 0.6786,
+       "r": 0.6786,
+       "f1": 0.6786,
+       "support": 140
+      },
+      "noise": {
+       "p": 0.0,
+       "r": 0.0,
+       "f1": 0.0,
+       "support": 11
+      }
+     },
+     "macro_f1": 0.5271,
+     "false_stop_rate": 0.0857,
+     "vad_bargeins_rejected": 0.7895,
+     "latency_ms_p50_true_stops": 330.0000000001546
+    },
+    "ami": {
+     "n": 187,
+     "per_class": {
+      "backchannel": {
+       "p": 0.8552,
+       "r": 1.0,
+       "f1": 0.9219,
+       "support": 124
+      },
+      "interruption": {
+       "p": 1.0,
+       "r": 0.8077,
+       "f1": 0.8936,
+       "support": 52
+      },
+      "noise": {
+       "p": 0.0,
+       "r": 0.0,
+       "f1": 0.0,
+       "support": 11
+      }
+     },
+     "macro_f1": 0.6052,
+     "false_stop_rate": 0.0,
+     "vad_bargeins_rejected": 0.7754,
+     "latency_ms_p50_true_stops": 264.99999999998636
+    },
+    "icsi": {
+     "n": 100,
+     "per_class": {
+      "backchannel": {
+       "p": 0.9722,
+       "r": 0.9859,
+       "f1": 0.979,
+       "support": 71
+      },
+      "interruption": {
+       "p": 0.9643,
+       "r": 0.931,
+       "f1": 0.9474,
+       "support": 29
+      },
+      "noise": {
+       "p": 0.0,
+       "r": 0.0,
+       "f1": 0.0,
+       "support": 0
+      }
+     },
+     "macro_f1": 0.9632,
+     "false_stop_rate": 0.0141,
+     "vad_bargeins_rejected": 0.72,
+     "latency_ms_p50_true_stops": 199.99999999998863
+    },
+    "oto": {
+     "n": 378,
+     "per_class": {
+      "backchannel": {
+       "p": 0.8929,
+       "r": 0.8621,
+       "f1": 0.8772,
+       "support": 319
+      },
+      "interruption": {
+       "p": 0.3714,
+       "r": 0.4407,
+       "f1": 0.4031,
+       "support": 59
+      },
+      "noise": {
+       "p": 0.0,
+       "r": 0.0,
+       "f1": 0.0,
+       "support": 0
+      }
+     },
+     "macro_f1": 0.6401,
+     "false_stop_rate": 0.1379,
+     "vad_bargeins_rejected": 0.8148,
+     "latency_ms_p50_true_stops": 840.0000000000318
+    }
+   },
+   "min_words_1_1500ms": {
+    "rule": "stop once >= 1 words are transcribed within 1500 ms of the onset (oto: our streaming RNNT on the user channel; AMI / ICSI: reference words at their end time, no ASR delay = an upper bound)",
+    "all": {
+     "n": 665,
+     "per_class": {
+      "backchannel": {
+       "p": 0.8846,
+       "r": 0.358,
+       "f1": 0.5097,
+       "support": 514
+      },
+      "interruption": {
+       "p": 0.2779,
+       "r": 0.9071,
+       "f1": 0.4255,
+       "support": 140
+      },
+      "noise": {
+       "p": 0.0,
+       "r": 0.0,
+       "f1": 0.0,
+       "support": 11
+      }
+     },
+     "macro_f1": 0.3117,
+     "false_stop_rate": 0.6286,
+     "vad_bargeins_rejected": 0.3128,
+     "latency_ms_p50_true_stops": 400.00000000009095
+    },
+    "ami": {
+     "n": 187,
+     "per_class": {
+      "backchannel": {
+       "p": 0.3333,
+       "r": 0.0565,
+       "f1": 0.0966,
+       "support": 124
+      },
+      "interruption": {
+       "p": 0.2952,
+       "r": 0.9423,
+       "f1": 0.4495,
+       "support": 52
+      },
+      "noise": {
+       "p": 0.0,
+       "r": 0.0,
+       "f1": 0.0,
+       "support": 11
+      }
+     },
+     "macro_f1": 0.182,
+     "false_stop_rate": 0.8667,
+     "vad_bargeins_rejected": 0.1123,
+     "latency_ms_p50_true_stops": 259.9999999999909
+    },
+    "icsi": {
+     "n": 100,
+     "per_class": {
+      "backchannel": {
+       "p": 0.0,
+       "r": 0.0,
+       "f1": 0.0,
+       "support": 71
+      },
+      "interruption": {
+       "p": 0.29,
+       "r": 1.0,
+       "f1": 0.4496,
+       "support": 29
+      },
+      "noise": {
+       "p": 0.0,
+       "r": 0.0,
+       "f1": 0.0,
+       "support": 0
+      }
+     },
+     "macro_f1": 0.2248,
+     "false_stop_rate": 1.0,
+     "vad_bargeins_rejected": 0.0,
+     "latency_ms_p50_true_stops": 190.00000000005457
+    },
+    "oto": {
+     "n": 378,
+     "per_class": {
+      "backchannel": {
+       "p": 0.9465,
+       "r": 0.5549,
+       "f1": 0.6996,
+       "support": 319
+      },
+      "interruption": {
+       "p": 0.2565,
+       "r": 0.8305,
+       "f1": 0.392,
+       "support": 59
+      },
+      "noise": {
+       "p": 0.0,
+       "r": 0.0,
+       "f1": 0.0,
+       "support": 0
+      }
+     },
+     "macro_f1": 0.5458,
+     "false_stop_rate": 0.4451,
+     "vad_bargeins_rejected": 0.4947,
+     "latency_ms_p50_true_stops": 879.9999999999955
+    }
+   },
+   "min_words_1_nonbc_1500ms": {
+    "rule": "stop once >= 1 non-backchannel words are transcribed within 1500 ms of the onset (oto: our streaming RNNT on the user channel; AMI / ICSI: reference words at their end time, no ASR delay = an upper bound)",
+    "all": {
+     "n": 665,
+     "per_class": {
+      "backchannel": {
+       "p": 0.931,
+       "r": 0.8405,
+       "f1": 0.8834,
+       "support": 514
+      },
+      "interruption": {
+       "p": 0.592,
+       "r": 0.85,
+       "f1": 0.6979,
+       "support": 140
+      },
+      "noise": {
+       "p": 0.0,
+       "r": 0.0,
+       "f1": 0.0,
+       "support": 11
+      }
+     },
+     "macro_f1": 0.5271,
+     "false_stop_rate": 0.1562,
+     "vad_bargeins_rejected": 0.6977,
+     "latency_ms_p50_true_stops": 560.0000000000591
+    },
+    "ami": {
+     "n": 187,
+     "per_class": {
+      "backchannel": {
+       "p": 0.8794,
+       "r": 1.0,
+       "f1": 0.9358,
+       "support": 124
+      },
+      "interruption": {
+       "p": 1.0,
+       "r": 0.8846,
+       "f1": 0.9388,
+       "support": 52
+      },
+      "noise": {
+       "p": 0.0,
+       "r": 0.0,
+       "f1": 0.0,
+       "support": 11
+      }
+     },
+     "macro_f1": 0.6249,
+     "false_stop_rate": 0.0,
+     "vad_bargeins_rejected": 0.754,
+     "latency_ms_p50_true_stops": 290.0000000000773
+    },
+    "icsi": {
+     "n": 100,
+     "per_class": {
+      "backchannel": {
+       "p": 1.0,
+       "r": 0.9859,
+       "f1": 0.9929,
+       "support": 71
+      },
+      "interruption": {
+       "p": 0.9667,
+       "r": 1.0,
+       "f1": 0.9831,
+       "support": 29
+      },
+      "noise": {
+       "p": 0.0,
+       "r": 0.0,
+       "f1": 0.0,
+       "support": 0
+      }
+     },
+     "macro_f1": 0.988,
+     "false_stop_rate": 0.0141,
+     "vad_bargeins_rejected": 0.7,
+     "latency_ms_p50_true_stops": 219.99999999934516
+    },
+    "oto": {
+     "n": 378,
+     "per_class": {
+      "backchannel": {
+       "p": 0.9407,
+       "r": 0.7461,
+       "f1": 0.8322,
+       "support": 319
+      },
+      "interruption": {
+       "p": 0.352,
+       "r": 0.7458,
+       "f1": 0.4783,
+       "support": 59
+      },
+      "noise": {
+       "p": 0.0,
+       "r": 0.0,
+       "f1": 0.0,
+       "support": 0
+      }
+     },
+     "macro_f1": 0.6552,
+     "false_stop_rate": 0.2539,
+     "vad_bargeins_rejected": 0.6693,
+     "latency_ms_p50_true_stops": 959.9999999999227
+    }
+   },
+   "min_words_2_560ms": {
+    "rule": "stop once >= 2 words are transcribed within 560 ms of the onset (oto: our streaming RNNT on the user channel; AMI / ICSI: reference words at their end time, no ASR delay = an upper bound)",
+    "all": {
+     "n": 665,
+     "per_class": {
+      "backchannel": {
+       "p": 0.8364,
+       "r": 0.9844,
+       "f1": 0.9044,
+       "support": 514
+      },
+      "interruption": {
+       "p": 0.8667,
+       "r": 0.3714,
+       "f1": 0.52,
+       "support": 140
+      },
+      "noise": {
+       "p": 0.0,
+       "r": 0.0,
+       "f1": 0.0,
+       "support": 11
+      }
+     },
+     "macro_f1": 0.4748,
+     "false_stop_rate": 0.0152,
+     "vad_bargeins_rejected": 0.9098,
+     "latency_ms_p50_true_stops": 360.0000000003547
+    },
+    "ami": {
+     "n": 187,
+     "per_class": {
+      "backchannel": {
+       "p": 0.7707,
+       "r": 0.9758,
+       "f1": 0.8612,
+       "support": 124
+      },
+      "interruption": {
+       "p": 0.9,
+       "r": 0.5192,
+       "f1": 0.6585,
+       "support": 52
+      },
+      "noise": {
+       "p": 0.0,
+       "r": 0.0,
+       "f1": 0.0,
+       "support": 11
+      }
+     },
+     "macro_f1": 0.5066,
+     "false_stop_rate": 0.0222,
+     "vad_bargeins_rejected": 0.8396,
+     "latency_ms_p50_true_stops": 359.99999999989996
+    },
+    "icsi": {
+     "n": 100,
+     "per_class": {
+      "backchannel": {
+       "p": 0.9178,
+       "r": 0.9437,
+       "f1": 0.9306,
+       "support": 71
+      },
+      "interruption": {
+       "p": 0.8519,
+       "r": 0.7931,
+       "f1": 0.8214,
+       "support": 29
+      },
+      "noise": {
+       "p": 0.0,
+       "r": 0.0,
+       "f1": 0.0,
+       "support": 0
+      }
+     },
+     "macro_f1": 0.876,
+     "false_stop_rate": 0.0563,
+     "vad_bargeins_rejected": 0.73,
+     "latency_ms_p50_true_stops": 360.0000000005821
+    },
+    "oto": {
+     "n": 378,
+     "per_class": {
+      "backchannel": {
+       "p": 0.848,
+       "r": 0.9969,
+       "f1": 0.9164,
+       "support": 319
+      },
+      "interruption": {
+       "p": 0.6667,
+       "r": 0.0339,
+       "f1": 0.0645,
+       "support": 59
+      },
+      "noise": {
+       "p": 0.0,
+       "r": 0.0,
+       "f1": 0.0,
+       "support": 0
+      }
+     },
+     "macro_f1": 0.4904,
+     "false_stop_rate": 0.0031,
+     "vad_bargeins_rejected": 0.9921,
+     "latency_ms_p50_true_stops": 439.9999999999977
+    }
+   },
+   "min_words_2_nonbc_560ms": {
+    "rule": "stop once >= 2 non-backchannel words are transcribed within 560 ms of the onset (oto: our streaming RNNT on the user channel; AMI / ICSI: reference words at their end time, no ASR delay = an upper bound)",
+    "all": {
+     "n": 665,
+     "per_class": {
+      "backchannel": {
+       "p": 0.8248,
+       "r": 0.9981,
+       "f1": 0.9032,
+       "support": 514
+      },
+      "interruption": {
+       "p": 0.9767,
+       "r": 0.3,
+       "f1": 0.459,
+       "support": 140
+      },
+      "noise": {
+       "p": 0.0,
+       "r": 0.0,
+       "f1": 0.0,
+       "support": 11
+      }
+     },
+     "macro_f1": 0.4541,
+     "false_stop_rate": 0.0019,
+     "vad_bargeins_rejected": 0.9353,
+     "latency_ms_p50_true_stops": 370.00000000000455
+    },
+    "ami": {
+     "n": 187,
+     "per_class": {
+      "backchannel": {
+       "p": 0.747,
+       "r": 1.0,
+       "f1": 0.8552,
+       "support": 124
+      },
+      "interruption": {
+       "p": 1.0,
+       "r": 0.4038,
+       "f1": 0.5753,
+       "support": 52
+      },
+      "noise": {
+       "p": 0.0,
+       "r": 0.0,
+       "f1": 0.0,
+       "support": 11
+      }
+     },
+     "macro_f1": 0.4768,
+     "false_stop_rate": 0.0,
+     "vad_bargeins_rejected": 0.8877,
+     "latency_ms_p50_true_stops": 370.00000000000455
+    },
+    "icsi": {
+     "n": 100,
+     "per_class": {
+      "backchannel": {
+       "p": 0.875,
+       "r": 0.9859,
+       "f1": 0.9272,
+       "support": 71
+      },
+      "interruption": {
+       "p": 0.95,
+       "r": 0.6552,
+       "f1": 0.7755,
+       "support": 29
+      },
+      "noise": {
+       "p": 0.0,
+       "r": 0.0,
+       "f1": 0.0,
+       "support": 0
+      }
+     },
+     "macro_f1": 0.8514,
+     "false_stop_rate": 0.0141,
+     "vad_bargeins_rejected": 0.8,
+     "latency_ms_p50_true_stops": 360.0000000005821
+    },
+    "oto": {
+     "n": 378,
+     "per_class": {
+      "backchannel": {
+       "p": 0.8484,
+       "r": 1.0,
+       "f1": 0.918,
+       "support": 319
+      },
+      "interruption": {
+       "p": 1.0,
+       "r": 0.0339,
+       "f1": 0.0656,
+       "support": 59
+      },
+      "noise": {
+       "p": 0.0,
+       "r": 0.0,
+       "f1": 0.0,
+       "support": 0
+      }
+     },
+     "macro_f1": 0.4918,
+     "false_stop_rate": 0.0,
+     "vad_bargeins_rejected": 0.9947,
+     "latency_ms_p50_true_stops": 439.9999999999977
+    }
+   },
+   "min_words_2_1000ms": {
+    "rule": "stop once >= 2 words are transcribed within 1000 ms of the onset (oto: our streaming RNNT on the user channel; AMI / ICSI: reference words at their end time, no ASR delay = an upper bound)",
+    "all": {
+     "n": 665,
+     "per_class": {
+      "backchannel": {
+       "p": 0.8663,
+       "r": 0.9455,
+       "f1": 0.9042,
+       "support": 514
+      },
+      "interruption": {
+       "p": 0.7308,
+       "r": 0.5429,
+       "f1": 0.623,
+       "support": 140
+      },
+      "noise": {
+       "p": 0.0,
+       "r": 0.0,
+       "f1": 0.0,
+       "support": 11
+      }
+     },
+     "macro_f1": 0.5091,
+     "false_stop_rate": 0.0533,
+     "vad_bargeins_rejected": 0.8436,
+     "latency_ms_p50_true_stops": 404.9999999999727
+    },
+    "ami": {
+     "n": 187,
+     "per_class": {
+      "backchannel": {
+       "p": 0.8258,
+       "r": 0.879,
+       "f1": 0.8516,
+       "support": 124
+      },
+      "interruption": {
+       "p": 0.7273,
+       "r": 0.7692,
+       "f1": 0.7477,
+       "support": 52
+      },
+      "noise": {
+       "p": 0.0,
+       "r": 0.0,
+       "f1": 0.0,
+       "support": 11
+      }
+     },
+     "macro_f1": 0.5331,
+     "false_stop_rate": 0.1111,
+     "vad_bargeins_rejected": 0.7059,
+     "latency_ms_p50_true_stops": 400.0000000000341
+    },
+    "icsi": {
+     "n": 100,
+     "per_class": {
+      "backchannel": {
+       "p": 0.9706,
+       "r": 0.9296,
+       "f1": 0.9496,
+       "support": 71
+      },
+      "interruption": {
+       "p": 0.8438,
+       "r": 0.931,
+       "f1": 0.8852,
+       "support": 29
+      },
+      "noise": {
+       "p": 0.0,
+       "r": 0.0,
+       "f1": 0.0,
+       "support": 0
+      }
+     },
+     "macro_f1": 0.9174,
+     "false_stop_rate": 0.0704,
+     "vad_bargeins_rejected": 0.68,
+     "latency_ms_p50_true_stops": 380.00000000000966
+    },
+    "oto": {
+     "n": 378,
+     "per_class": {
+      "backchannel": {
+       "p": 0.8615,
+       "r": 0.9749,
+       "f1": 0.9147,
+       "support": 319
+      },
+      "interruption": {
+       "p": 0.5294,
+       "r": 0.1525,
+       "f1": 0.2368,
+       "support": 59
+      },
+      "noise": {
+       "p": 0.0,
+       "r": 0.0,
+       "f1": 0.0,
+       "support": 0
+      }
+     },
+     "macro_f1": 0.5757,
+     "false_stop_rate": 0.0251,
+     "vad_bargeins_rejected": 0.955,
+     "latency_ms_p50_true_stops": 800.0000000000682
+    }
+   },
+   "min_words_2_nonbc_1000ms": {
+    "rule": "stop once >= 2 non-backchannel words are transcribed within 1000 ms of the onset (oto: our streaming RNNT on the user channel; AMI / ICSI: reference words at their end time, no ASR delay = an upper bound)",
+    "all": {
+     "n": 665,
+     "per_class": {
+      "backchannel": {
+       "p": 0.8564,
+       "r": 0.9864,
+       "f1": 0.9168,
+       "support": 514
+      },
+      "interruption": {
+       "p": 0.9041,
+       "r": 0.4714,
+       "f1": 0.6197,
+       "support": 140
+      },
+      "noise": {
+       "p": 0.0,
+       "r": 0.0,
+       "f1": 0.0,
+       "support": 11
+      }
+     },
+     "macro_f1": 0.5122,
+     "false_stop_rate": 0.0133,
+     "vad_bargeins_rejected": 0.8902,
+     "latency_ms_p50_true_stops": 454.9999999999059
+    },
+    "ami": {
+     "n": 187,
+     "per_class": {
+      "backchannel": {
+       "p": 0.8158,
+       "r": 1.0,
+       "f1": 0.8986,
+       "support": 124
+      },
+      "interruption": {
+       "p": 1.0,
+       "r": 0.6731,
+       "f1": 0.8046,
+       "support": 52
+      },
+      "noise": {
+       "p": 0.0,
+       "r": 0.0,
+       "f1": 0.0,
+       "support": 11
+      }
+     },
+     "macro_f1": 0.5677,
+     "false_stop_rate": 0.0,
+     "vad_bargeins_rejected": 0.8128,
+     "latency_ms_p50_true_stops": 509.9999999999909
+    },
+    "icsi": {
+     "n": 100,
+     "per_class": {
+      "backchannel": {
+       "p": 0.9333,
+       "r": 0.9859,
+       "f1": 0.9589,
+       "support": 71
+      },
+      "interruption": {
+       "p": 0.96,
+       "r": 0.8276,
+       "f1": 0.8889,
+       "support": 29
+      },
+      "noise": {
+       "p": 0.0,
+       "r": 0.0,
+       "f1": 0.0,
+       "support": 0
+      }
+     },
+     "macro_f1": 0.9239,
+     "false_stop_rate": 0.0141,
+     "vad_bargeins_rejected": 0.75,
+     "latency_ms_p50_true_stops": 384.99999999994117
+    },
+    "oto": {
+     "n": 378,
+     "per_class": {
+      "backchannel": {
+       "p": 0.8575,
+       "r": 0.9812,
+       "f1": 0.9152,
+       "support": 319
+      },
+      "interruption": {
+       "p": 0.5385,
+       "r": 0.1186,
+       "f1": 0.1944,
+       "support": 59
+      },
+      "noise": {
+       "p": 0.0,
+       "r": 0.0,
+       "f1": 0.0,
+       "support": 0
+      }
+     },
+     "macro_f1": 0.5548,
+     "false_stop_rate": 0.0188,
+     "vad_bargeins_rejected": 0.9656,
+     "latency_ms_p50_true_stops": 800.0000000000114
+    }
+   },
+   "min_words_2_1500ms": {
+    "rule": "stop once >= 2 words are transcribed within 1500 ms of the onset (oto: our streaming RNNT on the user channel; AMI / ICSI: reference words at their end time, no ASR delay = an upper bound)",
+    "all": {
+     "n": 665,
+     "per_class": {
+      "backchannel": {
+       "p": 0.9139,
+       "r": 0.9086,
+       "f1": 0.9112,
+       "support": 514
+      },
+      "interruption": {
+       "p": 0.6948,
+       "r": 0.7643,
+       "f1": 0.7279,
+       "support": 140
+      },
+      "noise": {
+       "p": 0.0,
+       "r": 0.0,
+       "f1": 0.0,
+       "support": 11
+      }
+     },
+     "macro_f1": 0.5464,
+     "false_stop_rate": 0.0895,
+     "vad_bargeins_rejected": 0.7684,
+     "latency_ms_p50_true_stops": 629.9999999999955
+    },
+    "ami": {
+     "n": 187,
+     "per_class": {
+      "backchannel": {
+       "p": 0.8651,
+       "r": 0.879,
+       "f1": 0.872,
+       "support": 124
+      },
+      "interruption": {
+       "p": 0.7541,
+       "r": 0.8846,
+       "f1": 0.8142,
+       "support": 52
+      },
+      "noise": {
+       "p": 0.0,
+       "r": 0.0,
+       "f1": 0.0,
+       "support": 11
+      }
+     },
+     "macro_f1": 0.5621,
+     "false_stop_rate": 0.1111,
+     "vad_bargeins_rejected": 0.6738,
+     "latency_ms_p50_true_stops": 509.9999999999909
+    },
+    "icsi": {
+     "n": 100,
+     "per_class": {
+      "backchannel": {
+       "p": 1.0,
+       "r": 0.9296,
+       "f1": 0.9635,
+       "support": 71
+      },
+      "interruption": {
+       "p": 0.8529,
+       "r": 1.0,
+       "f1": 0.9206,
+       "support": 29
+      },
+      "noise": {
+       "p": 0.0,
+       "r": 0.0,
+       "f1": 0.0,
+       "support": 0
+      }
+     },
+     "macro_f1": 0.9421,
+     "false_stop_rate": 0.0704,
+     "vad_bargeins_rejected": 0.66,
+     "latency_ms_p50_true_stops": 380.00000000010914
+    },
+    "oto": {
+     "n": 378,
+     "per_class": {
+      "backchannel": {
+       "p": 0.9154,
+       "r": 0.9154,
+       "f1": 0.9154,
+       "support": 319
+      },
+      "interruption": {
+       "p": 0.5424,
+       "r": 0.5424,
+       "f1": 0.5424,
+       "support": 59
+      },
+      "noise": {
+       "p": 0.0,
+       "r": 0.0,
+       "f1": 0.0,
+       "support": 0
+      }
+     },
+     "macro_f1": 0.7289,
+     "false_stop_rate": 0.0846,
+     "vad_bargeins_rejected": 0.8439,
+     "latency_ms_p50_true_stops": 1120.0000000000045
+    }
+   },
+   "min_words_2_nonbc_1500ms": {
+    "rule": "stop once >= 2 non-backchannel words are transcribed within 1500 ms of the onset (oto: our streaming RNNT on the user channel; AMI / ICSI: reference words at their end time, no ASR delay = an upper bound)",
+    "all": {
+     "n": 665,
+     "per_class": {
+      "backchannel": {
+       "p": 0.9024,
+       "r": 0.9533,
+       "f1": 0.9272,
+       "support": 514
+      },
+      "interruption": {
+       "p": 0.8033,
+       "r": 0.7,
+       "f1": 0.7481,
+       "support": 140
+      },
+      "noise": {
+       "p": 0.0,
+       "r": 0.0,
+       "f1": 0.0,
+       "support": 11
+      }
+     },
+     "macro_f1": 0.5584,
+     "false_stop_rate": 0.0457,
+     "vad_bargeins_rejected": 0.8165,
+     "latency_ms_p50_true_stops": 764.9999999999864
+    },
+    "ami": {
+     "n": 187,
+     "per_class": {
+      "backchannel": {
+       "p": 0.8493,
+       "r": 1.0,
+       "f1": 0.9185,
+       "support": 124
+      },
+      "interruption": {
+       "p": 1.0,
+       "r": 0.7885,
+       "f1": 0.8817,
+       "support": 52
+      },
+      "noise": {
+       "p": 0.0,
+       "r": 0.0,
+       "f1": 0.0,
+       "support": 11
+      }
+     },
+     "macro_f1": 0.6001,
+     "false_stop_rate": 0.0,
+     "vad_bargeins_rejected": 0.7807,
+     "latency_ms_p50_true_stops": 550.0000000000682
+    },
+    "icsi": {
+     "n": 100,
+     "per_class": {
+      "backchannel": {
+       "p": 1.0,
+       "r": 0.9859,
+       "f1": 0.9929,
+       "support": 71
+      },
+      "interruption": {
+       "p": 0.9667,
+       "r": 1.0,
+       "f1": 0.9831,
+       "support": 29
+      },
+      "noise": {
+       "p": 0.0,
+       "r": 0.0,
+       "f1": 0.0,
+       "support": 0
+      }
+     },
+     "macro_f1": 0.988,
+     "false_stop_rate": 0.0141,
+     "vad_bargeins_rejected": 0.7,
+     "latency_ms_p50_true_stops": 449.9999999998181
+    },
+    "oto": {
+     "n": 378,
+     "per_class": {
+      "backchannel": {
+       "p": 0.9052,
+       "r": 0.9279,
+       "f1": 0.9164,
+       "support": 319
+      },
+      "interruption": {
+       "p": 0.549,
+       "r": 0.4746,
+       "f1": 0.5091,
+       "support": 59
+      },
+      "noise": {
+       "p": 0.0,
+       "r": 0.0,
+       "f1": 0.0,
+       "support": 0
+      }
+     },
+     "macro_f1": 0.7127,
+     "false_stop_rate": 0.0721,
+     "vad_bargeins_rejected": 0.8651,
+     "latency_ms_p50_true_stops": 1159.9999999999966
+    }
+   },
+   "min_words_3_560ms": {
+    "rule": "stop once >= 3 words are transcribed within 560 ms of the onset (oto: our streaming RNNT on the user channel; AMI / ICSI: reference words at their end time, no ASR delay = an upper bound)",
+    "all": {
+     "n": 665,
+     "per_class": {
+      "backchannel": {
+       "p": 0.7994,
+       "r": 1.0,
+       "f1": 0.8885,
+       "support": 514
+      },
+      "interruption": {
+       "p": 1.0,
+       "r": 0.1571,
+       "f1": 0.2716,
+       "support": 140
+      },
+      "noise": {
+       "p": 0.0,
+       "r": 0.0,
+       "f1": 0.0,
+       "support": 11
+      }
+     },
+     "macro_f1": 0.3867,
+     "false_stop_rate": 0.0,
+     "vad_bargeins_rejected": 0.9669,
+     "latency_ms_p50_true_stops": 470.0000000000273
+    },
+    "ami": {
+     "n": 187,
+     "per_class": {
+      "backchannel": {
+       "p": 0.7045,
+       "r": 1.0,
+       "f1": 0.8267,
+       "support": 124
+      },
+      "interruption": {
+       "p": 1.0,
+       "r": 0.2115,
+       "f1": 0.3492,
+       "support": 52
+      },
+      "noise": {
+       "p": 0.0,
+       "r": 0.0,
+       "f1": 0.0,
+       "support": 11
+      }
+     },
+     "macro_f1": 0.392,
+     "false_stop_rate": 0.0,
+     "vad_bargeins_rejected": 0.9412,
+     "latency_ms_p50_true_stops": 460.0000000000364
+    },
+    "icsi": {
+     "n": 100,
+     "per_class": {
+      "backchannel": {
+       "p": 0.7978,
+       "r": 1.0,
+       "f1": 0.8875,
+       "support": 71
+      },
+      "interruption": {
+       "p": 1.0,
+       "r": 0.3793,
+       "f1": 0.55,
+       "support": 29
+      },
+      "noise": {
+       "p": 0.0,
+       "r": 0.0,
+       "f1": 0.0,
+       "support": 0
+      }
+     },
+     "macro_f1": 0.7188,
+     "false_stop_rate": 0.0,
+     "vad_bargeins_rejected": 0.89,
+     "latency_ms_p50_true_stops": 480.0000000000182
+    },
+    "oto": {
+     "n": 378,
+     "per_class": {
+      "backchannel": {
+       "p": 0.8439,
+       "r": 1.0,
+       "f1": 0.9154,
+       "support": 319
+      },
+      "interruption": {
+       "p": 0.0,
+       "r": 0.0,
+       "f1": 0.0,
+       "support": 59
+      },
+      "noise": {
+       "p": 0.0,
+       "r": 0.0,
+       "f1": 0.0,
+       "support": 0
+      }
+     },
+     "macro_f1": 0.4577,
+     "false_stop_rate": 0.0,
+     "vad_bargeins_rejected": 1.0,
+     "latency_ms_p50_true_stops": null
+    }
+   },
+   "min_words_3_nonbc_560ms": {
+    "rule": "stop once >= 3 non-backchannel words are transcribed within 560 ms of the onset (oto: our streaming RNNT on the user channel; AMI / ICSI: reference words at their end time, no ASR delay = an upper bound)",
+    "all": {
+     "n": 665,
+     "per_class": {
+      "backchannel": {
+       "p": 0.7932,
+       "r": 1.0,
+       "f1": 0.8847,
+       "support": 514
+      },
+      "interruption": {
+       "p": 1.0,
+       "r": 0.1214,
+       "f1": 0.2166,
+       "support": 140
+      },
+      "noise": {
+       "p": 0.0,
+       "r": 0.0,
+       "f1": 0.0,
+       "support": 11
+      }
+     },
+     "macro_f1": 0.3671,
+     "false_stop_rate": 0.0,
+     "vad_bargeins_rejected": 0.9744,
+     "latency_ms_p50_true_stops": 460.0000000000364
+    },
+    "ami": {
+     "n": 187,
+     "per_class": {
+      "backchannel": {
+       "p": 0.6966,
+       "r": 1.0,
+       "f1": 0.8212,
+       "support": 124
+      },
+      "interruption": {
+       "p": 1.0,
+       "r": 0.1731,
+       "f1": 0.2951,
+       "support": 52
+      },
+      "noise": {
+       "p": 0.0,
+       "r": 0.0,
+       "f1": 0.0,
+       "support": 11
+      }
+     },
+     "macro_f1": 0.3721,
+     "false_stop_rate": 0.0,
+     "vad_bargeins_rejected": 0.9519,
+     "latency_ms_p50_true_stops": 460.0000000000364
+    },
+    "icsi": {
+     "n": 100,
+     "per_class": {
+      "backchannel": {
+       "p": 0.7717,
+       "r": 1.0,
+       "f1": 0.8712,
+       "support": 71
+      },
+      "interruption": {
+       "p": 1.0,
+       "r": 0.2759,
+       "f1": 0.4324,
+       "support": 29
+      },
+      "noise": {
+       "p": 0.0,
+       "r": 0.0,
+       "f1": 0.0,
+       "support": 0
+      }
+     },
+     "macro_f1": 0.6518,
+     "false_stop_rate": 0.0,
+     "vad_bargeins_rejected": 0.92,
+     "latency_ms_p50_true_stops": 454.99999999992724
+    },
+    "oto": {
+     "n": 378,
+     "per_class": {
+      "backchannel": {
+       "p": 0.8439,
+       "r": 1.0,
+       "f1": 0.9154,
+       "support": 319
+      },
+      "interruption": {
+       "p": 0.0,
+       "r": 0.0,
+       "f1": 0.0,
+       "support": 59
+      },
+      "noise": {
+       "p": 0.0,
+       "r": 0.0,
+       "f1": 0.0,
+       "support": 0
+      }
+     },
+     "macro_f1": 0.4577,
+     "false_stop_rate": 0.0,
+     "vad_bargeins_rejected": 1.0,
+     "latency_ms_p50_true_stops": null
+    }
+   },
+   "min_words_3_1000ms": {
+    "rule": "stop once >= 3 words are transcribed within 1000 ms of the onset (oto: our streaming RNNT on the user channel; AMI / ICSI: reference words at their end time, no ASR delay = an upper bound)",
+    "all": {
+     "n": 665,
+     "per_class": {
+      "backchannel": {
+       "p": 0.8402,
+       "r": 0.9922,
+       "f1": 0.9099,
+       "support": 514
+      },
+      "interruption": {
+       "p": 0.931,
+       "r": 0.3857,
+       "f1": 0.5455,
+       "support": 140
+      },
+      "noise": {
+       "p": 0.0,
+       "r": 0.0,
+       "f1": 0.0,
+       "support": 11
+      }
+     },
+     "macro_f1": 0.4851,
+     "false_stop_rate": 0.0076,
+     "vad_bargeins_rejected": 0.9128,
+     "latency_ms_p50_true_stops": 645.0000000000387
+    },
+    "ami": {
+     "n": 187,
+     "per_class": {
+      "backchannel": {
+       "p": 0.7821,
+       "r": 0.9839,
+       "f1": 0.8714,
+       "support": 124
+      },
+      "interruption": {
+       "p": 0.9355,
+       "r": 0.5577,
+       "f1": 0.6988,
+       "support": 52
+      },
+      "noise": {
+       "p": 0.0,
+       "r": 0.0,
+       "f1": 0.0,
+       "support": 11
+      }
+     },
+     "macro_f1": 0.5234,
+     "false_stop_rate": 0.0148,
+     "vad_bargeins_rejected": 0.8342,
+     "latency_ms_p50_true_stops": 650.000000000091
+    },
+    "icsi": {
+     "n": 100,
+     "per_class": {
+      "backchannel": {
+       "p": 0.9221,
+       "r": 1.0,
+       "f1": 0.9595,
+       "support": 71
+      },
+      "interruption": {
+       "p": 1.0,
+       "r": 0.7931,
+       "f1": 0.8846,
+       "support": 29
+      },
+      "noise": {
+       "p": 0.0,
+       "r": 0.0,
+       "f1": 0.0,
+       "support": 0
+      }
+     },
+     "macro_f1": 0.9221,
+     "false_stop_rate": 0.0,
+     "vad_bargeins_rejected": 0.77,
+     "latency_ms_p50_true_stops": 569.9999999999363
+    },
+    "oto": {
+     "n": 378,
+     "per_class": {
+      "backchannel": {
+       "p": 0.8476,
+       "r": 0.9937,
+       "f1": 0.9149,
+       "support": 319
+      },
+      "interruption": {
+       "p": 0.5,
+       "r": 0.0339,
+       "f1": 0.0635,
+       "support": 59
+      },
+      "noise": {
+       "p": 0.0,
+       "r": 0.0,
+       "f1": 0.0,
+       "support": 0
+      }
+     },
+     "macro_f1": 0.4892,
+     "false_stop_rate": 0.0063,
+     "vad_bargeins_rejected": 0.9894,
+     "latency_ms_p50_true_stops": 759.9999999999909
+    }
+   },
+   "min_words_3_nonbc_1000ms": {
+    "rule": "stop once >= 3 non-backchannel words are transcribed within 1000 ms of the onset (oto: our streaming RNNT on the user channel; AMI / ICSI: reference words at their end time, no ASR delay = an upper bound)",
+    "all": {
+     "n": 665,
+     "per_class": {
+      "backchannel": {
+       "p": 0.825,
+       "r": 1.0,
+       "f1": 0.9041,
+       "support": 514
+      },
+      "interruption": {
+       "p": 1.0,
+       "r": 0.3,
+       "f1": 0.4615,
+       "support": 140
+      },
+      "noise": {
+       "p": 0.0,
+       "r": 0.0,
+       "f1": 0.0,
+       "support": 11
+      }
+     },
+     "macro_f1": 0.4552,
+     "false_stop_rate": 0.0,
+     "vad_bargeins_rejected": 0.9368,
+     "latency_ms_p50_true_stops": 634.9999999999909
+    },
+    "ami": {
+     "n": 187,
+     "per_class": {
+      "backchannel": {
+       "p": 0.7515,
+       "r": 1.0,
+       "f1": 0.8581,
+       "support": 124
+      },
+      "interruption": {
+       "p": 1.0,
+       "r": 0.4231,
+       "f1": 0.5946,
+       "support": 52
+      },
+      "noise": {
+       "p": 0.0,
+       "r": 0.0,
+       "f1": 0.0,
+       "support": 11
+      }
+     },
+     "macro_f1": 0.4842,
+     "false_stop_rate": 0.0,
+     "vad_bargeins_rejected": 0.8824,
+     "latency_ms_p50_true_stops": 625.0
+    },
+    "icsi": {
+     "n": 100,
+     "per_class": {
+      "backchannel": {
+       "p": 0.8659,
+       "r": 1.0,
+       "f1": 0.9281,
+       "support": 71
+      },
+      "interruption": {
+       "p": 1.0,
+       "r": 0.6207,
+       "f1": 0.766,
+       "support": 29
+      },
+      "noise": {
+       "p": 0.0,
+       "r": 0.0,
+       "f1": 0.0,
+       "support": 0
+      }
+     },
+     "macro_f1": 0.8471,
+     "false_stop_rate": 0.0,
+     "vad_bargeins_rejected": 0.82,
+     "latency_ms_p50_true_stops": 610.0000000000136
+    },
+    "oto": {
+     "n": 378,
+     "per_class": {
+      "backchannel": {
+       "p": 0.8484,
+       "r": 1.0,
+       "f1": 0.918,
+       "support": 319
+      },
+      "interruption": {
+       "p": 1.0,
+       "r": 0.0339,
+       "f1": 0.0656,
+       "support": 59
+      },
+      "noise": {
+       "p": 0.0,
+       "r": 0.0,
+       "f1": 0.0,
+       "support": 0
+      }
+     },
+     "macro_f1": 0.4918,
+     "false_stop_rate": 0.0,
+     "vad_bargeins_rejected": 0.9947,
+     "latency_ms_p50_true_stops": 759.9999999999909
+    }
+   },
+   "min_words_3_1500ms": {
+    "rule": "stop once >= 3 words are transcribed within 1500 ms of the onset (oto: our streaming RNNT on the user channel; AMI / ICSI: reference words at their end time, no ASR delay = an upper bound)",
+    "all": {
+     "n": 665,
+     "per_class": {
+      "backchannel": {
+       "p": 0.8842,
+       "r": 0.9805,
+       "f1": 0.9299,
+       "support": 514
+      },
+      "interruption": {
+       "p": 0.8947,
+       "r": 0.6071,
+       "f1": 0.7234,
+       "support": 140
+      },
+      "noise": {
+       "p": 0.0,
+       "r": 0.0,
+       "f1": 0.0,
+       "support": 11
+      }
+     },
+     "macro_f1": 0.5511,
+     "false_stop_rate": 0.019,
+     "vad_bargeins_rejected": 0.8571,
+     "latency_ms_p50_true_stops": 759.9999999999909
+    },
+    "ami": {
+     "n": 187,
+     "per_class": {
+      "backchannel": {
+       "p": 0.8299,
+       "r": 0.9839,
+       "f1": 0.9004,
+       "support": 124
+      },
+      "interruption": {
+       "p": 0.95,
+       "r": 0.7308,
+       "f1": 0.8261,
+       "support": 52
+      },
+      "noise": {
+       "p": 0.0,
+       "r": 0.0,
+       "f1": 0.0,
+       "support": 11
+      }
+     },
+     "macro_f1": 0.5755,
+     "false_stop_rate": 0.0148,
+     "vad_bargeins_rejected": 0.7861,
+     "latency_ms_p50_true_stops": 690.0000000000332
+    },
+    "icsi": {
+     "n": 100,
+     "per_class": {
+      "backchannel": {
+       "p": 0.9861,
+       "r": 1.0,
+       "f1": 0.993,
+       "support": 71
+      },
+      "interruption": {
+       "p": 1.0,
+       "r": 0.9655,
+       "f1": 0.9825,
+       "support": 29
+      },
+      "noise": {
+       "p": 0.0,
+       "r": 0.0,
+       "f1": 0.0,
+       "support": 0
+      }
+     },
+     "macro_f1": 0.9878,
+     "false_stop_rate": 0.0,
+     "vad_bargeins_rejected": 0.72,
+     "latency_ms_p50_true_stops": 670.0000000000728
+    },
+    "oto": {
+     "n": 378,
+     "per_class": {
+      "backchannel": {
+       "p": 0.886,
+       "r": 0.9749,
+       "f1": 0.9284,
+       "support": 319
+      },
+      "interruption": {
+       "p": 0.7037,
+       "r": 0.322,
+       "f1": 0.4419,
+       "support": 59
+      },
+      "noise": {
+       "p": 0.0,
+       "r": 0.0,
+       "f1": 0.0,
+       "support": 0
+      }
+     },
+     "macro_f1": 0.6852,
+     "false_stop_rate": 0.0251,
+     "vad_bargeins_rejected": 0.9286,
+     "latency_ms_p50_true_stops": 1280.0000000000864
+    }
+   },
+   "min_words_3_nonbc_1500ms": {
+    "rule": "stop once >= 3 non-backchannel words are transcribed within 1500 ms of the onset (oto: our streaming RNNT on the user channel; AMI / ICSI: reference words at their end time, no ASR delay = an upper bound)",
+    "all": {
+     "n": 665,
+     "per_class": {
+      "backchannel": {
+       "p": 0.8718,
+       "r": 0.9922,
+       "f1": 0.9281,
+       "support": 514
+      },
+      "interruption": {
+       "p": 0.95,
+       "r": 0.5429,
+       "f1": 0.6909,
+       "support": 140
+      },
+      "noise": {
+       "p": 0.0,
+       "r": 0.0,
+       "f1": 0.0,
+       "support": 11
+      }
+     },
+     "macro_f1": 0.5397,
+     "false_stop_rate": 0.0076,
+     "vad_bargeins_rejected": 0.8797,
+     "latency_ms_p50_true_stops": 904.9999999999727
+    },
+    "ami": {
+     "n": 187,
+     "per_class": {
+      "backchannel": {
+       "p": 0.8105,
+       "r": 1.0,
+       "f1": 0.8953,
+       "support": 124
+      },
+      "interruption": {
+       "p": 1.0,
+       "r": 0.6538,
+       "f1": 0.7907,
+       "support": 52
+      },
+      "noise": {
+       "p": 0.0,
+       "r": 0.0,
+       "f1": 0.0,
+       "support": 11
+      }
+     },
+     "macro_f1": 0.562,
+     "false_stop_rate": 0.0,
+     "vad_bargeins_rejected": 0.8182,
+     "latency_ms_p50_true_stops": 750.0
+    },
+    "icsi": {
+     "n": 100,
+     "per_class": {
+      "backchannel": {
+       "p": 0.9595,
+       "r": 1.0,
+       "f1": 0.9793,
+       "support": 71
+      },
+      "interruption": {
+       "p": 1.0,
+       "r": 0.8966,
+       "f1": 0.9455,
+       "support": 29
+      },
+      "noise": {
+       "p": 0.0,
+       "r": 0.0,
+       "f1": 0.0,
+       "support": 0
+      }
+     },
+     "macro_f1": 0.9624,
+     "false_stop_rate": 0.0,
+     "vad_bargeins_rejected": 0.74,
+     "latency_ms_p50_true_stops": 700.0000000001307
+    },
+    "oto": {
+     "n": 378,
+     "per_class": {
+      "backchannel": {
+       "p": 0.8799,
+       "r": 0.9875,
+       "f1": 0.9306,
+       "support": 319
+      },
+      "interruption": {
+       "p": 0.8,
+       "r": 0.2712,
+       "f1": 0.4051,
+       "support": 59
+      },
+      "noise": {
+       "p": 0.0,
+       "r": 0.0,
+       "f1": 0.0,
+       "support": 0
+      }
+     },
+     "macro_f1": 0.6679,
+     "false_stop_rate": 0.0125,
+     "vad_bargeins_rejected": 0.9471,
+     "latency_ms_p50_true_stops": 1280.0000000000437
+    }
+   }
+  }
+ },
+ "probe": {
+  "train_events": 6022,
+  "val_events": 641,
+  "val_conversations": 22,
+  "decision_ms": [
+   240,
+   400,
+   560
+  ],
+  "variants": {
+   "b4+b8": {
+    "summary_mean_std": {
+     "240": {
+      "auc_int_val": [
+       0.742,
+       0.0074
+      ],
+      "auc_int_eval": [
+       0.7113,
+       0.0043
+      ],
+      "fused_int_p": [
+       0.2422,
+       0.0059
+      ],
+      "fused_int_r": [
+       0.9405,
+       0.0067
+      ],
+      "fused_int_f1": [
+       0.3852,
+       0.0073
+      ],
+      "fused_false_stop": [
+       0.7854,
+       0.0274
+      ],
+      "fused_rejected": [
+       0.1819,
+       0.0224
+      ],
+      "argmax_macro_f1": [
+       0.4544,
+       0.0229
+      ],
+      "argmax_f1": {
+       "backchannel": [
+        0.8088,
+        0.0026
+       ],
+       "interruption": [
+        0.4554,
+        0.0074
+       ],
+       "noise": [
+        0.0989,
+        0.0701
+       ]
+      },
+      "argmax_p": {
+       "backchannel": [
+        0.8473,
+        0.0027
+       ],
+       "interruption": [
+        0.3924,
+        0.004
+       ],
+       "noise": [
+        0.2778,
+        0.2079
+       ]
+      },
+      "argmax_r": {
+       "backchannel": [
+        0.7737,
+        0.0064
+       ],
+       "interruption": [
+        0.5429,
+        0.0175
+       ],
+       "noise": [
+        0.0606,
+        0.0429
+       ]
+      },
+      "stop95_int_p": [
+       0.2273,
+       0.0056
+      ],
+      "stop95_int_r": [
+       0.9405,
+       0.0067
+      ],
+      "stop95_false_stop": [
+       0.8533,
+       0.0298
+      ],
+      "stop95_rejected": [
+       0.1283,
+       0.0244
+      ],
+      "oracle100_int_p": [
+       0.2116,
+       0.0001
+      ],
+      "oracle100_rejected": [
+       0.005,
+       0.0007
+      ],
+      "stop95_int_p_by_corpus": {
+       "ami": [
+        0.3141,
+        0.0172
+       ],
+       "icsi": [
+        0.3001,
+        0.0047
+       ],
+       "oto": [
+        0.1708,
+        0.0033
+       ]
+      },
+      "stop95_int_r_by_corpus": {
+       "ami": [
+        0.891,
+        0.0091
+       ],
+       "icsi": [
+        0.931,
+        0.0
+       ],
+       "oto": [
+        0.9887,
+        0.008
+       ]
+      }
+     },
+     "400": {
+      "auc_int_val": [
+       0.7969,
+       0.0041
+      ],
+      "auc_int_eval": [
+       0.7931,
+       0.0098
+      ],
+      "fused_int_p": [
+       0.3546,
+       0.008
+      ],
+      "fused_int_r": [
+       0.95,
+       0.0117
+      ],
+      "fused_int_f1": [
+       0.5164,
+       0.0068
+      ],
+      "fused_false_stop": [
+       0.4616,
+       0.0218
+      ],
+      "fused_rejected": [
+       0.4356,
+       0.0197
+      ],
+      "argmax_macro_f1": [
+       0.4721,
+       0.0034
+      ],
+      "argmax_f1": {
+       "backchannel": [
+        0.8507,
+        0.005
+       ],
+       "interruption": [
+        0.5656,
+        0.0054
+       ],
+       "noise": [
+        0.0,
+        0.0
+       ]
+      },
+      "argmax_p": {
+       "backchannel": [
+        0.879,
+        0.0021
+       ],
+       "interruption": [
+        0.4996,
+        0.0129
+       ],
+       "noise": [
+        0.0,
+        0.0
+       ]
+      },
+      "argmax_r": {
+       "backchannel": [
+        0.8242,
+        0.0106
+       ],
+       "interruption": [
+        0.6524,
+        0.0089
+       ],
+       "noise": [
+        0.0,
+        0.0
+       ]
+      },
+      "stop95_int_p": [
+       0.2413,
+       0.0073
+      ],
+      "stop95_int_r": [
+       0.95,
+       0.0117
+      ],
+      "stop95_false_stop": [
+       0.7981,
+       0.0418
+      ],
+      "stop95_rejected": [
+       0.1699,
+       0.0354
+      ],
+      "oracle100_int_p": [
+       0.2153,
+       0.0008
+      ],
+      "oracle100_rejected": [
+       0.0221,
+       0.0038
+      ],
+      "stop95_int_p_by_corpus": {
+       "ami": [
+        0.3134,
+        0.0142
+       ],
+       "icsi": [
+        0.3081,
+        0.0123
+       ],
+       "oto": [
+        0.1874,
+        0.0059
+       ]
+      },
+      "stop95_int_r_by_corpus": {
+       "ami": [
+        0.9038,
+        0.0157
+       ],
+       "icsi": [
+        0.954,
+        0.0163
+       ],
+       "oto": [
+        0.9887,
+        0.008
+       ]
+      }
+     },
+     "560": {
+      "auc_int_val": [
+       0.8185,
+       0.0057
+      ],
+      "auc_int_eval": [
+       0.8072,
+       0.0069
+      ],
+      "fused_int_p": [
+       0.4633,
+       0.0059
+      ],
+      "fused_int_r": [
+       0.9595,
+       0.0089
+      ],
+      "fused_int_f1": [
+       0.6248,
+       0.0039
+      ],
+      "fused_false_stop": [
+       0.2965,
+       0.0095
+      ],
+      "fused_rejected": [
+       0.5639,
+       0.0092
+      ],
+      "argmax_macro_f1": [
+       0.4748,
+       0.0063
+      ],
+      "argmax_f1": {
+       "backchannel": [
+        0.856,
+        0.0059
+       ],
+       "interruption": [
+        0.5684,
+        0.0149
+       ],
+       "noise": [
+        0.0,
+        0.0
+       ]
+      },
+      "argmax_p": {
+       "backchannel": [
+        0.8786,
+        0.0052
+       ],
+       "interruption": [
+        0.51,
+        0.0164
+       ],
+       "noise": [
+        0.0,
+        0.0
+       ]
+      },
+      "argmax_r": {
+       "backchannel": [
+        0.8346,
+        0.0124
+       ],
+       "interruption": [
+        0.6428,
+        0.0254
+       ],
+       "noise": [
+        0.0,
+        0.0
+       ]
+      },
+      "stop95_int_p": [
+       0.2571,
+       0.0071
+      ],
+      "stop95_int_r": [
+       0.9595,
+       0.0089
+      ],
+      "stop95_false_stop": [
+       0.7403,
+       0.0323
+      ],
+      "stop95_rejected": [
+       0.2135,
+       0.0271
+      ],
+      "oracle100_int_p": [
+       0.2145,
+       0.0022
+      ],
+      "oracle100_rejected": [
+       0.0186,
+       0.0102
+      ],
+      "stop95_int_p_by_corpus": {
+       "ami": [
+        0.3132,
+        0.01
+       ],
+       "icsi": [
+        0.325,
+        0.0118
+       ],
+       "oto": [
+        0.2062,
+        0.0085
+       ]
+      },
+      "stop95_int_r_by_corpus": {
+       "ami": [
+        0.9167,
+        0.0091
+       ],
+       "icsi": [
+        0.977,
+        0.0163
+       ],
+       "oto": [
+        0.9887,
+        0.008
+       ]
+      }
+     }
+    },
+    "seed0_detail": {
+     "240": {
+      "auc_int_val": 0.7513,
+      "auc_int_eval": 0.7172,
+      "fused_duration_gate": {
+       "threshold": 0.0422,
+       "all": {
+        "n": 665,
+        "per_class": {
+         "backchannel": {
+          "p": 0.8873,
+          "r": 0.2451,
+          "f1": 0.3841,
+          "support": 514
+         },
+         "interruption": {
+          "p": 0.2505,
+          "r": 0.9357,
+          "f1": 0.3952,
+          "support": 140
+         },
+         "noise": {
+          "p": 0.0,
+          "r": 0.0,
+          "f1": 0.0,
+          "support": 11
+         }
+        },
+        "macro_f1": 0.2598,
+        "false_stop_rate": 0.7467,
+        "vad_bargeins_rejected": 0.2135,
+        "latency_ms_p50_true_stops": 240.0
+       },
+       "ami": {
+        "n": 187,
+        "per_class": {
+         "backchannel": {
+          "p": 0.8116,
+          "r": 0.4516,
+          "f1": 0.5803,
+          "support": 124
+         },
+         "interruption": {
+          "p": 0.3898,
+          "r": 0.8846,
+          "f1": 0.5412,
+          "support": 52
+         },
+         "noise": {
+          "p": 0.0,
+          "r": 0.0,
+          "f1": 0.0,
+          "support": 11
+         }
+        },
+        "macro_f1": 0.3738,
+        "false_stop_rate": 0.5333,
+        "vad_bargeins_rejected": 0.369,
+        "latency_ms_p50_true_stops": 240.0
+       },
+       "icsi": {
+        "n": 100,
+        "per_class": {
+         "backchannel": {
+          "p": 0.9259,
+          "r": 0.3521,
+          "f1": 0.5102,
+          "support": 71
+         },
+         "interruption": {
+          "p": 0.3699,
+          "r": 0.931,
+          "f1": 0.5294,
+          "support": 29
+         },
+         "noise": {
+          "p": 0.0,
+          "r": 0.0,
+          "f1": 0.0,
+          "support": 0
+         }
+        },
+        "macro_f1": 0.5198,
+        "false_stop_rate": 0.6479,
+        "vad_bargeins_rejected": 0.27,
+        "latency_ms_p50_true_stops": 240.0
+       },
+       "oto": {
+        "n": 378,
+        "per_class": {
+         "backchannel": {
+          "p": 0.9783,
+          "r": 0.1411,
+          "f1": 0.2466,
+          "support": 319
+         },
+         "interruption": {
+          "p": 0.1747,
+          "r": 0.9831,
+          "f1": 0.2967,
+          "support": 59
+         },
+         "noise": {
+          "p": 0.0,
+          "r": 0.0,
+          "f1": 0.0,
+          "support": 0
+         }
+        },
+        "macro_f1": 0.2717,
+        "false_stop_rate": 0.8589,
+        "vad_bargeins_rejected": 0.1217,
+        "latency_ms_p50_true_stops": 240.0
+       }
+      },
+      "argmax": {
+       "all": {
+        "n": 665,
+        "per_class": {
+         "backchannel": {
+          "p": 0.8439,
+          "r": 0.7782,
+          "f1": 0.8097,
+          "support": 514
+         },
+         "interruption": {
+          "p": 0.3883,
+          "r": 0.5214,
+          "f1": 0.4451,
+          "support": 140
+         },
+         "noise": {
+          "p": 0.3333,
+          "r": 0.0909,
+          "f1": 0.1429,
+          "support": 11
+         }
+        },
+        "macro_f1": 0.4659,
+        "false_stop_rate": 0.219,
+        "vad_bargeins_rejected": 0.7173,
+        "latency_ms_p50_true_stops": 240.0
+       },
+       "ami": {
+        "n": 187,
+        "per_class": {
+         "backchannel": {
+          "p": 0.75,
+          "r": 0.8468,
+          "f1": 0.7955,
+          "support": 124
+         },
+         "interruption": {
+          "p": 0.5556,
+          "r": 0.4808,
+          "f1": 0.5155,
+          "support": 52
+         },
+         "noise": {
+          "p": 0.5,
+          "r": 0.0909,
+          "f1": 0.1538,
+          "support": 11
+         }
+        },
+        "macro_f1": 0.4883,
+        "false_stop_rate": 0.1481,
+        "vad_bargeins_rejected": 0.7594,
+        "latency_ms_p50_true_stops": 240.0
+       },
+       "icsi": {
+        "n": 100,
+        "per_class": {
+         "backchannel": {
+          "p": 0.8358,
+          "r": 0.7887,
+          "f1": 0.8116,
+          "support": 71
+         },
+         "interruption": {
+          "p": 0.5312,
+          "r": 0.5862,
+          "f1": 0.5574,
+          "support": 29
+         },
+         "noise": {
+          "p": 0.0,
+          "r": 0.0,
+          "f1": 0.0,
+          "support": 0
+         }
+        },
+        "macro_f1": 0.6845,
+        "false_stop_rate": 0.2113,
+        "vad_bargeins_rejected": 0.68,
+        "latency_ms_p50_true_stops": 240.0
+       },
+       "oto": {
+        "n": 378,
+        "per_class": {
+         "backchannel": {
+          "p": 0.8951,
+          "r": 0.7492,
+          "f1": 0.8157,
+          "support": 319
+         },
+         "interruption": {
+          "p": 0.2793,
+          "r": 0.5254,
+          "f1": 0.3647,
+          "support": 59
+         },
+         "noise": {
+          "p": 0.0,
+          "r": 0.0,
+          "f1": 0.0,
+          "support": 0
+         }
+        },
+        "macro_f1": 0.5902,
+        "false_stop_rate": 0.2508,
+        "vad_bargeins_rejected": 0.7063,
+        "latency_ms_p50_true_stops": 240.0
+       }
+      },
+      "stop_at_val_recall95": {
+       "threshold": 0.0422,
+       "all": {
+        "n": 665,
+        "per_class": {
+         "backchannel": {
+          "p": 0.8598,
+          "r": 0.179,
+          "f1": 0.2963,
+          "support": 514
+         },
+         "interruption": {
+          "p": 0.2352,
+          "r": 0.9357,
+          "f1": 0.3759,
+          "support": 140
+         },
+         "noise": {
+          "p": 0.0,
+          "r": 0.0,
+          "f1": 0.0,
+          "support": 11
+         }
+        },
+        "macro_f1": 0.2241,
+        "false_stop_rate": 0.8114,
+        "vad_bargeins_rejected": 0.1624,
+        "latency_ms_p50_true_stops": 240.0
+       },
+       "ami": {
+        "n": 187,
+        "per_class": {
+         "backchannel": {
+          "p": 0.76,
+          "r": 0.3065,
+          "f1": 0.4368,
+          "support": 124
+         },
+         "interruption": {
+          "p": 0.3382,
+          "r": 0.8846,
+          "f1": 0.4894,
+          "support": 52
+         },
+         "noise": {
+          "p": 0.0,
+          "r": 0.0,
+          "f1": 0.0,
+          "support": 11
+         }
+        },
+        "macro_f1": 0.3087,
+        "false_stop_rate": 0.6667,
+        "vad_bargeins_rejected": 0.2727,
+        "latency_ms_p50_true_stops": 240.0
+       },
+       "icsi": {
+        "n": 100,
+        "per_class": {
+         "backchannel": {
+          "p": 0.8182,
+          "r": 0.1268,
+          "f1": 0.2195,
+          "support": 71
+         },
+         "interruption": {
+          "p": 0.3034,
+          "r": 0.931,
+          "f1": 0.4576,
+          "support": 29
+         },
+         "noise": {
+          "p": 0.0,
+          "r": 0.0,
+          "f1": 0.0,
+          "support": 0
+         }
+        },
+        "macro_f1": 0.3386,
+        "false_stop_rate": 0.8732,
+        "vad_bargeins_rejected": 0.11,
+        "latency_ms_p50_true_stops": 240.0
+       },
+       "oto": {
+        "n": 378,
+        "per_class": {
+         "backchannel": {
+          "p": 0.9783,
+          "r": 0.1411,
+          "f1": 0.2466,
+          "support": 319
+         },
+         "interruption": {
+          "p": 0.1747,
+          "r": 0.9831,
+          "f1": 0.2967,
+          "support": 59
+         },
+         "noise": {
+          "p": 0.0,
+          "r": 0.0,
+          "f1": 0.0,
+          "support": 0
+         }
+        },
+        "macro_f1": 0.2717,
+        "false_stop_rate": 0.8589,
+        "vad_bargeins_rejected": 0.1217,
+        "latency_ms_p50_true_stops": 240.0
+       }
+      },
+      "oracle_recall100": {
+       "n": 665,
+       "per_class": {
+        "backchannel": {
+         "p": 1.0,
+         "r": 0.0058,
+         "f1": 0.0116,
+         "support": 514
+        },
+        "interruption": {
+         "p": 0.2115,
+         "r": 1.0,
+         "f1": 0.3491,
+         "support": 140
+        },
+        "noise": {
+         "p": 0.0,
+         "r": 0.0,
+         "f1": 0.0,
+         "support": 11
+        }
+       },
+       "macro_f1": 0.1202,
+       "false_stop_rate": 0.9943,
+       "vad_bargeins_rejected": 0.0045
+      }
+     },
+     "400": {
+      "auc_int_val": 0.8027,
+      "auc_int_eval": 0.8062,
+      "fused_duration_gate": {
+       "threshold": 0.0277,
+       "all": {
+        "n": 665,
+        "per_class": {
+         "backchannel": {
+          "p": 0.9446,
+          "r": 0.5311,
+          "f1": 0.68,
+          "support": 514
+         },
+         "interruption": {
+          "p": 0.3537,
+          "r": 0.95,
+          "f1": 0.5155,
+          "support": 140
+         },
+         "noise": {
+          "p": 0.0,
+          "r": 0.0,
+          "f1": 0.0,
+          "support": 11
+         }
+        },
+        "macro_f1": 0.3985,
+        "false_stop_rate": 0.4629,
+        "vad_bargeins_rejected": 0.4346,
+        "latency_ms_p50_true_stops": 400.0
+       },
+       "ami": {
+        "n": 187,
+        "per_class": {
+         "backchannel": {
+          "p": 0.8478,
+          "r": 0.629,
+          "f1": 0.7222,
+          "support": 124
+         },
+         "interruption": {
+          "p": 0.4947,
+          "r": 0.9038,
+          "f1": 0.6395,
+          "support": 52
+         },
+         "noise": {
+          "p": 0.0,
+          "r": 0.0,
+          "f1": 0.0,
+          "support": 11
+         }
+        },
+        "macro_f1": 0.4539,
+        "false_stop_rate": 0.3556,
+        "vad_bargeins_rejected": 0.492,
+        "latency_ms_p50_true_stops": 400.0
+       },
+       "icsi": {
+        "n": 100,
+        "per_class": {
+         "backchannel": {
+          "p": 0.9815,
+          "r": 0.7465,
+          "f1": 0.848,
+          "support": 71
+         },
+         "interruption": {
+          "p": 0.6087,
+          "r": 0.9655,
+          "f1": 0.7467,
+          "support": 29
+         },
+         "noise": {
+          "p": 0.0,
+          "r": 0.0,
+          "f1": 0.0,
+          "support": 0
+         }
+        },
+        "macro_f1": 0.7974,
+        "false_stop_rate": 0.2535,
+        "vad_bargeins_rejected": 0.54,
+        "latency_ms_p50_true_stops": 400.0
+       },
+       "oto": {
+        "n": 378,
+        "per_class": {
+         "backchannel": {
+          "p": 0.993,
+          "r": 0.4451,
+          "f1": 0.6147,
+          "support": 319
+         },
+         "interruption": {
+          "p": 0.2468,
+          "r": 0.9831,
+          "f1": 0.3946,
+          "support": 59
+         },
+         "noise": {
+          "p": 0.0,
+          "r": 0.0,
+          "f1": 0.0,
+          "support": 0
+         }
+        },
+        "macro_f1": 0.5047,
+        "false_stop_rate": 0.5549,
+        "vad_bargeins_rejected": 0.3783,
+        "latency_ms_p50_true_stops": 400.0
+       }
+      },
+      "argmax": {
+       "all": {
+        "n": 665,
+        "per_class": {
+         "backchannel": {
+          "p": 0.8778,
+          "r": 0.8385,
+          "f1": 0.8577,
+          "support": 514
+         },
+         "interruption": {
+          "p": 0.5172,
+          "r": 0.6429,
+          "f1": 0.5732,
+          "support": 140
+         },
+         "noise": {
+          "p": 0.0,
+          "r": 0.0,
+          "f1": 0.0,
+          "support": 11
+         }
+        },
+        "macro_f1": 0.477,
+        "false_stop_rate": 0.16,
+        "vad_bargeins_rejected": 0.7383,
+        "latency_ms_p50_true_stops": 400.0
+       },
+       "ami": {
+        "n": 187,
+        "per_class": {
+         "backchannel": {
+          "p": 0.7786,
+          "r": 0.879,
+          "f1": 0.8258,
+          "support": 124
+         },
+         "interruption": {
+          "p": 0.6596,
+          "r": 0.5962,
+          "f1": 0.6263,
+          "support": 52
+         },
+         "noise": {
+          "p": 0.0,
+          "r": 0.0,
+          "f1": 0.0,
+          "support": 11
+         }
+        },
+        "macro_f1": 0.484,
+        "false_stop_rate": 0.1185,
+        "vad_bargeins_rejected": 0.7487,
+        "latency_ms_p50_true_stops": 400.0
+       },
+       "icsi": {
+        "n": 100,
+        "per_class": {
+         "backchannel": {
+          "p": 0.8971,
+          "r": 0.8592,
+          "f1": 0.8777,
+          "support": 71
+         },
+         "interruption": {
+          "p": 0.6875,
+          "r": 0.7586,
+          "f1": 0.7213,
+          "support": 29
+         },
+         "noise": {
+          "p": 0.0,
+          "r": 0.0,
+          "f1": 0.0,
+          "support": 0
+         }
+        },
+        "macro_f1": 0.7995,
+        "false_stop_rate": 0.1408,
+        "vad_bargeins_rejected": 0.68,
+        "latency_ms_p50_true_stops": 400.0
+       },
+       "oto": {
+        "n": 378,
+        "per_class": {
+         "backchannel": {
+          "p": 0.9223,
+          "r": 0.8182,
+          "f1": 0.8671,
+          "support": 319
+         },
+         "interruption": {
+          "p": 0.3895,
+          "r": 0.6271,
+          "f1": 0.4805,
+          "support": 59
+         },
+         "noise": {
+          "p": 0.0,
+          "r": 0.0,
+          "f1": 0.0,
+          "support": 0
+         }
+        },
+        "macro_f1": 0.6738,
+        "false_stop_rate": 0.1818,
+        "vad_bargeins_rejected": 0.7487,
+        "latency_ms_p50_true_stops": 400.0
+       }
+      },
+      "stop_at_val_recall95": {
+       "threshold": 0.0277,
+       "all": {
+        "n": 665,
+        "per_class": {
+         "backchannel": {
+          "p": 0.876,
+          "r": 0.2062,
+          "f1": 0.3339,
+          "support": 514
+         },
+         "interruption": {
+          "p": 0.2445,
+          "r": 0.95,
+          "f1": 0.3889,
+          "support": 140
+         },
+         "noise": {
+          "p": 0.0,
+          "r": 0.0,
+          "f1": 0.0,
+          "support": 11
+         }
+        },
+        "macro_f1": 0.2409,
+        "false_stop_rate": 0.7829,
+        "vad_bargeins_rejected": 0.182,
+        "latency_ms_p50_true_stops": 400.0
+       },
+       "ami": {
+        "n": 187,
+        "per_class": {
+         "backchannel": {
+          "p": 0.7111,
+          "r": 0.2581,
+          "f1": 0.3787,
+          "support": 124
+         },
+         "interruption": {
+          "p": 0.331,
+          "r": 0.9038,
+          "f1": 0.4845,
+          "support": 52
+         },
+         "noise": {
+          "p": 0.0,
+          "r": 0.0,
+          "f1": 0.0,
+          "support": 11
+         }
+        },
+        "macro_f1": 0.2877,
+        "false_stop_rate": 0.7037,
+        "vad_bargeins_rejected": 0.2406,
+        "latency_ms_p50_true_stops": 400.0
+       },
+       "icsi": {
+        "n": 100,
+        "per_class": {
+         "backchannel": {
+          "p": 0.9,
+          "r": 0.1268,
+          "f1": 0.2222,
+          "support": 71
+         },
+         "interruption": {
+          "p": 0.3111,
+          "r": 0.9655,
+          "f1": 0.4706,
+          "support": 29
+         },
+         "noise": {
+          "p": 0.0,
+          "r": 0.0,
+          "f1": 0.0,
+          "support": 0
+         }
+        },
+        "macro_f1": 0.3464,
+        "false_stop_rate": 0.8732,
+        "vad_bargeins_rejected": 0.1,
+        "latency_ms_p50_true_stops": 400.0
+       },
+       "oto": {
+        "n": 378,
+        "per_class": {
+         "backchannel": {
+          "p": 0.9848,
+          "r": 0.2038,
+          "f1": 0.3377,
+          "support": 319
+         },
+         "interruption": {
+          "p": 0.1859,
+          "r": 0.9831,
+          "f1": 0.3127,
+          "support": 59
+         },
+         "noise": {
+          "p": 0.0,
+          "r": 0.0,
+          "f1": 0.0,
+          "support": 0
+         }
+        },
+        "macro_f1": 0.3252,
+        "false_stop_rate": 0.7962,
+        "vad_bargeins_rejected": 0.1746,
+        "latency_ms_p50_true_stops": 400.0
+       }
+      },
+      "oracle_recall100": {
+       "n": 665,
+       "per_class": {
+        "backchannel": {
+         "p": 1.0,
+         "r": 0.0272,
+         "f1": 0.053,
+         "support": 514
+        },
+        "interruption": {
+         "p": 0.2151,
+         "r": 1.0,
+         "f1": 0.354,
+         "support": 140
+        },
+        "noise": {
+         "p": 0.0,
+         "r": 0.0,
+         "f1": 0.0,
+         "support": 11
+        }
+       },
+       "macro_f1": 0.1357,
+       "false_stop_rate": 0.9733,
+       "vad_bargeins_rejected": 0.0211
+      }
+     },
+     "560": {
+      "auc_int_val": 0.8262,
+      "auc_int_eval": 0.8169,
+      "fused_duration_gate": {
+       "threshold": 0.0255,
+       "all": {
+        "n": 665,
+        "per_class": {
+         "backchannel": {
+          "p": 0.9599,
+          "r": 0.6984,
+          "f1": 0.8086,
+          "support": 514
+         },
+         "interruption": {
+          "p": 0.4605,
+          "r": 0.9571,
+          "f1": 0.6218,
+          "support": 140
+         },
+         "noise": {
+          "p": 0.0,
+          "r": 0.0,
+          "f1": 0.0,
+          "support": 11
+         }
+        },
+        "macro_f1": 0.4768,
+        "false_stop_rate": 0.299,
+        "vad_bargeins_rejected": 0.5624,
+        "latency_ms_p50_true_stops": 560.0
+       },
+       "ami": {
+        "n": 187,
+        "per_class": {
+         "backchannel": {
+          "p": 0.886,
+          "r": 0.8145,
+          "f1": 0.8487,
+          "support": 124
+         },
+         "interruption": {
+          "p": 0.6575,
+          "r": 0.9231,
+          "f1": 0.768,
+          "support": 52
+         },
+         "noise": {
+          "p": 0.0,
+          "r": 0.0,
+          "f1": 0.0,
+          "support": 11
+         }
+        },
+        "macro_f1": 0.5389,
+        "false_stop_rate": 0.1852,
+        "vad_bargeins_rejected": 0.6096,
+        "latency_ms_p50_true_stops": 560.0
+       },
+       "icsi": {
+        "n": 100,
+        "per_class": {
+         "backchannel": {
+          "p": 0.9848,
+          "r": 0.9155,
+          "f1": 0.9489,
+          "support": 71
+         },
+         "interruption": {
+          "p": 0.8235,
+          "r": 0.9655,
+          "f1": 0.8889,
+          "support": 29
+         },
+         "noise": {
+          "p": 0.0,
+          "r": 0.0,
+          "f1": 0.0,
+          "support": 0
+         }
+        },
+        "macro_f1": 0.9189,
+        "false_stop_rate": 0.0845,
+        "vad_bargeins_rejected": 0.66,
+        "latency_ms_p50_true_stops": 560.0
+       },
+       "oto": {
+        "n": 378,
+        "per_class": {
+         "backchannel": {
+          "p": 0.9948,
+          "r": 0.605,
+          "f1": 0.7524,
+          "support": 319
+         },
+         "interruption": {
+          "p": 0.3152,
+          "r": 0.9831,
+          "f1": 0.4774,
+          "support": 59
+         },
+         "noise": {
+          "p": 0.0,
+          "r": 0.0,
+          "f1": 0.0,
+          "support": 0
+         }
+        },
+        "macro_f1": 0.6149,
+        "false_stop_rate": 0.395,
+        "vad_bargeins_rejected": 0.5132,
+        "latency_ms_p50_true_stops": 560.0
+       }
+      },
+      "argmax": {
+       "all": {
+        "n": 665,
+        "per_class": {
+         "backchannel": {
+          "p": 0.8712,
+          "r": 0.8424,
+          "f1": 0.8566,
+          "support": 514
+         },
+         "interruption": {
+          "p": 0.506,
+          "r": 0.6071,
+          "f1": 0.5519,
+          "support": 140
+         },
+         "noise": {
+          "p": 0.0,
+          "r": 0.0,
+          "f1": 0.0,
+          "support": 11
+         }
+        },
+        "macro_f1": 0.4695,
+        "false_stop_rate": 0.1581,
+        "vad_bargeins_rejected": 0.7474,
+        "latency_ms_p50_true_stops": 560.0
+       },
+       "ami": {
+        "n": 187,
+        "per_class": {
+         "backchannel": {
+          "p": 0.7721,
+          "r": 0.8468,
+          "f1": 0.8077,
+          "support": 124
+         },
+         "interruption": {
+          "p": 0.5882,
+          "r": 0.5769,
+          "f1": 0.5825,
+          "support": 52
+         },
+         "noise": {
+          "p": 0.0,
+          "r": 0.0,
+          "f1": 0.0,
+          "support": 11
+         }
+        },
+        "macro_f1": 0.4634,
+        "false_stop_rate": 0.1556,
+        "vad_bargeins_rejected": 0.7273,
+        "latency_ms_p50_true_stops": 560.0
+       },
+       "icsi": {
+        "n": 100,
+        "per_class": {
+         "backchannel": {
+          "p": 0.8939,
+          "r": 0.831,
+          "f1": 0.8613,
+          "support": 71
+         },
+         "interruption": {
+          "p": 0.6471,
+          "r": 0.7586,
+          "f1": 0.6984,
+          "support": 29
+         },
+         "noise": {
+          "p": 0.0,
+          "r": 0.0,
+          "f1": 0.0,
+          "support": 0
+         }
+        },
+        "macro_f1": 0.7798,
+        "false_stop_rate": 0.169,
+        "vad_bargeins_rejected": 0.66,
+        "latency_ms_p50_true_stops": 560.0
+       },
+       "oto": {
+        "n": 378,
+        "per_class": {
+         "backchannel": {
+          "p": 0.9119,
+          "r": 0.8433,
+          "f1": 0.8762,
+          "support": 319
+         },
+         "interruption": {
+          "p": 0.3976,
+          "r": 0.5593,
+          "f1": 0.4648,
+          "support": 59
+         },
+         "noise": {
+          "p": 0.0,
+          "r": 0.0,
+          "f1": 0.0,
+          "support": 0
+         }
+        },
+        "macro_f1": 0.6705,
+        "false_stop_rate": 0.1567,
+        "vad_bargeins_rejected": 0.7804,
+        "latency_ms_p50_true_stops": 560.0
+       }
+      },
+      "stop_at_val_recall95": {
+       "threshold": 0.0255,
+       "all": {
+        "n": 665,
+        "per_class": {
+         "backchannel": {
+          "p": 0.8955,
+          "r": 0.2335,
+          "f1": 0.3704,
+          "support": 514
+         },
+         "interruption": {
+          "p": 0.2524,
+          "r": 0.9571,
+          "f1": 0.3994,
+          "support": 140
+         },
+         "noise": {
+          "p": 0.0,
+          "r": 0.0,
+          "f1": 0.0,
+          "support": 11
+         }
+        },
+        "macro_f1": 0.2566,
+        "false_stop_rate": 0.7562,
+        "vad_bargeins_rejected": 0.2015,
+        "latency_ms_p50_true_stops": 560.0
+       },
+       "ami": {
+        "n": 187,
+        "per_class": {
+         "backchannel": {
+          "p": 0.6923,
+          "r": 0.2177,
+          "f1": 0.3313,
+          "support": 124
+         },
+         "interruption": {
+          "p": 0.3243,
+          "r": 0.9231,
+          "f1": 0.48,
+          "support": 52
+         },
+         "noise": {
+          "p": 0.0,
+          "r": 0.0,
+          "f1": 0.0,
+          "support": 11
+         }
+        },
+        "macro_f1": 0.2704,
+        "false_stop_rate": 0.7407,
+        "vad_bargeins_rejected": 0.2086,
+        "latency_ms_p50_true_stops": 560.0
+       },
+       "icsi": {
+        "n": 100,
+        "per_class": {
+         "backchannel": {
+          "p": 0.9167,
+          "r": 0.1549,
+          "f1": 0.2651,
+          "support": 71
+         },
+         "interruption": {
+          "p": 0.3182,
+          "r": 0.9655,
+          "f1": 0.4786,
+          "support": 29
+         },
+         "noise": {
+          "p": 0.0,
+          "r": 0.0,
+          "f1": 0.0,
+          "support": 0
+         }
+        },
+        "macro_f1": 0.3719,
+        "false_stop_rate": 0.8451,
+        "vad_bargeins_rejected": 0.12,
+        "latency_ms_p50_true_stops": 560.0
+       },
+       "oto": {
+        "n": 378,
+        "per_class": {
+         "backchannel": {
+          "p": 0.988,
+          "r": 0.2571,
+          "f1": 0.408,
+          "support": 319
+         },
+         "interruption": {
+          "p": 0.1966,
+          "r": 0.9831,
+          "f1": 0.3277,
+          "support": 59
+         },
+         "noise": {
+          "p": 0.0,
+          "r": 0.0,
+          "f1": 0.0,
+          "support": 0
+         }
+        },
+        "macro_f1": 0.3679,
+        "false_stop_rate": 0.7429,
+        "vad_bargeins_rejected": 0.2196,
+        "latency_ms_p50_true_stops": 560.0
+       }
+      },
+      "oracle_recall100": {
+       "n": 665,
+       "per_class": {
+        "backchannel": {
+         "p": 1.0,
+         "r": 0.0058,
+         "f1": 0.0116,
+         "support": 514
+        },
+        "interruption": {
+         "p": 0.2115,
+         "r": 1.0,
+         "f1": 0.3491,
+         "support": 140
+        },
+        "noise": {
+         "p": 0.0,
+         "r": 0.0,
+         "f1": 0.0,
+         "support": 11
+        }
+       },
+       "macro_f1": 0.1202,
+       "false_stop_rate": 0.9943,
+       "vad_bargeins_rejected": 0.0045
+      }
+     }
+    }
+   },
+   "b4": {
+    "summary_mean_std": {
+     "240": {
+      "auc_int_val": [
+       0.7254,
+       0.0066
+      ],
+      "auc_int_eval": [
+       0.6836,
+       0.0051
+      ],
+      "fused_int_p": [
+       0.2656,
+       0.0058
+      ],
+      "fused_int_r": [
+       0.9262,
+       0.0178
+      ],
+      "fused_int_f1": [
+       0.4128,
+       0.0081
+      ],
+      "fused_false_stop": [
+       0.6832,
+       0.0175
+      ],
+      "fused_rejected": [
+       0.2657,
+       0.0148
+      ],
+      "argmax_macro_f1": [
+       0.4727,
+       0.0048
+      ],
+      "argmax_f1": {
+       "backchannel": [
+        0.7798,
+        0.0019
+       ],
+       "interruption": [
+        0.4026,
+        0.0078
+       ],
+       "noise": [
+        0.2358,
+        0.0114
+       ]
+      },
+      "argmax_p": {
+       "backchannel": [
+        0.8292,
+        0.0051
+       ],
+       "interruption": [
+        0.3404,
+        0.0048
+       ],
+       "noise": [
+        0.3397,
+        0.0469
+       ]
+      },
+      "argmax_r": {
+       "backchannel": [
+        0.736,
+        0.0073
+       ],
+       "interruption": [
+        0.4929,
+        0.0175
+       ],
+       "noise": [
+        0.1818,
+        0.0
+       ]
+      },
+      "stop95_int_p": [
+       0.2482,
+       0.0059
+      ],
+      "stop95_int_r": [
+       0.9262,
+       0.0178
+      ],
+      "stop95_false_stop": [
+       0.7486,
+       0.0214
+      ],
+      "stop95_rejected": [
+       0.214,
+       0.0178
+      ],
+      "oracle100_int_p": [
+       0.2176,
+       0.0043
+      ],
+      "oracle100_rejected": [
+       0.0321,
+       0.0194
+      ],
+      "stop95_int_p_by_corpus": {
+       "ami": [
+        0.328,
+        0.0041
+       ],
+       "icsi": [
+        0.3082,
+        0.0121
+       ],
+       "oto": [
+        0.1925,
+        0.0073
+       ]
+      },
+      "stop95_int_r_by_corpus": {
+       "ami": [
+        0.8846,
+        0.0416
+       ],
+       "icsi": [
+        0.931,
+        0.0281
+       ],
+       "oto": [
+        0.9605,
+        0.008
+       ]
+      }
+     },
+     "400": {
+      "auc_int_val": [
+       0.78,
+       0.0081
+      ],
+      "auc_int_eval": [
+       0.7698,
+       0.0043
+      ],
+      "fused_int_p": [
+       0.3613,
+       0.0038
+      ],
+      "fused_int_r": [
+       0.9762,
+       0.0089
+      ],
+      "fused_int_f1": [
+       0.5274,
+       0.0028
+      ],
+      "fused_false_stop": [
+       0.4603,
+       0.0117
+      ],
+      "fused_rejected": [
+       0.4311,
+       0.0111
+      ],
+      "argmax_macro_f1": [
+       0.5271,
+       0.0271
+      ],
+      "argmax_f1": {
+       "backchannel": [
+        0.815,
+        0.0054
+       ],
+       "interruption": [
+        0.5066,
+        0.0111
+       ],
+       "noise": [
+        0.2596,
+        0.0906
+       ]
+      },
+      "argmax_p": {
+       "backchannel": [
+        0.8693,
+        0.0071
+       ],
+       "interruption": [
+        0.4244,
+        0.0079
+       ],
+       "noise": [
+        0.5,
+        0.0816
+       ]
+      },
+      "argmax_r": {
+       "backchannel": [
+        0.7672,
+        0.0081
+       ],
+       "interruption": [
+        0.6286,
+        0.0202
+       ],
+       "noise": [
+        0.1818,
+        0.0742
+       ]
+      },
+      "stop95_int_p": [
+       0.2471,
+       0.0045
+      ],
+      "stop95_int_r": [
+       0.9762,
+       0.0089
+      ],
+      "stop95_false_stop": [
+       0.7937,
+       0.0265
+      ],
+      "stop95_rejected": [
+       0.1679,
+       0.0227
+      ],
+      "oracle100_int_p": [
+       0.228,
+       0.0127
+      ],
+      "oracle100_rejected": [
+       0.0737,
+       0.0503
+      ],
+      "stop95_int_p_by_corpus": {
+       "ami": [
+        0.3149,
+        0.0131
+       ],
+       "icsi": [
+        0.3037,
+        0.0087
+       ],
+       "oto": [
+        0.1926,
+        0.0014
+       ]
+      },
+      "stop95_int_r_by_corpus": {
+       "ami": [
+        0.9808,
+        0.0157
+       ],
+       "icsi": [
+        0.977,
+        0.0163
+       ],
+       "oto": [
+        0.9718,
+        0.008
+       ]
+      }
+     },
+     "560": {
+      "auc_int_val": [
+       0.7941,
+       0.0075
+      ],
+      "auc_int_eval": [
+       0.7883,
+       0.0035
+      ],
+      "fused_int_p": [
+       0.4849,
+       0.0096
+      ],
+      "fused_int_r": [
+       0.9786,
+       0.0058
+      ],
+      "fused_int_f1": [
+       0.6484,
+       0.0073
+      ],
+      "fused_false_stop": [
+       0.2775,
+       0.012
+      ],
+      "fused_rejected": [
+       0.5749,
+       0.0107
+      ],
+      "argmax_macro_f1": [
+       0.5333,
+       0.0131
+      ],
+      "argmax_f1": {
+       "backchannel": [
+        0.8316,
+        0.0094
+       ],
+       "interruption": [
+        0.5224,
+        0.0144
+       ],
+       "noise": [
+        0.246,
+        0.0561
+       ]
+      },
+      "argmax_p": {
+       "backchannel": [
+        0.8686,
+        0.0057
+       ],
+       "interruption": [
+        0.4534,
+        0.0185
+       ],
+       "noise": [
+        0.7778,
+        0.1571
+       ]
+      },
+      "argmax_r": {
+       "backchannel": [
+        0.7977,
+        0.0153
+       ],
+       "interruption": [
+        0.6167,
+        0.0147
+       ],
+       "noise": [
+        0.1515,
+        0.0429
+       ]
+      },
+      "stop95_int_p": [
+       0.2597,
+       0.0098
+      ],
+      "stop95_int_r": [
+       0.9786,
+       0.0058
+      ],
+      "stop95_false_stop": [
+       0.7454,
+       0.0422
+      ],
+      "stop95_rejected": [
+       0.2055,
+       0.0345
+      ],
+      "oracle100_int_p": [
+       0.238,
+       0.009
+      ],
+      "oracle100_rejected": [
+       0.1143,
+       0.0344
+      ],
+      "stop95_int_p_by_corpus": {
+       "ami": [
+        0.311,
+        0.0122
+       ],
+       "icsi": [
+        0.31,
+        0.0108
+       ],
+       "oto": [
+        0.2112,
+        0.0086
+       ]
+      },
+      "stop95_int_r_by_corpus": {
+       "ami": [
+        0.9808,
+        0.0157
+       ],
+       "icsi": [
+        1.0,
+        0.0
+       ],
+       "oto": [
+        0.9661,
+        0.0
+       ]
+      }
+     }
+    },
+    "seed0_detail": {
+     "240": {
+      "auc_int_val": 0.72,
+      "auc_int_eval": 0.6771,
+      "fused_duration_gate": {
+       "threshold": 0.1097,
+       "all": {
+        "n": 665,
+        "per_class": {
+         "backchannel": {
+          "p": 0.8848,
+          "r": 0.284,
+          "f1": 0.43,
+          "support": 514
+         },
+         "interruption": {
+          "p": 0.258,
+          "r": 0.9214,
+          "f1": 0.4031,
+          "support": 140
+         },
+         "noise": {
+          "p": 0.0,
+          "r": 0.0,
+          "f1": 0.0,
+          "support": 11
+         }
+        },
+        "macro_f1": 0.2777,
+        "false_stop_rate": 0.7067,
+        "vad_bargeins_rejected": 0.2481,
+        "latency_ms_p50_true_stops": 240.0
+       },
+       "ami": {
+        "n": 187,
+        "per_class": {
+         "backchannel": {
+          "p": 0.7969,
+          "r": 0.4113,
+          "f1": 0.5426,
+          "support": 124
+         },
+         "interruption": {
+          "p": 0.3821,
+          "r": 0.9038,
+          "f1": 0.5371,
+          "support": 52
+         },
+         "noise": {
+          "p": 0.0,
+          "r": 0.0,
+          "f1": 0.0,
+          "support": 11
+         }
+        },
+        "macro_f1": 0.3599,
+        "false_stop_rate": 0.563,
+        "vad_bargeins_rejected": 0.3422,
+        "latency_ms_p50_true_stops": 240.0
+       },
+       "icsi": {
+        "n": 100,
+        "per_class": {
+         "backchannel": {
+          "p": 0.8966,
+          "r": 0.3662,
+          "f1": 0.52,
+          "support": 71
+         },
+         "interruption": {
+          "p": 0.3662,
+          "r": 0.8966,
+          "f1": 0.52,
+          "support": 29
+         },
+         "noise": {
+          "p": 0.0,
+          "r": 0.0,
+          "f1": 0.0,
+          "support": 0
+         }
+        },
+        "macro_f1": 0.52,
+        "false_stop_rate": 0.6338,
+        "vad_bargeins_rejected": 0.29,
+        "latency_ms_p50_true_stops": 240.0
+       },
+       "oto": {
+        "n": 378,
+        "per_class": {
+         "backchannel": {
+          "p": 0.9583,
+          "r": 0.2163,
+          "f1": 0.3529,
+          "support": 319
+         },
+         "interruption": {
+          "p": 0.183,
+          "r": 0.9492,
+          "f1": 0.3068,
+          "support": 59
+         },
+         "noise": {
+          "p": 0.0,
+          "r": 0.0,
+          "f1": 0.0,
+          "support": 0
+         }
+        },
+        "macro_f1": 0.3298,
+        "false_stop_rate": 0.7837,
+        "vad_bargeins_rejected": 0.1905,
+        "latency_ms_p50_true_stops": 240.0
+       }
+      },
+      "argmax": {
+       "all": {
+        "n": 665,
+        "per_class": {
+         "backchannel": {
+          "p": 0.8247,
+          "r": 0.7412,
+          "f1": 0.7807,
+          "support": 514
+         },
+         "interruption": {
+          "p": 0.335,
+          "r": 0.4714,
+          "f1": 0.3917,
+          "support": 140
+         },
+         "noise": {
+          "p": 0.3333,
+          "r": 0.1818,
+          "f1": 0.2353,
+          "support": 11
+         }
+        },
+        "macro_f1": 0.4692,
+        "false_stop_rate": 0.2495,
+        "vad_bargeins_rejected": 0.7038,
+        "latency_ms_p50_true_stops": 240.0
+       },
+       "ami": {
+        "n": 187,
+        "per_class": {
+         "backchannel": {
+          "p": 0.7174,
+          "r": 0.7984,
+          "f1": 0.7557,
+          "support": 124
+         },
+         "interruption": {
+          "p": 0.4651,
+          "r": 0.3846,
+          "f1": 0.4211,
+          "support": 52
+         },
+         "noise": {
+          "p": 0.3333,
+          "r": 0.1818,
+          "f1": 0.2353,
+          "support": 11
+         }
+        },
+        "macro_f1": 0.4707,
+        "false_stop_rate": 0.1704,
+        "vad_bargeins_rejected": 0.7701,
+        "latency_ms_p50_true_stops": 240.0
+       },
+       "icsi": {
+        "n": 100,
+        "per_class": {
+         "backchannel": {
+          "p": 0.7826,
+          "r": 0.7606,
+          "f1": 0.7714,
+          "support": 71
+         },
+         "interruption": {
+          "p": 0.4516,
+          "r": 0.4828,
+          "f1": 0.4667,
+          "support": 29
+         },
+         "noise": {
+          "p": 0.0,
+          "r": 0.0,
+          "f1": 0.0,
+          "support": 0
+         }
+        },
+        "macro_f1": 0.619,
+        "false_stop_rate": 0.2394,
+        "vad_bargeins_rejected": 0.69,
+        "latency_ms_p50_true_stops": 240.0
+       },
+       "oto": {
+        "n": 378,
+        "per_class": {
+         "backchannel": {
+          "p": 0.8941,
+          "r": 0.7147,
+          "f1": 0.7944,
+          "support": 319
+         },
+         "interruption": {
+          "p": 0.2602,
+          "r": 0.5424,
+          "f1": 0.3516,
+          "support": 59
+         },
+         "noise": {
+          "p": 0.0,
+          "r": 0.0,
+          "f1": 0.0,
+          "support": 0
+         }
+        },
+        "macro_f1": 0.573,
+        "false_stop_rate": 0.2853,
+        "vad_bargeins_rejected": 0.6746,
+        "latency_ms_p50_true_stops": 240.0
+       }
+      },
+      "stop_at_val_recall95": {
+       "threshold": 0.1097,
+       "all": {
+        "n": 665,
+        "per_class": {
+         "backchannel": {
+          "p": 0.872,
+          "r": 0.2121,
+          "f1": 0.3412,
+          "support": 514
+         },
+         "interruption": {
+          "p": 0.2402,
+          "r": 0.9214,
+          "f1": 0.3811,
+          "support": 140
+         },
+         "noise": {
+          "p": 0.6667,
+          "r": 0.1818,
+          "f1": 0.2857,
+          "support": 11
+         }
+        },
+        "macro_f1": 0.336,
+        "false_stop_rate": 0.7771,
+        "vad_bargeins_rejected": 0.1925,
+        "latency_ms_p50_true_stops": 240.0
+       },
+       "ami": {
+        "n": 187,
+        "per_class": {
+         "backchannel": {
+          "p": 0.7619,
+          "r": 0.2581,
+          "f1": 0.3855,
+          "support": 124
+         },
+         "interruption": {
+          "p": 0.331,
+          "r": 0.9038,
+          "f1": 0.4845,
+          "support": 52
+         },
+         "noise": {
+          "p": 0.6667,
+          "r": 0.1818,
+          "f1": 0.2857,
+          "support": 11
+         }
+        },
+        "macro_f1": 0.3852,
+        "false_stop_rate": 0.7037,
+        "vad_bargeins_rejected": 0.2406,
+        "latency_ms_p50_true_stops": 240.0
+       },
+       "icsi": {
+        "n": 100,
+        "per_class": {
+         "backchannel": {
+          "p": 0.7273,
+          "r": 0.1127,
+          "f1": 0.1951,
+          "support": 71
+         },
+         "interruption": {
+          "p": 0.2921,
+          "r": 0.8966,
+          "f1": 0.4407,
+          "support": 29
+         },
+         "noise": {
+          "p": 0.0,
+          "r": 0.0,
+          "f1": 0.0,
+          "support": 0
+         }
+        },
+        "macro_f1": 0.3179,
+        "false_stop_rate": 0.8873,
+        "vad_bargeins_rejected": 0.11,
+        "latency_ms_p50_true_stops": 240.0
+       },
+       "oto": {
+        "n": 378,
+        "per_class": {
+         "backchannel": {
+          "p": 0.9583,
+          "r": 0.2163,
+          "f1": 0.3529,
+          "support": 319
+         },
+         "interruption": {
+          "p": 0.183,
+          "r": 0.9492,
+          "f1": 0.3068,
+          "support": 59
+         },
+         "noise": {
+          "p": 0.0,
+          "r": 0.0,
+          "f1": 0.0,
+          "support": 0
+         }
+        },
+        "macro_f1": 0.3298,
+        "false_stop_rate": 0.7837,
+        "vad_bargeins_rejected": 0.1905,
+        "latency_ms_p50_true_stops": 240.0
+       }
+      },
+      "oracle_recall100": {
+       "n": 665,
+       "per_class": {
+        "backchannel": {
+         "p": 1.0,
+         "r": 0.0078,
+         "f1": 0.0154,
+         "support": 514
+        },
+        "interruption": {
+         "p": 0.2118,
+         "r": 1.0,
+         "f1": 0.3496,
+         "support": 140
+        },
+        "noise": {
+         "p": 0.0,
+         "r": 0.0,
+         "f1": 0.0,
+         "support": 11
+        }
+       },
+       "macro_f1": 0.1217,
+       "false_stop_rate": 0.9924,
+       "vad_bargeins_rejected": 0.006
+      }
+     },
+     "400": {
+      "auc_int_val": 0.7771,
+      "auc_int_eval": 0.7649,
+      "fused_duration_gate": {
+       "threshold": 0.0675,
+       "all": {
+        "n": 665,
+        "per_class": {
+         "backchannel": {
+          "p": 0.965,
+          "r": 0.537,
+          "f1": 0.69,
+          "support": 514
+         },
+         "interruption": {
+          "p": 0.3615,
+          "r": 0.9786,
+          "f1": 0.5279,
+          "support": 140
+         },
+         "noise": {
+          "p": 0.0,
+          "r": 0.0,
+          "f1": 0.0,
+          "support": 11
+         }
+        },
+        "macro_f1": 0.406,
+        "false_stop_rate": 0.461,
+        "vad_bargeins_rejected": 0.4301,
+        "latency_ms_p50_true_stops": 400.0
+       },
+       "ami": {
+        "n": 187,
+        "per_class": {
+         "backchannel": {
+          "p": 0.9024,
+          "r": 0.5968,
+          "f1": 0.7184,
+          "support": 124
+         },
+         "interruption": {
+          "p": 0.4857,
+          "r": 0.9808,
+          "f1": 0.6497,
+          "support": 52
+         },
+         "noise": {
+          "p": 0.0,
+          "r": 0.0,
+          "f1": 0.0,
+          "support": 11
+         }
+        },
+        "macro_f1": 0.456,
+        "false_stop_rate": 0.4,
+        "vad_bargeins_rejected": 0.4385,
+        "latency_ms_p50_true_stops": 400.0
+       },
+       "icsi": {
+        "n": 100,
+        "per_class": {
+         "backchannel": {
+          "p": 1.0,
+          "r": 0.7746,
+          "f1": 0.873,
+          "support": 71
+         },
+         "interruption": {
+          "p": 0.6444,
+          "r": 1.0,
+          "f1": 0.7838,
+          "support": 29
+         },
+         "noise": {
+          "p": 0.0,
+          "r": 0.0,
+          "f1": 0.0,
+          "support": 0
+         }
+        },
+        "macro_f1": 0.8284,
+        "false_stop_rate": 0.2254,
+        "vad_bargeins_rejected": 0.55,
+        "latency_ms_p50_true_stops": 400.0
+       },
+       "oto": {
+        "n": 378,
+        "per_class": {
+         "backchannel": {
+          "p": 0.9866,
+          "r": 0.4608,
+          "f1": 0.6282,
+          "support": 319
+         },
+         "interruption": {
+          "p": 0.2489,
+          "r": 0.9661,
+          "f1": 0.3958,
+          "support": 59
+         },
+         "noise": {
+          "p": 0.0,
+          "r": 0.0,
+          "f1": 0.0,
+          "support": 0
+         }
+        },
+        "macro_f1": 0.512,
+        "false_stop_rate": 0.5392,
+        "vad_bargeins_rejected": 0.3942,
+        "latency_ms_p50_true_stops": 400.0
+       }
+      },
+      "argmax": {
+       "all": {
+        "n": 665,
+        "per_class": {
+         "backchannel": {
+          "p": 0.8658,
+          "r": 0.7782,
+          "f1": 0.8197,
+          "support": 514
+         },
+         "interruption": {
+          "p": 0.4279,
+          "r": 0.6143,
+          "f1": 0.5044,
+          "support": 140
+         },
+         "noise": {
+          "p": 0.5,
+          "r": 0.0909,
+          "f1": 0.1538,
+          "support": 11
+         }
+        },
+        "macro_f1": 0.4926,
+        "false_stop_rate": 0.219,
+        "vad_bargeins_rejected": 0.6977,
+        "latency_ms_p50_true_stops": 400.0
+       },
+       "ami": {
+        "n": 187,
+        "per_class": {
+         "backchannel": {
+          "p": 0.7519,
+          "r": 0.8065,
+          "f1": 0.7782,
+          "support": 124
+         },
+         "interruption": {
+          "p": 0.5192,
+          "r": 0.5192,
+          "f1": 0.5192,
+          "support": 52
+         },
+         "noise": {
+          "p": 0.5,
+          "r": 0.0909,
+          "f1": 0.1538,
+          "support": 11
+         }
+        },
+        "macro_f1": 0.4837,
+        "false_stop_rate": 0.1852,
+        "vad_bargeins_rejected": 0.7219,
+        "latency_ms_p50_true_stops": 400.0
+       },
+       "icsi": {
+        "n": 100,
+        "per_class": {
+         "backchannel": {
+          "p": 0.8333,
+          "r": 0.8451,
+          "f1": 0.8392,
+          "support": 71
+         },
+         "interruption": {
+          "p": 0.6071,
+          "r": 0.5862,
+          "f1": 0.5965,
+          "support": 29
+         },
+         "noise": {
+          "p": 0.0,
+          "r": 0.0,
+          "f1": 0.0,
+          "support": 0
+         }
+        },
+        "macro_f1": 0.7178,
+        "false_stop_rate": 0.1549,
+        "vad_bargeins_rejected": 0.72,
+        "latency_ms_p50_true_stops": 400.0
+       },
+       "oto": {
+        "n": 378,
+        "per_class": {
+         "backchannel": {
+          "p": 0.9339,
+          "r": 0.7524,
+          "f1": 0.8333,
+          "support": 319
+         },
+         "interruption": {
+          "p": 0.3471,
+          "r": 0.7119,
+          "f1": 0.4667,
+          "support": 59
+         },
+         "noise": {
+          "p": 0.0,
+          "r": 0.0,
+          "f1": 0.0,
+          "support": 0
+         }
+        },
+        "macro_f1": 0.65,
+        "false_stop_rate": 0.2476,
+        "vad_bargeins_rejected": 0.6799,
+        "latency_ms_p50_true_stops": 400.0
+       }
+      },
+      "stop_at_val_recall95": {
+       "threshold": 0.0675,
+       "all": {
+        "n": 665,
+        "per_class": {
+         "backchannel": {
+          "p": 0.9455,
+          "r": 0.2023,
+          "f1": 0.3333,
+          "support": 514
+         },
+         "interruption": {
+          "p": 0.2477,
+          "r": 0.9786,
+          "f1": 0.3954,
+          "support": 140
+         },
+         "noise": {
+          "p": 0.5,
+          "r": 0.0909,
+          "f1": 0.1538,
+          "support": 11
+         }
+        },
+        "macro_f1": 0.2942,
+        "false_stop_rate": 0.7924,
+        "vad_bargeins_rejected": 0.1684,
+        "latency_ms_p50_true_stops": 400.0
+       },
+       "ami": {
+        "n": 187,
+        "per_class": {
+         "backchannel": {
+          "p": 0.8261,
+          "r": 0.1532,
+          "f1": 0.2585,
+          "support": 124
+         },
+         "interruption": {
+          "p": 0.3148,
+          "r": 0.9808,
+          "f1": 0.4766,
+          "support": 52
+         },
+         "noise": {
+          "p": 0.5,
+          "r": 0.0909,
+          "f1": 0.1538,
+          "support": 11
+         }
+        },
+        "macro_f1": 0.2963,
+        "false_stop_rate": 0.8222,
+        "vad_bargeins_rejected": 0.1337,
+        "latency_ms_p50_true_stops": 400.0
+       },
+       "icsi": {
+        "n": 100,
+        "per_class": {
+         "backchannel": {
+          "p": 1.0,
+          "r": 0.0986,
+          "f1": 0.1795,
+          "support": 71
+         },
+         "interruption": {
+          "p": 0.3118,
+          "r": 1.0,
+          "f1": 0.4754,
+          "support": 29
+         },
+         "noise": {
+          "p": 0.0,
+          "r": 0.0,
+          "f1": 0.0,
+          "support": 0
+         }
+        },
+        "macro_f1": 0.3275,
+        "false_stop_rate": 0.9014,
+        "vad_bargeins_rejected": 0.07,
+        "latency_ms_p50_true_stops": 400.0
+       },
+       "oto": {
+        "n": 378,
+        "per_class": {
+         "backchannel": {
+          "p": 0.975,
+          "r": 0.2445,
+          "f1": 0.391,
+          "support": 319
+         },
+         "interruption": {
+          "p": 0.1913,
+          "r": 0.9661,
+          "f1": 0.3193,
+          "support": 59
+         },
+         "noise": {
+          "p": 0.0,
+          "r": 0.0,
+          "f1": 0.0,
+          "support": 0
+         }
+        },
+        "macro_f1": 0.3551,
+        "false_stop_rate": 0.7555,
+        "vad_bargeins_rejected": 0.2116,
+        "latency_ms_p50_true_stops": 400.0
+       }
+      },
+      "oracle_recall100": {
+       "n": 665,
+       "per_class": {
+        "backchannel": {
+         "p": 0.8571,
+         "r": 0.0233,
+         "f1": 0.0455,
+         "support": 514
+        },
+        "interruption": {
+         "p": 0.2151,
+         "r": 1.0,
+         "f1": 0.354,
+         "support": 140
+        },
+        "noise": {
+         "p": 0.0,
+         "r": 0.0,
+         "f1": 0.0,
+         "support": 11
+        }
+       },
+       "macro_f1": 0.1332,
+       "false_stop_rate": 0.9733,
+       "vad_bargeins_rejected": 0.0211
+      }
+     },
+     "560": {
+      "auc_int_val": 0.7978,
+      "auc_int_eval": 0.7879,
+      "fused_duration_gate": {
+       "threshold": 0.069,
+       "all": {
+        "n": 665,
+        "per_class": {
+         "backchannel": {
+          "p": 0.9711,
+          "r": 0.7179,
+          "f1": 0.8255,
+          "support": 514
+         },
+         "interruption": {
+          "p": 0.4807,
+          "r": 0.9786,
+          "f1": 0.6447,
+          "support": 140
+         },
+         "noise": {
+          "p": 0.0,
+          "r": 0.0,
+          "f1": 0.0,
+          "support": 11
+         }
+        },
+        "macro_f1": 0.4901,
+        "false_stop_rate": 0.2819,
+        "vad_bargeins_rejected": 0.5714,
+        "latency_ms_p50_true_stops": 560.0
+       },
+       "ami": {
+        "n": 187,
+        "per_class": {
+         "backchannel": {
+          "p": 0.9159,
+          "r": 0.7903,
+          "f1": 0.8485,
+          "support": 124
+         },
+         "interruption": {
+          "p": 0.6375,
+          "r": 0.9808,
+          "f1": 0.7727,
+          "support": 52
+         },
+         "noise": {
+          "p": 0.0,
+          "r": 0.0,
+          "f1": 0.0,
+          "support": 11
+         }
+        },
+        "macro_f1": 0.5404,
+        "false_stop_rate": 0.2148,
+        "vad_bargeins_rejected": 0.5722,
+        "latency_ms_p50_true_stops": 560.0
+       },
+       "icsi": {
+        "n": 100,
+        "per_class": {
+         "backchannel": {
+          "p": 1.0,
+          "r": 0.9437,
+          "f1": 0.971,
+          "support": 71
+         },
+         "interruption": {
+          "p": 0.8788,
+          "r": 1.0,
+          "f1": 0.9355,
+          "support": 29
+         },
+         "noise": {
+          "p": 0.0,
+          "r": 0.0,
+          "f1": 0.0,
+          "support": 0
+         }
+        },
+        "macro_f1": 0.9532,
+        "false_stop_rate": 0.0563,
+        "vad_bargeins_rejected": 0.67,
+        "latency_ms_p50_true_stops": 560.0
+       },
+       "oto": {
+        "n": 378,
+        "per_class": {
+         "backchannel": {
+          "p": 0.9903,
+          "r": 0.6395,
+          "f1": 0.7771,
+          "support": 319
+         },
+         "interruption": {
+          "p": 0.3314,
+          "r": 0.9661,
+          "f1": 0.4935,
+          "support": 59
+         },
+         "noise": {
+          "p": 0.0,
+          "r": 0.0,
+          "f1": 0.0,
+          "support": 0
+         }
+        },
+        "macro_f1": 0.6353,
+        "false_stop_rate": 0.3605,
+        "vad_bargeins_rejected": 0.545,
+        "latency_ms_p50_true_stops": 560.0
+       }
+      },
+      "argmax": {
+       "all": {
+        "n": 665,
+        "per_class": {
+         "backchannel": {
+          "p": 0.8698,
+          "r": 0.8191,
+          "f1": 0.8437,
+          "support": 514
+         },
+         "interruption": {
+          "p": 0.4778,
+          "r": 0.6143,
+          "f1": 0.5375,
+          "support": 140
+         },
+         "noise": {
+          "p": 1.0,
+          "r": 0.0909,
+          "f1": 0.1667,
+          "support": 11
+         }
+        },
+        "macro_f1": 0.516,
+        "false_stop_rate": 0.179,
+        "vad_bargeins_rejected": 0.7293,
+        "latency_ms_p50_true_stops": 560.0
+       },
+       "ami": {
+        "n": 187,
+        "per_class": {
+         "backchannel": {
+          "p": 0.7538,
+          "r": 0.7903,
+          "f1": 0.7717,
+          "support": 124
+         },
+         "interruption": {
+          "p": 0.5179,
+          "r": 0.5577,
+          "f1": 0.537,
+          "support": 52
+         },
+         "noise": {
+          "p": 1.0,
+          "r": 0.0909,
+          "f1": 0.1667,
+          "support": 11
+         }
+        },
+        "macro_f1": 0.4918,
+        "false_stop_rate": 0.2,
+        "vad_bargeins_rejected": 0.7005,
+        "latency_ms_p50_true_stops": 560.0
+       },
+       "icsi": {
+        "n": 100,
+        "per_class": {
+         "backchannel": {
+          "p": 0.8451,
+          "r": 0.8451,
+          "f1": 0.8451,
+          "support": 71
+         },
+         "interruption": {
+          "p": 0.6207,
+          "r": 0.6207,
+          "f1": 0.6207,
+          "support": 29
+         },
+         "noise": {
+          "p": 0.0,
+          "r": 0.0,
+          "f1": 0.0,
+          "support": 0
+         }
+        },
+        "macro_f1": 0.7329,
+        "false_stop_rate": 0.1549,
+        "vad_bargeins_rejected": 0.71,
+        "latency_ms_p50_true_stops": 560.0
+       },
+       "oto": {
+        "n": 378,
+        "per_class": {
+         "backchannel": {
+          "p": 0.9293,
+          "r": 0.8245,
+          "f1": 0.8738,
+          "support": 319
+         },
+         "interruption": {
+          "p": 0.4105,
+          "r": 0.661,
+          "f1": 0.5065,
+          "support": 59
+         },
+         "noise": {
+          "p": 0.0,
+          "r": 0.0,
+          "f1": 0.0,
+          "support": 0
+         }
+        },
+        "macro_f1": 0.6902,
+        "false_stop_rate": 0.1755,
+        "vad_bargeins_rejected": 0.7487,
+        "latency_ms_p50_true_stops": 560.0
+       }
+      },
+      "stop_at_val_recall95": {
+       "threshold": 0.069,
+       "all": {
+        "n": 665,
+        "per_class": {
+         "backchannel": {
+          "p": 0.9474,
+          "r": 0.2451,
+          "f1": 0.3895,
+          "support": 514
+         },
+         "interruption": {
+          "p": 0.258,
+          "r": 0.9786,
+          "f1": 0.4083,
+          "support": 140
+         },
+         "noise": {
+          "p": 1.0,
+          "r": 0.0909,
+          "f1": 0.1667,
+          "support": 11
+         }
+        },
+        "macro_f1": 0.3215,
+        "false_stop_rate": 0.7505,
+        "vad_bargeins_rejected": 0.2015,
+        "latency_ms_p50_true_stops": 560.0
+       },
+       "ami": {
+        "n": 187,
+        "per_class": {
+         "backchannel": {
+          "p": 0.7619,
+          "r": 0.129,
+          "f1": 0.2207,
+          "support": 124
+         },
+         "interruption": {
+          "p": 0.3091,
+          "r": 0.9808,
+          "f1": 0.47,
+          "support": 52
+         },
+         "noise": {
+          "p": 1.0,
+          "r": 0.0909,
+          "f1": 0.1667,
+          "support": 11
+         }
+        },
+        "macro_f1": 0.2858,
+        "false_stop_rate": 0.8444,
+        "vad_bargeins_rejected": 0.1176,
+        "latency_ms_p50_true_stops": 560.0
+       },
+       "icsi": {
+        "n": 100,
+        "per_class": {
+         "backchannel": {
+          "p": 1.0,
+          "r": 0.0986,
+          "f1": 0.1795,
+          "support": 71
+         },
+         "interruption": {
+          "p": 0.3118,
+          "r": 1.0,
+          "f1": 0.4754,
+          "support": 29
+         },
+         "noise": {
+          "p": 0.0,
+          "r": 0.0,
+          "f1": 0.0,
+          "support": 0
+         }
+        },
+        "macro_f1": 0.3275,
+        "false_stop_rate": 0.9014,
+        "vad_bargeins_rejected": 0.07,
+        "latency_ms_p50_true_stops": 560.0
+       },
+       "oto": {
+        "n": 378,
+        "per_class": {
+         "backchannel": {
+          "p": 0.981,
+          "r": 0.3229,
+          "f1": 0.4858,
+          "support": 319
+         },
+         "interruption": {
+          "p": 0.2088,
+          "r": 0.9661,
+          "f1": 0.3434,
+          "support": 59
+         },
+         "noise": {
+          "p": 0.0,
+          "r": 0.0,
+          "f1": 0.0,
+          "support": 0
+         }
+        },
+        "macro_f1": 0.4146,
+        "false_stop_rate": 0.6771,
+        "vad_bargeins_rejected": 0.2778,
+        "latency_ms_p50_true_stops": 560.0
+       }
+      },
+      "oracle_recall100": {
+       "n": 665,
+       "per_class": {
+        "backchannel": {
+         "p": 0.9545,
+         "r": 0.0817,
+         "f1": 0.1505,
+         "support": 514
+        },
+        "interruption": {
+         "p": 0.2254,
+         "r": 1.0,
+         "f1": 0.3679,
+         "support": 140
+        },
+        "noise": {
+         "p": 0.0,
+         "r": 0.0,
+         "f1": 0.0,
+         "support": 11
+        }
+       },
+       "macro_f1": 0.1728,
+       "false_stop_rate": 0.9162,
+       "vad_bargeins_rejected": 0.0662
+      }
+     }
+    }
+   },
+   "b8": {
+    "summary_mean_std": {
+     "240": {
+      "auc_int_val": [
+       0.7208,
+       0.0102
+      ],
+      "auc_int_eval": [
+       0.6847,
+       0.0024
+      ],
+      "fused_int_p": [
+       0.2419,
+       0.0025
+      ],
+      "fused_int_r": [
+       0.9309,
+       0.0135
+      ],
+      "fused_int_f1": [
+       0.3841,
+       0.0042
+      ],
+      "fused_false_stop": [
+       0.7777,
+       0.0009
+      ],
+      "fused_rejected": [
+       0.19,
+       0.0035
+      ],
+      "argmax_macro_f1": [
+       0.4108,
+       0.0018
+      ],
+      "argmax_f1": {
+       "backchannel": [
+        0.7983,
+        0.0025
+       ],
+       "interruption": [
+        0.4341,
+        0.004
+       ],
+       "noise": [
+        0.0,
+        0.0
+       ]
+      },
+      "argmax_p": {
+       "backchannel": [
+        0.8423,
+        0.0016
+       ],
+       "interruption": [
+        0.3719,
+        0.0049
+       ],
+       "noise": [
+        0.0,
+        0.0
+       ]
+      },
+      "argmax_r": {
+       "backchannel": [
+        0.7587,
+        0.0057
+       ],
+       "interruption": [
+        0.5214,
+        0.0058
+       ],
+       "noise": [
+        0.0,
+        0.0
+       ]
+      },
+      "stop95_int_p": [
+       0.2273,
+       0.002
+      ],
+      "stop95_int_r": [
+       0.9309,
+       0.0135
+      ],
+      "stop95_false_stop": [
+       0.8438,
+       0.0031
+      ],
+      "stop95_rejected": [
+       0.1378,
+       0.0051
+      ],
+      "oracle100_int_p": [
+       0.211,
+       0.0006
+      ],
+      "oracle100_rejected": [
+       0.0025,
+       0.0025
+      ],
+      "stop95_int_p_by_corpus": {
+       "ami": [
+        0.3114,
+        0.0038
+       ],
+       "icsi": [
+        0.3098,
+        0.0054
+       ],
+       "oto": [
+        0.1707,
+        0.0016
+       ]
+      },
+      "stop95_int_r_by_corpus": {
+       "ami": [
+        0.8782,
+        0.0091
+       ],
+       "icsi": [
+        0.9081,
+        0.043
+       ],
+       "oto": [
+        0.9887,
+        0.008
+       ]
+      }
+     },
+     "400": {
+      "auc_int_val": [
+       0.8012,
+       0.0028
+      ],
+      "auc_int_eval": [
+       0.7892,
+       0.0029
+      ],
+      "fused_int_p": [
+       0.3647,
+       0.001
+      ],
+      "fused_int_r": [
+       0.9595,
+       0.0067
+      ],
+      "fused_int_f1": [
+       0.5285,
+       0.0021
+      ],
+      "fused_false_stop": [
+       0.4457,
+       0.0016
+      ],
+      "fused_rejected": [
+       0.4461,
+       0.0025
+      ],
+      "argmax_macro_f1": [
+       0.4614,
+       0.0047
+      ],
+      "argmax_f1": {
+       "backchannel": [
+        0.8362,
+        0.0051
+       ],
+       "interruption": [
+        0.5481,
+        0.0089
+       ],
+       "noise": [
+        0.0,
+        0.0
+       ]
+      },
+      "argmax_p": {
+       "backchannel": [
+        0.8803,
+        0.0026
+       ],
+       "interruption": [
+        0.4688,
+        0.0101
+       ],
+       "noise": [
+        0.0,
+        0.0
+       ]
+      },
+      "argmax_r": {
+       "backchannel": [
+        0.7963,
+        0.0072
+       ],
+       "interruption": [
+        0.6595,
+        0.0067
+       ],
+       "noise": [
+        0.0,
+        0.0
+       ]
+      },
+      "stop95_int_p": [
+       0.2441,
+       0.0008
+      ],
+      "stop95_int_r": [
+       0.9595,
+       0.0067
+      ],
+      "stop95_false_stop": [
+       0.7924,
+       0.0031
+      ],
+      "stop95_rejected": [
+       0.1724,
+       0.0037
+      ],
+      "oracle100_int_p": [
+       0.2113,
+       0.0004
+      ],
+      "oracle100_rejected": [
+       0.0035,
+       0.0019
+      ],
+      "stop95_int_p_by_corpus": {
+       "ami": [
+        0.3188,
+        0.0026
+       ],
+       "icsi": [
+        0.3161,
+        0.0083
+       ],
+       "oto": [
+        0.1861,
+        0.001
+       ]
+      },
+      "stop95_int_r_by_corpus": {
+       "ami": [
+        0.9359,
+        0.0091
+       ],
+       "icsi": [
+        0.977,
+        0.0163
+       ],
+       "oto": [
+        0.9718,
+        0.016
+       ]
+      }
+     },
+     "560": {
+      "auc_int_val": [
+       0.8247,
+       0.0008
+      ],
+      "auc_int_eval": [
+       0.8083,
+       0.0047
+      ],
+      "fused_int_p": [
+       0.4607,
+       0.0022
+      ],
+      "fused_int_r": [
+       0.9476,
+       0.0121
+      ],
+      "fused_int_f1": [
+       0.6199,
+       0.0006
+      ],
+      "fused_false_stop": [
+       0.2959,
+       0.0065
+      ],
+      "fused_rejected": [
+       0.5669,
+       0.0076
+      ],
+      "argmax_macro_f1": [
+       0.4649,
+       0.0062
+      ],
+      "argmax_f1": {
+       "backchannel": [
+        0.8422,
+        0.0065
+       ],
+       "interruption": [
+        0.5525,
+        0.0129
+       ],
+       "noise": [
+        0.0,
+        0.0
+       ]
+      },
+      "argmax_p": {
+       "backchannel": [
+        0.8793,
+        0.0037
+       ],
+       "interruption": [
+        0.4793,
+        0.0147
+       ],
+       "noise": [
+        0.0,
+        0.0
+       ]
+      },
+      "argmax_r": {
+       "backchannel": [
+        0.808,
+        0.0096
+       ],
+       "interruption": [
+        0.6524,
+        0.0121
+       ],
+       "noise": [
+        0.0,
+        0.0
+       ]
+      },
+      "stop95_int_p": [
+       0.2641,
+       0.0112
+      ],
+      "stop95_int_r": [
+       0.9476,
+       0.0121
+      ],
+      "stop95_false_stop": [
+       0.706,
+       0.0462
+      ],
+      "stop95_rejected": [
+       0.2431,
+       0.0385
+      ],
+      "oracle100_int_p": [
+       0.2129,
+       0.0025
+      ],
+      "oracle100_rejected": [
+       0.011,
+       0.0114
+      ],
+      "stop95_int_p_by_corpus": {
+       "ami": [
+        0.3124,
+        0.0091
+       ],
+       "icsi": [
+        0.3289,
+        0.012
+       ],
+       "oto": [
+        0.215,
+        0.0117
+       ]
+      },
+      "stop95_int_r_by_corpus": {
+       "ami": [
+        0.9102,
+        0.0091
+       ],
+       "icsi": [
+        0.9885,
+        0.0163
+       ],
+       "oto": [
+        0.9605,
+        0.016
+       ]
+      }
+     }
+    },
+    "seed0_detail": {
+     "240": {
+      "auc_int_val": 0.7303,
+      "auc_int_eval": 0.6815,
+      "fused_duration_gate": {
+       "threshold": 0.0903,
+       "all": {
+        "n": 665,
+        "per_class": {
+         "backchannel": {
+          "p": 0.9268,
+          "r": 0.2218,
+          "f1": 0.3579,
+          "support": 514
+         },
+         "interruption": {
+          "p": 0.2454,
+          "r": 0.95,
+          "f1": 0.39,
+          "support": 140
+         },
+         "noise": {
+          "p": 0.0,
+          "r": 0.0,
+          "f1": 0.0,
+          "support": 11
+         }
+        },
+        "macro_f1": 0.2493,
+        "false_stop_rate": 0.779,
+        "vad_bargeins_rejected": 0.185,
+        "latency_ms_p50_true_stops": 240.0
+       },
+       "ami": {
+        "n": 187,
+        "per_class": {
+         "backchannel": {
+          "p": 0.8689,
+          "r": 0.4274,
+          "f1": 0.573,
+          "support": 124
+         },
+         "interruption": {
+          "p": 0.3651,
+          "r": 0.8846,
+          "f1": 0.5169,
+          "support": 52
+         },
+         "noise": {
+          "p": 0.0,
+          "r": 0.0,
+          "f1": 0.0,
+          "support": 11
+         }
+        },
+        "macro_f1": 0.3633,
+        "false_stop_rate": 0.5926,
+        "vad_bargeins_rejected": 0.3262,
+        "latency_ms_p50_true_stops": 240.0
+       },
+       "icsi": {
+        "n": 100,
+        "per_class": {
+         "backchannel": {
+          "p": 0.9615,
+          "r": 0.3521,
+          "f1": 0.5155,
+          "support": 71
+         },
+         "interruption": {
+          "p": 0.3784,
+          "r": 0.9655,
+          "f1": 0.5437,
+          "support": 29
+         },
+         "noise": {
+          "p": 0.0,
+          "r": 0.0,
+          "f1": 0.0,
+          "support": 0
+         }
+        },
+        "macro_f1": 0.5296,
+        "false_stop_rate": 0.6479,
+        "vad_bargeins_rejected": 0.26,
+        "latency_ms_p50_true_stops": 240.0
+       },
+       "oto": {
+        "n": 378,
+        "per_class": {
+         "backchannel": {
+          "p": 1.0,
+          "r": 0.1129,
+          "f1": 0.2028,
+          "support": 319
+         },
+         "interruption": {
+          "p": 0.1725,
+          "r": 1.0,
+          "f1": 0.2943,
+          "support": 59
+         },
+         "noise": {
+          "p": 0.0,
+          "r": 0.0,
+          "f1": 0.0,
+          "support": 0
+         }
+        },
+        "macro_f1": 0.2485,
+        "false_stop_rate": 0.8871,
+        "vad_bargeins_rejected": 0.0952,
+        "latency_ms_p50_true_stops": 240.0
+       }
+      },
+      "argmax": {
+       "all": {
+        "n": 665,
+        "per_class": {
+         "backchannel": {
+          "p": 0.8431,
+          "r": 0.7529,
+          "f1": 0.7955,
+          "support": 514
+         },
+         "interruption": {
+          "p": 0.365,
+          "r": 0.5214,
+          "f1": 0.4294,
+          "support": 140
+         },
+         "noise": {
+          "p": 0.0,
+          "r": 0.0,
+          "f1": 0.0,
+          "support": 11
+         }
+        },
+        "macro_f1": 0.4083,
+        "false_stop_rate": 0.2419,
+        "vad_bargeins_rejected": 0.6992,
+        "latency_ms_p50_true_stops": 240.0
+       },
+       "ami": {
+        "n": 187,
+        "per_class": {
+         "backchannel": {
+          "p": 0.7295,
+          "r": 0.7177,
+          "f1": 0.7236,
+          "support": 124
+         },
+         "interruption": {
+          "p": 0.4167,
+          "r": 0.4808,
+          "f1": 0.4464,
+          "support": 52
+         },
+         "noise": {
+          "p": 0.0,
+          "r": 0.0,
+          "f1": 0.0,
+          "support": 11
+         }
+        },
+        "macro_f1": 0.39,
+        "false_stop_rate": 0.2593,
+        "vad_bargeins_rejected": 0.6791,
+        "latency_ms_p50_true_stops": 240.0
+       },
+       "icsi": {
+        "n": 100,
+        "per_class": {
+         "backchannel": {
+          "p": 0.8548,
+          "r": 0.7465,
+          "f1": 0.797,
+          "support": 71
+         },
+         "interruption": {
+          "p": 0.5135,
+          "r": 0.6552,
+          "f1": 0.5758,
+          "support": 29
+         },
+         "noise": {
+          "p": 0.0,
+          "r": 0.0,
+          "f1": 0.0,
+          "support": 0
+         }
+        },
+        "macro_f1": 0.6864,
+        "false_stop_rate": 0.2535,
+        "vad_bargeins_rejected": 0.63,
+        "latency_ms_p50_true_stops": 240.0
+       },
+       "oto": {
+        "n": 378,
+        "per_class": {
+         "backchannel": {
+          "p": 0.8909,
+          "r": 0.768,
+          "f1": 0.8249,
+          "support": 319
+         },
+         "interruption": {
+          "p": 0.2816,
+          "r": 0.4915,
+          "f1": 0.358,
+          "support": 59
+         },
+         "noise": {
+          "p": 0.0,
+          "r": 0.0,
+          "f1": 0.0,
+          "support": 0
+         }
+        },
+        "macro_f1": 0.5915,
+        "false_stop_rate": 0.232,
+        "vad_bargeins_rejected": 0.7275,
+        "latency_ms_p50_true_stops": 240.0
+       }
+      },
+      "stop_at_val_recall95": {
+       "threshold": 0.0903,
+       "all": {
+        "n": 665,
+        "per_class": {
+         "backchannel": {
+          "p": 0.9268,
+          "r": 0.1479,
+          "f1": 0.255,
+          "support": 514
+         },
+         "interruption": {
+          "p": 0.2301,
+          "r": 0.95,
+          "f1": 0.3705,
+          "support": 140
+         },
+         "noise": {
+          "p": 0.0,
+          "r": 0.0,
+          "f1": 0.0,
+          "support": 11
+         }
+        },
+        "macro_f1": 0.2085,
+        "false_stop_rate": 0.8476,
+        "vad_bargeins_rejected": 0.1308,
+        "latency_ms_p50_true_stops": 240.0
+       },
+       "ami": {
+        "n": 187,
+        "per_class": {
+         "backchannel": {
+          "p": 0.8571,
+          "r": 0.2419,
+          "f1": 0.3774,
+          "support": 124
+         },
+         "interruption": {
+          "p": 0.3129,
+          "r": 0.8846,
+          "f1": 0.4623,
+          "support": 52
+         },
+         "noise": {
+          "p": 0.0,
+          "r": 0.0,
+          "f1": 0.0,
+          "support": 11
+         }
+        },
+        "macro_f1": 0.2799,
+        "false_stop_rate": 0.7481,
+        "vad_bargeins_rejected": 0.2139,
+        "latency_ms_p50_true_stops": 240.0
+       },
+       "icsi": {
+        "n": 100,
+        "per_class": {
+         "backchannel": {
+          "p": 0.9091,
+          "r": 0.1408,
+          "f1": 0.2439,
+          "support": 71
+         },
+         "interruption": {
+          "p": 0.3146,
+          "r": 0.9655,
+          "f1": 0.4746,
+          "support": 29
+         },
+         "noise": {
+          "p": 0.0,
+          "r": 0.0,
+          "f1": 0.0,
+          "support": 0
+         }
+        },
+        "macro_f1": 0.3593,
+        "false_stop_rate": 0.8592,
+        "vad_bargeins_rejected": 0.11,
+        "latency_ms_p50_true_stops": 240.0
+       },
+       "oto": {
+        "n": 378,
+        "per_class": {
+         "backchannel": {
+          "p": 1.0,
+          "r": 0.1129,
+          "f1": 0.2028,
+          "support": 319
+         },
+         "interruption": {
+          "p": 0.1725,
+          "r": 1.0,
+          "f1": 0.2943,
+          "support": 59
+         },
+         "noise": {
+          "p": 0.0,
+          "r": 0.0,
+          "f1": 0.0,
+          "support": 0
+         }
+        },
+        "macro_f1": 0.2485,
+        "false_stop_rate": 0.8871,
+        "vad_bargeins_rejected": 0.0952,
+        "latency_ms_p50_true_stops": 240.0
+       }
+      },
+      "oracle_recall100": {
+       "n": 665,
+       "per_class": {
+        "backchannel": {
+         "p": 0.0,
+         "r": 0.0,
+         "f1": 0.0,
+         "support": 514
+        },
+        "interruption": {
+         "p": 0.2105,
+         "r": 1.0,
+         "f1": 0.3478,
+         "support": 140
+        },
+        "noise": {
+         "p": 0.0,
+         "r": 0.0,
+         "f1": 0.0,
+         "support": 11
+        }
+       },
+       "macro_f1": 0.1159,
+       "false_stop_rate": 1.0,
+       "vad_bargeins_rejected": 0.0
+      }
+     },
+     "400": {
+      "auc_int_val": 0.8051,
+      "auc_int_eval": 0.789,
+      "fused_duration_gate": {
+       "threshold": 0.0736,
+       "all": {
+        "n": 665,
+        "per_class": {
+         "backchannel": {
+          "p": 0.9593,
+          "r": 0.5506,
+          "f1": 0.6996,
+          "support": 514
+         },
+         "interruption": {
+          "p": 0.3649,
+          "r": 0.9643,
+          "f1": 0.5294,
+          "support": 140
+         },
+         "noise": {
+          "p": 0.0,
+          "r": 0.0,
+          "f1": 0.0,
+          "support": 11
+         }
+        },
+        "macro_f1": 0.4097,
+        "false_stop_rate": 0.4476,
+        "vad_bargeins_rejected": 0.4436,
+        "latency_ms_p50_true_stops": 400.0
+       },
+       "ami": {
+        "n": 187,
+        "per_class": {
+         "backchannel": {
+          "p": 0.8791,
+          "r": 0.6452,
+          "f1": 0.7442,
+          "support": 124
+         },
+         "interruption": {
+          "p": 0.5,
+          "r": 0.9231,
+          "f1": 0.6486,
+          "support": 52
+         },
+         "noise": {
+          "p": 0.0,
+          "r": 0.0,
+          "f1": 0.0,
+          "support": 11
+         }
+        },
+        "macro_f1": 0.4643,
+        "false_stop_rate": 0.3556,
+        "vad_bargeins_rejected": 0.4866,
+        "latency_ms_p50_true_stops": 400.0
+       },
+       "icsi": {
+        "n": 100,
+        "per_class": {
+         "backchannel": {
+          "p": 1.0,
+          "r": 0.7746,
+          "f1": 0.873,
+          "support": 71
+         },
+         "interruption": {
+          "p": 0.6444,
+          "r": 1.0,
+          "f1": 0.7838,
+          "support": 29
+         },
+         "noise": {
+          "p": 0.0,
+          "r": 0.0,
+          "f1": 0.0,
+          "support": 0
+         }
+        },
+        "macro_f1": 0.8284,
+        "false_stop_rate": 0.2254,
+        "vad_bargeins_rejected": 0.55,
+        "latency_ms_p50_true_stops": 400.0
+       },
+       "oto": {
+        "n": 378,
+        "per_class": {
+         "backchannel": {
+          "p": 0.9933,
+          "r": 0.4639,
+          "f1": 0.6325,
+          "support": 319
+         },
+         "interruption": {
+          "p": 0.2533,
+          "r": 0.9831,
+          "f1": 0.4028,
+          "support": 59
+         },
+         "noise": {
+          "p": 0.0,
+          "r": 0.0,
+          "f1": 0.0,
+          "support": 0
+         }
+        },
+        "macro_f1": 0.5176,
+        "false_stop_rate": 0.5361,
+        "vad_bargeins_rejected": 0.3942,
+        "latency_ms_p50_true_stops": 400.0
+       }
+      },
+      "argmax": {
+       "all": {
+        "n": 665,
+        "per_class": {
+         "backchannel": {
+          "p": 0.8827,
+          "r": 0.8054,
+          "f1": 0.8423,
+          "support": 514
+         },
+         "interruption": {
+          "p": 0.4819,
+          "r": 0.6643,
+          "f1": 0.5586,
+          "support": 140
+         },
+         "noise": {
+          "p": 0.0,
+          "r": 0.0,
+          "f1": 0.0,
+          "support": 11
+         }
+        },
+        "macro_f1": 0.467,
+        "false_stop_rate": 0.1905,
+        "vad_bargeins_rejected": 0.7098,
+        "latency_ms_p50_true_stops": 400.0
+       },
+       "ami": {
+        "n": 187,
+        "per_class": {
+         "backchannel": {
+          "p": 0.8,
+          "r": 0.7742,
+          "f1": 0.7869,
+          "support": 124
+         },
+         "interruption": {
+          "p": 0.5625,
+          "r": 0.6923,
+          "f1": 0.6207,
+          "support": 52
+         },
+         "noise": {
+          "p": 0.0,
+          "r": 0.0,
+          "f1": 0.0,
+          "support": 11
+         }
+        },
+        "macro_f1": 0.4692,
+        "false_stop_rate": 0.2074,
+        "vad_bargeins_rejected": 0.6578,
+        "latency_ms_p50_true_stops": 400.0
+       },
+       "icsi": {
+        "n": 100,
+        "per_class": {
+         "backchannel": {
+          "p": 0.8939,
+          "r": 0.831,
+          "f1": 0.8613,
+          "support": 71
+         },
+         "interruption": {
+          "p": 0.6471,
+          "r": 0.7586,
+          "f1": 0.6984,
+          "support": 29
+         },
+         "noise": {
+          "p": 0.0,
+          "r": 0.0,
+          "f1": 0.0,
+          "support": 0
+         }
+        },
+        "macro_f1": 0.7798,
+        "false_stop_rate": 0.169,
+        "vad_bargeins_rejected": 0.66,
+        "latency_ms_p50_true_stops": 400.0
+       },
+       "oto": {
+        "n": 378,
+        "per_class": {
+         "backchannel": {
+          "p": 0.9152,
+          "r": 0.8119,
+          "f1": 0.8605,
+          "support": 319
+         },
+         "interruption": {
+          "p": 0.3684,
+          "r": 0.5932,
+          "f1": 0.4545,
+          "support": 59
+         },
+         "noise": {
+          "p": 0.0,
+          "r": 0.0,
+          "f1": 0.0,
+          "support": 0
+         }
+        },
+        "macro_f1": 0.6575,
+        "false_stop_rate": 0.1881,
+        "vad_bargeins_rejected": 0.7487,
+        "latency_ms_p50_true_stops": 400.0
+       }
+      },
+      "stop_at_val_recall95": {
+       "threshold": 0.0736,
+       "all": {
+        "n": 665,
+        "per_class": {
+         "backchannel": {
+          "p": 0.9369,
+          "r": 0.2023,
+          "f1": 0.3328,
+          "support": 514
+         },
+         "interruption": {
+          "p": 0.245,
+          "r": 0.9643,
+          "f1": 0.3907,
+          "support": 140
+         },
+         "noise": {
+          "p": 0.0,
+          "r": 0.0,
+          "f1": 0.0,
+          "support": 11
+         }
+        },
+        "macro_f1": 0.2412,
+        "false_stop_rate": 0.7924,
+        "vad_bargeins_rejected": 0.1714,
+        "latency_ms_p50_true_stops": 400.0
+       },
+       "ami": {
+        "n": 187,
+        "per_class": {
+         "backchannel": {
+          "p": 0.8182,
+          "r": 0.2177,
+          "f1": 0.3439,
+          "support": 124
+         },
+         "interruption": {
+          "p": 0.3179,
+          "r": 0.9231,
+          "f1": 0.4729,
+          "support": 52
+         },
+         "noise": {
+          "p": 0.0,
+          "r": 0.0,
+          "f1": 0.0,
+          "support": 11
+         }
+        },
+        "macro_f1": 0.2723,
+        "false_stop_rate": 0.763,
+        "vad_bargeins_rejected": 0.1925,
+        "latency_ms_p50_true_stops": 400.0
+       },
+       "icsi": {
+        "n": 100,
+        "per_class": {
+         "backchannel": {
+          "p": 1.0,
+          "r": 0.1408,
+          "f1": 0.2469,
+          "support": 71
+         },
+         "interruption": {
+          "p": 0.3222,
+          "r": 1.0,
+          "f1": 0.4874,
+          "support": 29
+         },
+         "noise": {
+          "p": 0.0,
+          "r": 0.0,
+          "f1": 0.0,
+          "support": 0
+         }
+        },
+        "macro_f1": 0.3671,
+        "false_stop_rate": 0.8592,
+        "vad_bargeins_rejected": 0.1,
+        "latency_ms_p50_true_stops": 400.0
+       },
+       "oto": {
+        "n": 378,
+        "per_class": {
+         "backchannel": {
+          "p": 0.9853,
+          "r": 0.21,
+          "f1": 0.3463,
+          "support": 319
+         },
+         "interruption": {
+          "p": 0.1871,
+          "r": 0.9831,
+          "f1": 0.3144,
+          "support": 59
+         },
+         "noise": {
+          "p": 0.0,
+          "r": 0.0,
+          "f1": 0.0,
+          "support": 0
+         }
+        },
+        "macro_f1": 0.3304,
+        "false_stop_rate": 0.79,
+        "vad_bargeins_rejected": 0.1799,
+        "latency_ms_p50_true_stops": 400.0
+       }
+      },
+      "oracle_recall100": {
+       "n": 665,
+       "per_class": {
+        "backchannel": {
+         "p": 1.0,
+         "r": 0.0019,
+         "f1": 0.0039,
+         "support": 514
+        },
+        "interruption": {
+         "p": 0.2108,
+         "r": 1.0,
+         "f1": 0.3483,
+         "support": 140
+        },
+        "noise": {
+         "p": 0.0,
+         "r": 0.0,
+         "f1": 0.0,
+         "support": 11
+        }
+       },
+       "macro_f1": 0.1174,
+       "false_stop_rate": 0.9981,
+       "vad_bargeins_rejected": 0.0015
+      }
+     },
+     "560": {
+      "auc_int_val": 0.8236,
+      "auc_int_eval": 0.8093,
+      "fused_duration_gate": {
+       "threshold": 0.0732,
+       "all": {
+        "n": 665,
+        "per_class": {
+         "backchannel": {
+          "p": 0.9578,
+          "r": 0.7062,
+          "f1": 0.813,
+          "support": 514
+         },
+         "interruption": {
+          "p": 0.4615,
+          "r": 0.9429,
+          "f1": 0.6197,
+          "support": 140
+         },
+         "noise": {
+          "p": 0.0,
+          "r": 0.0,
+          "f1": 0.0,
+          "support": 11
+         }
+        },
+        "macro_f1": 0.4776,
+        "false_stop_rate": 0.2933,
+        "vad_bargeins_rejected": 0.5699,
+        "latency_ms_p50_true_stops": 560.0
+       },
+       "ami": {
+        "n": 187,
+        "per_class": {
+         "backchannel": {
+          "p": 0.885,
+          "r": 0.8065,
+          "f1": 0.8439,
+          "support": 124
+         },
+         "interruption": {
+          "p": 0.6351,
+          "r": 0.9038,
+          "f1": 0.746,
+          "support": 52
+         },
+         "noise": {
+          "p": 0.0,
+          "r": 0.0,
+          "f1": 0.0,
+          "support": 11
+         }
+        },
+        "macro_f1": 0.53,
+        "false_stop_rate": 0.2,
+        "vad_bargeins_rejected": 0.6043,
+        "latency_ms_p50_true_stops": 560.0
+       },
+       "icsi": {
+        "n": 100,
+        "per_class": {
+         "backchannel": {
+          "p": 1.0,
+          "r": 0.9155,
+          "f1": 0.9559,
+          "support": 71
+         },
+         "interruption": {
+          "p": 0.8286,
+          "r": 1.0,
+          "f1": 0.9062,
+          "support": 29
+         },
+         "noise": {
+          "p": 0.0,
+          "r": 0.0,
+          "f1": 0.0,
+          "support": 0
+         }
+        },
+        "macro_f1": 0.931,
+        "false_stop_rate": 0.0845,
+        "vad_bargeins_rejected": 0.65,
+        "latency_ms_p50_true_stops": 560.0
+       },
+       "oto": {
+        "n": 378,
+        "per_class": {
+         "backchannel": {
+          "p": 0.9851,
+          "r": 0.6207,
+          "f1": 0.7615,
+          "support": 319
+         },
+         "interruption": {
+          "p": 0.3164,
+          "r": 0.9492,
+          "f1": 0.4746,
+          "support": 59
+         },
+         "noise": {
+          "p": 0.0,
+          "r": 0.0,
+          "f1": 0.0,
+          "support": 0
+         }
+        },
+        "macro_f1": 0.618,
+        "false_stop_rate": 0.3793,
+        "vad_bargeins_rejected": 0.5317,
+        "latency_ms_p50_true_stops": 560.0
+       }
+      },
+      "argmax": {
+       "all": {
+        "n": 665,
+        "per_class": {
+         "backchannel": {
+          "p": 0.8845,
+          "r": 0.8191,
+          "f1": 0.8505,
+          "support": 514
+         },
+         "interruption": {
+          "p": 0.5,
+          "r": 0.6643,
+          "f1": 0.5706,
+          "support": 140
+         },
+         "noise": {
+          "p": 0.0,
+          "r": 0.0,
+          "f1": 0.0,
+          "support": 11
+         }
+        },
+        "macro_f1": 0.4737,
+        "false_stop_rate": 0.1771,
+        "vad_bargeins_rejected": 0.7203,
+        "latency_ms_p50_true_stops": 560.0
+       },
+       "ami": {
+        "n": 187,
+        "per_class": {
+         "backchannel": {
+          "p": 0.7982,
+          "r": 0.7339,
+          "f1": 0.7647,
+          "support": 124
+         },
+         "interruption": {
+          "p": 0.5286,
+          "r": 0.7115,
+          "f1": 0.6066,
+          "support": 52
+         },
+         "noise": {
+          "p": 0.0,
+          "r": 0.0,
+          "f1": 0.0,
+          "support": 11
+         }
+        },
+        "macro_f1": 0.4571,
+        "false_stop_rate": 0.2444,
+        "vad_bargeins_rejected": 0.6257,
+        "latency_ms_p50_true_stops": 560.0
+       },
+       "icsi": {
+        "n": 100,
+        "per_class": {
+         "backchannel": {
+          "p": 0.8955,
+          "r": 0.8451,
+          "f1": 0.8696,
+          "support": 71
+         },
+         "interruption": {
+          "p": 0.6667,
+          "r": 0.7586,
+          "f1": 0.7097,
+          "support": 29
+         },
+         "noise": {
+          "p": 0.0,
+          "r": 0.0,
+          "f1": 0.0,
+          "support": 0
+         }
+        },
+        "macro_f1": 0.7896,
+        "false_stop_rate": 0.1549,
+        "vad_bargeins_rejected": 0.67,
+        "latency_ms_p50_true_stops": 560.0
+       },
+       "oto": {
+        "n": 378,
+        "per_class": {
+         "backchannel": {
+          "p": 0.9153,
+          "r": 0.8464,
+          "f1": 0.8795,
+          "support": 319
+         },
+         "interruption": {
+          "p": 0.4096,
+          "r": 0.5763,
+          "f1": 0.4789,
+          "support": 59
+         },
+         "noise": {
+          "p": 0.0,
+          "r": 0.0,
+          "f1": 0.0,
+          "support": 0
+         }
+        },
+        "macro_f1": 0.6792,
+        "false_stop_rate": 0.1536,
+        "vad_bargeins_rejected": 0.7804,
+        "latency_ms_p50_true_stops": 560.0
+       }
+      },
+      "stop_at_val_recall95": {
+       "threshold": 0.0732,
+       "all": {
+        "n": 665,
+        "per_class": {
+         "backchannel": {
+          "p": 0.9392,
+          "r": 0.2704,
+          "f1": 0.4199,
+          "support": 514
+         },
+         "interruption": {
+          "p": 0.2568,
+          "r": 0.9429,
+          "f1": 0.4037,
+          "support": 140
+         },
+         "noise": {
+          "p": 0.0,
+          "r": 0.0,
+          "f1": 0.0,
+          "support": 11
+         }
+        },
+        "macro_f1": 0.2745,
+        "false_stop_rate": 0.7276,
+        "vad_bargeins_rejected": 0.2271,
+        "latency_ms_p50_true_stops": 560.0
+       },
+       "ami": {
+        "n": 187,
+        "per_class": {
+         "backchannel": {
+          "p": 0.8182,
+          "r": 0.2177,
+          "f1": 0.3439,
+          "support": 124
+         },
+         "interruption": {
+          "p": 0.3113,
+          "r": 0.9038,
+          "f1": 0.4631,
+          "support": 52
+         },
+         "noise": {
+          "p": 0.0,
+          "r": 0.0,
+          "f1": 0.0,
+          "support": 11
+         }
+        },
+        "macro_f1": 0.269,
+        "false_stop_rate": 0.7704,
+        "vad_bargeins_rejected": 0.1925,
+        "latency_ms_p50_true_stops": 560.0
+       },
+       "icsi": {
+        "n": 100,
+        "per_class": {
+         "backchannel": {
+          "p": 1.0,
+          "r": 0.1408,
+          "f1": 0.2469,
+          "support": 71
+         },
+         "interruption": {
+          "p": 0.3222,
+          "r": 1.0,
+          "f1": 0.4874,
+          "support": 29
+         },
+         "noise": {
+          "p": 0.0,
+          "r": 0.0,
+          "f1": 0.0,
+          "support": 0
+         }
+        },
+        "macro_f1": 0.3671,
+        "false_stop_rate": 0.8592,
+        "vad_bargeins_rejected": 0.1,
+        "latency_ms_p50_true_stops": 560.0
+       },
+       "oto": {
+        "n": 378,
+        "per_class": {
+         "backchannel": {
+          "p": 0.9714,
+          "r": 0.3197,
+          "f1": 0.4811,
+          "support": 319
+         },
+         "interruption": {
+          "p": 0.2051,
+          "r": 0.9492,
+          "f1": 0.3373,
+          "support": 59
+         },
+         "noise": {
+          "p": 0.0,
+          "r": 0.0,
+          "f1": 0.0,
+          "support": 0
+         }
+        },
+        "macro_f1": 0.4092,
+        "false_stop_rate": 0.6803,
+        "vad_bargeins_rejected": 0.2778,
+        "latency_ms_p50_true_stops": 560.0
+       }
+      },
+      "oracle_recall100": {
+       "n": 665,
+       "per_class": {
+        "backchannel": {
+         "p": 1.0,
+         "r": 0.0039,
+         "f1": 0.0078,
+         "support": 514
+        },
+        "interruption": {
+         "p": 0.2112,
+         "r": 1.0,
+         "f1": 0.3487,
+         "support": 140
+        },
+        "noise": {
+         "p": 0.0,
+         "r": 0.0,
+         "f1": 0.0,
+         "support": 11
+        }
+       },
+       "macro_f1": 0.1188,
+       "false_stop_rate": 0.9962,
+       "vad_bargeins_rejected": 0.003
+      }
+     }
+    }
+   }
+  },
+  "head": {
+   "params_b4b8": 35428,
+   "epochs": 15,
+   "seeds": 3,
+   "train_lengths_ms": [
+    160,
+    240,
+    320,
+    400,
+    480,
+    560
+   ],
+   "class_weights": [
+    0.42763811349868774,
+    1.5346585512161255,
+    20.0
+   ]
+  }
+ }
+}

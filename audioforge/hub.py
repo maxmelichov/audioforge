@@ -21,6 +21,11 @@ block 4 only, research/VAD_SINGLE.md), so the rebuilt model is bit-identical to 
 need v0.3) and ``--heads-version 0.1`` ``stage1_served.afm``, the 2026-09-27 checkpoint most numbers in research/ were
 measured with.
 
+Second core (``--core 0.6b``, research/CORE_0P6B.md): NVIDIA's ``nemotron-speech-streaming-en-0.6b`` (NVIDIA Open
+Model License; 618 M parameters, every tensor unchanged) plus heads retrained on it (``assets/served_heads_0p6b_v0.1.pt``
+-> ``served_0p6b_v0.1.afm``) and its own TS-VAD and LID heads (``tsvad_0p6b.pt``, ``lid_0p6b.pt``). The 115M stays the
+default. ``audioforge-download --core 0.6b`` fetches that set (2.5 GB download, ~2.3 GB on disk).
+
 Output directory: ``--dir``, else ``$AUDIOFORGE_HOME``, else ``<repo>/models`` in a source checkout, else
 ``~/.cache/audioforge``. ``audioforge-serve`` looks there.
 """
@@ -42,6 +47,7 @@ __all__ = [
     "accept_licenses", "build_served", "CC_BY", "Component", "diarizer_defaults", "DIARIZERS", "export_heads",
     "fetch", "find_model", "HEADS_FILE", "heads_path", "HEADS_URL", "install", "list_components", "main",
     "models_dir", "OPTIONAL", "RELEASE_URL", "SERVED", "SINGLE", "sha256_file", "state_hash", "HEADS", "HEADS_VERSION",
+    "CORES", "CORE_DEFAULT", "HEADS_0P6B", "SERVED_0P6B", "core_keys",
 ]
 
 # the heads asset: v0.3 ships (v0.2 + heads.turn_seg, the turn head v5 segment classifier of --turn-preset fast /
@@ -58,6 +64,22 @@ HEADS_FILE = HEADS[HEADS_VERSION][0]
 RELEASE_URL = "https://github.com/maxmelichov/audioforge/releases/download/v0.1.0"
 HEADS_URL = f"{RELEASE_URL}/{HEADS_FILE}"
 SERVED = HEADS[HEADS_VERSION][3]  # what ships: stage1_served_v3.afm (= v2 + heads.turn_seg; runs/stage1_served.afm = v1)
+
+# the second core (--core 0.6b): nemotron-speech-streaming-en-0.6b + heads retrained on it (research/CORE_0P6B.md)
+HEADS_0P6B = {"0.1": ("served_heads_0p6b_v0.1.pt", 16045143,
+                       "664be5a0e498b9268d088ccf2fa079d909cd70311c4096f8d28f94258adc4e6e", "served_0p6b_v0.1.afm")}
+HEADS_0P6B_VERSION = "0.1"
+SERVED_0P6B = HEADS_0P6B[HEADS_0P6B_VERSION][3]
+# what each core needs: (served ASR + heads, TS-VAD head, LID head) component keys
+CORES = {"115m": ("asr", "tsvad", "lid"), "0.6b": ("asr_0p6b", "tsvad_0p6b", "lid_0p6b")}
+CORE_DEFAULT = "115m"
+
+
+def core_keys(core: str) -> tuple[str, str, str]:
+    """(asr, tsvad, lid) component keys of ``core`` (115m | 0.6b)."""
+    if core not in CORES:
+        raise ValueError(f"unknown core {core!r}: one of {', '.join(CORES)}")
+    return CORES[core]
 
 
 @dataclass(frozen=True)
@@ -90,6 +112,13 @@ COMPONENTS: dict[str, Component] = {c.key: c for c in [
               "streaming ASR, VAD, turn and speaker heads (required)", SERVED, 443, "served",
               repo="nvidia/stt_en_fastconformer_hybrid_large_streaming_multi",
               revision="ae98143333690bd7ced4bc8ec16769bcb8918374"),
+    Component("asr_0p6b", "NVIDIA Nemotron Speech Streaming EN 0.6B + audioforge heads (--core 0.6b)",
+              "nemotron-speech-streaming-en-0.6b.nemo", 2473041920,
+              "283638054c44f6794e74fe9af9048d78a6d9d6c058c12131856c7859a62ac9cd", "NVIDIA Open Model License",
+              "https://www.nvidia.com/en-us/agreements/enterprise-software/nvidia-open-model-license/",
+              "second core (serve --core 0.6b): streaming ASR, VAD, turn and speaker heads; one real-time stream on "
+              "2 CPU threads, 3 on an Apple GPU", SERVED_0P6B, 2300, "served",
+              repo="nvidia/nemotron-speech-streaming-en-0.6b", revision="ebe59e5a817142986528bbbee5dba8db7b38ed50"),
     Component("sortformer", "NVIDIA Streaming Sortformer 4spk v2 (117M)", "diar_streaming_sortformer_4spk-v2.nemo",
               471367680, "b371afce2c4958186469df33d939936b9746c89f38b10a69cfd2c61254e83329", "CC-BY-4.0", CC_BY,
               "speaker activity / diarizer (default --diar)", "nemo_sortformer_v2.afm", 436, "afm",
@@ -124,6 +153,16 @@ COMPONENTS: dict[str, Component] = {c.key: c for c in [
               "Apache-2.0 (audioforge heads; trained on AmberNet outputs, NGC Terms of Use)",
               "https://ngc.nvidia.com/legal/terms", "single-model mode: language ID (serve --lid head)",
               "lid_distill.pt", 4, "keep", url=f"{RELEASE_URL}/lid_distill.pt"),
+    # the 0.6B core's own TS-VAD and LID heads (research/CORE_0P6B.md; a 115M head does not fit the 1024-d encoder)
+    Component("tsvad_0p6b", "audioforge TS-VAD head for the 0.6B core", "tsvad_0p6b.pt", 1441712,
+              "06fc6e3a421ac344216a593bcae0922099435aef8b8834e62fa401eaafa8a9d8",
+              "Apache-2.0 (audioforge heads)", "https://www.apache.org/licenses/LICENSE-2.0",
+              "--core 0.6b: the user's track", "tsvad_0p6b.pt", 2, "keep", url=f"{RELEASE_URL}/tsvad_0p6b.pt"),
+    Component("lid_0p6b", "audioforge LID head for the 0.6B core (distilled from AmberNet)", "lid_0p6b.pt", 4757196,
+              "22c8667afbb5be64cbd3fe41b7b941f9a0b07b3453139da062524af7d0307fed",
+              "Apache-2.0 (audioforge heads; trained on AmberNet outputs, NGC Terms of Use)",
+              "https://ngc.nvidia.com/legal/terms", "--core 0.6b: language ID", "lid_0p6b.pt", 5, "keep",
+              url=f"{RELEASE_URL}/lid_0p6b.pt"),
     Component("silero", "Silero VAD v5 (v5.1.2 ONNX)", "silero_vad.onnx", 2327524,
               "2623a2953f6ff3d2c1e61740c6cdb7168133479b267dfef114a4a3cc5bdd788f", "MIT",
               "https://github.com/snakers4/silero-vad/blob/master/LICENSE",
@@ -160,7 +199,9 @@ def find_model(key: str, directory: str | Path | None = None) -> Path | None:
     """Where a component's output is, searching the models dir, then this checkout's legacy runs/ and data/ paths."""
     c = COMPONENTS[key]
     cands = [models_dir(directory) / c.output]
-    legacy = {"asr": ROOT / "runs" / SERVED, "sortformer": ROOT / "runs" / c.output,
+    legacy = {"asr": ROOT / "runs" / SERVED, "asr_0p6b": ROOT / "runs" / SERVED_0P6B,
+              "tsvad_0p6b": ROOT / "assets" / c.output, "lid_0p6b": ROOT / "assets" / c.output,
+              "sortformer": ROOT / "runs" / c.output,
               "nemotron3": ROOT / "runs" / c.output, "silero": DATA_ROOT / "silero" / c.output,
               "tsvad": ROOT / "assets" / c.output, "lid": ROOT / "assets" / c.output}
     cands.append(legacy.get(key, DATA_ROOT / "nemo" / c.filename))
@@ -189,7 +230,7 @@ def state_hash(state_dict) -> str:
 
 
 # --------------------------------------------------------------------------- heads delta
-def export_heads(served: str | Path, base_nemo: str | Path, out: str | Path) -> dict:
+def export_heads(served: str | Path, base_nemo: str | Path, out: str | Path, base_key: str = "asr") -> dict:
     """Write the served model's non-NVIDIA tensors + full config + the merged model's tensor hash (maintainers)."""
     import torch
 
@@ -202,18 +243,20 @@ def export_heads(served: str | Path, base_nemo: str | Path, out: str | Path) -> 
         raise ValueError(f"served model is not the base + new tensors: changed {changed[:3]}")
     tensors = {k: v.clone() for k, v in ss.items() if k not in bs}
     blob = {"format": "audioforge-heads/1", "config": s.cfg, "tensors": tensors,
-            "base": {"repo": COMPONENTS["asr"].repo, "revision": COMPONENTS["asr"].revision,
-                     "sha256": COMPONENTS["asr"].sha256},
+            "base": {"repo": COMPONENTS[base_key].repo, "revision": COMPONENTS[base_key].revision,
+                     "sha256": COMPONENTS[base_key].sha256},
             "state_hash": state_hash(ss), "source": str(Path(served).name)}
     torch.save(blob, out)
     return {"tensors": len(tensors), "mb": round(sum(v.numel() * v.element_size() for v in tensors.values()) / 1e6, 1),
             "state_hash": blob["state_hash"]}
 
 
-def heads_path(explicit: str | Path | None, directory: Path, version: str = HEADS_VERSION) -> Path:
-    """The heads file of ``version``: explicit path, the repo's assets/, the models dir, else downloaded from the
-    release; a registry file (not an explicit path) must match its pinned size and sha256."""
-    name, size, sha, _ = HEADS[version]
+def heads_path(explicit: str | Path | None, directory: Path, version: str = HEADS_VERSION,
+               registry: dict | None = None) -> Path:
+    """The heads file of ``version`` (in ``registry``: HEADS, or HEADS_0P6B for the 0.6B core): explicit path, the
+    repo's assets/, the models dir, else downloaded from the release; a registry file (not an explicit path) must match
+    its pinned size and sha256."""
+    name, size, sha, _ = (registry or HEADS)[version]
     if explicit:
         return Path(explicit)
     for p in (ROOT / "assets" / name, directory / name):
@@ -343,6 +386,10 @@ def install(keys: list[str], directory: Path, local: list[Path], yes: bool, keep
     import dataclasses
     comps = [COMPONENTS[k] if not (k == "asr" and heads_version != HEADS_VERSION)
              else dataclasses.replace(COMPONENTS[k], output=HEADS[heads_version][3]) for k in keys]
+    missing = [c.key for c in comps if not c.sha256]
+    if missing:
+        raise RuntimeError(f"{', '.join(missing)}: no pinned file yet in this version of audioforge "
+                           f"(research/CORE_0P6B.md); nothing downloaded")
     todo = [c for c in comps if force or not (directory / c.output).exists()]
     for c in comps:
         if c not in todo:
@@ -356,7 +403,10 @@ def install(keys: list[str], directory: Path, local: list[Path], yes: bool, keep
         src, downloaded = fetch(c, directory, local)
         out = directory / c.output
         out.parent.mkdir(parents=True, exist_ok=True)
-        if c.convert == "served":
+        if c.convert == "served" and c.key == "asr_0p6b":
+            h = build_served(src, heads_path(None, directory, HEADS_0P6B_VERSION, HEADS_0P6B), out)
+            print(f"  built {out} (tensor hash {h[:16]}, identical to the measured model)")
+        elif c.convert == "served":
             h = build_served(src, heads_path(heads, directory, heads_version), out)
             print(f"  built {out} (tensor hash {h[:16]}, identical to the measured model)")
         elif c.convert == "afm":
@@ -379,7 +429,8 @@ def list_components():
     print(f"{'key':<11} {'download MB':>11} {'on disk MB':>10}  {'licence':<18} used for")
     for c in COMPONENTS.values():
         print(f"{c.key:<11} {c.size / 1e6:>11.0f} {c.output_mb:>10}  {c.license:<18} {c.used_for}")
-    print("\nDefault set (single-model mode): asr + tsvad + lid; --diarizer adds a diarizer for room mode. "
+    print("\nDefault set (single-model mode): asr + tsvad + lid; --core 0.6b: asr_0p6b + tsvad_0p6b + lid_0p6b instead; "
+          "--diarizer adds a diarizer for room mode. "
           "Peak disk during a default install ~0.9 GB (the .nemo files are deleted after conversion unless --keep-nemo).")
 
 
@@ -388,6 +439,10 @@ def main(argv=None):
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--dir", default=None, help="models directory (default: $AUDIOFORGE_HOME, <repo>/models, "
                                                 "or ~/.cache/audioforge)")
+    ap.add_argument("--core", choices=list(CORES), default=CORE_DEFAULT,
+                    help="which streaming core: 115m (default; NVIDIA FastConformer 114M, CC-BY-4.0, real time on 2 CPU "
+                         "threads) | 0.6b (NVIDIA nemotron-speech-streaming-en-0.6b, NVIDIA Open Model License, 2.5 GB; "
+                         "about half the meeting WER; 1 real-time stream per 2 CPU threads (115M: 4), research/CORE_0P6B.md)")
     ap.add_argument("--diarizer", choices=sorted(DIARIZERS), default=None,
                     help="also fetch a diarizer for room mode (audioforge-serve --mode room): nemotron3 = "
                          "Nemotron-3-Diarization (OpenMDW-1.1, the room-mode default), sortformer = Streaming Sortformer "
@@ -419,14 +474,17 @@ def main(argv=None):
     data_root = Path(a.data_root).expanduser() if a.data_root else DATA_ROOT
     local += [d for d in (data_root / "nemo", data_root / "silero", ROOT / "assets") if d.is_dir() and d not in local]
     if a.export_heads:
-        src, _ = fetch(COMPONENTS["asr"], directory, local)
-        print(export_heads(a.export_heads[0], src, a.export_heads[1]))
+        base_key = core_keys(a.core)[0]
+        src, _ = fetch(COMPONENTS[base_key], directory, local)
+        print(export_heads(a.export_heads[0], src, a.export_heads[1], base_key))
         return 0
     if a.only:
         keys = list(a.only)
     else:
         extra = list(OPTIONAL) if "all" in a.extra else a.extra
-        keys = list(SINGLE) + ([DIARIZERS[a.diarizer]] if a.diarizer else [])
+        asr_k, tsvad_k, lid_k = core_keys(a.core)
+        keys = [asr_k, tsvad_k] + ([lid_k] if a.core != CORE_DEFAULT else []) \
+            + ([DIARIZERS[a.diarizer]] if a.diarizer else [])
         keys += [k for k in extra if k not in keys]
     import torch
     torch.set_num_threads(min(4, torch.get_num_threads()))
@@ -435,11 +493,12 @@ def main(argv=None):
     for k, p in paths.items():
         size = p.resolve().stat().st_size / 1e6 if p.exists() else 0
         print(f"  {k:<11} {p}  ({size:.0f} MB)")
-    missing = [k for k in ("tsvad", "lid") if k in paths and not paths[k].exists()]
+    missing = [k for k in ("tsvad", "lid", "tsvad_0p6b", "lid_0p6b") if k in paths and not paths[k].exists()]
     if missing:
         sys.exit(f"audioforge-download: {', '.join(missing)} missing after install; single-model mode cannot start")
     diar = [k for k in DIARIZERS if k in paths]
     extra = f" --mode room --diarizer {diar[0]}" if diar else ""
+    extra += "" if a.core == CORE_DEFAULT else f" --core {a.core}"
     print(f"\nStart the server:  audioforge-serve{extra}" + ("" if a.dir is None else f" --models-dir {directory}"))
     if not diar:
         print("  single-model mode: send the user's stored voice print ({\"type\": \"enroll\", \"embedding\": [...]}, "
