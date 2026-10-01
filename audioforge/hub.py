@@ -22,8 +22,8 @@ need v0.3) and ``--heads-version 0.1`` ``stage1_served.afm``, the 2026-09-27 che
 measured with.
 
 Second core (``--core 0.6b``, research/CORE_0P6B.md): NVIDIA's ``nemotron-speech-streaming-en-0.6b`` (NVIDIA Open
-Model License; 618 M parameters, every tensor unchanged) plus heads retrained on it (``assets/served_heads_0p6b_v0.1.pt``
--> ``served_0p6b_v0.1.afm``) and its own TS-VAD and LID heads (``tsvad_0p6b.pt``, ``lid_0p6b.pt``). The 115M stays the
+Model License; 618 M parameters, every tensor unchanged) plus heads retrained on it (``assets/served_heads_0p6b_v0.2.pt``
+-> ``served_0p6b_v0.2.afm``; v0.1's tensors with re-picked turn-preset constants) and its own TS-VAD and LID heads (``tsvad_0p6b.pt``, ``lid_0p6b.pt``). The 115M stays the
 default. ``audioforge-download --core 0.6b`` fetches that set (2.5 GB download, ~2.3 GB on disk).
 
 Output directory: ``--dir``, else ``$AUDIOFORGE_HOME``, else ``<repo>/models`` in a source checkout, else
@@ -66,9 +66,13 @@ HEADS_URL = f"{RELEASE_URL}/{HEADS_FILE}"
 SERVED = HEADS[HEADS_VERSION][3]  # what ships: stage1_served_v3.afm (= v2 + heads.turn_seg; runs/stage1_served.afm = v1)
 
 # the second core (--core 0.6b): nemotron-speech-streaming-en-0.6b + heads retrained on it (research/CORE_0P6B.md)
-HEADS_0P6B = {"0.1": ("served_heads_0p6b_v0.1.pt", 16045143,
-                       "664be5a0e498b9268d088ccf2fa079d909cd70311c4096f8d28f94258adc4e6e", "served_0p6b_v0.1.afm")}
-HEADS_0P6B_VERSION = "0.1"
+HEADS_0P6B = {"0.2": ("served_heads_0p6b_v0.2.pt", 16045591,
+                       "ceff8c8912640e67500ca796d7c983d220ddf581845134e3e7ca68d7c32db3ff", "served_0p6b_v0.2.afm"),
+              # v0.2 = v0.1's tensors (same state hash) with the turn presets' constants re-picked on held-out data
+              # (research/CORE_0P6B_TURN.md)
+              "0.1": ("served_heads_0p6b_v0.1.pt", 16045143,
+                      "664be5a0e498b9268d088ccf2fa079d909cd70311c4096f8d28f94258adc4e6e", "served_0p6b_v0.1.afm")}
+HEADS_0P6B_VERSION = "0.2"
 SERVED_0P6B = HEADS_0P6B[HEADS_0P6B_VERSION][3]
 # what each core needs: (served ASR + heads, TS-VAD head, LID head) component keys
 CORES = {"115m": ("asr", "tsvad", "lid"), "0.6b": ("asr_0p6b", "tsvad_0p6b", "lid_0p6b")}

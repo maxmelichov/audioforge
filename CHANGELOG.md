@@ -6,6 +6,30 @@ versions follow [Semantic Versioning](https://semver.org/). Every measured numbe
 
 ## [Unreleased]
 
+### Changed (2026-10-01): 0.6B core heads v0.2, end of turn diagnosed (research/CORE_0P6B_TURN.md)
+- Why the 0.6B was worse at end of turn: two heads, shown by swapping the 115M's per-frame signals into the 0.6B
+  session.
+  - The recurrent VAD head, trained on AMI only, stays up 1-2 s after the user stops and flickers on quiet phone
+    channels. With the 115M's VAD, fast calls missed 11.9 → 7.3 %.
+  - The v5 classifier fires inside utterances under the assistant trigger. With the 115M's v5, the assistant row goes
+    78.2 → 90.2 % on shared constants.
+- `assets/served_heads_0p6b_v0.2.pt` (hub `HEADS_0P6B` 0.2, the default): v0.1's tensors (same state hash) with every
+  preset's constants re-picked on a held-out set. `balanced` now decides with the v5 classifier. On the evaluation sets
+  (`runs/core_0p6b_turn.json`):
+  - assistant 91.2 → 93.0 % accuracy and 7.1 → 4.5 % false fires at 374 ms;
+  - fast calls 530 / 33.9 / 11.9 → 487 ms / 26.6 % / 11.0 %;
+  - balanced calls 920 / 20.2 / 11.0 → 725 ms / 19.3 % / 10.1 %;
+  - served == offline on 32 / 32 sessions per preset;
+  - MPS cost 43-45 ms per chunk.
+- The 115M's end-of-turn bars are still not all met: the calls misses, fast false interruptions, and the assistant
+  p50. A full head fix (stateless VAD on block 12 + retrained v5 + block-12 per-frame turn head) was built and
+  measured. It halves the calls misses (4.6 %) and gives assistant 95.2 % / 342 ms, but it is not shipped: it raises
+  `balanced` false interruptions on the TurnBench calls.
+- Serving: a model's `cfg["turn_presets"]` can give a preset a `theta` of its own and give `balanced` the v5 decider
+  (`V5_TURN_MODEL`). Models without them are unchanged.
+- `scripts/research/core_0p6b_turn.py`: evaluation cache, cross-core swap, held-out end-of-turn set with a
+  quiet-channel scope, VAD / v5 / per-frame head candidates, rule scans, served check, cost.
+
 ### Added (2026-10-01): a second core, `--core 0.6b` (nemotron-speech-streaming-en-0.6b), every head retrained
 - `audioforge-download --core 0.6b` / `audioforge-serve --core 0.6b` / `audioforge.load(core="0.6b")` /
   `audioforge.voiceprint(core="0.6b")`.

@@ -77,6 +77,34 @@ def test_engine_and_session_presets():
     assert any("turn_preset" in m["detail"] for m in s.take_notices())
 
 
+def test_a_model_preset_may_carry_its_own_theta():
+    """cfg["turn_presets"] can set a preset's turn-head threshold (the 0.6B core's balanced, research/CORE_0P6B_TURN.md);
+    the client's eot_threshold still wins, and models without it keep POLICY_THETA (0.99)."""
+    asr = H.H._talky_asr_model()
+    asr.cfg = {**(getattr(asr, "cfg", None) or {}), "turn_presets": {"balanced": {"theta": 0.9, "vad_wait_ms": [240, 960]}}}
+    e = H.H.EnergyEngine(asr, H.H._diar_model(), name="tiny", threads=1)
+    s = Session(e, SessionConfig(turn_policy="vad_head"))
+    assert (s.vh_pol.thr, s.vh_pol.k, s.vh_pol.fb) == (0.9, 3, 12)
+    s = Session(e, SessionConfig(turn_policy="vad_head", eot_threshold=0.97))
+    assert s.vh_pol.thr == 0.97
+    s = Session(e, SessionConfig(turn_policy="vad_head", turn_preset="steady"))
+    assert s.vh_pol.thr == 0.99
+    e = H.H.EnergyEngine(H.H._talky_asr_model(), H.H._diar_model(), name="tiny", threads=1)
+    assert Session(e, SessionConfig(turn_policy="vad_head")).vh_pol.thr == 0.99
+
+
+def test_a_model_may_give_balanced_the_v5_decider():
+    """cfg["turn_presets"]["balanced"]["turn_model"] adds the v5 segment classifier to a preset that has none (on top of
+    V5_TURN_MODEL); without it balanced stays the per-frame head rule."""
+    from audioforge.serve import V5_TURN_MODEL, model_presets
+    m = type("M", (), {"cfg": {"turn_presets": {"balanced": {"vad_wait_ms": [320, 720],
+                                                             "turn_model": {"vad_thr": 0.4, "p": 0.6}}}}})()
+    pr = model_presets(m)
+    assert pr["balanced"]["turn_model"] == {**V5_TURN_MODEL, "vad_thr": 0.4, "p": 0.6}
+    assert vad_head_params("balanced", presets=pr)[:2] == (4, 9)
+    assert pr["fast"] == TURN_PRESETS["fast"] and "turn_model" not in model_presets(object())["balanced"]
+
+
 @pytest.mark.parametrize("seed", range(6))
 def test_steady_policy_equals_sim_room(seed):
     rng = np.random.default_rng(300 + seed)

@@ -193,6 +193,12 @@ def translate_config(nc: dict, nemo_keys=None) -> dict:
                              joint_hidden=int(jn["joint_hidden"]),
                              max_symbols=int(nc.get("decoding", {}).get("greedy", {}).get("max_symbols", 10)),
                              weight=1.0 - ctc_w)
+        if str(nc.get("target", "")).endswith("WithPrompt"):  # nemotron-3.5-asr-streaming-0.6b: language prompt
+            md = nc.get("model_defaults") or {}
+            pd = {str(k): int(v) for k, v in (md.get("prompt_dictionary") or {}).items()}
+            heads["rnnt"]["prompt"] = dict(num_prompts=int(nc.get("num_prompts", md.get("num_prompts", 128))),
+                                           hidden=2 * int(md.get("enc_hidden", nc["encoder"]["d_model"])),
+                                           default="en-US" if "en-US" in pd else None, dictionary=pd)
         durations = tdt_durations(nc)
         if durations is not None:  # TDT (parakeet-tdt-*): the joint's last len(durations) outputs are durations
             heads["rnnt"].update(type="tdt", durations=durations,
@@ -309,6 +315,7 @@ _TOP = [
     (r"joint\.pred\.(weight|bias)", r"heads.rnnt.joint.pred.\1"),
     (r"joint\.enc\.(weight|bias)", r"heads.rnnt.joint.enc.\1"),
     (r"joint\.joint_net\.2\.(weight|bias)", r"heads.rnnt.joint.out.2.\1"),
+    (r"prompt_kernel\.(0|2)\.(weight|bias)", r"heads.rnnt.joint.enc.kernel.\1.\2"),  # EncDecRNNTBPEModelWithPrompt
     (r"(?:ctc_decoder|decoder)\.decoder_layers\.0\.(weight|bias)", r"heads.ctc.proj.\1"),
 ]
 SKIP = ("preprocessor.featurizer.window", "preprocessor.featurizer.fb")  # recomputed by our LogMel (checked)
@@ -764,6 +771,12 @@ def import_nemo(path_or_hf_id: str | Path, verbose: bool = False) -> SpeechModel
     tok = (SentencePieceTokenizer(_nemo_file(files, nc["tokenizer"]["model_path"]), specials=[])
            if "tokenizer" in nc else None)  # diarization models have no tokenizer
     cfg = translate_config(nc, nemo_sd.keys())
+    if tok is not None and "prompt" in cfg["heads"].get("rnnt", {}):
+        # a language-prompted model emits its detected language as a tag piece ("<en-US>") after the terminal
+        # punctuation: kept in the token ids (language ID), dropped from the decoded text
+        tok.specials = [p for p in (tok.sp.id_to_piece(i) for i in range(tok.vocab_size))
+                        if re.fullmatch(r"<[a-z]{2,3}-[A-Za-z]{2,4}>", p)]
+        cfg["heads"]["rnnt"]["prompt"]["tag_pieces"] = len(tok.specials)
     cfg["nemo_source"] = dict(checkpoint=str(path_or_hf_id), target=nc.get("target"),
                               nemo_version=nc.get("nemo_version"), license=license_of(path_or_hf_id))
     n_cls = nc.get("decoder", {}).get("vocab_size") or nc.get("decoder", {}).get("num_classes")

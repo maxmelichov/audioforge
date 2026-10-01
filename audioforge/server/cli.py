@@ -117,7 +117,7 @@ FLAGS: tuple[Flag, ...] = (
          {"choices": ["115m", "0.6b"], "default": None}, launcher=True, doc_default="`115m`",
          doc="which streaming core the launcher loads from the models directory: `115m` (NVIDIA FastConformer 114M + "
          "our heads, real time on 2 CPU threads) or `0.6b` (NVIDIA nemotron-speech-streaming-en-0.6b, NVIDIA Open Model "
-         "License, with every head retrained on it: `served_0p6b_v0.1.afm`, `tsvad_0p6b.pt`, `lid_0p6b.pt`; about half the "
+         "License, with every head retrained on it: `served_0p6b_v0.2.afm`, `tsvad_0p6b.pt`, `lid_0p6b.pt`; about half the "
          "meeting WER, but ~96 ms of CPU per 160 ms chunk on 2 threads: one real-time stream per process against the 115M's 4, "
          "3 on an Apple GPU with `--device mps`, 5 GB RSS). Voice prints "
          "belong to one core: re-enroll after switching. Install with `audioforge-download --core 0.6b`; "

@@ -3,7 +3,7 @@
 One frozen NVIDIA streaming speech model with six small heads: live words, voice activity, "is it the user?" and
 "is the turn over?" for a voice agent that talks to one known user, over one WebSocket.
 
-![architecture](demo/images/architecture_v9.png)
+![architecture](demo/images/architecture_v10.png)
 
 A 115M NVIDIA cache-aware FastConformer ([`stt_en_fastconformer_hybrid_large_streaming_multi`](docs/MODELS.md),
 frozen, 160 ms chunks) gives the words (RNNT). The heads read its layers ([`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md)):
@@ -73,49 +73,69 @@ events = s.feed(pcm) + s.end()              # the protocol's messages as dicts
 
 ## Results
 
-Same audio for every system in a row. LiveKit = LiveKit Agents defaults (Silero + LiveKit turn detector + Whisper
-small); Pipecat = Pipecat defaults (Silero + smart-turn v3 + Whisper small). What each metric means:
-[`research/METRICS.md`](research/METRICS.md).
+One measurement pass on 2026-10-01: both cores and the best open models in use today, the same audio and labels for
+every system in a row. Full tables with 95 % confidence intervals: [`research/FINAL_COMPARE.md`](research/FINAL_COMPARE.md).
+Ours = audioforge on the 115M core (heads v0.3) and on the English 0.6B core (heads v0.2).
 
-| metric | audioforge | LiveKit | Pipecat | source |
-|---|---|---|---|---|
-| **Calls** (32 sessions, user channel, 109 turn ends) | | | | |
-| end-of-turn latency, p50 | 956 ms | 567 ms | 237 ms (bimodal: 38 of 82 answered ends wait for the 3 s fallback; p95 3217 ms) | [EOT_LATENCY](research/EOT_LATENCY.md) |
-| false interruptions (% of turns) | 20 % | 27 % | 36 % | [EOT_LATENCY](research/EOT_LATENCY.md) |
-| missed turn ends | 7 % | 23 % | 25 % | [EOT_LATENCY](research/EOT_LATENCY.md) |
-| end-of-turn p50 / FI / missed with `--turn-preset fast` (turn head v5) | 547 ms / 25 % / 5.5 % | | | [TURN_V5](research/TURN_V5.md) |
-| **Meetings** (AMI, 200 turns) | | | | |
-| end-of-turn latency, p50 | 1326 ms | 1890 ms | 385 ms | [EOT_LATENCY](research/EOT_LATENCY.md) |
-| false interruptions | 11 % | 13 % | 28 % | [EOT_LATENCY](research/EOT_LATENCY.md) |
-| missed turn ends | 34 % | 68 % | 45 % | [EOT_LATENCY](research/EOT_LATENCY.md) |
-| **Speech directed at the agent** (smart-turn's 399 test clips, `--turn-preset assistant`) | | | | |
-| accuracy (complete answered, incomplete not cut within 3 s) | 92 % (smart-turn bridge `--turn-model smartturn`: 96 %) | 73 % | 70 % | [TURN_V5](research/TURN_V5.md), [EOT_ASSISTANT](research/EOT_ASSISTANT.md) |
-| end-of-turn latency, p50 | 292 ms (bridge: 770 ms) | 547 ms | 211 ms | [TURN_V5](research/TURN_V5.md), [EOT_ASSISTANT](research/EOT_ASSISTANT.md) |
-| false fires on incomplete clips | 5.4 % (bridge: 5.8 %) | 44.6 % | 40.2 % | [EOT_ASSISTANT](research/EOT_ASSISTANT.md) |
-| **Words** | | | | |
-| WER, LibriSpeech test-clean (200 utt.) | 2.3 % | 2.4 % (Whisper small) | 2.4 % | [FINAL_REPORT](research/FINAL_REPORT.md), [MPS_115M](research/MPS_115M.md) |
-| WER, live calls | 23.2 % | 19.3 % | 23.5 % | [METRICS](research/METRICS.md) |
-| target-speaker WER, mixed calls | 40 % (no filter 63, perfect labels 36) | – | – | [TSWER](research/TSWER.md) |
-| target-speaker WER, ICSI meetings | 37 % (Nemotron-3 diarizer 65-67, no filter 101) | – | – | [TSWER](research/TSWER.md) |
-| **VAD** F1, AMI (threshold 0.5) | 0.951 | 0.915 (Silero) | 0.915 (Silero) | [METRICS](research/METRICS.md) (MarbleNet 0.937) |
-| **Cost** per 160 ms chunk, whole engine | 29.8 ms CPU (2 threads); 28.7 ms Mac GPU; 20 ms RTX 5090 | | | [MPS_115M](research/MPS_115M.md), [PR #1](https://github.com/maxmelichov/audioforge/pull/1) |
+**Words** (WER %, Whisper normaliser; ours stream at 160 ms, a word shows up about 0.3 s after it is said; the others
+transcribe after the speaker stops)
 
-Real-time streams per Mac process: 4 on CPU, 5 on MPS; CPU and MPS give identical events
-([MPS_115M](research/MPS_115M.md)). The VAD head was trained on AMI labels, so its AMI F1 is in-domain.
+| system | LibriSpeech | AMI meetings | ICSI meetings | live calls, user channel |
+|---|---:|---:|---:|---:|
+| ours 0.6B | 2.1 | 10.4 | 13.6 | **5.7** |
+| ours 115M | 2.3 | 20.6 | 26.2 | 15.4 |
+| Parakeet-TDT 0.6B v3 | 1.9 | **9.5** | **10.4** | 7.7 |
+| Whisper large-v3 | 1.4 | 12.4 | 12.8 | 8.5 |
+| Whisper small (LiveKit default) | 2.3 | 14.5 | 18.2 | 10.1 |
 
-![results](demo/images/results_v10.png)
+![words](demo/images/compare_asr.png)
+
+**Turn taking** (`--turn-preset assistant`, smart-turn v3.2's 399 public test clips)
+
+| system | right about "done" | answers after you stop, p50 | cuts off unfinished sentences |
+|---|---:|---:|---:|
+| ours 115M | 92.7 % | 299 ms | 5.4 % |
+| ours 0.6B | **93.0 %** | 379 ms | **4.5 %** |
+| LiveKit turn detector + Silero | 72.7 % | 547 ms | 44.6 % |
+| Pipecat smart-turn v3.2 + Silero | 69.7 % | **211 ms** | 40.2 % |
+| NVIDIA Parakeet-Realtime-EOU | 48.4 % | 462 ms | 91.5 % |
+
+On human two-party calls (109 turn ends, default `balanced` preset): ours 115M 955 ms / 20.2 % false interruptions /
+7.3 % missed, ours 0.6B 730 ms / 19.3 % / 10.1 %, LiveKit 567 ms / 26.6 % / 22.9 %, Pipecat 237 ms / 35.8 % / 24.8 %.
+
+![turn taking](demo/images/compare_turn.png)
+
+**Speech detection** (F1 at threshold 0.5): AMI ours 0.951 (both cores), MarbleNet v2 0.937, TEN VAD 0.925, Silero v5
+0.915. Our heads were trained on AMI. On held-out ICSI: TEN VAD 0.935, Silero and MarbleNet 0.929, ours 0.906 (0.6B) /
+0.898 (115M).
+
+![speech detection](demo/images/compare_vad.png)
+
+**Your words only** (target-speaker WER %, same 5 s voice print for every system): ICSI meetings ours 0.6B 31.7,
+ours 115M 37.1, Nemotron-3 diarizer 60.0, pyannote 3.1 74.8, no filter 100.8.
+
+![speaker tracking](demo/images/compare_spk.png)
+
+**Language ID** (FLEURS 17 languages, 2 s of speech): Whisper large-v3 95.9 %, AmberNet 95.1 %, ours 115M 91.0 %,
+Whisper small 90.6 %, ours 0.6B 87.6 %.
+
+![language](demo/images/compare_lid.png)
+
+**Cost on an Apple-silicon laptop** (whole engine, per 160 ms of audio): 115M 27.7 ms on the GPU, 31.0 ms on 2 CPU
+threads, 4 real-time streams, 1.2 GB; 0.6B 43.7 ms GPU / 99.4 ms CPU, 3 streams on the GPU, 4.8 GB.
 
 ## Where it loses
 
-- **Words are those of a 115M streaming model.** On live calls LiveKit's default (Whisper small) transcribes better,
-  23.2 vs 19.3 % WER. For a meeting-grade transcript use room mode with Parakeet-TDT v3.
-- **Not the fastest turn end by default.** The default preset (`balanced`) answers calls in 956 ms p50; LiveKit
-  answers sooner (567 ms) and Pipecat answers meetings sooner (385 vs 1326 ms), at more false interruptions.
-  `--turn-preset fast` (turn head v5) answers calls in 547 ms at 25 % false interruptions, but is not the default: it
-  misses the ship bar on false interruptions (25 vs 20 %). In meetings audioforge still misses 34 % of turn ends.
-- **Speech to an agent: smart-turn is faster.** On smart-turn's 399 test clips, Pipecat smart-turn answers finished
-  sentences about 80 ms sooner (211 vs 292 ms p50 with `--turn-preset assistant`), though it answers 40 % of the
-  unfinished ones (audioforge 5 %).
+- **Turn answers are not the fastest.** Pipecat smart-turn answers assistant speech sooner (211 ms vs 299 / 379 ms
+  p50) and calls sooner, at many more cut-offs. The `assistant` preset misses a third of human call turns, so calls
+  use `balanced`; no single preset wins every column.
+- **Words of the 115M core** are behind every offline baseline on meetings and calls. Use the 0.6B core
+  (`--core 0.6b`) for transcript quality. Parakeet-TDT v3 still beats the 0.6B on ICSI meetings (10.4 vs 13.6 %).
+- **Speech detection on unseen meetings (ICSI):** TEN VAD, Silero and MarbleNet beat our heads.
+- **Language ID:** Whisper and AmberNet beat our heads, most at 2 s.
+- **Speaker embeddings alone:** TitaNet-L and WeSpeaker match voices better than our speaker heads (EER AMI 12 % vs
+  14-20 %); our tracker still gives the best target-speaker WER.
+- Not measured: paid APIs (Deepgram Nova-3, AssemblyAI).
 
 ## Modes and the voice sample
 
@@ -154,16 +174,21 @@ Voice prints belong to one core, so re-enroll after switching. Numbers on the sa
 | target-speaker WER, AMI / ICSI | 62.1 / 37.1 % | 63.2 / **31.7 %** |
 | speaker EER within a meeting, AMI / ICSI | 19.8 / 7.0 % | **13.6 / 3.6 %** |
 | VAD F1, AMI / ICSI | 0.951 / 0.898 | 0.951 / **0.906** |
-| turn end, calls (`balanced`): p50, false interruptions, missed | 956 ms, 20.2 %, **7.3 %** | 920 ms, 20.2 %, 11.0 % |
-| turn end, AMI (`balanced`): p50, false interruptions, missed | 1326 ms, **10.5 %**, 33.5 % | **1176 ms**, 13.0 %, **28.0 %** |
-| speech to an agent (`assistant`): accuracy, p50 | **92.2 %, 292 ms** | 91.2 %, 374 ms |
+| turn end, calls (`balanced`): p50, false interruptions, missed | 956 ms, 20.2 %, **7.3 %** | **725 ms, 19.3 %**, 10.1 % |
+| turn end, calls (`fast`): p50, false interruptions, missed | 547 ms, **24.8 %, 5.5 %** | **487 ms**, 26.6 %, 11.0 % |
+| turn end, AMI (`balanced`): p50, false interruptions, missed | 1326 ms, **10.5 %**, 33.5 % | **1177 ms**, 11.0 %, **33.0 %** |
+| speech to an agent (`assistant`): accuracy, p50, false fires | 92.2 %, **292 ms**, 5.4 % | **93.0 %**, 374 ms, **4.5 %** |
 | compute per 160 ms chunk, CPU 2 threads / Apple GPU | **30 / 29 ms** | 96 / 39 ms |
 | real-time streams, CPU 2 threads / Apple GPU | **4 / 5** | 1 / 3 |
 | memory | **1.1 GB** | 5.0 GB (+3.3 GB GPU) |
 
 What you gain: transcripts at about half the error, a better voice print, better ICSI tracking. What it costs: 3× the
-CPU per chunk, a quarter of the streams, 4× the memory, and a less permissive licence. End of turn is not better:
-fewer misses in meetings, more on calls, and `fast` interrupts more (33.9 vs 24.8 % on calls).
+CPU per chunk, a quarter of the streams, 4× the memory, and a less permissive licence. End of turn is mixed (heads
+v0.2, constants re-picked on held-out data):
+- faster on calls and meetings, and a more accurate agent preset;
+- but it misses more call ends (10-11 vs 5.5-7.3 %) and answers an agent 80 ms later.
+
+The cause is the 0.6B's VAD head on quiet phone channels ([`research/CORE_0P6B_TURN.md`](research/CORE_0P6B_TURN.md)).
 
 ## Integrations
 

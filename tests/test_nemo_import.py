@@ -326,3 +326,23 @@ def test_real_0p6b_tensor_counts():
     assert m.tokenizer.vocab_size == 1024 and set(m.heads) == {"rnnt"}
     assert m.cfg["nemo_source"]["license"] == "NVIDIA Open Model License"
     assert info["fb_max_abs_diff"] < 1e-6 and info["window_max_abs_diff"] < 1e-6
+
+
+def test_prompted_joint_matches_nemo_concat():
+    """Nemotron 3.5's language prompt (NeMo EncDecRNNTBPEModelWithPrompt): cat(frame, one-hot) -> prompt_kernel ->
+    joint.enc; set_prompt picks the one-hot."""
+    import torch
+    from audioforge.heads.asr import RNNTHead
+    torch.manual_seed(0)
+    h = RNNTHead(16, 10, pred_hidden=8, joint_hidden=8,
+                 prompt={"num_prompts": 4, "hidden": 12, "default": "en-US", "dictionary": {"en-US": 0, "auto": 3}})
+    f = torch.randn(5, 16)
+    h.set_prompt("auto")
+    oh = torch.zeros(5, 4)
+    oh[:, 3] = 1
+    k = h.joint.enc.kernel
+    want = torch.nn.functional.linear(k[2](torch.relu(k[0](torch.cat([f, oh], -1)))), h.joint.enc.weight,
+                                      h.joint.enc.bias)
+    assert torch.allclose(h.joint.enc(f), want)
+    h.set_prompt("en-US")
+    assert not torch.allclose(h.joint.enc(f), want)

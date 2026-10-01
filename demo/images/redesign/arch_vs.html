@@ -1,0 +1,408 @@
+<!doctype html><html><head><meta charset="utf-8"><link rel="stylesheet" href="style.css">
+<style>
+.l1 { position: absolute; font-weight: 700; color: var(--ink); line-height: 1.1; white-space: nowrap; }
+.l2 { position: absolute; font-size: 22px; color: var(--ink2); line-height: 1.2; white-space: nowrap; }
+.blk { position: absolute; background: var(--slate); border-radius: 16px; }
+.blk .bt { position: absolute; color: #FFFFFF; font-weight: 700; white-space: nowrap; line-height: 1.1; }
+.blk .bs { position: absolute; color: var(--onslate); font-size: 22px; white-space: nowrap; line-height: 1.1; }
+.slab { position: absolute; background: var(--slab); border-radius: 4px; }
+.slab.tap { background: var(--ours); }
+.box { position: absolute; display: flex; flex-direction: column; align-items: center; justify-content: center; border-radius: 12px; line-height: 1.15; text-align: center; }
+.box.ours { background: #FFFFFF; border: 2.5px solid var(--ours); }
+.box.one { background: #FFFFFF; border: 2.5px solid var(--slate); }
+.box.nv { background: var(--slate); color: #FFFFFF; }
+.box.grey { background: var(--panel); border: 1.5px solid #C3C9D1; }
+.box.grey .a { color: #3F4753; }
+.box .m { font-weight: 700; color: var(--ink); }
+.box.nv .m { color: #FFFFFF; }
+.box .a { font-size: 22px; color: var(--ink2); margin-top: 2px; }
+.box.nv .a { color: var(--onslate); }
+.zone { position: absolute; border: 2px dashed #AEB6C0; border-radius: 18px; background: #FAFBFC; }
+.circ { position: absolute; width: 34px; height: 34px; border-radius: 50%; background: #FFFFFF; font-size: 22px; font-weight: 700;
+  color: var(--ink); display: flex; align-items: center; justify-content: center; line-height: 1; }
+.badge { position: absolute; font-size: 22px; font-weight: 700; color: var(--ink); background: #FFFFFF; border-radius: 999px; padding: 4px 14px; white-space: nowrap; }
+.blk, .slab, .box, .ghost, .gs, .rl, .circ, .badge, .l1, .l2, .wave { z-index: 2; } svg.wires { z-index: 1; } .blk { z-index: 0 !important; } .zone { z-index: 0; }
+.reg { position: absolute; background: #F6F7F9; border-radius: 22px; z-index: 0; }
+.rl { position: absolute; font-size: 22px; font-weight: 700; letter-spacing: 0.06em; color: var(--ink2); white-space: nowrap; z-index: 2; }
+.ghost { position: absolute; background: #FFFFFF; border: 2px solid #AEB6C0; border-radius: 14px; z-index: 2; }
+.gs { position: absolute; background: #E6E9ED; border-radius: 3px; z-index: 2; }
+.box.dash { background: #FFFFFF; border: 2px dashed #AEB6C0; }
+.wave i { position: absolute; background: #6B7280; border-radius: 3px; }
+.dim { filter: grayscale(1); opacity: 0.32; }
+.dimcore { opacity: 0.55; }
+#outer { position: relative; overflow: hidden; background: #FFFFFF; }
+#stage { transform-origin: 0 0; }
+#score { position: absolute; }
+.sc-t { font-size: 34px; font-weight: 800; letter-spacing: -0.02em; color: var(--ink); line-height: 1.1; }
+.sc-p { font-size: 22px; color: var(--ink2); line-height: 1.3; margin-top: 8px; }
+.sc-h { font-size: 22px; font-weight: 700; color: var(--ink); margin-top: 22px; line-height: 1.15; }
+.sc-u { font-size: 20px; color: var(--ink2); line-height: 1.15; }
+table.sc { border-collapse: collapse; margin-top: 8px; width: 100%; font-variant-numeric: tabular-nums; }
+table.sc td { font-size: 22px; padding: 4px 6px; border-bottom: 1px solid #E2E5E9; color: var(--ink2); white-space: nowrap; }
+table.sc td:first-child { color: var(--ink); padding-left: 0; }
+table.sc td.n { text-align: right; }
+table.sc tr.us td { color: var(--ink); font-weight: 700; }
+table.sc tr.us td:first-child::before { content: ""; display: inline-block; width: 14px; height: 14px; border-radius: 3px; background: var(--ours); margin-right: 8px; vertical-align: -1px; }
+table.sc tr.us2 td { color: var(--ink); font-weight: 700; }
+table.sc tr.us2 td:first-child::before { content: ""; display: inline-block; width: 14px; height: 14px; border-radius: 3px; background: #F4A66B; margin-right: 8px; vertical-align: -1px; }
+table.sc tr.base td:first-child::before { content: ""; display: inline-block; width: 14px; height: 14px; border-radius: 3px; background: #C8CDD4; margin-right: 8px; vertical-align: -1px; }
+.col-h { position: absolute; font-size: 30px; font-weight: 800; color: var(--ink); letter-spacing: -0.02em; }
+.sw { display: inline-block; width: 16px; height: 16px; border-radius: 4px; vertical-align: -1px; margin-right: 6px; }
+.col-s b { color: var(--ink); }
+.col-s { position: absolute; font-size: 22px; color: var(--ink2); line-height: 1.25; }
+.tb { position: absolute; border-radius: 12px; background: #F5F6F8; border: 1.5px solid #C3C9D1; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; }
+.tb .m { font-size: 24px; font-weight: 700; color: #3F4753; line-height: 1.1; }
+.tb .a { font-size: 20px; color: var(--ink2); margin-top: 3px; line-height: 1.15; }
+.tb.hot { background: #FFFFFF; border: 2.5px solid #3F4753; }
+.tb.hot .m { color: var(--ink); }
+.tb.dim2 { opacity: 0.4; }
+.tile { position: absolute; background: #FFFFFF; border: 1.5px solid #E2E5E9; border-radius: 18px; padding: 22px 26px; }
+.tile .q { font-size: 22px; color: var(--ink2); line-height: 1.2; }
+.tile .big { font-size: 64px; font-weight: 800; color: var(--ours); letter-spacing: -0.03em; line-height: 1.05; margin-top: 6px; }
+.tile .big small { font-size: 26px; font-weight: 700; color: var(--ink); margin-left: 8px; letter-spacing: 0; }
+.tile .big2 { font-size: 30px; font-weight: 800; color: #F4A66B; margin-top: 2px; line-height: 1.1; }
+.tile .big2 small { font-size: 20px; font-weight: 600; color: var(--ink2); margin-left: 6px; }
+.tile .today { font-size: 22px; color: var(--ink2); margin-top: 10px; line-height: 1.25; }
+.tile .today b { color: #3F4753; }
+.bc { position: absolute; background: #FFFFFF; border: 1.5px solid #E2E5E9; border-radius: 18px; }
+.bc .ph { position: absolute; font-size: 22px; font-weight: 700; color: var(--ink); line-height: 1.15; white-space: nowrap; }
+.bc .pu { position: absolute; font-size: 20px; color: var(--ink2); line-height: 1.15; white-space: nowrap; }
+.bc .val { position: absolute; font-size: 22px; color: var(--ink2); line-height: 1; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.bc .val.us { color: var(--ink); font-weight: 800; }
+.bc .xl { position: absolute; font-size: 19px; color: var(--ink2); line-height: 1.1; text-align: center; }
+.bc .xl.us { color: var(--ink); font-weight: 700; }
+.bc .dl { position: absolute; font-size: 20px; font-weight: 800; line-height: 1; white-space: nowrap; }
+.bc .nm { position: absolute; font-size: 18px; color: #9AA3AE; line-height: 1.1; text-align: center; white-space: normal; }
+.sc-f { font-size: 20px; color: var(--ink2); line-height: 1.3; position: absolute; bottom: 0; left: 0; right: 0; }
+</style></head><body><script src="numbers_final.js"></script><div id="outer"><div id="stage"></div><div id="score"></div></div><script>
+// architecture_v9 (= v8 with turn head v5, commit 21b55cb: the turn-end box names both deciders. balanced (the default) still
+// uses the GRU turn head (0.32M, pass 2) at VAD quiet >= 160 ms, p >= 0.99; --turn-preset fast / assistant ask the segment
+// classifier (heads/turn_seg.py SegTurn, 2 455 301 params, reads block 8 of pass 1 via ASRStream.attach_seg + served VAD / TS-VAD
+// tracks + the RNNT tokens) at every quiet frame. Six heads: VAD, speaker, TS-VAD, turn GRU, turn classifier v5, LID.)
+// architecture_v8 (= v7 with single mode's shipped turn rule vad_head, research/EOT_LATENCY.md, audioforge/server/policies.py
+// VadHeadPolicy: VAD head < 0.4 for >= 160 ms AND turn head p >= 0.99 (or 640 ms, or the others path); no Silero in single mode; else as v7, verified
+// in audioforge/server/streams.py and cli.py MODES['single']). v7: the original A1 composition (audio left, ONE dark FastConformer in the centre, outputs right, small
+// heads around it). Exactly one encoder is drawn; the second pass is only the orange (2) loop that carries your voice
+// track back INTO the same block (speaker kernels at blocks 1 and 3, runs/stage1_served.afm) and the short orange (2)
+// exit to the turn head. Layer 17 -> RNNT -> streaming words leaves the right edge at the top; all 17 layers -> VAD
+// head -> Speech?; layer 4 -> TS-VAD "Is it you?" <- voice print (speaker head, layer 4) <- 5 s sample.
+const st = document.getElementById("stage"); const wires = [];
+const css = k => getComputedStyle(document.documentElement).getPropertyValue(k).trim();
+function el(cls, html, x, y, w, h) { const e = document.createElement("div"); e.className = cls; if (html != null) e.innerHTML = html;
+  Object.assign(e.style, { left: x + "px", top: y + "px" }); if (w) e.style.width = w + "px"; if (h) e.style.height = h + "px"; st.appendChild(e); return e; }
+function R(e) { const r = e.getBoundingClientRect(); return { l: r.left, t: r.top, r: r.right, b: r.bottom, cx: (r.left + r.right) / 2, cy: (r.top + r.bottom) / 2 }; }
+function wire(pts, { col = "#8A939E", w = 2.2, head = true, dash = false } = {}) {
+  wires.push(`<path d="${pts.map((p, i) => (i ? "L" : "M") + p[0] + " " + p[1]).join(" ")}" fill="none" stroke="${col}" stroke-width="${w}" stroke-linecap="round" stroke-linejoin="round"${dash ? ' stroke-dasharray="6 6"' : ""}/>`);
+  if (head) { const [x2, y2] = pts[pts.length - 1], [x1, y1] = pts[pts.length - 2], a = Math.atan2(y2 - y1, x2 - x1), s = 11;
+    wires.push(`<path d="M${x2 - s * Math.cos(a - 0.55)} ${y2 - s * Math.sin(a - 0.55)} L${x2} ${y2} L${x2 - s * Math.cos(a + 0.55)} ${y2 - s * Math.sin(a + 0.55)}" fill="none" stroke="${col}" stroke-width="${w}" stroke-linecap="round" stroke-linejoin="round"/>`); } }
+const OR = () => ({ col: css("--ours"), w: 2.6 });
+function l1(t, x, y, z) { const e = el("l1", t, x, y); e.style.fontSize = z + "px"; return e; }
+function l2(t, x, y) { return el("l2", t, x, y); }
+function box(cls, main, ann, x, y, w, h, z) { const e = el("box " + cls, `<div class="m" style="font-size:${z}px">${main}</div>` + (ann ? `<div class="a">${ann}</div>` : ""), x, y, w, h); return e; }
+function wave(x, y, w, h) { const v = [0.3, 0.55, 0.85, 0.5, 1, 0.7, 0.4, 0.8, 0.55, 0.35, 0.6, 0.25]; const b = el("wave", "", x, y, w, h); b.style.position = "absolute";
+  v.forEach((k, i) => { const s = document.createElement("i"); Object.assign(s.style, { left: (i * w / v.length + w / v.length * 0.2) + "px", width: (w / v.length * 0.55) + "px", top: (h * (1 - k) / 2) + "px", height: (h * k) + "px" }); b.appendChild(s); }); return b; }
+// one lane of the frozen model: 17 slabs; returns slab centres
+function lane(x, y, w, h, o, title, sub) {
+  const b = el("blk", "", x, y, w, h);
+  const t = document.createElement("div"); t.className = "bt"; t.innerHTML = title; Object.assign(t.style, { left: o.pad + "px", top: "12px", fontSize: o.tz + "px" }); b.appendChild(t);
+  if (sub) { const s = document.createElement("div"); s.className = "bs"; s.innerHTML = sub; Object.assign(s.style, { right: o.pad + "px", top: "14px" }); b.appendChild(s); }
+  const gap = (w - 2 * o.pad - 17 * o.sw) / 16, cx = [];
+  for (let k = 1; k <= 17; k++) { const sx = x + o.pad + (k - 1) * (o.sw + gap); el("slab" + (o.tap === k ? " tap" : ""), "", sx, y + o.top, o.sw, h - o.top - o.bot); cx.push(sx + o.sw / 2); }
+  return { b, cx, R: R(b), sy0: y + o.top, sy1: y + h - o.bot }; }
+function brace(x1, x2, y, up, col) {   // curly brace over [x1, x2]; tip away from the lane
+  const d = up ? -1 : 1, y1 = y + 14 * d, tip = y + 28 * d, mx = (x1 + x2) / 2, r = 14;
+  wires.push(`<path d="M${x1} ${y} Q${x1} ${y1} ${x1 + r} ${y1} L${mx - r} ${y1} Q${mx} ${y1} ${mx} ${tip} Q${mx} ${y1} ${mx + r} ${y1} L${x2 - r} ${y1} Q${x2} ${y1} ${x2} ${y}" fill="none" stroke="${col}" stroke-width="2.6" stroke-linejoin="round"/>`);
+  return { mx, tip }; }
+
+// the reuse marker: a dashed grey bracket on the far left spanning both lanes, a vertical "↻ one model, used twice";
+// it touches neither lane's output side, so nothing can read as pass-1 output flowing into pass 2
+function place(e, x, y, ax = 0, ay = 0) { e.style.left = (x - ax * e.offsetWidth) + "px"; e.style.top = (y - ay * e.offsetHeight) + "px"; return e; }
+function circ(n, x, y, col) { const e = el("circ", String(n), 0, 0); e.style.border = `3px solid ${col}`; return place(e, x, y, 0.5, 0.5); }
+function spark(gx, gyy, gw, gh, O) {
+  const ps = [0.05, 0.08, 0.06, 0.1, 0.07, 0.12, 0.09, 0.2, 0.35, 0.55, 0.8], thr = gyy + gh * 0.28;
+  const pts = ps.map((p, i) => [gx + i * gw / (ps.length - 1), gyy + gh * (1 - p)]);
+  wires.push(`<line x1="${gx}" y1="${thr}" x2="${gx + gw}" y2="${thr}" stroke="#8A939E" stroke-width="1.5"/>`);
+  wires.push(`<polyline points="${pts.map(p => p.join(",")).join(" ")}" fill="none" stroke="${O}" stroke-width="2.6"/>`);
+  wires.push(`<line x1="${gx}" y1="${gyy + gh}" x2="${gx + gw}" y2="${gyy + gh}" stroke="#C8CDD4" stroke-width="1.5"/>`);
+  const c = pts[pts.length - 1]; wires.push(`<circle cx="${c[0]}" cy="${c[1]}" r="6" fill="${O}"/>`); return c; }
+function spark2(gx, gyy, gw, gh, O) {
+  const ps = [0.05, 0.08, 0.06, 0.1, 0.07, 0.12, 0.09, 0.2, 0.35, 0.55, 0.8], thr = gyy + gh * 0.3;
+  const pts = ps.map((p, i) => [gx + i * gw / (ps.length - 1), gyy + gh * (1 - p)]);
+  wires.push(`<line x1="${gx}" y1="${thr}" x2="${gx + gw + 10}" y2="${thr}" stroke="#8A939E" stroke-width="1.8" stroke-dasharray="6 5"/>`);
+  wires.push(`<polyline points="${pts.map(p => p.join(",")).join(" ")}" fill="none" stroke="${O}" stroke-width="2.6"/>`);
+  wires.push(`<line x1="${gx}" y1="${gyy + gh}" x2="${gx + gw}" y2="${gyy + gh}" stroke="#C8CDD4" stroke-width="1.5"/>`);
+  // the crossing: where the curve meets the threshold (linear interpolation between the two samples around it)
+  let i = pts.findIndex(p => p[1] <= thr); const [a, b] = [pts[i - 1], pts[i]], f = (a[1] - thr) / (a[1] - b[1]);
+  const c = [a[0] + f * (b[0] - a[0]), thr]; wires.push(`<circle cx="${c[0]}" cy="${c[1]}" r="7" fill="${O}"/>`); return c; }
+function ghost(x, y, w, h, sw) {
+  const g = el("ghost", "", x, y, w, h), n = 17, pad = 16, gap = (w - 2 * pad - n * sw) / (n - 1), cx = [];
+  for (let k = 0; k < n; k++) { const sx = x + pad + k * (sw + gap); el("gs", "", sx, y + 44, sw, h - 44 - 12); cx.push(sx + sw / 2); }
+  return { g, R: R(g), cx }; }
+function region(x, y, w, h, label, lx, ly) { el("reg", "", x, y, w, h); return el("rl", label, lx, ly); }
+function build(W, H) {
+  Object.assign(st.style, { width: W + "px", height: H + "px" }); st.innerHTML = ""; wires.length = 0;
+  const M = 64, sq = H / W > 0.9, O = css("--ours"), S1 = css("--slate");
+  const R1 = { col: S1, w: 2.6 }, R2 = { col: O, w: 3 }, GR = { col: "#8A939E", w: 2, head: true };
+  const Lz = sq ? 26 : 30, Mz = sq ? 22 : 24;
+  const P = sq ? { tz: 32, bx: 250, bw: 460, bt: 376, bh: 290, pad: 18, sw: 14, wav: [64, 80], ex: 764, rn: 96, th: 150, ts: [420, 200], tsy: 782, ly: 710, sm: [64, 124], lpx: 690, vy: 824 }
+               : { tz: 44, bx: 480, bw: 760, bt: 388, bh: 300, pad: 26, sw: 26, wav: [110, 120], ex: 1290, rn: 170, th: 170, ts: [525, 220], tsy: 782, ly: 0, sm: [110, 160], lpx: 1000, vy: 900 };
+  l1("One frozen NVIDIA speech model, six small heads on top", M, M + 4, P.tz);
+  const sub = el("sub abs", "Pick the model: FastConformer Hybrid Streaming 115M (17 blocks) or Nemotron Speech Streaming 0.6B (24 blocks). Same heads on both.", M, 0); sub.style.fontSize = (sq ? 24 : 26) + "px"; place(sub, M, M + 2 + (sq ? 44 : 58));
+  // the two runs as a sequence, one line of tiny grey boxes
+  const seq = sq ? ["every 160 ms", "① run model", "voice track", "② run again, conditioned", "turn decision"]
+                 : ["each 160 ms chunk", "① run the model", "your voice track", "② run it again, conditioned", "turn decision"];
+  let sxq = M; const syq = R(sub).b + (sq ? 12 : 16);
+  seq.forEach((t, i) => { const e = el("l2", t, sxq, syq); if (i) { Object.assign(e.style, { border: "1.5px solid #C3C9D1", borderRadius: "8px", padding: "1px 8px", background: "#FFFFFF" }); }
+    const r = R(e); if (i < seq.length - 1) { wire([[r.r + 6, r.cy], [r.r + (sq ? 20 : 26), r.cy]], { col: "#8A939E", w: 1.8 }); } sxq = r.r + (sq ? 26 : 34); });
+  // the one frozen model
+  const A = lane(P.bx, P.bt, P.bw, P.bh, { pad: P.pad, sw: P.sw, top: sq ? 58 : 66, bot: 94, tz: Lz, tap: 4 }, sq ? "Frozen NVIDIA model" : "FastConformer 115M or Nemotron Speech 0.6B", "");
+  [[1, "1"], [4, "4"], [17, "17 / 24"]].forEach(([k, t]) => { const e = el("l2", t, 0, 0); e.style.background = S1; e.style.color = k === 4 ? "#FFFFFF" : "var(--onslate)"; if (k === 4) e.style.fontWeight = 700; place(e, A.cx[k - 1], A.R.b - 62, 0.5, 1); });
+  const ex1 = A.R.t + (sq ? 84 : 96), ex2 = A.R.b - 31;
+  // pass 2: a thin orange-tinted lane along the bottom of the SAME block, flush to its right edge (exits into the turn head)
+  const lane2 = el("abs", "", A.R.l + 10, A.R.b - 52, A.R.r - A.R.l - 10, 42);
+  Object.assign(lane2.style, { background: "#634739", borderRadius: "8px 0 0 8px", zIndex: 0 });
+  const l2t = el("l2", sq ? "② second run · voice track · 115M" : "② second run · knows your voice track (115M model)", 0, 0);
+  Object.assign(l2t.style, { color: "#FFFFFF", background: "#634739", fontWeight: 400, zIndex: 3 }); place(l2t, A.cx[3] + 14, ex2, 0, 0.5);
+  // audio in (one entry)
+  const au = l1("Audio", 0, 0, Mz); place(au, P.wav[0], ex1 - 38, 0, 1); wave(P.wav[0], ex1 - 32, P.wav[1], 64);
+  wire([[P.wav[0] + P.wav[1] + 10, ex1], [A.R.l - 8, ex1]], R1); circ(1, A.R.l - 36, ex1, S1);
+  place(l2("first", 0, 0), A.R.l - 36, ex1 - 22, 0.5, 1);
+  // all 17 layers -> VAD head, directly above -> Speech?
+  // the VAD head reads layer 4 (block index 3): one stem up from slab 4, sharing the layer-4 tap with "Is it you?"
+  const s4t = A.cx[3], vtop = A.R.t - (sq ? 48 : 56) - 16 - 48;
+  const vw = sq ? 200 : 250, vb = box("ours", "Speech detector", "VAD · block 4 / 12", s4t - vw / 2, 0, vw, 56, Mz); place(vb, s4t - vw / 2, vtop, 0, 1);
+  const br = { mx: s4t, tip: A.R.t };
+  wire([[s4t, A.R.t - 2], [s4t, R(vb).b + 6]], R1); circ(1, s4t, (A.R.t + R(vb).b) / 2, S1);
+  // inside the block: the tap leaves the top of slab 4 (light line); the block title moves right, clear of it
+  wires.push(`<line x1="${s4t}" y1="${A.sy0}" x2="${s4t}" y2="${A.R.t}" stroke="#C8CDD4" stroke-width="2.6"/>`);
+  const bt = A.b.querySelector(".bt"); bt.style.left = "auto"; bt.style.right = P.pad + "px";
+  // Speech? to the LEFT of the VAD head, so the language head can sit over layers 8-12 on the right
+  const vr = R(vb); wire([[vr.l - 6, vr.cy], [vr.l - 36, vr.cy]], R1); const spq = l1("Speech?", 0, 0, Lz); place(spq, vr.l - 44, vr.cy, 1, 0.5);
+  place(l2("every 80 ms", 0, 0), vr.l - 44, vr.cy + 20, 1, 0);
+  // language head (verified: assets/lid_distill.pt from_layers [7..11] = layers 8-12, 0.92 M; pass 1, same chunk outputs,
+  // server/streams.py self.lid.feed(enc, hid, ...)): a short bracket over slabs 8-12
+  const b8 = A.cx[7], b12 = A.cx[11], lm = (b8 + b12) / 2, lb = brace(b8, b12, A.R.t - 8, true, S1);
+  const lw = sq ? 220 : 290, lbx = box("ours", "Language detector", sq ? "blocks 8–12 / 16–20" : "blocks 8–12 / 16–20", lm - lw / 2, 0, lw, 60, Mz);
+  place(lbx, Math.max(vr.r + 16, lm - lw / 2), vr.b, 0, 1);   // level with the VAD head
+  const lr = R(lbx); wire([[lm, lb.tip], [lm, lr.b + 6]], R1); circ(1, lm, (lb.tip + lr.b) / 2 + 2, S1);
+  // layer 17 (right edge, top) -> RNNT -> streaming words
+  const d = box("grey", "Decoder", "RNNT", P.ex, ex1 - 28, P.rn, 56, Mz);
+  wire([[A.R.r + 6, ex1], [P.ex - 8, ex1]], R1); circ(1, A.R.r + (P.ex - A.R.r) / 2, ex1, S1);
+  const dr = R(d); wire([[dr.r + 6, ex1], [dr.r + (sq ? 28 : 36), ex1]], R1);
+  const wl = l1(sq ? "Streaming<br>words" : "Streaming words", 0, 0, sq ? 24 : Lz); wl.style.whiteSpace = "normal"; place(wl, dr.r + (sq ? 36 : 44), ex1 - (sq ? 0 : 8), 0, 0.5);
+  if (sq) place(l2("every 160 ms", 0, 0), dr.l, dr.b + 6); else place(l2("every 160 ms", 0, 0), dr.r + 44, R(wl).b + 2);
+  // layer 4 -> TS-VAD "Is it you?" <- voice print <- 5 s sample
+  const s4 = A.cx[3], tw = P.ts[1] + 40, ts = box("ours", "Is it you?", "speaker tracker · 4 / 5", sq ? P.ts[0] : s4 - tw / 2, P.tsy - 38, tw, 76, Lz), t = R(ts);
+  ts.querySelector(".a").style.fontSize = "22px";
+  if (!sq) wire([[s4, A.R.b + 4], [s4, t.t - 6]], R1); else wire([[s4, A.R.b + 4], [s4, P.ly], [t.cx, P.ly], [t.cx, t.t - 6]], R1);
+  // the layer-4 tap starts at slab 4 (pass 1) and crosses over the pass-2 lane in a light line with a gap in the lane
+  wires.push(`<line x1="${s4}" y1="${A.sy1}" x2="${s4}" y2="${A.R.b}" stroke="#FFFFFF" stroke-width="9"/>`, `<line x1="${s4}" y1="${A.sy1}" x2="${s4}" y2="${A.R.b + 4}" stroke="#C8CDD4" stroke-width="2.6"/>`);
+  const c4y = A.R.b + (sq ? 22 : 30); circ(1, s4, c4y, S1); place(l2("block 4 / 5", 0, 0), s4 + 26, c4y, 0, 0.5);
+  // the voice print comes up from below: 5 s sample -> (speaker head, layer 4) -> TS-VAD
+  const smw = sq ? 140 : 160, sm = box("grey", "5 s sample", null, t.cx - smw / 2, t.b + (sq ? 104 : 88), smw, 56, Mz), smr = R(sm);
+  wire([[t.cx, smr.t - 6], [t.cx, t.b + 6]], R1);
+  // verified: tsvad_stream.voiceprint = the sample's layer-4 features through the speaker head, once
+  // v9 square: the annotation moves to the LEFT of the stem, so the (taller) turn-end box has the right side
+  const vpx = sq ? t.cx - 14 : t.cx + 14, vpa = sq ? 1 : 0;
+  const vp1 = place(l2("voice print", 0, 0), vpx, (t.b + smr.t) / 2 - 1, vpa, 1);
+  const vp2 = place(l2(sq ? "sample run once through<br>block 4 / 5 → speaker head" : "(sample run once through block 4 / 5 → speaker head)", 0, 0), vpx, (t.b + smr.t) / 2 + 1, vpa, 0);
+  if (sq) { vp1.style.textAlign = "right"; vp2.style.textAlign = "right"; }
+  // your voice track -> orange loop (2) back INTO the same block (its bottom edge), conditioned at blocks 1 and 3
+  // your voice track: out of the TS-VAD's left side, up into the pass-2 lane at layers 1 and 3
+  const b1 = A.cx[0], b3 = A.cx[2], lxv = b1 - (sq ? 16 : 20), hy = A.R.b + (sq ? 34 : 42);
+  wire([[t.l - 6, t.cy], [lxv, t.cy], [lxv, hy], [b3, hy], [b3, A.R.b - 44]], R2); wire([[b1, hy], [b1, A.R.b - 44]], R2);
+  circ(2, lxv, hy, O);
+  place(l2(sq ? "then · layers 1, 3" : "then · into layers 1 & 3", 0, 0), lxv - 26, hy, 1, 0.5);
+  const vt = l1(sq ? "Your voice<br>track" : "Your voice track", 0, 0, Mz); vt.style.textAlign = "right"; place(vt, lxv - 26, t.cy - 4, 1, 0);
+  const strip = [[0.20, O], [0.12, "#C8CDD4"], [0.18, "#FFFFFF"], [0.28, O], [0.10, "#C8CDD4"], [0.12, O]], swd = sq ? 140 : 180; let sx0 = lxv - 26 - swd, sy0 = R(vt).b + 6;
+  strip.forEach(([f, col]) => { wires.push(`<rect x="${sx0}" y="${sy0}" width="${f * swd}" height="12" fill="${col}" stroke="#AEB6C0" stroke-width="1"/>`); sx0 += f * swd; });
+  // (2) exit: right edge, lower -> turn head -> turn over? -> turn end
+  wire([[A.R.r, ex2], [P.ex - 8, ex2]], R2); circ(2, A.R.r + (P.ex - A.R.r) / 2, ex2, O);
+  const th = box("ours", "Turn detector", "0.32M", P.ex, ex2 - 36, P.th, 72, Mz), hr = R(th); th.querySelector(".a").style.fontSize = "22px";
+  let gx, gyy, tl;
+  if (!sq) { wire([[hr.r + 6, ex2], [hr.r + 36, ex2]], R2); gx = hr.r + 44; tl = l1("Turn over?", gx, 0, Lz); place(tl, gx, ex2 - 34, 0, 1); gyy = ex2 - 26; }
+  else { tl = l1("Turn over?", 0, 0, Lz); place(tl, hr.l, hr.b + 34); gx = hr.l; gyy = R(tl).b + 8; wire([[hr.cx, hr.b + 4], [hr.cx, R(tl).t - 4]], R2); }
+  const gw = sq ? 140 : 170, gh = sq ? 44 : 52, cr = spark2(gx, gyy, gw, gh, O);
+  place(l2("every 80 ms", 0, 0), gx, gyy + gh + 6);
+  // the turn decision box, below the posterior: single mode's shipped rule (VadHeadPolicy defaults: VAD_HEAD_SIL_THR 0.4,
+  // VAD_HEAD_WAIT_MS (160, 640), POLICY_THETA["vad_head"] 0.99; research/EOT_LATENCY.md), no Silero
+  const te = el("abs", `<div style="font-size:${Lz}px;font-weight:700;color:var(--ink);line-height:1.1">Turn end</div>` +
+    `<div style="font-size:22px;color:var(--ink);line-height:1.2;margin-top:4px">` + (sq ? "quiet ≥ 160 ms + turn detector ≥ 0.99<br>or end-of-turn classifier at each quiet frame<br>(block 8 / 12 + words)"
+      : "quiet ≥ 160 ms + turn detector ≥ 0.99<br>or end-of-turn classifier at each quiet frame (block 8 / 12 + words)") + `</div>`, 0, 0);
+  Object.assign(te.style, { border: `2.5px solid ${O}`, borderRadius: "10px", padding: "6px 14px 8px", background: "#FFFFFF", whiteSpace: "nowrap", zIndex: 2 });
+  te.dataset.rule = "1";
+  const tby = gyy + gh + (sq ? 40 : 52); place(te, Math.min(cr[0] - 60, W - M - te.offsetWidth), tby);
+  wire([[cr[0], cr[1] + 8], [cr[0], tby - 6]], R2);
+  // optional: tiny grey dashed branch, no container
+  const f = el("foot abs", "blocks shown as 115M / 0.6B · the voice-aware second run exists on the 115M; the 0.6B decides from the first run · heads: speech detector, speaker head (voice print), speaker tracker, turn detector, end-of-turn classifier, language detector", M, 0, W - 2 * M); f.style.top = (H - M - f.offsetHeight - 2) + "px";
+  const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg"); svg.setAttribute("class", "wires"); svg.setAttribute("width", W); svg.setAttribute("height", H);
+  svg.innerHTML = wires.join(""); st.prepend(svg);
+  if (new URLSearchParams(location.search).get("notext")) notext();
+}
+// removal test: hide every explanatory annotation (level 2) and the footer (level 3); level-1 labels stay
+function notext() { const s = document.createElement("style"); s.textContent = "#stage .l2, #stage .foot, #stage .box .a { color: transparent !important; } /* transparent !important */"; document.head.appendChild(s); }
+
+const FOCUS = {
+  asr: { title: "Words", sub: "The frozen NVIDIA model and its decoder transcribe. Nothing changed here: pick the size you can afford.",
+    keep: e => /Audio|Decoder|Streaming words|every 160 ms|^first$/.test(e.textContent.trim()) || e.classList.contains("wave"), core: true,
+    rows: [["Live two-party calls, WER %", "lower is better", [["Nemotron 0.6B","13.7","us"],["FastConformer 115M","23.2","us2"],["Whisper small (LiveKit default)","19.3","base"]]],
+           ["Meetings (AMI), WER %", "lower is better", [["Nemotron 0.6B","11.2","us"],["FastConformer 115M","24.4","us2"]]],
+           ["Read speech (LibriSpeech), WER %", "lower is better", [["Nemotron 0.6B","2.2","us"],["FastConformer 115M","2.3","us2"],["Whisper small","2.4","base"]]],
+           ["Compute per 160 ms of audio, Mac GPU", "ms", [["Nemotron 0.6B","39","us"],["FastConformer 115M","29","us2"]]]],
+    foot: "Same audio for every row. Words stream every 160 ms; a word appears about 0.4 s after it is spoken (115M, median)." },
+  vad: { title: "Speech detector", sub: "A 33K head on block 4 (12 on the 0.6B) says speech or not every 80 ms. It replaces Silero.",
+    keep: e => /Speech detector|Speech\?/.test(e.textContent.trim()) || (/every 80 ms/.test(e.textContent.trim()) && parseFloat(e.style.top) < 400), core: false,
+    rows: [["AMI meetings, F1", "higher is better", [["FastConformer 115M","0.951","us2"],["Nemotron 0.6B","0.951","us"],["NVIDIA MarbleNet v2","0.937","base"],["Silero v5","0.915","base"]]],
+           ["AMI meetings, ROC-AUC", "higher is better", [["FastConformer 115M","0.972","us2"],["Nemotron 0.6B","0.972","us"],["MarbleNet v2","0.959","base"],["Silero v5","0.956","base"]]],
+           ["Reaction to speech onset", "median", [["both cores","80 ms","us"]]]],
+    foot: "64 × 20 s AMI windows, threshold 0.5 for every system. Same frames, same labels." },
+  spk: { title: "Speaker head and speaker tracker", sub: "A 5 s sample becomes a voice print; the tracker marks every 80 ms whether the voice is yours.",
+    keep: e => /Is it you|5 s sample|voice print|sample run once|block 4 \/ 5|Your voice track/.test(e.textContent.trim()), core: false,
+    rows: [["Your words only, meetings (ICSI), target-speaker WER %", "lower is better", [["Nemotron 0.6B","31.7","us"],["FastConformer 115M","37.1","us2"],["Nemotron-3 diarization + print","65","base"],["no speaker filter","101","base"]]],
+           ["Your words only, mixed two-party calls, WER %", "lower is better", [["FastConformer 115M","40","us2"],["no speaker filter","63","base"]]],
+           ["Speaker match error (EER), AMI", "lower is better", [["Nemotron 0.6B","13.6 %","us"],["FastConformer 115M","19.8 %","us2"]]],
+           ["Tracking F1, AMI / ICSI", "higher is better", [["Nemotron 0.6B","0.760 / 0.894","us"],["FastConformer 115M","0.743 / 0.882","us2"]]]],
+    foot: "No diarizer in the loop. Nemotron-3 diarization row: NVIDIA's diarizer bound to the same voice print, same ICSI audio." },
+  turn: { title: "Turn detector and end-of-turn classifier", sub: "Has the user finished? Asked at every quiet frame, answered from the model’s features plus the words.",
+    keep: e => /Turn detector|Turn over|Turn end|quiet ≥|second run|then · into layers|turn decision|run it again/.test(e.textContent.trim()), core: false,
+    rows: [["Speech to an agent: accuracy", "399 smart-turn test clips", [["FastConformer 115M","92.2 %","us2"],["Nemotron 0.6B","fix in progress","us"],["Pipecat smart-turn v3.2","69.7 %","base"],["LiveKit turn detector","72.7 %","base"]]],
+           ["Speech to an agent: answer latency", "median, after you stop", [["FastConformer 115M","292 ms","us2"],["Pipecat smart-turn v3.2","211 ms","base"],["LiveKit turn detector","547 ms","base"]]],
+           ["Speech to an agent: cut off mid-sentence", "% of unfinished sentences", [["FastConformer 115M","5.4 %","us2"],["Pipecat smart-turn v3.2","40.2 %","base"],["LiveKit turn detector","44.6 %","base"]]],
+           ["Two-party calls, fast preset: latency / false interruptions / missed", "109 turn ends", [["FastConformer 115M","547 ms / 24.8 % / 5.5 %","us2"],["LiveKit turn detector","567 ms / 26.6 % / 22.9 %","base"]]]],
+    foot: "Same clips and calls for every system. Pipecat 1.12 and LiveKit Agents 1.8 defaults, replayed without waiting for their speech-to-text." },
+  lid: { title: "Language detector", sub: "A 0.92M head on blocks 8–12 (16–20 on the 0.6B) names the language. Distilled from NVIDIA AmberNet.",
+    keep: e => /Language detector/.test(e.textContent.trim()), core: false,
+    rows: [["FLEURS, 17 languages: accuracy", "2 s of audio / whole clip", [["FastConformer 115M","91.0 % / 97.8 %","us2"],["Nemotron 0.6B (same data as 115M control)","87.4 % / 95.3 %","us"]]],
+           ["Industry baseline on the same clips", "", [["not measured","–","base"]]]],
+    foot: "Optional head. The 0.6B row and its 115M control were trained on the smaller FLEURS split; the shipped 115M head saw 47k more rows." },
+};
+function buildFocus(W, H, key) {
+  const F = FOCUS[key], outer = document.getElementById("outer"), sc = document.getElementById("score");
+  Object.assign(outer.style, { width: W + "px", height: H + "px" });
+  build(1920, 1080);
+  // retitle the diagram
+  [...st.querySelectorAll(".l1")].filter(e => e.textContent.startsWith("One frozen")).forEach(e => e.textContent = "audioforge · " + F.title);
+  [...st.querySelectorAll(".sub")].forEach(e => { e.textContent = F.sub; e.style.width = "1500px"; e.style.whiteSpace = "normal"; });
+  [...st.querySelectorAll(".foot")].forEach(e => e.style.display = "none");
+  const SEQ = /^(each 160 ms chunk|① run the model|your voice track|② run it again, conditioned|turn decision)$/;
+  [...st.querySelectorAll(".l2")].filter(e => SEQ.test(e.textContent.trim())).forEach(e => e.style.display = "none");
+  const svgEl = st.querySelector("svg"); if (svgEl) [...svgEl.querySelectorAll("path")].forEach(p => { const ys = (p.getAttribute("d").match(/[\d.]+(?=\s*[LMQ]|$)/g) || []); const nums = p.getAttribute("d").match(/-?[\d.]+/g).map(Number); const yv = nums.filter((_, i) => i % 2 === 1); if (yv.length && Math.max(...yv) < 230) p.remove(); });
+  for (const e of [...st.children]) {
+    if (e.tagName === "svg") { e.style.opacity = key === "asr" ? 0.9 : 0.35; continue; }
+    if (e.classList.contains("l1") && e.textContent.startsWith("audioforge")) continue;
+    if (e.classList.contains("sub")) continue;
+    if (e.classList.contains("blk")) { if (!F.core) e.classList.add("dimcore"); continue; }
+    if (!F.keep(e)) e.classList.add("dim");
+  }
+  const s = 0.68; st.style.transform = `scale(${s})`; st.style.position = "absolute"; st.style.left = "0px"; st.style.top = "40px";
+  const sx = Math.round(1920 * s) + 10, sw = W - sx - 64;
+  Object.assign(sc.style, { left: sx + "px", top: "88px", width: sw + "px", height: (H - 88 - 64) + "px" });
+  let html = `<div class="sc-t">Measured</div><div class="sc-p">Same audio for every row. Orange: audioforge heads. Grey: the model in use today.</div>`;
+  F.rows.forEach(([h, u, rows]) => { html += `<div class="sc-h">${h}</div>` + (u ? `<div class="sc-u">${u}</div>` : "") + `<table class="sc">` +
+    rows.map(([n, v, k]) => `<tr class="${k}"><td>${n}</td><td class="n">${v}</td></tr>`).join("") + `</table>`; });
+  html += `<div class="sc-f">${F.foot}</div>`;
+  sc.innerHTML = html;
+}
+
+// "today" = the separate models a voice agent stacks now (Pipecat / LiveKit defaults and common choices)
+const TODAY = [["mic", "Microphone", ""], ["vad", "Silero / TEN VAD", "speech or not"], ["asr", "Whisper / Parakeet-TDT", "speech-to-text, after you stop"],
+  ["turn", "smart-turn v3.2 / LiveKit detector", "has the user finished?"], ["spk", "pyannote / Nemotron-3 diarizer", "+ a voice-print model"],
+  ["lid", "Whisper / AmberNet", "which language"], ["llm", "LLM + TTS", ""]];
+// bars: kind us = Nemotron 0.6B (dark orange), us2 = FastConformer 115M (light orange), base = best in use (grey), na = not measured
+const NV = k => { const e = (window.NF || {})[k]; if (!e) throw new Error("numbers_final has no " + k); return typeof e.value === "number" ? e.value : null; };
+const B = (label, key, kind) => ({ label, v: NV(key), kind, key });
+const F = "final/";
+const VS = {
+  asr: { title: "Words", hot: "asr", what: "Today: a separate speech-to-text model that waits for you to stop. Here: the same NVIDIA model that feeds every head, streaming as you talk.",
+    charts: [{ name: "Live calls, your voice", unit: "wrong words per 100 · lower is better", lower: true, dec: 1, bars: [B("ours 0.6B", F+"wer/live_user/ours_0p6b", "us"), B("ours 115M", F+"wer/live_user/ours_115m", "us2"), B("Parakeet-TDT 0.6B", F+"wer/live_user/parakeet_tdt", "base"), B("Whisper large-v3", F+"wer/live_user/whisper_large", "base"), B("Whisper small", F+"wer/live_user/whisper_small", "base")] },
+             { name: "Meetings, AMI", unit: "wrong words per 100 · lower is better", lower: true, dec: 1, bars: [B("ours 0.6B", F+"wer/ami/ours_0p6b", "us"), B("ours 115M", F+"wer/ami/ours_115m", "us2"), B("Parakeet-TDT 0.6B", F+"wer/ami/parakeet_tdt", "base"), B("Whisper large-v3", F+"wer/ami/whisper_large", "base"), B("Whisper small", F+"wer/ami/whisper_small", "base")] },
+             { name: "Read speech, LibriSpeech", unit: "wrong words per 100 · lower is better", lower: true, dec: 1, bars: [B("ours 0.6B", F+"wer/libri/ours_0p6b", "us"), B("ours 115M", F+"wer/libri/ours_115m", "us2"), B("Parakeet-TDT 0.6B", F+"wer/libri/parakeet_tdt", "base"), B("Whisper large-v3", F+"wer/libri/whisper_large", "base"), B("Whisper small", F+"wer/libri/whisper_small", "base")] }] },
+  vad: { title: "Speech detector", hot: "vad", what: "Today: Silero or TEN VAD, a separate model. Here: a 33K head on the same model’s features. Live-capable detectors only.",
+    charts: [{ name: "Meetings, AMI (our training set)", unit: "F1 at threshold 0.5 · higher is better", lower: false, domain: [0.8, 1.0, 0.1], dec: 3, bars: [B("ours, both", F+"vad/ami/f1/ours_115m", "us"), B("MarbleNet v2", F+"vad/ami/f1/marblenet", "base"), B("TEN VAD", F+"vad/ami/f1/ten_vad", "base"), B("Silero v5", F+"vad/ami/f1/silero", "base")] },
+             { name: "Speech missed, AMI (our training set)", unit: "per 100 speech frames, same false alarms · lower is better", lower: true, dec: 1, bars: [B("ours, both", F+"vad/ami/miss/ours_115m", "us"), B("MarbleNet v2", F+"vad/ami/miss/marblenet", "base"), B("TEN VAD", F+"vad/ami/miss/ten_vad", "base"), B("Silero v5", F+"vad/ami/miss/silero", "base")] },
+             { name: "Meetings, ICSI (unseen in training)", unit: "F1 at threshold 0.5 · higher is better", lower: false, domain: [0.8, 1.0, 0.1], dec: 3, bars: [B("ours 0.6B", F+"vad/icsi/f1/ours_0p6b", "us"), B("ours 115M", F+"vad/icsi/f1/ours_115m", "us2"), B("MarbleNet v2", F+"vad/icsi/f1/marblenet", "base"), B("TEN VAD", F+"vad/icsi/f1/ten_vad", "base"), B("Silero v5", F+"vad/icsi/f1/silero", "base")] }] },
+  spk: { title: "Speaker tracker", hot: "spk", what: "Today: a diarizer plus a voice-print model. Here: a 5 s sample and a 0.26M head on block 4. No diarizer.",
+    charts: [{ name: "Your words only, ICSI meetings", unit: "wrong words per 100 of yours · same 5 s voice print for all", lower: true, dec: 1, bars: [B("ours 0.6B", F+"twer/icsi/ours_0p6b", "us"), B("ours 115M", F+"twer/icsi/ours_115m", "us2"), B("pyannote 3.1", F+"twer/icsi/pyannote31", "base"), B("Nemotron-3", F+"twer/icsi/nemotron3_0p6bwords", "base"), B("no filter", F+"twer/icsi/nofilter", "base")] },
+             { name: "Your words only, AMI meetings", unit: "wrong words per 100 of yours · lower is better", lower: true, dec: 1, bars: [B("ours 0.6B", F+"twer/ami/ours_0p6b", "us"), B("ours 115M", F+"twer/ami/ours_115m", "us2"), B("pyannote 3.1", F+"twer/ami/pyannote31", "base"), B("Nemotron-3", F+"twer/ami/nemotron3_0p6bwords", "base"), B("no filter", F+"twer/ami/nofilter", "base")] },
+             { name: "Tracking F1, ICSI", unit: "is it you, every 80 ms · higher is better", lower: false, domain: [0.5, 1.0, 0.25], dec: 3, bars: [B("ours 0.6B", F+"trackf1/icsi/ours_0p6b", "us"), B("ours 115M", F+"trackf1/icsi/ours_115m", "us2"), B("pyannote 3.1", F+"trackf1/icsi/pyannote31", "base"), B("Nemotron-3", F+"trackf1/icsi/nemotron3", "base")] }] },
+  turn: { title: "Turn detection", hot: "turn", what: "Today: smart-turn or LiveKit’s detector, a separate model on top of Silero. Here: a classifier on the same model’s features plus the words.",
+    charts: [{ name: "Right about “you’re done”", unit: "per 100 clips, speech to an agent · higher is better", lower: false, domain: [0, 100, 50], dec: 1, bars: [B("ours 0.6B", F+"asst/acc/ours_0p6b", "us"), B("ours 115M", F+"asst/acc/ours_115m", "us2"), B("LiveKit detector", F+"asst/acc/livekit", "base"), B("Pipecat smart-turn", F+"asst/acc/pipecat", "base"), B("Parakeet EOU", F+"asst/acc/parakeet_eou", "base")] },
+             { name: "Answers after you stop", unit: "median, ms · lower is better", lower: true, bars: [B("ours 0.6B", F+"asst/p50/ours_0p6b", "us"), B("ours 115M", F+"asst/p50/ours_115m", "us2"), B("LiveKit detector", F+"asst/p50/livekit", "base"), B("Pipecat smart-turn", F+"asst/p50/pipecat", "base"), B("Parakeet EOU", F+"asst/p50/parakeet_eou", "base")] },
+             { name: "Cuts you off mid-sentence", unit: "per 100 unfinished sentences · lower is better", lower: true, dec: 1, bars: [B("ours 0.6B", F+"asst/ff/ours_0p6b", "us"), B("ours 115M", F+"asst/ff/ours_115m", "us2"), B("LiveKit detector", F+"asst/ff/livekit", "base"), B("Pipecat smart-turn", F+"asst/ff/pipecat", "base"), B("Parakeet EOU", F+"asst/ff/parakeet_eou", "base")] }] },
+  lid: { title: "Language detector", hot: "lid", what: "Today: Whisper’s language detection or AmberNet. Here: a 0.92M head on the same features. Optional.",
+    charts: [{ name: "Right language from 2 s", unit: "per 100 clips, FLEURS 17 languages · higher is better", lower: false, domain: [0, 100, 50], dec: 1, bars: [B("ours 115M", F+"lid/2s/ours_115m", "us2"), B("ours 0.6B", F+"lid/2s/ours_0p6b", "us"), B("Whisper turbo", F+"lid/2s/whisper_turbo", "base"), B("AmberNet", F+"lid/2s/ambernet", "base"), B("Whisper small", F+"lid/2s/whisper_small", "base")] },
+             { name: "Right language, whole clip", unit: "per 100 clips · higher is better", lower: false, domain: [0, 100, 50], dec: 1, bars: [B("ours 115M", F+"lid/full/ours_115m", "us2"), B("ours 0.6B", F+"lid/full/ours_0p6b", "us"), B("Whisper large-v3", F+"lid/full/whisper_large", "base"), B("AmberNet", F+"lid/full/ambernet", "base"), B("Whisper small", F+"lid/full/whisper_small", "base")] }] },
+};
+function barchart(x, y, w, h, spec, sc) {
+  const c = document.createElement("div"); c.className = "bc"; Object.assign(c.style, { left: x + "px", top: y + "px", width: w + "px", height: h + "px" }); sc.appendChild(c);
+  const P = 22, mk = (cls, html, px, py) => { const e = document.createElement("div"); e.className = cls; e.innerHTML = html; e.style.left = px + "px"; e.style.top = py + "px"; c.appendChild(e); return e; };
+  const hn = mk("ph", spec.name, P, 16), hu = mk("pu", spec.unit, P, 16 + hn.offsetHeight + 2);
+  const top = 16 + hn.offsetHeight + hu.offsetHeight + 14, pb = h - 58, A = pb - top;
+  const vals = spec.bars.filter(b => b.v != null).map(b => b.v), mx = Math.max(...vals);
+  let lo = 0, hi, step; if (spec.domain) [lo, hi, step] = spec.domain; else { for (const st_ of [0.5, 1, 2, 5, 10, 20, 25, 50, 100, 200, 250, 500, 1000]) { hi = Math.ceil(mx * 1.02 / st_) * st_; if (hi / st_ <= 2) { step = hi / 2; break; } } }
+  const STK = 56, ph = Math.min(A - 6, (A - STK) / ((mx - lo) / (hi - lo)));
+  const ticks = []; for (let t = lo; t <= hi + 1e-9; t += step) ticks.push(t);
+  const dec = spec.dec ?? (step < 1 ? 1 : 0), fmt = t => step < 1 ? t.toFixed(spec.dec ?? 1) : String(Math.round(t));
+  const tl = ticks.map(t => mk("val", fmt(t), 0, 0)); const tw = Math.max(...tl.map(e => e.offsetWidth)) + 10;
+  const px0 = P + tw, px1 = w - P, pw = px1 - px0; let svg = "";
+  tl.forEach((e, i) => { const yy = pb - ph * (ticks[i] - lo) / (hi - lo); e.style.left = (px0 - 8 - e.offsetWidth) + "px"; e.style.top = (yy - e.offsetHeight / 2) + "px"; e.style.color = "#6B7280"; e.style.fontSize = "19px"; if (i) svg += `<line x1="${px0}" y1="${yy}" x2="${px1}" y2="${yy}" stroke="#ECEEF1" stroke-width="1.5"/>`; });
+  svg += `<line x1="${px0}" y1="${pb - ph - 4}" x2="${px0}" y2="${pb}" stroke="#9AA3AE" stroke-width="1.5"/><line x1="${px0}" y1="${pb}" x2="${px1}" y2="${pb}" stroke="#9AA3AE" stroke-width="1.5"/>`;
+  const n = spec.bars.length, slot = pw / n, bw = Math.min(64, slot * 0.6);
+  const bases = spec.bars.filter(b => b.kind === "base" && b.v != null).map(b => b.v), best = bases.length ? (spec.lower ? Math.min(...bases) : Math.max(...bases)) : null;
+  spec.bars.forEach((b, i) => {
+    const cx = px0 + slot * (i + 0.5), col = b.kind === "us" ? css("--ours") : b.kind === "us2" ? "#F4A66B" : "#C8CDD4";
+    const xl = mk("xl" + (b.kind === "us" || b.kind === "us2" ? " us" : ""), b.label, 0, 0); xl.style.width = (slot - 6) + "px"; xl.style.left = (cx - (slot - 6) / 2) + "px"; xl.style.top = (pb + 6) + "px";
+    if (b.v == null) { svg += `<rect x="${cx - bw / 2}" y="${pb - ph * 0.5}" width="${bw}" height="${ph * 0.5}" rx="3" fill="none" stroke="#C8CDD4" stroke-width="1.5" stroke-dasharray="5 4"/>`;
+      const nm = mk("nm", "still running", 0, 0); nm.style.width = bw + 20 + "px"; nm.style.left = (cx - (bw + 20) / 2) + "px"; nm.style.top = (pb - ph * 0.25 - nm.offsetHeight / 2) + "px"; return; }
+    const bh = ph * (b.v - lo) / (hi - lo); svg += `<rect x="${cx - bw / 2}" y="${pb - bh}" width="${bw}" height="${bh}" rx="3" fill="${col}"/>`;
+    const vl = mk("val" + (b.kind !== "base" ? " us" : ""), spec.dec != null ? b.v.toFixed(spec.dec) : String(b.v), 0, 0); vl.style.left = (cx - vl.offsetWidth / 2) + "px"; vl.style.top = (pb - bh - 4 - vl.offsetHeight) + "px";
+    if (b.kind !== "base" && best != null) { const rel = spec.lower ? 100 * (1 - b.v / best) : 100 * (b.v / best - 1), better = rel > 0.5, tie = Math.abs(rel) <= 0.5 || Math.abs(b.v - best) < (spec.dec >= 2 ? 0.0015 : spec.dec === 1 ? 0.05 : 0.5);
+      const diff = b.v - best, ad = Math.abs(diff), dd = spec.dec != null && spec.dec >= 2 ? ad.toFixed(3) : spec.dec === 1 ? ad.toFixed(1) : String(Math.round(ad));
+      const d = mk("dl", tie ? "same" : `${diff > 0 ? "+" : "−"}${dd}${spec.unitShort ? " " + spec.unitShort : ""}`, 0, 0);
+      d.style.color = tie ? "#4B5563" : better ? "#0A5C2B" : "#9B1C1C"; d.style.left = (cx - d.offsetWidth / 2) + "px"; d.style.top = (pb - bh - 4 - vl.offsetHeight - 4 - d.offsetHeight) + "px"; }
+  });
+  const sv = document.createElementNS("http://www.w3.org/2000/svg", "svg"); sv.setAttribute("width", w); sv.setAttribute("height", h); Object.assign(sv.style, { position: "absolute", left: 0, top: 0 }); sv.innerHTML = svg; c.prepend(sv);
+}
+function buildVs(W, H, key) {
+  const V = VS[key], F = FOCUS[key], outer = document.getElementById("outer"), sc = document.getElementById("score");
+  Object.assign(outer.style, { width: W + "px", height: H + "px" }); sc.innerHTML = "";
+  build(1920, 1080);
+  [...st.querySelectorAll(".l1")].filter(e => e.textContent.startsWith("One frozen")).forEach(e => e.style.display = "none");
+  [...st.querySelectorAll(".sub")].forEach(e => e.style.display = "none");
+  [...st.querySelectorAll(".foot")].forEach(e => e.style.display = "none");
+  const SEQ = /^(each 160 ms chunk|① run the model|your voice track|② run it again, conditioned|turn decision)$/;
+  [...st.querySelectorAll(".l2")].filter(e => SEQ.test(e.textContent.trim())).forEach(e => e.style.display = "none");
+  const svgEl = st.querySelector("svg"); if (svgEl) [...svgEl.querySelectorAll("path")].forEach(p => { const nums = p.getAttribute("d").match(/-?[\d.]+/g).map(Number); const yv = nums.filter((_, i) => i % 2 === 1); if (yv.length && Math.max(...yv) < 230) p.remove(); });
+  for (const e of [...st.children]) {
+    if (e.tagName === "svg") { e.style.opacity = key === "asr" ? 0.9 : 0.35; continue; }
+    if (e.classList.contains("blk")) { if (!F.core) e.classList.add("dimcore"); continue; }
+    if (!F.keep(e)) e.classList.add("dim");
+  }
+  const M = 64, s = 0.52, left = 520;
+  st.style.transform = `scale(${s})`; st.style.position = "absolute"; st.style.left = (left + 60) + "px"; st.style.top = (M + 118 + 44 - 185 * s) + "px";
+  // page title
+  const h = document.createElement("div"); h.className = "col-h"; h.style.fontSize = "44px"; h.textContent = "audioforge · " + V.title; Object.assign(h.style, { left: M + "px", top: M + "px" }); sc.appendChild(h);
+  const w = document.createElement("div"); w.className = "col-s"; w.style.fontSize = "24px"; w.textContent = V.what; Object.assign(w.style, { left: M + "px", top: (M + 54) + "px", width: (W - 2 * M) + "px" }); sc.appendChild(w);
+  // column headers
+  const y0 = M + 118;
+  const ch1 = document.createElement("div"); ch1.className = "col-h"; ch1.textContent = "Today: one model per job"; Object.assign(ch1.style, { left: M + "px", top: y0 + "px", color: "#3F4753" }); sc.appendChild(ch1);
+  const ch2 = document.createElement("div"); ch2.className = "col-h"; ch2.textContent = "audioforge: one frozen model, small heads"; Object.assign(ch2.style, { left: (left + 60) + "px", top: y0 + "px", color: css("--ours") }); sc.appendChild(ch2);
+  // the today chain
+  let ty = y0 + 46; const bh = 44, gap = 10, bw = left - M - 30;
+  TODAY.forEach(([k, m, a], i) => {
+    const b = document.createElement("div"); b.className = "tb" + (k === V.hot ? " hot" : (k === "mic" || k === "llm" ? "" : " dim2"));
+    b.innerHTML = `<div class="m">${m}</div>` + (a ? `<div class="a">${a}</div>` : ""); Object.assign(b.style, { left: M + "px", top: ty + "px", width: bw + "px", height: (a ? bh + 16 : bh) + "px" }); sc.appendChild(b);
+    const hh = a ? bh + 16 : bh;
+    if (i < TODAY.length - 1) { const ar = document.createElement("div"); ar.className = "col-s"; ar.textContent = "↓"; Object.assign(ar.style, { left: (M + bw / 2 - 7) + "px", top: (ty + hh - 8) + "px", fontSize: "20px", color: "#9AA3AE" }); sc.appendChild(ar); }
+    ty += hh + gap;
+  });
+  // the bar charts along the bottom
+  const ch = 330, tt = H - M - ch, n = V.charts.length, cwid = (W - 2 * M - 24 * (n - 1)) / n;
+  V.charts.forEach((spec, i) => barchart(M + i * (cwid + 24), tt, cwid, ch, spec, sc));
+  const lg = document.createElement("div"); lg.className = "col-s"; lg.innerHTML = `<span class="sw" style="background:${css("--ours")}"></span><b>ours 0.6B</b> (Nemotron Speech)&nbsp;&nbsp;&nbsp;<span class="sw" style="background:#F4A66B"></span><b>ours 115M</b> (FastConformer)&nbsp;&nbsp;&nbsp;<span class="sw" style="background:#C8CDD4"></span>best in use today · green/red = difference to the best grey bar`;
+  Object.assign(lg.style, { right: M + "px", top: (M + 8) + "px", fontSize: "20px" }); lg.style.left = "auto"; sc.appendChild(lg);
+  Object.assign(sc.style, { left: 0, top: 0, width: W + "px", height: H + "px" });
+}
+window.build = build; window.notext = notext; window.buildFocus = buildFocus; window.buildVs = buildVs;
+const q = new URLSearchParams(location.search); if (q.get("w")) build(+q.get("w"), +q.get("h"));
+</script></body></html>

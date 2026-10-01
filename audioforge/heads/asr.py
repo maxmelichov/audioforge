@@ -68,10 +68,32 @@ class PredictionNet(nn.Module):
         return F.pad(y, (1, 0), value=self.blank)
 
 
+class PromptedLinear(nn.Linear):
+    """The encoder projection of a language-prompted transducer (nemotron-3.5-asr-streaming-0.6b, NeMo
+    ``EncDecRNNTBPEModelWithPrompt``): every encoder frame is concatenated with a one-hot language prompt (K =
+    ``num_prompts``), mapped back to d_enc by ``kernel`` (Linear(d_enc + K, hidden), ReLU, Linear(hidden, d_enc)),
+    then projected as usual. The prompt only touches the RNNT path; the encoder blocks (what every audioforge head
+    reads) do not depend on it. ``prompt_id`` is a runtime choice (not saved): ``set_prompt``."""
+
+    def __init__(self, d_enc: int, d_joint: int, num_prompts: int, hidden: int, prompt_id: int = 0):
+        super().__init__(d_enc, d_joint)
+        self.num_prompts, self.prompt_id = num_prompts, int(prompt_id)
+        self.kernel = nn.Sequential(nn.Linear(d_enc + num_prompts, hidden), nn.ReLU(), nn.Linear(hidden, d_enc))
+
+    def forward(self, f):
+        oh = f.new_zeros(*f.shape[:-1], self.num_prompts)
+        oh[..., self.prompt_id] = 1.0
+        return super().forward(self.kernel(torch.cat([f, oh], -1)))
+
+
 class Joint(nn.Module):
-    def __init__(self, d_enc: int, d_pred: int, d_joint: int, n_out: int, dropout: float = 0.1):
+    def __init__(self, d_enc: int, d_pred: int, d_joint: int, n_out: int, dropout: float = 0.1,
+                 prompt: dict | None = None):
         super().__init__()
-        self.enc, self.pred = nn.Linear(d_enc, d_joint), nn.Linear(d_pred, d_joint)
+        self.enc = (PromptedLinear(d_enc, d_joint, int(prompt["num_prompts"]), int(prompt["hidden"]),
+                                   int(prompt.get("dictionary", {}).get(prompt.get("default"), 0)))
+                    if prompt else nn.Linear(d_enc, d_joint))
+        self.pred = nn.Linear(d_pred, d_joint)
         self.out = nn.Sequential(nn.ReLU(), nn.Dropout(dropout), nn.Linear(d_joint, n_out))
 
     def forward(self, f, g):
@@ -82,9 +104,10 @@ class Joint(nn.Module):
 class RNNTHead(Head):
     def __init__(self, d_model: int, vocab_size: int, pred_hidden: int = 320, pred_layers: int = 1,
                  joint_hidden: int = 320, durations: list[int] | None = None, max_symbols: int = 10,
-                 sigma: float = 0.0, fused_batch_size: int = 0, key: str = "text"):
+                 sigma: float = 0.0, fused_batch_size: int = 0, key: str = "text", prompt: dict | None = None):
         super().__init__()
         self.vocab_size, self.blank, self.key = vocab_size, vocab_size, key
+        self.prompt = dict(prompt) if prompt else None  # language-prompted joint (PromptedLinear)
         self.durations = list(durations) if durations else None  # None -> plain RNNT
         self.max_symbols, self.sigma = max_symbols, sigma
         # >0: build the B x T x (U+1) x V joint only for sub-batches of this size, cropped to their own
@@ -92,7 +115,18 @@ class RNNTHead(Head):
         self.fused_batch_size = fused_batch_size
         self.pred = PredictionNet(vocab_size, pred_hidden, pred_layers)
         n_out = vocab_size + 1 + (len(self.durations) if self.durations else 0)
-        self.joint = Joint(d_model, pred_hidden, joint_hidden, n_out)
+        self.joint = Joint(d_model, pred_hidden, joint_hidden, n_out, prompt=prompt)
+
+    def set_prompt(self, lang: str | int):
+        """Language prompt of a prompted joint: a locale of the model's prompt dictionary ('en-US', 'de', 'auto')
+        or a prompt index. 'auto' makes the model detect the language and emit a ``<xx-XX>`` tag token after the
+        terminal punctuation."""
+        if self.prompt is None:
+            raise ValueError("this transducer has no language prompt")
+        d = self.prompt.get("dictionary", {})
+        if isinstance(lang, str) and lang not in d:
+            raise ValueError(f"unknown language prompt {lang!r}: one of {', '.join(sorted(d))}")
+        self.joint.enc.prompt_id = int(d[lang] if isinstance(lang, str) else lang)
 
     @property
     def is_tdt(self):

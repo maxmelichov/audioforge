@@ -100,6 +100,9 @@ TURN_PRESETS = {
                   "turn_model": {"model": "v5", "vad_thr": VAD_HEAD_SIL_THR, "p": 0.9, "reask": True, "quiet_db": 6.0}},
 }
 TURN_PRESET_DEFAULT = "balanced"
+# the v5 decider a model's cfg["turn_presets"] can give a preset that has none (serve.model_presets): the fast preset's
+# keys, overridden by the model's values
+V5_TURN_MODEL = {"model": "v5", "vad_thr": VAD_HEAD_SIL_THR, "p": 0.5, "reask": True, "quiet_db": None}
 V5_HINT_P = 0.5  # turn_end_hint under a v5 preset: the segment classifier's p at >= 80 ms of quiet (research/TURN_V5.md)
 # --energy-gate (research/EOT_ASSISTANT.md "Energy gate"; audioforge.server.policies.EnergyGate), on by default for
 # vad_head: a per-session noise floor (10th percentile of the 80 ms frame log energies of the last 3 s); a turn is

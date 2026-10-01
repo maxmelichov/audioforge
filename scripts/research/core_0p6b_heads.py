@@ -29,21 +29,29 @@ ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT))
 sys.path.insert(0, str(ROOT / "scripts" / "research"))
 
-NEMO = ROOT / "data/nemo/nemotron-speech-streaming-en-0.6b.nemo"
-AFM = Path(os.environ.get("AUDIOFORGE_0P6B_AFM",
-                          "/Volumes/ExternalSSD/nvidia-audio-models/runs/nemo_nemotron_speech_streaming_en_0.6b.afm"))
-# --core 115m: the same stages on the DEFAULT 115M core (research/LAYER_SWEEP_115M.md; the shipped
-# stage1_served_v3.afm's frozen encoder + its served heads; caches under scratch/core_115m, results runs/core_115m.json)
+# --core 0.6b (English nemotron-speech-streaming-en-0.6b, research/CORE_0P6B.md) | 115m (the default core,
+# research/LAYER_SWEEP_115M.md) | 3.5 (nemotron-3.5-asr-streaming-0.6b, research/CORE_3P5.md: the multilingual
+# extension of the English 0.6B, same 24 x 1024 cache-aware FastConformer, trained at left context 56; the language
+# prompt only enters the RNNT joint, the encoder blocks every head reads do not depend on it)
 CORE = sys.argv[sys.argv.index("--core") + 1] if "--core" in sys.argv else "0.6b"
 C115 = CORE == "115m"
+C35 = CORE == "3.5"
+TAG = {"0.6b": "0p6b", "115m": "115m", "3.5": "3p5"}[CORE]  # file / key tag of the core
+NEMO = ROOT / ("data/nemo/nemotron-3.5-asr-streaming-0.6b.nemo" if C35 else
+               "data/nemo/nemotron-speech-streaming-en-0.6b.nemo")
+AFM = Path(os.environ.get("AUDIOFORGE_3P5_AFM",
+                          "/Volumes/ExternalSSD/nvidia-audio-models/runs/nemo_nemotron_3p5_asr_streaming_0.6b.afm")) \
+    if C35 else Path(os.environ.get("AUDIOFORGE_0P6B_AFM",
+                                    "/Volumes/ExternalSSD/nvidia-audio-models/runs/nemo_nemotron_speech_streaming_en_0.6b.afm"))
+# --core 115m: the same stages on the DEFAULT 115M core (research/LAYER_SWEEP_115M.md; the shipped
+# stage1_served_v3.afm's frozen encoder + its served heads; caches under scratch/core_115m, results runs/core_115m.json)
 AFM115 = Path(os.environ.get("CORE115_AFM", str(ROOT / "runs" / "stage1_served_v3.afm")))  # a candidate build overrides
-W = Path(os.environ.get("CORE_0P6B_W", "/Volumes/ExternalSSD/nvidia-audio-models/scratch/"
-                        + ("core_115m" if C115 else "core_0p6b")))
-OUT = ROOT / "runs" / ("core_115m.json" if C115 else "core_0p6b.json")
+W = Path(os.environ.get("CORE_0P6B_W", "/Volumes/ExternalSSD/nvidia-audio-models/scratch/core_" + TAG))
+OUT = ROOT / "runs" / f"core_{TAG}.json"
 D = 512 if C115 else 1024  # encoder width
 NB = 17 if C115 else 24  # encoder blocks
 SR, CHUNK = 16000, 2560
-ATT = [70, 1]
+ATT = [56, 1] if C35 else [70, 1]  # 160 ms chunks at the core's trained left context
 
 
 def log(*a):
@@ -117,6 +125,116 @@ def stage_verify(a):
     rec["equality_70_1"] = eq
     save("verify", rec)
     log("verify done")
+
+
+# --------------------------------------------------------------------------- import + bare WER (--core 3.5)
+LANG_TAG = __import__("re").compile(r"\s*<[a-z]{2,3}(?:-[A-Za-z]{2,4})?>")  # the auto-detect language tag token
+
+
+def stage_import(a):
+    """The .nemo -> AFM (audioforge.nemo_import: the prompt kernel goes into heads.rnnt.joint.enc), read back
+    tensor-identical, sha256 of the .nemo."""
+    import torch
+    from audioforge.hub import sha256_file
+    from audioforge.nemo_import import import_nemo
+    from audioforge.train import load_model, save_model
+    torch.set_num_threads(2)
+    t0 = time.time()
+    m = import_nemo(NEMO)
+    info = {k: v for k, v in m.import_info.items() if isinstance(v, (int, float, str, bool))}
+    AFM.parent.mkdir(parents=True, exist_ok=True)
+    save_model(m, AFM)
+    back = load_model(str(AFM), "cpu").state_dict()
+    src = m.state_dict()
+    assert set(back) == set(src) and all(torch.equal(back[k], src[k]) for k in src), "read-back mismatch"
+    rec = {"params_m": round(m.num_params() / 1e6, 2), "n_tensors": len(src), "import": info,
+           "att_context_sizes": m.encoder.att_context_sizes, "prompt": {k: v for k, v in
+                                                                          m.cfg["heads"]["rnnt"]["prompt"].items()
+                                                                          if k != "dictionary"},
+           "n_prompt_keys": len(m.cfg["heads"]["rnnt"]["prompt"]["dictionary"]), "afm": str(AFM),
+           "afm_bytes": AFM.stat().st_size, "sec": round(time.time() - t0, 1), "nemo_sha256": sha256_file(NEMO),
+           "nemo_bytes": NEMO.stat().st_size}
+    log(rec)
+    save("import", rec)
+
+
+WER_SETS = ("libri", "ami", "icsi")
+
+
+def stage_wer(a):
+    """Bare ASR WER at 160 ms chunks (masked [L,1] forward == cache-aware streaming, batch 4, greedy RNNT) on the
+    hybrid_asr LibriSpeech-200 / AMI-200 / ICSI-200 sets, language prompt --which en-US | auto (auto: the detected
+    language tag is stripped from the text and kept in 'tag'). -> W/wer/<prompt>_<set>.jsonl (resumable)."""
+    import torch
+    import hybrid_asr as H
+    from audioforge.train import load_model
+    torch.set_num_threads(2)
+    m = load_model(str(AFM), a.device).eval()
+    m.heads["rnnt"].set_prompt(a.which)
+    m.tokenizer.specials = []  # keep the language-tag pieces in the text here (stripped below, kept in 'tag')
+    od = W / "wer"
+    od.mkdir(parents=True, exist_ok=True)
+    t0, left = time.time(), []
+    att = [ATT[0], a.att_right] if a.att_right is not None else list(ATT)
+    sfx = "" if a.att_right is None else f"_r{a.att_right}"
+    for set_name in WER_SETS:
+        audios, refs = H.load_fa_set(set_name)
+        p = od / f"{a.which}{sfx}_{set_name}.jsonl"
+        done = len(p.read_text().splitlines()) if p.exists() else 0
+        with p.open("a") as f:
+            i = done
+            while i < len(refs) and time.time() - t0 < a.budget:
+                xs = audios[i:i + 4]
+                t1 = time.perf_counter()
+                with torch.inference_mode():
+                    hyps = m.transcribe(xs, head="rnnt", att_context_size=att)
+                dt = time.perf_counter() - t1
+                for k, h in enumerate(hyps):
+                    tags = LANG_TAG.findall(h)
+                    f.write(json.dumps({"i": i + k, "hyp": LANG_TAG.sub("", h).strip(), "raw": h,
+                                        "tag": [t.strip() for t in tags], "sec": dt / len(hyps),
+                                        "audio_sec": len(xs[k]) / SR}) + "\n")
+                i += len(xs)
+        if i < len(refs):
+            left.append(set_name)
+    log("wer", a.which, "done" if not left else f"left {left}")
+
+
+def stage_wer_report(a):
+    """WER (normalize_text and whisper_norm, utterance bootstrap 95 % CI) of the 3.5 (en-US prompt / auto) beside
+    the English 0.6B and the 115M at 160 ms (their hybrid_asr [70,1] hypotheses), paired deltas. -> OUT wer."""
+    import hybrid_asr as H
+    norms, _ = H._normalizers()
+    od = W / "wer"
+    res = {"protocol": f"masked [{ATT[0]},{ATT[1]}] forward (== cache-aware streaming at 160 ms), greedy RNNT, batch 4; "
+                       "115M / English 0.6B: hybrid_asr served_la1 / served_0p6b_la1 ([70,1])", "sets": {}}
+    for set_name in WER_SETS:
+        _, refs = H.load_fa_set(set_name)
+        srcs = {"115m": H.WORK / f"served_la1_{set_name}.jsonl", "0p6b_en": H.WORK / f"served_0p6b_la1_{set_name}.jsonl",
+                "3p5_enUS": od / f"en-US_{set_name}.jsonl", "3p5_auto": od / f"auto_{set_name}.jsonl",
+                "3p5_enUS_80ms": od / f"en-US_r0_{set_name}.jsonl", "3p5_enUS_320ms": od / f"en-US_r3_{set_name}.jsonl"}
+        E, out = {}, {}
+        for name, pth in srcs.items():
+            rows = H._rows(pth)
+            if len(rows) < len(refs):
+                continue
+            hy = [rows[i]["hyp"] for i in range(len(refs))]
+            out[name] = {}
+            for nn in ("normalize_text", "nofill", "whisper_norm"):
+                e = np.array([H.edits_words(norms[nn](r), norms[nn](h)) for r, h in zip(refs, hy)], float)
+                E[(name, nn)] = e
+                out[name][nn] = H.rate_ci(e)
+            if name == "3p5_auto":
+                tags = [t for r in rows.values() for t in r.get("tag", [])]
+                out[name]["tags"] = {t: tags.count(t) for t in sorted(set(tags))}
+                out[name]["utts_without_tag"] = sum(1 for r in rows.values() if not r.get("tag"))
+        out["paired"] = {f"{x} - {y} / {nn}": H.paired(E[(x, nn)], E[(y, nn)])
+                         for x, y in (("3p5_enUS", "0p6b_en"), ("3p5_enUS", "115m"), ("3p5_auto", "3p5_enUS"),
+                                      ("3p5_enUS_80ms", "0p6b_en"), ("3p5_enUS_320ms", "0p6b_en"))
+                         for nn in ("normalize_text", "nofill") if (x, nn) in E and (y, nn) in E}
+        res["sets"][set_name] = out
+        log(set_name, {k: v["normalize_text"]["wer"] for k, v in out.items() if k != "paired"})
+    save("wer", res)
 
 
 # --------------------------------------------------------------------------- bare core cost
@@ -1578,6 +1696,42 @@ def stage_tswer(a):
         res[corpus] = out
         log(corpus, json.dumps(out["primary"]))
     save("tswer", res)
+
+
+def stage_live_wer(a):
+    """--core 3.5: the bare-ASR row of tswer_live (arm none_full: every word of the session against its full
+    reference) on the 32 live TurnBench sessions (16 clips x {mono mix, user channel}), the session wav through the
+    masked [L,1] forward + greedy timed RNNT words, prompt --prompt; beside the English 0.6B's and the 115M's stored
+    none_full rows (core_0p6b live_sessions.json, tswer_live sessions.json). -> OUT live_wer.<prompt>."""
+    import copy
+    import torch
+    import tswer as TW
+    from audioforge.teachers import normalize_text
+    torch.set_num_threads(2)
+    m = load_core(a.device, heads=())
+    m.heads["rnnt"].set_prompt(a.prompt)
+    rnnt = copy.deepcopy(m.heads["rnnt"]).cpu()
+    clips = json.loads((TW.E2E / "clips.json").read_text())
+    sessions = []
+    for c in clips:
+        if c["set"] != "turnbench" or not c.get("text_user"):
+            continue
+        for cond in ("mono", "user"):
+            x = TW._wav(TW.E2E / "clips" / f"{c['name']}.{cond}.wav")
+            _, L, top = encode_blocks(m, [x], (1,), top=True)
+            hw = TW.words_of(m.tokenizer, TW.greedy_timed(rnnt, top[0, :L[0]].float().cpu()))
+            full = normalize_text(c["text_mono"] if cond == "mono" else c["text_user"]).split()
+            sessions.append({"key": f"{c['name']}|{cond}", "clip": c["name"], "cond": cond, "N_full": len(full),
+                             "N": len(full), "arms": {"none_full": TW._counts(full, [w[0] for w in hw])}})
+    p6 = json.loads(Path("/Volumes/ExternalSSD/nvidia-audio-models/scratch/core_0p6b/tswer/live_sessions.json")
+                    .read_text())["sessions"]
+    old = json.loads((TW.LIVE_WORK / "sessions.json").read_text())["sessions"]
+    res = {}
+    for g, sel in (("all", lambda u: True), ("user_channel", lambda u: u["cond"] == "user")):
+        res[g] = {name: TW._live_group([u for u in S_ if sel(u)], ["none_full"])
+                  for name, S_ in ((TAG, sessions), ("0p6b", p6), ("115m", old))}
+    save("live_wer", res, sub=a.prompt)
+    log(a.prompt, {g: {k: v["none_full"]["wer"] for k, v in r.items()} for g, r in res.items()})
 
 
 def _spk_head_115(spk_tag):
@@ -3175,7 +3329,8 @@ def stage_served_check(a):
     save("served_check", res)
 
 
-STAGES = {"vad_probe": stage_vad_probe, "vad_feats": stage_vad_feats, "vad_train": stage_vad_train,
+STAGES = {"import": stage_import, "wer": stage_wer, "wer_report": stage_wer_report, "live_wer": stage_live_wer,
+          "vad_probe": stage_vad_probe, "vad_feats": stage_vad_feats, "vad_train": stage_vad_train,
           "vad_room115": stage_vad_room115, "vad2": stage_vad2, "sweep_vad": stage_sweep_vad, "sweep_spk_feats": stage_sweep_spk_feats,
           "sweep_spk": stage_sweep_spk, "sweep_tsvad": stage_sweep_tsvad,
           "sweep_seg_feats": stage_sweep_seg_feats, "sweep_seg": stage_sweep_seg, "sweep_lid": stage_sweep_lid, "spk_frame": stage_spk_frame, "turn_retrack": stage_turn_retrack,
@@ -3240,11 +3395,16 @@ def main():
     ap.add_argument("--turn-tag", default="f1")
     ap.add_argument("--n-utt", type=int, default=20)
     ap.add_argument("--repeats", type=int, default=3)
-    ap.add_argument("--core", default="0.6b", choices=("0.6b", "115m"))
+    ap.add_argument("--core", default="0.6b", choices=("0.6b", "115m", "3.5"))
     ap.add_argument("--vad-tag", default=None)
     ap.add_argument("--spk-tag", default=None)
     ap.add_argument("--presets-json", default=None)
+    ap.add_argument("--prompt", default="en-US")
+    ap.add_argument("--att-right", type=int, default=None)
     a = ap.parse_args()
+    if C35:  # mps_115m.time_stream (stage core) streams at the core's 160 ms context
+        import mps_115m as M
+        M.ATT = list(ATT)
     STAGES[a.stage](a)
 
 

@@ -1,0 +1,200 @@
+<!doctype html><html><head><meta charset="utf-8"><link rel="stylesheet" href="style.css">
+<style>
+.l1 { position: absolute; font-weight: 700; color: var(--ink); line-height: 1.1; white-space: nowrap; }
+.l2 { position: absolute; font-size: 22px; color: var(--ink2); line-height: 1.2; white-space: nowrap; }
+.blk { position: absolute; background: var(--slate); border-radius: 16px; }
+.blk .bt { position: absolute; color: #FFFFFF; font-weight: 700; white-space: nowrap; line-height: 1.1; }
+.blk .bs { position: absolute; color: var(--onslate); font-size: 22px; white-space: nowrap; line-height: 1.1; }
+.slab { position: absolute; background: var(--slab); border-radius: 4px; }
+.slab.tap { background: var(--ours); }
+.box { position: absolute; display: flex; flex-direction: column; align-items: center; justify-content: center; border-radius: 12px; line-height: 1.15; text-align: center; }
+.box.ours { background: #FFFFFF; border: 2.5px solid var(--ours); }
+.box.one { background: #FFFFFF; border: 2.5px solid var(--slate); }
+.box.nv { background: var(--slate); color: #FFFFFF; }
+.box.grey { background: var(--panel); border: 1.5px solid #C3C9D1; }
+.box.grey .a { color: #3F4753; }
+.box .m { font-weight: 700; color: var(--ink); }
+.box.nv .m { color: #FFFFFF; }
+.box .a { font-size: 22px; color: var(--ink2); margin-top: 2px; }
+.box.nv .a { color: var(--onslate); }
+.zone { position: absolute; border: 2px dashed #AEB6C0; border-radius: 18px; background: #FAFBFC; }
+.circ { position: absolute; width: 34px; height: 34px; border-radius: 50%; background: #FFFFFF; font-size: 22px; font-weight: 700;
+  color: var(--ink); display: flex; align-items: center; justify-content: center; line-height: 1; }
+.badge { position: absolute; font-size: 22px; font-weight: 700; color: var(--ink); background: #FFFFFF; border-radius: 999px; padding: 4px 14px; white-space: nowrap; }
+.blk, .slab, .box, .ghost, .gs, .rl, .circ, .badge, .l1, .l2, .wave { z-index: 2; } svg.wires { z-index: 1; } .blk { z-index: 0 !important; } .zone { z-index: 0; }
+.reg { position: absolute; background: #F6F7F9; border-radius: 22px; z-index: 0; }
+.rl { position: absolute; font-size: 22px; font-weight: 700; letter-spacing: 0.06em; color: var(--ink2); white-space: nowrap; z-index: 2; }
+.ghost { position: absolute; background: #FFFFFF; border: 2px solid #AEB6C0; border-radius: 14px; z-index: 2; }
+.gs { position: absolute; background: #E6E9ED; border-radius: 3px; z-index: 2; }
+.box.dash { background: #FFFFFF; border: 2px dashed #AEB6C0; }
+.wave i { position: absolute; background: #6B7280; border-radius: 3px; }
+</style></head><body><div id="stage"></div><script>
+// architecture_v9 (= v8 with turn head v5, commit 21b55cb: the turn-end box names both deciders. balanced (the default) still
+// uses the GRU turn head (0.32M, pass 2) at VAD quiet >= 160 ms, p >= 0.99; --turn-preset fast / assistant ask the segment
+// classifier (heads/turn_seg.py SegTurn, 2 455 301 params, reads block 8 of pass 1 via ASRStream.attach_seg + served VAD / TS-VAD
+// tracks + the RNNT tokens) at every quiet frame. Six heads: VAD, speaker, TS-VAD, turn GRU, turn classifier v5, LID.)
+// architecture_v8 (= v7 with single mode's shipped turn rule vad_head, research/EOT_LATENCY.md, audioforge/server/policies.py
+// VadHeadPolicy: VAD head < 0.4 for >= 160 ms AND turn head p >= 0.99 (or 640 ms, or the others path); no Silero in single mode; else as v7, verified
+// in audioforge/server/streams.py and cli.py MODES['single']). v7: the original A1 composition (audio left, ONE dark FastConformer in the centre, outputs right, small
+// heads around it). Exactly one encoder is drawn; the second pass is only the orange (2) loop that carries your voice
+// track back INTO the same block (speaker kernels at blocks 1 and 3, runs/stage1_served.afm) and the short orange (2)
+// exit to the turn head. Layer 17 -> RNNT -> streaming words leaves the right edge at the top; all 17 layers -> VAD
+// head -> Speech?; layer 4 -> TS-VAD "Is it you?" <- voice print (speaker head, layer 4) <- 5 s sample.
+const st = document.getElementById("stage"); const wires = [];
+const css = k => getComputedStyle(document.documentElement).getPropertyValue(k).trim();
+function el(cls, html, x, y, w, h) { const e = document.createElement("div"); e.className = cls; if (html != null) e.innerHTML = html;
+  Object.assign(e.style, { left: x + "px", top: y + "px" }); if (w) e.style.width = w + "px"; if (h) e.style.height = h + "px"; st.appendChild(e); return e; }
+function R(e) { const r = e.getBoundingClientRect(); return { l: r.left, t: r.top, r: r.right, b: r.bottom, cx: (r.left + r.right) / 2, cy: (r.top + r.bottom) / 2 }; }
+function wire(pts, { col = "#8A939E", w = 2.2, head = true, dash = false } = {}) {
+  wires.push(`<path d="${pts.map((p, i) => (i ? "L" : "M") + p[0] + " " + p[1]).join(" ")}" fill="none" stroke="${col}" stroke-width="${w}" stroke-linecap="round" stroke-linejoin="round"${dash ? ' stroke-dasharray="6 6"' : ""}/>`);
+  if (head) { const [x2, y2] = pts[pts.length - 1], [x1, y1] = pts[pts.length - 2], a = Math.atan2(y2 - y1, x2 - x1), s = 11;
+    wires.push(`<path d="M${x2 - s * Math.cos(a - 0.55)} ${y2 - s * Math.sin(a - 0.55)} L${x2} ${y2} L${x2 - s * Math.cos(a + 0.55)} ${y2 - s * Math.sin(a + 0.55)}" fill="none" stroke="${col}" stroke-width="${w}" stroke-linecap="round" stroke-linejoin="round"/>`); } }
+const OR = () => ({ col: css("--ours"), w: 2.6 });
+function l1(t, x, y, z) { const e = el("l1", t, x, y); e.style.fontSize = z + "px"; return e; }
+function l2(t, x, y) { return el("l2", t, x, y); }
+function box(cls, main, ann, x, y, w, h, z) { const e = el("box " + cls, `<div class="m" style="font-size:${z}px">${main}</div>` + (ann ? `<div class="a">${ann}</div>` : ""), x, y, w, h); return e; }
+function wave(x, y, w, h) { const v = [0.3, 0.55, 0.85, 0.5, 1, 0.7, 0.4, 0.8, 0.55, 0.35, 0.6, 0.25]; const b = el("wave", "", x, y, w, h); b.style.position = "absolute";
+  v.forEach((k, i) => { const s = document.createElement("i"); Object.assign(s.style, { left: (i * w / v.length + w / v.length * 0.2) + "px", width: (w / v.length * 0.55) + "px", top: (h * (1 - k) / 2) + "px", height: (h * k) + "px" }); b.appendChild(s); }); return b; }
+// one lane of the frozen model: 17 slabs; returns slab centres
+function lane(x, y, w, h, o, title, sub) {
+  const b = el("blk", "", x, y, w, h);
+  const t = document.createElement("div"); t.className = "bt"; t.innerHTML = title; Object.assign(t.style, { left: o.pad + "px", top: "12px", fontSize: o.tz + "px" }); b.appendChild(t);
+  if (sub) { const s = document.createElement("div"); s.className = "bs"; s.innerHTML = sub; Object.assign(s.style, { right: o.pad + "px", top: "14px" }); b.appendChild(s); }
+  const gap = (w - 2 * o.pad - 17 * o.sw) / 16, cx = [];
+  for (let k = 1; k <= 17; k++) { const sx = x + o.pad + (k - 1) * (o.sw + gap); el("slab" + (o.tap === k ? " tap" : ""), "", sx, y + o.top, o.sw, h - o.top - o.bot); cx.push(sx + o.sw / 2); }
+  return { b, cx, R: R(b), sy0: y + o.top, sy1: y + h - o.bot }; }
+function brace(x1, x2, y, up, col) {   // curly brace over [x1, x2]; tip away from the lane
+  const d = up ? -1 : 1, y1 = y + 14 * d, tip = y + 28 * d, mx = (x1 + x2) / 2, r = 14;
+  wires.push(`<path d="M${x1} ${y} Q${x1} ${y1} ${x1 + r} ${y1} L${mx - r} ${y1} Q${mx} ${y1} ${mx} ${tip} Q${mx} ${y1} ${mx + r} ${y1} L${x2 - r} ${y1} Q${x2} ${y1} ${x2} ${y}" fill="none" stroke="${col}" stroke-width="2.6" stroke-linejoin="round"/>`);
+  return { mx, tip }; }
+
+// the reuse marker: a dashed grey bracket on the far left spanning both lanes, a vertical "↻ one model, used twice";
+// it touches neither lane's output side, so nothing can read as pass-1 output flowing into pass 2
+function place(e, x, y, ax = 0, ay = 0) { e.style.left = (x - ax * e.offsetWidth) + "px"; e.style.top = (y - ay * e.offsetHeight) + "px"; return e; }
+function circ(n, x, y, col) { const e = el("circ", String(n), 0, 0); e.style.border = `3px solid ${col}`; return place(e, x, y, 0.5, 0.5); }
+function spark(gx, gyy, gw, gh, O) {
+  const ps = [0.05, 0.08, 0.06, 0.1, 0.07, 0.12, 0.09, 0.2, 0.35, 0.55, 0.8], thr = gyy + gh * 0.28;
+  const pts = ps.map((p, i) => [gx + i * gw / (ps.length - 1), gyy + gh * (1 - p)]);
+  wires.push(`<line x1="${gx}" y1="${thr}" x2="${gx + gw}" y2="${thr}" stroke="#8A939E" stroke-width="1.5"/>`);
+  wires.push(`<polyline points="${pts.map(p => p.join(",")).join(" ")}" fill="none" stroke="${O}" stroke-width="2.6"/>`);
+  wires.push(`<line x1="${gx}" y1="${gyy + gh}" x2="${gx + gw}" y2="${gyy + gh}" stroke="#C8CDD4" stroke-width="1.5"/>`);
+  const c = pts[pts.length - 1]; wires.push(`<circle cx="${c[0]}" cy="${c[1]}" r="6" fill="${O}"/>`); return c; }
+function spark2(gx, gyy, gw, gh, O) {
+  const ps = [0.05, 0.08, 0.06, 0.1, 0.07, 0.12, 0.09, 0.2, 0.35, 0.55, 0.8], thr = gyy + gh * 0.3;
+  const pts = ps.map((p, i) => [gx + i * gw / (ps.length - 1), gyy + gh * (1 - p)]);
+  wires.push(`<line x1="${gx}" y1="${thr}" x2="${gx + gw + 10}" y2="${thr}" stroke="#8A939E" stroke-width="1.8" stroke-dasharray="6 5"/>`);
+  wires.push(`<polyline points="${pts.map(p => p.join(",")).join(" ")}" fill="none" stroke="${O}" stroke-width="2.6"/>`);
+  wires.push(`<line x1="${gx}" y1="${gyy + gh}" x2="${gx + gw}" y2="${gyy + gh}" stroke="#C8CDD4" stroke-width="1.5"/>`);
+  // the crossing: where the curve meets the threshold (linear interpolation between the two samples around it)
+  let i = pts.findIndex(p => p[1] <= thr); const [a, b] = [pts[i - 1], pts[i]], f = (a[1] - thr) / (a[1] - b[1]);
+  const c = [a[0] + f * (b[0] - a[0]), thr]; wires.push(`<circle cx="${c[0]}" cy="${c[1]}" r="7" fill="${O}"/>`); return c; }
+function ghost(x, y, w, h, sw) {
+  const g = el("ghost", "", x, y, w, h), n = 17, pad = 16, gap = (w - 2 * pad - n * sw) / (n - 1), cx = [];
+  for (let k = 0; k < n; k++) { const sx = x + pad + k * (sw + gap); el("gs", "", sx, y + 44, sw, h - 44 - 12); cx.push(sx + sw / 2); }
+  return { g, R: R(g), cx }; }
+function region(x, y, w, h, label, lx, ly) { el("reg", "", x, y, w, h); return el("rl", label, lx, ly); }
+function build(W, H) {
+  Object.assign(st.style, { width: W + "px", height: H + "px" }); st.innerHTML = ""; wires.length = 0;
+  const M = 64, sq = H / W > 0.9, O = css("--ours"), S1 = css("--slate");
+  const R1 = { col: S1, w: 2.6 }, R2 = { col: O, w: 3 }, GR = { col: "#8A939E", w: 2, head: true };
+  const Lz = sq ? 26 : 30, Mz = sq ? 22 : 24;
+  const P = sq ? { tz: 32, bx: 250, bw: 460, bt: 376, bh: 290, pad: 18, sw: 14, wav: [64, 80], ex: 764, rn: 96, th: 150, ts: [420, 200], tsy: 782, ly: 710, sm: [64, 124], lpx: 690, vy: 824 }
+               : { tz: 44, bx: 480, bw: 760, bt: 388, bh: 300, pad: 26, sw: 26, wav: [110, 120], ex: 1290, rn: 170, th: 170, ts: [525, 220], tsy: 782, ly: 0, sm: [110, 160], lpx: 1000, vy: 900 };
+  l1("One frozen NVIDIA speech model, six small heads on top", M, M + 4, P.tz);
+  const sub = el("sub abs", "Pick the model: FastConformer Hybrid Streaming 115M (17 blocks) or Nemotron Speech Streaming 0.6B (24 blocks). Same heads on both.", M, 0); sub.style.fontSize = (sq ? 24 : 26) + "px"; place(sub, M, M + 2 + (sq ? 44 : 58));
+  // the two runs as a sequence, one line of tiny grey boxes
+  const seq = sq ? ["every 160 ms", "① run model", "voice track", "② run again, conditioned", "turn decision"]
+                 : ["each 160 ms chunk", "① run the model", "your voice track", "② run it again, conditioned", "turn decision"];
+  let sxq = M; const syq = R(sub).b + (sq ? 12 : 16);
+  seq.forEach((t, i) => { const e = el("l2", t, sxq, syq); if (i) { Object.assign(e.style, { border: "1.5px solid #C3C9D1", borderRadius: "8px", padding: "1px 8px", background: "#FFFFFF" }); }
+    const r = R(e); if (i < seq.length - 1) { wire([[r.r + 6, r.cy], [r.r + (sq ? 20 : 26), r.cy]], { col: "#8A939E", w: 1.8 }); } sxq = r.r + (sq ? 26 : 34); });
+  // the one frozen model
+  const A = lane(P.bx, P.bt, P.bw, P.bh, { pad: P.pad, sw: P.sw, top: sq ? 58 : 66, bot: 94, tz: Lz, tap: 4 }, sq ? "Frozen NVIDIA model" : "FastConformer 115M or Nemotron Speech 0.6B", "");
+  [[1, "1"], [4, "4"], [17, "17 / 24"]].forEach(([k, t]) => { const e = el("l2", t, 0, 0); e.style.background = S1; e.style.color = k === 4 ? "#FFFFFF" : "var(--onslate)"; if (k === 4) e.style.fontWeight = 700; place(e, A.cx[k - 1], A.R.b - 62, 0.5, 1); });
+  const ex1 = A.R.t + (sq ? 84 : 96), ex2 = A.R.b - 31;
+  // pass 2: a thin orange-tinted lane along the bottom of the SAME block, flush to its right edge (exits into the turn head)
+  const lane2 = el("abs", "", A.R.l + 10, A.R.b - 52, A.R.r - A.R.l - 10, 42);
+  Object.assign(lane2.style, { background: "#634739", borderRadius: "8px 0 0 8px", zIndex: 0 });
+  const l2t = el("l2", sq ? "② second run · voice track · 115M" : "② second run · knows your voice track (115M model)", 0, 0);
+  Object.assign(l2t.style, { color: "#FFFFFF", background: "#634739", fontWeight: 400, zIndex: 3 }); place(l2t, A.cx[3] + 14, ex2, 0, 0.5);
+  // audio in (one entry)
+  const au = l1("Audio", 0, 0, Mz); place(au, P.wav[0], ex1 - 38, 0, 1); wave(P.wav[0], ex1 - 32, P.wav[1], 64);
+  wire([[P.wav[0] + P.wav[1] + 10, ex1], [A.R.l - 8, ex1]], R1); circ(1, A.R.l - 36, ex1, S1);
+  place(l2("first", 0, 0), A.R.l - 36, ex1 - 22, 0.5, 1);
+  // all 17 layers -> VAD head, directly above -> Speech?
+  // the VAD head reads layer 4 (block index 3): one stem up from slab 4, sharing the layer-4 tap with "Is it you?"
+  const s4t = A.cx[3], vtop = A.R.t - (sq ? 48 : 56) - 16 - 48;
+  const vw = sq ? 200 : 250, vb = box("ours", "Speech detector", "VAD · block 4 / 12", s4t - vw / 2, 0, vw, 56, Mz); place(vb, s4t - vw / 2, vtop, 0, 1);
+  const br = { mx: s4t, tip: A.R.t };
+  wire([[s4t, A.R.t - 2], [s4t, R(vb).b + 6]], R1); circ(1, s4t, (A.R.t + R(vb).b) / 2, S1);
+  // inside the block: the tap leaves the top of slab 4 (light line); the block title moves right, clear of it
+  wires.push(`<line x1="${s4t}" y1="${A.sy0}" x2="${s4t}" y2="${A.R.t}" stroke="#C8CDD4" stroke-width="2.6"/>`);
+  const bt = A.b.querySelector(".bt"); bt.style.left = "auto"; bt.style.right = P.pad + "px";
+  // Speech? to the LEFT of the VAD head, so the language head can sit over layers 8-12 on the right
+  const vr = R(vb); wire([[vr.l - 6, vr.cy], [vr.l - 36, vr.cy]], R1); const spq = l1("Speech?", 0, 0, Lz); place(spq, vr.l - 44, vr.cy, 1, 0.5);
+  place(l2("every 80 ms", 0, 0), vr.l - 44, vr.cy + 20, 1, 0);
+  // language head (verified: assets/lid_distill.pt from_layers [7..11] = layers 8-12, 0.92 M; pass 1, same chunk outputs,
+  // server/streams.py self.lid.feed(enc, hid, ...)): a short bracket over slabs 8-12
+  const b8 = A.cx[7], b12 = A.cx[11], lm = (b8 + b12) / 2, lb = brace(b8, b12, A.R.t - 8, true, S1);
+  const lw = sq ? 220 : 290, lbx = box("ours", "Language detector", sq ? "blocks 8–12 / 16–20" : "blocks 8–12 / 16–20", lm - lw / 2, 0, lw, 60, Mz);
+  place(lbx, Math.max(vr.r + 16, lm - lw / 2), vr.b, 0, 1);   // level with the VAD head
+  const lr = R(lbx); wire([[lm, lb.tip], [lm, lr.b + 6]], R1); circ(1, lm, (lb.tip + lr.b) / 2 + 2, S1);
+  // layer 17 (right edge, top) -> RNNT -> streaming words
+  const d = box("grey", "Decoder", "RNNT", P.ex, ex1 - 28, P.rn, 56, Mz);
+  wire([[A.R.r + 6, ex1], [P.ex - 8, ex1]], R1); circ(1, A.R.r + (P.ex - A.R.r) / 2, ex1, S1);
+  const dr = R(d); wire([[dr.r + 6, ex1], [dr.r + (sq ? 28 : 36), ex1]], R1);
+  const wl = l1(sq ? "Streaming<br>words" : "Streaming words", 0, 0, sq ? 24 : Lz); wl.style.whiteSpace = "normal"; place(wl, dr.r + (sq ? 36 : 44), ex1 - (sq ? 0 : 8), 0, 0.5);
+  if (sq) place(l2("every 160 ms", 0, 0), dr.l, dr.b + 6); else place(l2("every 160 ms", 0, 0), dr.r + 44, R(wl).b + 2);
+  // layer 4 -> TS-VAD "Is it you?" <- voice print <- 5 s sample
+  const s4 = A.cx[3], tw = P.ts[1] + 40, ts = box("ours", "Is it you?", "speaker tracker · 4 / 5", sq ? P.ts[0] : s4 - tw / 2, P.tsy - 38, tw, 76, Lz), t = R(ts);
+  ts.querySelector(".a").style.fontSize = "22px";
+  if (!sq) wire([[s4, A.R.b + 4], [s4, t.t - 6]], R1); else wire([[s4, A.R.b + 4], [s4, P.ly], [t.cx, P.ly], [t.cx, t.t - 6]], R1);
+  // the layer-4 tap starts at slab 4 (pass 1) and crosses over the pass-2 lane in a light line with a gap in the lane
+  wires.push(`<line x1="${s4}" y1="${A.sy1}" x2="${s4}" y2="${A.R.b}" stroke="#FFFFFF" stroke-width="9"/>`, `<line x1="${s4}" y1="${A.sy1}" x2="${s4}" y2="${A.R.b + 4}" stroke="#C8CDD4" stroke-width="2.6"/>`);
+  const c4y = A.R.b + (sq ? 22 : 30); circ(1, s4, c4y, S1); place(l2("block 4 / 5", 0, 0), s4 + 26, c4y, 0, 0.5);
+  // the voice print comes up from below: 5 s sample -> (speaker head, layer 4) -> TS-VAD
+  const smw = sq ? 140 : 160, sm = box("grey", "5 s sample", null, t.cx - smw / 2, t.b + (sq ? 104 : 88), smw, 56, Mz), smr = R(sm);
+  wire([[t.cx, smr.t - 6], [t.cx, t.b + 6]], R1);
+  // verified: tsvad_stream.voiceprint = the sample's layer-4 features through the speaker head, once
+  // v9 square: the annotation moves to the LEFT of the stem, so the (taller) turn-end box has the right side
+  const vpx = sq ? t.cx - 14 : t.cx + 14, vpa = sq ? 1 : 0;
+  const vp1 = place(l2("voice print", 0, 0), vpx, (t.b + smr.t) / 2 - 1, vpa, 1);
+  const vp2 = place(l2(sq ? "sample run once through<br>block 4 / 5 → speaker head" : "(sample run once through block 4 / 5 → speaker head)", 0, 0), vpx, (t.b + smr.t) / 2 + 1, vpa, 0);
+  if (sq) { vp1.style.textAlign = "right"; vp2.style.textAlign = "right"; }
+  // your voice track -> orange loop (2) back INTO the same block (its bottom edge), conditioned at blocks 1 and 3
+  // your voice track: out of the TS-VAD's left side, up into the pass-2 lane at layers 1 and 3
+  const b1 = A.cx[0], b3 = A.cx[2], lxv = b1 - (sq ? 16 : 20), hy = A.R.b + (sq ? 34 : 42);
+  wire([[t.l - 6, t.cy], [lxv, t.cy], [lxv, hy], [b3, hy], [b3, A.R.b - 44]], R2); wire([[b1, hy], [b1, A.R.b - 44]], R2);
+  circ(2, lxv, hy, O);
+  place(l2(sq ? "then · layers 1, 3" : "then · into layers 1 & 3", 0, 0), lxv - 26, hy, 1, 0.5);
+  const vt = l1(sq ? "Your voice<br>track" : "Your voice track", 0, 0, Mz); vt.style.textAlign = "right"; place(vt, lxv - 26, t.cy - 4, 1, 0);
+  const strip = [[0.20, O], [0.12, "#C8CDD4"], [0.18, "#FFFFFF"], [0.28, O], [0.10, "#C8CDD4"], [0.12, O]], swd = sq ? 140 : 180; let sx0 = lxv - 26 - swd, sy0 = R(vt).b + 6;
+  strip.forEach(([f, col]) => { wires.push(`<rect x="${sx0}" y="${sy0}" width="${f * swd}" height="12" fill="${col}" stroke="#AEB6C0" stroke-width="1"/>`); sx0 += f * swd; });
+  // (2) exit: right edge, lower -> turn head -> turn over? -> turn end
+  wire([[A.R.r, ex2], [P.ex - 8, ex2]], R2); circ(2, A.R.r + (P.ex - A.R.r) / 2, ex2, O);
+  const th = box("ours", "Turn detector", "0.32M", P.ex, ex2 - 36, P.th, 72, Mz), hr = R(th); th.querySelector(".a").style.fontSize = "22px";
+  let gx, gyy, tl;
+  if (!sq) { wire([[hr.r + 6, ex2], [hr.r + 36, ex2]], R2); gx = hr.r + 44; tl = l1("Turn over?", gx, 0, Lz); place(tl, gx, ex2 - 34, 0, 1); gyy = ex2 - 26; }
+  else { tl = l1("Turn over?", 0, 0, Lz); place(tl, hr.l, hr.b + 34); gx = hr.l; gyy = R(tl).b + 8; wire([[hr.cx, hr.b + 4], [hr.cx, R(tl).t - 4]], R2); }
+  const gw = sq ? 140 : 170, gh = sq ? 44 : 52, cr = spark2(gx, gyy, gw, gh, O);
+  place(l2("every 80 ms", 0, 0), gx, gyy + gh + 6);
+  // the turn decision box, below the posterior: single mode's shipped rule (VadHeadPolicy defaults: VAD_HEAD_SIL_THR 0.4,
+  // VAD_HEAD_WAIT_MS (160, 640), POLICY_THETA["vad_head"] 0.99; research/EOT_LATENCY.md), no Silero
+  const te = el("abs", `<div style="font-size:${Lz}px;font-weight:700;color:var(--ink);line-height:1.1">Turn end</div>` +
+    `<div style="font-size:22px;color:var(--ink);line-height:1.2;margin-top:4px">` + (sq ? "quiet ≥ 160 ms + turn detector ≥ 0.99<br>or end-of-turn classifier at each quiet frame<br>(block 8 / 12 + words)"
+      : "quiet ≥ 160 ms + turn detector ≥ 0.99<br>or end-of-turn classifier at each quiet frame (block 8 / 12 + words)") + `</div>`, 0, 0);
+  Object.assign(te.style, { border: `2.5px solid ${O}`, borderRadius: "10px", padding: "6px 14px 8px", background: "#FFFFFF", whiteSpace: "nowrap", zIndex: 2 });
+  te.dataset.rule = "1";
+  const tby = gyy + gh + (sq ? 40 : 52); place(te, Math.min(cr[0] - 60, W - M - te.offsetWidth), tby);
+  wire([[cr[0], cr[1] + 8], [cr[0], tby - 6]], R2);
+  // optional: tiny grey dashed branch, no container
+  const f = el("foot abs", "blocks shown as 115M / 0.6B · the voice-aware second run exists on the 115M; the 0.6B decides from the first run · heads: speech detector, speaker head (voice print), speaker tracker, turn detector, end-of-turn classifier, language detector", M, 0, W - 2 * M); f.style.top = (H - M - f.offsetHeight - 2) + "px";
+  const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg"); svg.setAttribute("class", "wires"); svg.setAttribute("width", W); svg.setAttribute("height", H);
+  svg.innerHTML = wires.join(""); st.prepend(svg);
+  if (new URLSearchParams(location.search).get("notext")) notext();
+}
+// removal test: hide every explanatory annotation (level 2) and the footer (level 3); level-1 labels stay
+function notext() { const s = document.createElement("style"); s.textContent = "#stage .l2, #stage .foot, #stage .box .a { color: transparent !important; } /* transparent !important */"; document.head.appendChild(s); }
+window.build = build; window.notext = notext;
+const q = new URLSearchParams(location.search); if (q.get("w")) build(+q.get("w"), +q.get("h"));
+</script></body></html>

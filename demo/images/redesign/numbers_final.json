@@ -1,0 +1,2004 @@
+{
+ "final/wer/libri/ours_115m": {
+  "value": 2.27,
+  "shown": "2.3",
+  "dec": 1,
+  "scope": "WER %, LibriSpeech test-clean first 200, Whisper normalizer",
+  "source": "runs/final_compare.json",
+  "path": "words > libri > whisper_norm|all > core_115m > wer_pct"
+ },
+ "final/wer/libri/ours_0p6b": {
+  "value": 2.07,
+  "shown": "2.1",
+  "dec": 1,
+  "scope": "WER %, LibriSpeech test-clean first 200, Whisper normalizer",
+  "source": "runs/final_compare.json",
+  "path": "words > libri > whisper_norm|all > core_0p6b > wer_pct"
+ },
+ "final/wer/libri/whisper_small": {
+  "value": 2.29,
+  "shown": "2.3",
+  "dec": 1,
+  "scope": "WER %, LibriSpeech test-clean first 200, Whisper normalizer",
+  "source": "runs/final_compare.json",
+  "path": "words > libri > whisper_norm|all > whisper_small > wer_pct"
+ },
+ "final/wer/libri/whisper_turbo": {
+  "value": 1.28,
+  "shown": "1.3",
+  "dec": 1,
+  "scope": "WER %, LibriSpeech test-clean first 200, Whisper normalizer",
+  "source": "runs/final_compare.json",
+  "path": "words > libri > whisper_norm|all > whisper_turbo > wer_pct"
+ },
+ "final/wer/libri/whisper_large": {
+  "value": 1.41,
+  "shown": "1.4",
+  "dec": 1,
+  "scope": "WER %, LibriSpeech test-clean first 200, Whisper normalizer",
+  "source": "runs/final_compare.json",
+  "path": "words > libri > whisper_norm|all > whisper_large_v3 > wer_pct"
+ },
+ "final/wer/libri/parakeet_tdt": {
+  "value": 1.88,
+  "shown": "1.9",
+  "dec": 1,
+  "scope": "WER %, LibriSpeech test-clean first 200, Whisper normalizer",
+  "source": "runs/final_compare.json",
+  "path": "words > libri > whisper_norm|all > tdt_v3 > wer_pct"
+ },
+ "final/wer/ami/ours_115m": {
+  "value": 20.63,
+  "shown": "20.6",
+  "dec": 1,
+  "scope": "WER %, AMI dev 200 segments, Whisper normalizer",
+  "source": "runs/final_compare.json",
+  "path": "words > ami > whisper_norm|all > core_115m > wer_pct"
+ },
+ "final/wer/ami/ours_0p6b": {
+  "value": 10.39,
+  "shown": "10.4",
+  "dec": 1,
+  "scope": "WER %, AMI dev 200 segments, Whisper normalizer",
+  "source": "runs/final_compare.json",
+  "path": "words > ami > whisper_norm|all > core_0p6b > wer_pct"
+ },
+ "final/wer/ami/whisper_small": {
+  "value": 14.49,
+  "shown": "14.5",
+  "dec": 1,
+  "scope": "WER %, AMI dev 200 segments, Whisper normalizer",
+  "source": "runs/final_compare.json",
+  "path": "words > ami > whisper_norm|all > whisper_small > wer_pct"
+ },
+ "final/wer/ami/whisper_turbo": {
+  "value": 12.33,
+  "shown": "12.3",
+  "dec": 1,
+  "scope": "WER %, AMI dev 200 segments, Whisper normalizer",
+  "source": "runs/final_compare.json",
+  "path": "words > ami > whisper_norm|all > whisper_turbo > wer_pct"
+ },
+ "final/wer/ami/whisper_large": {
+  "value": 12.36,
+  "shown": "12.4",
+  "dec": 1,
+  "scope": "WER %, AMI dev 200 segments, Whisper normalizer",
+  "source": "runs/final_compare.json",
+  "path": "words > ami > whisper_norm|all > whisper_large_v3 > wer_pct"
+ },
+ "final/wer/ami/parakeet_tdt": {
+  "value": 9.5,
+  "shown": "9.5",
+  "dec": 1,
+  "scope": "WER %, AMI dev 200 segments, Whisper normalizer",
+  "source": "runs/final_compare.json",
+  "path": "words > ami > whisper_norm|all > tdt_v3 > wer_pct"
+ },
+ "final/wer/icsi/ours_115m": {
+  "value": 26.21,
+  "shown": "26.2",
+  "dec": 1,
+  "scope": "WER %, ICSI dev 200 segments, Whisper normalizer",
+  "source": "runs/final_compare.json",
+  "path": "words > icsi > whisper_norm|all > core_115m > wer_pct"
+ },
+ "final/wer/icsi/ours_0p6b": {
+  "value": 13.62,
+  "shown": "13.6",
+  "dec": 1,
+  "scope": "WER %, ICSI dev 200 segments, Whisper normalizer",
+  "source": "runs/final_compare.json",
+  "path": "words > icsi > whisper_norm|all > core_0p6b > wer_pct"
+ },
+ "final/wer/icsi/whisper_small": {
+  "value": 18.17,
+  "shown": "18.2",
+  "dec": 1,
+  "scope": "WER %, ICSI dev 200 segments, Whisper normalizer",
+  "source": "runs/final_compare.json",
+  "path": "words > icsi > whisper_norm|all > whisper_small > wer_pct"
+ },
+ "final/wer/icsi/whisper_turbo": {
+  "value": 13.86,
+  "shown": "13.9",
+  "dec": 1,
+  "scope": "WER %, ICSI dev 200 segments, Whisper normalizer",
+  "source": "runs/final_compare.json",
+  "path": "words > icsi > whisper_norm|all > whisper_turbo > wer_pct"
+ },
+ "final/wer/icsi/whisper_large": {
+  "value": 12.79,
+  "shown": "12.8",
+  "dec": 1,
+  "scope": "WER %, ICSI dev 200 segments, Whisper normalizer",
+  "source": "runs/final_compare.json",
+  "path": "words > icsi > whisper_norm|all > whisper_large_v3 > wer_pct"
+ },
+ "final/wer/icsi/parakeet_tdt": {
+  "value": 10.37,
+  "shown": "10.4",
+  "dec": 1,
+  "scope": "WER %, ICSI dev 200 segments, Whisper normalizer",
+  "source": "runs/final_compare.json",
+  "path": "words > icsi > whisper_norm|all > tdt_v3 > wer_pct"
+ },
+ "final/wer/live/ours_115m": {
+  "value": 20.34,
+  "shown": "20.3",
+  "dec": 1,
+  "scope": "WER %, 32 live two-party sessions (all), every word, Whisper normalizer",
+  "source": "runs/final_compare.json",
+  "path": "words > live > whisper_norm|all > core_115m > wer_pct"
+ },
+ "final/wer/live/ours_0p6b": {
+  "value": 11.55,
+  "shown": "11.6",
+  "dec": 1,
+  "scope": "WER %, 32 live two-party sessions (all), every word, Whisper normalizer",
+  "source": "runs/final_compare.json",
+  "path": "words > live > whisper_norm|all > core_0p6b > wer_pct"
+ },
+ "final/wer/live/whisper_small": {
+  "value": 14.67,
+  "shown": "14.7",
+  "dec": 1,
+  "scope": "WER %, 32 live two-party sessions (all), every word, Whisper normalizer",
+  "source": "runs/final_compare.json",
+  "path": "words > live > whisper_norm|all > whisper_small > wer_pct"
+ },
+ "final/wer/live/whisper_turbo": {
+  "value": 12.91,
+  "shown": "12.9",
+  "dec": 1,
+  "scope": "WER %, 32 live two-party sessions (all), every word, Whisper normalizer",
+  "source": "runs/final_compare.json",
+  "path": "words > live > whisper_norm|all > whisper_turbo > wer_pct"
+ },
+ "final/wer/live/whisper_large": {
+  "value": 12.69,
+  "shown": "12.7",
+  "dec": 1,
+  "scope": "WER %, 32 live two-party sessions (all), every word, Whisper normalizer",
+  "source": "runs/final_compare.json",
+  "path": "words > live > whisper_norm|all > whisper_large_v3 > wer_pct"
+ },
+ "final/wer/live/parakeet_tdt": {
+  "value": 11.04,
+  "shown": "11.0",
+  "dec": 1,
+  "scope": "WER %, 32 live two-party sessions (all), every word, Whisper normalizer",
+  "source": "runs/final_compare.json",
+  "path": "words > live > whisper_norm|all > tdt_v3 > wer_pct"
+ },
+ "final/wer/live_user/ours_115m": {
+  "value": 15.35,
+  "shown": "15.4",
+  "dec": 1,
+  "scope": "WER %, 32 live two-party sessions (user_channel), every word, Whisper normalizer",
+  "source": "runs/final_compare.json",
+  "path": "words > live > whisper_norm|user_channel > core_115m > wer_pct"
+ },
+ "final/wer/live_user/ours_0p6b": {
+  "value": 5.7,
+  "shown": "5.7",
+  "dec": 1,
+  "scope": "WER %, 32 live two-party sessions (user_channel), every word, Whisper normalizer",
+  "source": "runs/final_compare.json",
+  "path": "words > live > whisper_norm|user_channel > core_0p6b > wer_pct"
+ },
+ "final/wer/live_user/whisper_small": {
+  "value": 10.14,
+  "shown": "10.1",
+  "dec": 1,
+  "scope": "WER %, 32 live two-party sessions (user_channel), every word, Whisper normalizer",
+  "source": "runs/final_compare.json",
+  "path": "words > live > whisper_norm|user_channel > whisper_small > wer_pct"
+ },
+ "final/wer/live_user/whisper_turbo": {
+  "value": 8.38,
+  "shown": "8.4",
+  "dec": 1,
+  "scope": "WER %, 32 live two-party sessions (user_channel), every word, Whisper normalizer",
+  "source": "runs/final_compare.json",
+  "path": "words > live > whisper_norm|user_channel > whisper_turbo > wer_pct"
+ },
+ "final/wer/live_user/whisper_large": {
+  "value": 8.45,
+  "shown": "8.5",
+  "dec": 1,
+  "scope": "WER %, 32 live two-party sessions (user_channel), every word, Whisper normalizer",
+  "source": "runs/final_compare.json",
+  "path": "words > live > whisper_norm|user_channel > whisper_large_v3 > wer_pct"
+ },
+ "final/wer/live_user/parakeet_tdt": {
+  "value": 7.68,
+  "shown": "7.7",
+  "dec": 1,
+  "scope": "WER %, 32 live two-party sessions (user_channel), every word, Whisper normalizer",
+  "source": "runs/final_compare.json",
+  "path": "words > live > whisper_norm|user_channel > tdt_v3 > wer_pct"
+ },
+ "final/wer/libri/nemotron35": {
+  "value": 2.59,
+  "shown": "2.6",
+  "dec": 1,
+  "scope": "WER %, Nemotron 3.5 ASR 0.6B (multilingual), en-US prompt (runs/core_3p5.json via final_compare)",
+  "source": "runs/final_compare.json",
+  "path": "words_nemotron35 > libri > whisper_norm > wer_pct"
+ },
+ "final/wer/ami/nemotron35": {
+  "value": 14.78,
+  "shown": "14.8",
+  "dec": 1,
+  "scope": "WER %, Nemotron 3.5 ASR 0.6B (multilingual), en-US prompt (runs/core_3p5.json via final_compare)",
+  "source": "runs/final_compare.json",
+  "path": "words_nemotron35 > ami > whisper_norm > wer_pct"
+ },
+ "final/wer/icsi/nemotron35": {
+  "value": 20.27,
+  "shown": "20.3",
+  "dec": 1,
+  "scope": "WER %, Nemotron 3.5 ASR 0.6B (multilingual), en-US prompt (runs/core_3p5.json via final_compare)",
+  "source": "runs/final_compare.json",
+  "path": "words_nemotron35 > icsi > whisper_norm > wer_pct"
+ },
+ "final/sttlat/p50/ours_115m": {
+  "value": 273.0,
+  "shown": "273",
+  "dec": 0,
+  "scope": "streaming word latency p50 (ms), AMI test windows",
+  "source": "runs/final_compare.json",
+  "path": "stt_latency > 115m > p50_ms"
+ },
+ "final/sttlat/p50/ours_0p6b": {
+  "value": 290.0,
+  "shown": "290",
+  "dec": 0,
+  "scope": "streaming word latency p50 (ms), AMI test windows",
+  "source": "runs/final_compare.json",
+  "path": "stt_latency > 0p6b > p50_ms"
+ },
+ "final/vad/ami/f1/ours_115m": {
+  "value": 0.9511,
+  "shown": "0.951",
+  "dec": 3,
+  "scope": "VAD F1 at 0.5, ami_dev",
+  "source": "runs/final_compare.json",
+  "path": "vad > ami_dev > core_115m > f1_at_0.5"
+ },
+ "final/vad/ami/auc/ours_115m": {
+  "value": 0.9719,
+  "shown": "0.972",
+  "dec": 3,
+  "scope": "VAD ROC-AUC, ami_dev",
+  "source": "runs/final_compare.json",
+  "path": "vad > ami_dev > core_115m > auc"
+ },
+ "final/vad/ami/miss/ours_115m": {
+  "value": 10.58,
+  "shown": "10.6",
+  "dec": 1,
+  "scope": "speech missed at 7.5 % false alarms, ami_dev",
+  "source": "runs/final_compare.json",
+  "path": "vad > ami_dev > core_115m > miss_at_fpr_7.5_pct"
+ },
+ "final/vad/ami/f1/ours_0p6b": {
+  "value": 0.9507,
+  "shown": "0.951",
+  "dec": 3,
+  "scope": "VAD F1 at 0.5, ami_dev",
+  "source": "runs/final_compare.json",
+  "path": "vad > ami_dev > core_0p6b > f1_at_0.5"
+ },
+ "final/vad/ami/auc/ours_0p6b": {
+  "value": 0.9715,
+  "shown": "0.972",
+  "dec": 3,
+  "scope": "VAD ROC-AUC, ami_dev",
+  "source": "runs/final_compare.json",
+  "path": "vad > ami_dev > core_0p6b > auc"
+ },
+ "final/vad/ami/miss/ours_0p6b": {
+  "value": 10.65,
+  "shown": "10.7",
+  "dec": 1,
+  "scope": "speech missed at 7.5 % false alarms, ami_dev",
+  "source": "runs/final_compare.json",
+  "path": "vad > ami_dev > core_0p6b > miss_at_fpr_7.5_pct"
+ },
+ "final/vad/ami/f1/silero": {
+  "value": 0.9147,
+  "shown": "0.915",
+  "dec": 3,
+  "scope": "VAD F1 at 0.5, ami_dev",
+  "source": "runs/final_compare.json",
+  "path": "vad > ami_dev > silero_v5 > f1_at_0.5"
+ },
+ "final/vad/ami/auc/silero": {
+  "value": 0.9561,
+  "shown": "0.956",
+  "dec": 3,
+  "scope": "VAD ROC-AUC, ami_dev",
+  "source": "runs/final_compare.json",
+  "path": "vad > ami_dev > silero_v5 > auc"
+ },
+ "final/vad/ami/miss/silero": {
+  "value": 13.81,
+  "shown": "13.8",
+  "dec": 1,
+  "scope": "speech missed at 7.5 % false alarms, ami_dev",
+  "source": "runs/final_compare.json",
+  "path": "vad > ami_dev > silero_v5 > miss_at_fpr_7.5_pct"
+ },
+ "final/vad/ami/f1/marblenet": {
+  "value": 0.9367,
+  "shown": "0.937",
+  "dec": 3,
+  "scope": "VAD F1 at 0.5, ami_dev",
+  "source": "runs/final_compare.json",
+  "path": "vad > ami_dev > marblenet_v2 > f1_at_0.5"
+ },
+ "final/vad/ami/auc/marblenet": {
+  "value": 0.9587,
+  "shown": "0.959",
+  "dec": 3,
+  "scope": "VAD ROC-AUC, ami_dev",
+  "source": "runs/final_compare.json",
+  "path": "vad > ami_dev > marblenet_v2 > auc"
+ },
+ "final/vad/ami/miss/marblenet": {
+  "value": 12.35,
+  "shown": "12.4",
+  "dec": 1,
+  "scope": "speech missed at 7.5 % false alarms, ami_dev",
+  "source": "runs/final_compare.json",
+  "path": "vad > ami_dev > marblenet_v2 > miss_at_fpr_7.5_pct"
+ },
+ "final/vad/ami/f1/pyannote": {
+  "value": 0.9628,
+  "shown": "0.963",
+  "dec": 3,
+  "scope": "VAD F1 at 0.5, ami_dev",
+  "source": "runs/final_compare.json",
+  "path": "vad > ami_dev > pyannote_seg3 > f1_at_0.5"
+ },
+ "final/vad/ami/auc/pyannote": {
+  "value": 0.9835,
+  "shown": "0.984",
+  "dec": 3,
+  "scope": "VAD ROC-AUC, ami_dev",
+  "source": "runs/final_compare.json",
+  "path": "vad > ami_dev > pyannote_seg3 > auc"
+ },
+ "final/vad/ami/miss/pyannote": {
+  "value": 4.63,
+  "shown": "4.6",
+  "dec": 1,
+  "scope": "speech missed at 7.5 % false alarms, ami_dev",
+  "source": "runs/final_compare.json",
+  "path": "vad > ami_dev > pyannote_seg3 > miss_at_fpr_7.5_pct"
+ },
+ "final/vad/ami/f1/ten_vad": {
+  "value": 0.9253,
+  "shown": "0.925",
+  "dec": 3,
+  "scope": "VAD F1 at 0.5, ami_dev",
+  "source": "runs/final_compare.json",
+  "path": "vad > ami_dev > ten_vad > f1_at_0.5"
+ },
+ "final/vad/ami/auc/ten_vad": {
+  "value": 0.9481,
+  "shown": "0.948",
+  "dec": 3,
+  "scope": "VAD ROC-AUC, ami_dev",
+  "source": "runs/final_compare.json",
+  "path": "vad > ami_dev > ten_vad > auc"
+ },
+ "final/vad/ami/miss/ten_vad": {
+  "value": 13.59,
+  "shown": "13.6",
+  "dec": 1,
+  "scope": "speech missed at 7.5 % false alarms, ami_dev",
+  "source": "runs/final_compare.json",
+  "path": "vad > ami_dev > ten_vad > miss_at_fpr_7.5_pct"
+ },
+ "final/vad/icsi/f1/ours_115m": {
+  "value": 0.8977,
+  "shown": "0.898",
+  "dec": 3,
+  "scope": "VAD F1 at 0.5, icsi_dev",
+  "source": "runs/final_compare.json",
+  "path": "vad > icsi_dev > core_115m > f1_at_0.5"
+ },
+ "final/vad/icsi/auc/ours_115m": {
+  "value": 0.9313,
+  "shown": "0.931",
+  "dec": 3,
+  "scope": "VAD ROC-AUC, icsi_dev",
+  "source": "runs/final_compare.json",
+  "path": "vad > icsi_dev > core_115m > auc"
+ },
+ "final/vad/icsi/miss/ours_115m": {
+  "value": 19.82,
+  "shown": "19.8",
+  "dec": 1,
+  "scope": "speech missed at 7.5 % false alarms, icsi_dev",
+  "source": "runs/final_compare.json",
+  "path": "vad > icsi_dev > core_115m > miss_at_fpr_7.5_pct"
+ },
+ "final/vad/icsi/f1/ours_0p6b": {
+  "value": 0.9055,
+  "shown": "0.906",
+  "dec": 3,
+  "scope": "VAD F1 at 0.5, icsi_dev",
+  "source": "runs/final_compare.json",
+  "path": "vad > icsi_dev > core_0p6b > f1_at_0.5"
+ },
+ "final/vad/icsi/auc/ours_0p6b": {
+  "value": 0.9245,
+  "shown": "0.925",
+  "dec": 3,
+  "scope": "VAD ROC-AUC, icsi_dev",
+  "source": "runs/final_compare.json",
+  "path": "vad > icsi_dev > core_0p6b > auc"
+ },
+ "final/vad/icsi/miss/ours_0p6b": {
+  "value": 22.35,
+  "shown": "22.4",
+  "dec": 1,
+  "scope": "speech missed at 7.5 % false alarms, icsi_dev",
+  "source": "runs/final_compare.json",
+  "path": "vad > icsi_dev > core_0p6b > miss_at_fpr_7.5_pct"
+ },
+ "final/vad/icsi/f1/silero": {
+  "value": 0.9287,
+  "shown": "0.929",
+  "dec": 3,
+  "scope": "VAD F1 at 0.5, icsi_dev",
+  "source": "runs/final_compare.json",
+  "path": "vad > icsi_dev > silero_v5 > f1_at_0.5"
+ },
+ "final/vad/icsi/auc/silero": {
+  "value": 0.9338,
+  "shown": "0.934",
+  "dec": 3,
+  "scope": "VAD ROC-AUC, icsi_dev",
+  "source": "runs/final_compare.json",
+  "path": "vad > icsi_dev > silero_v5 > auc"
+ },
+ "final/vad/icsi/miss/silero": {
+  "value": 19.87,
+  "shown": "19.9",
+  "dec": 1,
+  "scope": "speech missed at 7.5 % false alarms, icsi_dev",
+  "source": "runs/final_compare.json",
+  "path": "vad > icsi_dev > silero_v5 > miss_at_fpr_7.5_pct"
+ },
+ "final/vad/icsi/f1/marblenet": {
+  "value": 0.929,
+  "shown": "0.929",
+  "dec": 3,
+  "scope": "VAD F1 at 0.5, icsi_dev",
+  "source": "runs/final_compare.json",
+  "path": "vad > icsi_dev > marblenet_v2 > f1_at_0.5"
+ },
+ "final/vad/icsi/auc/marblenet": {
+  "value": 0.9403,
+  "shown": "0.940",
+  "dec": 3,
+  "scope": "VAD ROC-AUC, icsi_dev",
+  "source": "runs/final_compare.json",
+  "path": "vad > icsi_dev > marblenet_v2 > auc"
+ },
+ "final/vad/icsi/miss/marblenet": {
+  "value": 19.78,
+  "shown": "19.8",
+  "dec": 1,
+  "scope": "speech missed at 7.5 % false alarms, icsi_dev",
+  "source": "runs/final_compare.json",
+  "path": "vad > icsi_dev > marblenet_v2 > miss_at_fpr_7.5_pct"
+ },
+ "final/vad/icsi/f1/pyannote": {
+  "value": 0.8988,
+  "shown": "0.899",
+  "dec": 3,
+  "scope": "VAD F1 at 0.5, icsi_dev",
+  "source": "runs/final_compare.json",
+  "path": "vad > icsi_dev > pyannote_seg3 > f1_at_0.5"
+ },
+ "final/vad/icsi/auc/pyannote": {
+  "value": 0.9041,
+  "shown": "0.904",
+  "dec": 3,
+  "scope": "VAD ROC-AUC, icsi_dev",
+  "source": "runs/final_compare.json",
+  "path": "vad > icsi_dev > pyannote_seg3 > auc"
+ },
+ "final/vad/icsi/miss/pyannote": {
+  "value": 28.64,
+  "shown": "28.6",
+  "dec": 1,
+  "scope": "speech missed at 7.5 % false alarms, icsi_dev",
+  "source": "runs/final_compare.json",
+  "path": "vad > icsi_dev > pyannote_seg3 > miss_at_fpr_7.5_pct"
+ },
+ "final/vad/icsi/f1/ten_vad": {
+  "value": 0.9353,
+  "shown": "0.935",
+  "dec": 3,
+  "scope": "VAD F1 at 0.5, icsi_dev",
+  "source": "runs/final_compare.json",
+  "path": "vad > icsi_dev > ten_vad > f1_at_0.5"
+ },
+ "final/vad/icsi/auc/ten_vad": {
+  "value": 0.9515,
+  "shown": "0.952",
+  "dec": 3,
+  "scope": "VAD ROC-AUC, icsi_dev",
+  "source": "runs/final_compare.json",
+  "path": "vad > icsi_dev > ten_vad > auc"
+ },
+ "final/vad/icsi/miss/ten_vad": {
+  "value": 14.01,
+  "shown": "14.0",
+  "dec": 1,
+  "scope": "speech missed at 7.5 % false alarms, icsi_dev",
+  "source": "runs/final_compare.json",
+  "path": "vad > icsi_dev > ten_vad > miss_at_fpr_7.5_pct"
+ },
+ "final/asst/acc/pipecat": {
+  "value": 69.7,
+  "shown": "69.7",
+  "dec": 1,
+  "scope": "smart-turn v3.2 test, 399 assistant-directed clips",
+  "source": "runs/final_compare.json",
+  "path": "turn > pipecat_smartturn_v3.2_silero > asst > accuracy_pct"
+ },
+ "final/asst/p50/pipecat": {
+  "value": 211.0,
+  "shown": "211",
+  "dec": 0,
+  "scope": "smart-turn v3.2 test, 399 assistant-directed clips",
+  "source": "runs/final_compare.json",
+  "path": "turn > pipecat_smartturn_v3.2_silero > asst > p50"
+ },
+ "final/asst/p95/pipecat": {
+  "value": 242.0,
+  "shown": "242",
+  "dec": 0,
+  "scope": "smart-turn v3.2 test, 399 assistant-directed clips",
+  "source": "runs/final_compare.json",
+  "path": "turn > pipecat_smartturn_v3.2_silero > asst > p95"
+ },
+ "final/asst/ff/pipecat": {
+  "value": 40.2,
+  "shown": "40.2",
+  "dec": 1,
+  "scope": "smart-turn v3.2 test, 399 assistant-directed clips",
+  "source": "runs/final_compare.json",
+  "path": "turn > pipecat_smartturn_v3.2_silero > asst > false_fire_pct"
+ },
+ "final/asst/missed/pipecat": {
+  "value": 13.1,
+  "shown": "13.1",
+  "dec": 1,
+  "scope": "smart-turn v3.2 test, 399 assistant-directed clips",
+  "source": "runs/final_compare.json",
+  "path": "turn > pipecat_smartturn_v3.2_silero > asst > missed_pct"
+ },
+ "final/calls/p50/pipecat": {
+  "value": 237.0,
+  "shown": "237",
+  "dec": 0,
+  "scope": "end of turn, calls",
+  "source": "runs/final_compare.json",
+  "path": "turn > pipecat_smartturn_v3.2_silero > calls > eot_total_ms_p50"
+ },
+ "final/calls/p95/pipecat": {
+  "value": 3217.0,
+  "shown": "3217",
+  "dec": 0,
+  "scope": "end of turn, calls",
+  "source": "runs/final_compare.json",
+  "path": "turn > pipecat_smartturn_v3.2_silero > calls > eot_total_ms_p95"
+ },
+ "final/calls/fi/pipecat": {
+  "value": 35.8,
+  "shown": "35.8",
+  "dec": 1,
+  "scope": "end of turn, calls",
+  "source": "runs/final_compare.json",
+  "path": "turn > pipecat_smartturn_v3.2_silero > calls > false_interruption_pct"
+ },
+ "final/calls/missed/pipecat": {
+  "value": 24.8,
+  "shown": "24.8",
+  "dec": 1,
+  "scope": "end of turn, calls",
+  "source": "runs/final_compare.json",
+  "path": "turn > pipecat_smartturn_v3.2_silero > calls > missed_pct"
+ },
+ "final/ami/p50/pipecat": {
+  "value": 385.0,
+  "shown": "385",
+  "dec": 0,
+  "scope": "end of turn, ami",
+  "source": "runs/final_compare.json",
+  "path": "turn > pipecat_smartturn_v3.2_silero > ami > eot_total_ms_p50"
+ },
+ "final/ami/p95/pipecat": {
+  "value": 3992.0,
+  "shown": "3992",
+  "dec": 0,
+  "scope": "end of turn, ami",
+  "source": "runs/final_compare.json",
+  "path": "turn > pipecat_smartturn_v3.2_silero > ami > eot_total_ms_p95"
+ },
+ "final/ami/fi/pipecat": {
+  "value": 27.5,
+  "shown": "27.5",
+  "dec": 1,
+  "scope": "end of turn, ami",
+  "source": "runs/final_compare.json",
+  "path": "turn > pipecat_smartturn_v3.2_silero > ami > false_interruption_pct"
+ },
+ "final/ami/missed/pipecat": {
+  "value": 44.5,
+  "shown": "44.5",
+  "dec": 1,
+  "scope": "end of turn, ami",
+  "source": "runs/final_compare.json",
+  "path": "turn > pipecat_smartturn_v3.2_silero > ami > missed_pct"
+ },
+ "final/asst/acc/livekit": {
+  "value": 72.7,
+  "shown": "72.7",
+  "dec": 1,
+  "scope": "smart-turn v3.2 test, 399 assistant-directed clips",
+  "source": "runs/final_compare.json",
+  "path": "turn > livekit_en_turn_detector_silero > asst > accuracy_pct"
+ },
+ "final/asst/p50/livekit": {
+  "value": 547.0,
+  "shown": "547",
+  "dec": 0,
+  "scope": "smart-turn v3.2 test, 399 assistant-directed clips",
+  "source": "runs/final_compare.json",
+  "path": "turn > livekit_en_turn_detector_silero > asst > p50"
+ },
+ "final/asst/p95/livekit": {
+  "value": 3016.0,
+  "shown": "3016",
+  "dec": 0,
+  "scope": "smart-turn v3.2 test, 399 assistant-directed clips",
+  "source": "runs/final_compare.json",
+  "path": "turn > livekit_en_turn_detector_silero > asst > p95"
+ },
+ "final/asst/ff/livekit": {
+  "value": 44.6,
+  "shown": "44.6",
+  "dec": 1,
+  "scope": "smart-turn v3.2 test, 399 assistant-directed clips",
+  "source": "runs/final_compare.json",
+  "path": "turn > livekit_en_turn_detector_silero > asst > false_fire_pct"
+ },
+ "final/asst/missed/livekit": {
+  "value": 4.6,
+  "shown": "4.6",
+  "dec": 1,
+  "scope": "smart-turn v3.2 test, 399 assistant-directed clips",
+  "source": "runs/final_compare.json",
+  "path": "turn > livekit_en_turn_detector_silero > asst > missed_pct"
+ },
+ "final/calls/p50/livekit": {
+  "value": 567.0,
+  "shown": "567",
+  "dec": 0,
+  "scope": "end of turn, calls",
+  "source": "runs/final_compare.json",
+  "path": "turn > livekit_en_turn_detector_silero > calls > eot_total_ms_p50"
+ },
+ "final/calls/p95/livekit": {
+  "value": 3127.0,
+  "shown": "3127",
+  "dec": 0,
+  "scope": "end of turn, calls",
+  "source": "runs/final_compare.json",
+  "path": "turn > livekit_en_turn_detector_silero > calls > eot_total_ms_p95"
+ },
+ "final/calls/fi/livekit": {
+  "value": 26.6,
+  "shown": "26.6",
+  "dec": 1,
+  "scope": "end of turn, calls",
+  "source": "runs/final_compare.json",
+  "path": "turn > livekit_en_turn_detector_silero > calls > false_interruption_pct"
+ },
+ "final/calls/missed/livekit": {
+  "value": 22.9,
+  "shown": "22.9",
+  "dec": 1,
+  "scope": "end of turn, calls",
+  "source": "runs/final_compare.json",
+  "path": "turn > livekit_en_turn_detector_silero > calls > missed_pct"
+ },
+ "final/ami/p50/livekit": {
+  "value": 1890.0,
+  "shown": "1890",
+  "dec": 0,
+  "scope": "end of turn, ami",
+  "source": "runs/final_compare.json",
+  "path": "turn > livekit_en_turn_detector_silero > ami > eot_total_ms_p50"
+ },
+ "final/ami/p95/livekit": {
+  "value": 4295.0,
+  "shown": "4295",
+  "dec": 0,
+  "scope": "end of turn, ami",
+  "source": "runs/final_compare.json",
+  "path": "turn > livekit_en_turn_detector_silero > ami > eot_total_ms_p95"
+ },
+ "final/ami/fi/livekit": {
+  "value": 12.5,
+  "shown": "12.5",
+  "dec": 1,
+  "scope": "end of turn, ami",
+  "source": "runs/final_compare.json",
+  "path": "turn > livekit_en_turn_detector_silero > ami > false_interruption_pct"
+ },
+ "final/ami/missed/livekit": {
+  "value": 67.5,
+  "shown": "67.5",
+  "dec": 1,
+  "scope": "end of turn, ami",
+  "source": "runs/final_compare.json",
+  "path": "turn > livekit_en_turn_detector_silero > ami > missed_pct"
+ },
+ "final/asst/acc/parakeet_eou": {
+  "value": 48.4,
+  "shown": "48.4",
+  "dec": 1,
+  "scope": "smart-turn v3.2 test, 399 assistant-directed clips",
+  "source": "runs/final_compare.json",
+  "path": "turn > parakeet_realtime_eou > asst > accuracy_pct"
+ },
+ "final/asst/p50/parakeet_eou": {
+  "value": 462.0,
+  "shown": "462",
+  "dec": 0,
+  "scope": "smart-turn v3.2 test, 399 assistant-directed clips",
+  "source": "runs/final_compare.json",
+  "path": "turn > parakeet_realtime_eou > asst > p50"
+ },
+ "final/asst/p95/parakeet_eou": {
+  "value": 1210.0,
+  "shown": "1210",
+  "dec": 0,
+  "scope": "smart-turn v3.2 test, 399 assistant-directed clips",
+  "source": "runs/final_compare.json",
+  "path": "turn > parakeet_realtime_eou > asst > p95"
+ },
+ "final/asst/ff/parakeet_eou": {
+  "value": 91.5,
+  "shown": "91.5",
+  "dec": 1,
+  "scope": "smart-turn v3.2 test, 399 assistant-directed clips",
+  "source": "runs/final_compare.json",
+  "path": "turn > parakeet_realtime_eou > asst > false_fire_pct"
+ },
+ "final/asst/missed/parakeet_eou": {
+  "value": 0.6,
+  "shown": "0.6",
+  "dec": 1,
+  "scope": "smart-turn v3.2 test, 399 assistant-directed clips",
+  "source": "runs/final_compare.json",
+  "path": "turn > parakeet_realtime_eou > asst > missed_pct"
+ },
+ "final/calls/p50/parakeet_eou": {
+  "value": 1277.0,
+  "shown": "1277",
+  "dec": 0,
+  "scope": "end of turn, calls",
+  "source": "runs/final_compare.json",
+  "path": "turn > parakeet_realtime_eou > calls > eot_total_ms_p50"
+ },
+ "final/calls/p95/parakeet_eou": {
+  "value": 5362.0,
+  "shown": "5362",
+  "dec": 0,
+  "scope": "end of turn, calls",
+  "source": "runs/final_compare.json",
+  "path": "turn > parakeet_realtime_eou > calls > eot_total_ms_p95"
+ },
+ "final/calls/fi/parakeet_eou": {
+  "value": 7.3,
+  "shown": "7.3",
+  "dec": 1,
+  "scope": "end of turn, calls",
+  "source": "runs/final_compare.json",
+  "path": "turn > parakeet_realtime_eou > calls > false_interruption_pct"
+ },
+ "final/calls/missed/parakeet_eou": {
+  "value": 30.3,
+  "shown": "30.3",
+  "dec": 1,
+  "scope": "end of turn, calls",
+  "source": "runs/final_compare.json",
+  "path": "turn > parakeet_realtime_eou > calls > missed_pct"
+ },
+ "final/ami/p50/parakeet_eou": {
+  "value": 2251.0,
+  "shown": "2251",
+  "dec": 0,
+  "scope": "end of turn, ami",
+  "source": "runs/final_compare.json",
+  "path": "turn > parakeet_realtime_eou > ami > eot_total_ms_p50"
+ },
+ "final/ami/p95/parakeet_eou": {
+  "value": 5707.0,
+  "shown": "5707",
+  "dec": 0,
+  "scope": "end of turn, ami",
+  "source": "runs/final_compare.json",
+  "path": "turn > parakeet_realtime_eou > ami > eot_total_ms_p95"
+ },
+ "final/ami/fi/parakeet_eou": {
+  "value": 1.5,
+  "shown": "1.5",
+  "dec": 1,
+  "scope": "end of turn, ami",
+  "source": "runs/final_compare.json",
+  "path": "turn > parakeet_realtime_eou > ami > false_interruption_pct"
+ },
+ "final/ami/missed/parakeet_eou": {
+  "value": 77.5,
+  "shown": "77.5",
+  "dec": 1,
+  "scope": "end of turn, ami",
+  "source": "runs/final_compare.json",
+  "path": "turn > parakeet_realtime_eou > ami > missed_pct"
+ },
+ "final/asst/acc/smartturn_alone": {
+  "value": 96.99,
+  "shown": "97.0",
+  "dec": 1,
+  "scope": "smart-turn v3.2 classifier alone, one call per whole clip (upper bound, no timing)",
+  "source": "runs/final_compare.json",
+  "path": "turn > smartturn_classifier_alone > asst > accuracy_pct"
+ },
+ "final/asst/acc/ours_115m_balanced": {
+  "value": 43.9,
+  "shown": "43.9",
+  "dec": 1,
+  "scope": "audioforge 115m --turn-preset balanced, assistant clips",
+  "source": "runs/final_compare.json",
+  "path": "turn > ours_115m > balanced > asst > accuracy_pct"
+ },
+ "final/asst/p50/ours_115m_balanced": {
+  "value": 1226.0,
+  "shown": "1226",
+  "dec": 0,
+  "scope": "audioforge 115m --turn-preset balanced, assistant clips",
+  "source": "runs/final_compare.json",
+  "path": "turn > ours_115m > balanced > asst > p50"
+ },
+ "final/asst/p95/ours_115m_balanced": {
+  "value": 1587.0,
+  "shown": "1587",
+  "dec": 0,
+  "scope": "audioforge 115m --turn-preset balanced, assistant clips",
+  "source": "runs/final_compare.json",
+  "path": "turn > ours_115m > balanced > asst > p95"
+ },
+ "final/asst/ff/ours_115m_balanced": {
+  "value": 100.0,
+  "shown": "100.0",
+  "dec": 1,
+  "scope": "audioforge 115m --turn-preset balanced, assistant clips",
+  "source": "runs/final_compare.json",
+  "path": "turn > ours_115m > balanced > asst > false_fire_pct"
+ },
+ "final/asst/missed/ours_115m_balanced": {
+  "value": 0.0,
+  "shown": "0.0",
+  "dec": 1,
+  "scope": "audioforge 115m --turn-preset balanced, assistant clips",
+  "source": "runs/final_compare.json",
+  "path": "turn > ours_115m > balanced > asst > missed_pct"
+ },
+ "final/calls/p50/ours_115m_balanced": {
+  "value": 955.0,
+  "shown": "955",
+  "dec": 0,
+  "scope": "audioforge 115m --turn-preset balanced, calls",
+  "source": "runs/final_compare.json",
+  "path": "turn > ours_115m > balanced > calls > eot_total_ms_p50"
+ },
+ "final/calls/p95/ours_115m_balanced": {
+  "value": 1918.0,
+  "shown": "1918",
+  "dec": 0,
+  "scope": "audioforge 115m --turn-preset balanced, calls",
+  "source": "runs/final_compare.json",
+  "path": "turn > ours_115m > balanced > calls > eot_total_ms_p95"
+ },
+ "final/calls/fi/ours_115m_balanced": {
+  "value": 20.2,
+  "shown": "20.2",
+  "dec": 1,
+  "scope": "audioforge 115m --turn-preset balanced, calls",
+  "source": "runs/final_compare.json",
+  "path": "turn > ours_115m > balanced > calls > false_interruption_pct"
+ },
+ "final/calls/missed/ours_115m_balanced": {
+  "value": 7.3,
+  "shown": "7.3",
+  "dec": 1,
+  "scope": "audioforge 115m --turn-preset balanced, calls",
+  "source": "runs/final_compare.json",
+  "path": "turn > ours_115m > balanced > calls > missed_pct"
+ },
+ "final/ami/p50/ours_115m_balanced": {
+  "value": 1326.0,
+  "shown": "1326",
+  "dec": 0,
+  "scope": "audioforge 115m --turn-preset balanced, ami",
+  "source": "runs/final_compare.json",
+  "path": "turn > ours_115m > balanced > ami > eot_total_ms_p50"
+ },
+ "final/ami/p95/ours_115m_balanced": {
+  "value": 3759.0,
+  "shown": "3759",
+  "dec": 0,
+  "scope": "audioforge 115m --turn-preset balanced, ami",
+  "source": "runs/final_compare.json",
+  "path": "turn > ours_115m > balanced > ami > eot_total_ms_p95"
+ },
+ "final/ami/fi/ours_115m_balanced": {
+  "value": 10.5,
+  "shown": "10.5",
+  "dec": 1,
+  "scope": "audioforge 115m --turn-preset balanced, ami",
+  "source": "runs/final_compare.json",
+  "path": "turn > ours_115m > balanced > ami > false_interruption_pct"
+ },
+ "final/ami/missed/ours_115m_balanced": {
+  "value": 33.5,
+  "shown": "33.5",
+  "dec": 1,
+  "scope": "audioforge 115m --turn-preset balanced, ami",
+  "source": "runs/final_compare.json",
+  "path": "turn > ours_115m > balanced > ami > missed_pct"
+ },
+ "final/asst/acc/ours_115m_fast": {
+  "value": 41.6,
+  "shown": "41.6",
+  "dec": 1,
+  "scope": "audioforge 115m --turn-preset fast, assistant clips",
+  "source": "runs/final_compare.json",
+  "path": "turn > ours_115m > fast > asst > accuracy_pct"
+ },
+ "final/asst/p50/ours_115m_fast": {
+  "value": 461.0,
+  "shown": "461",
+  "dec": 0,
+  "scope": "audioforge 115m --turn-preset fast, assistant clips",
+  "source": "runs/final_compare.json",
+  "path": "turn > ours_115m > fast > asst > p50"
+ },
+ "final/asst/p95/ours_115m_fast": {
+  "value": 698.0,
+  "shown": "698",
+  "dec": 0,
+  "scope": "audioforge 115m --turn-preset fast, assistant clips",
+  "source": "runs/final_compare.json",
+  "path": "turn > ours_115m > fast > asst > p95"
+ },
+ "final/asst/ff/ours_115m_fast": {
+  "value": 100.0,
+  "shown": "100.0",
+  "dec": 1,
+  "scope": "audioforge 115m --turn-preset fast, assistant clips",
+  "source": "runs/final_compare.json",
+  "path": "turn > ours_115m > fast > asst > false_fire_pct"
+ },
+ "final/asst/missed/ours_115m_fast": {
+  "value": 4.0,
+  "shown": "4.0",
+  "dec": 1,
+  "scope": "audioforge 115m --turn-preset fast, assistant clips",
+  "source": "runs/final_compare.json",
+  "path": "turn > ours_115m > fast > asst > missed_pct"
+ },
+ "final/calls/p50/ours_115m_fast": {
+  "value": 547.0,
+  "shown": "547",
+  "dec": 0,
+  "scope": "audioforge 115m --turn-preset fast, calls",
+  "source": "runs/final_compare.json",
+  "path": "turn > ours_115m > fast > calls > eot_total_ms_p50"
+ },
+ "final/calls/p95/ours_115m_fast": {
+  "value": 1861.0,
+  "shown": "1861",
+  "dec": 0,
+  "scope": "audioforge 115m --turn-preset fast, calls",
+  "source": "runs/final_compare.json",
+  "path": "turn > ours_115m > fast > calls > eot_total_ms_p95"
+ },
+ "final/calls/fi/ours_115m_fast": {
+  "value": 24.8,
+  "shown": "24.8",
+  "dec": 1,
+  "scope": "audioforge 115m --turn-preset fast, calls",
+  "source": "runs/final_compare.json",
+  "path": "turn > ours_115m > fast > calls > false_interruption_pct"
+ },
+ "final/calls/missed/ours_115m_fast": {
+  "value": 5.5,
+  "shown": "5.5",
+  "dec": 1,
+  "scope": "audioforge 115m --turn-preset fast, calls",
+  "source": "runs/final_compare.json",
+  "path": "turn > ours_115m > fast > calls > missed_pct"
+ },
+ "final/ami/p50/ours_115m_fast": {
+  "value": 1248.0,
+  "shown": "1248",
+  "dec": 0,
+  "scope": "audioforge 115m --turn-preset fast, ami",
+  "source": "runs/final_compare.json",
+  "path": "turn > ours_115m > fast > ami > eot_total_ms_p50"
+ },
+ "final/ami/p95/ours_115m_fast": {
+  "value": 4047.0,
+  "shown": "4047",
+  "dec": 0,
+  "scope": "audioforge 115m --turn-preset fast, ami",
+  "source": "runs/final_compare.json",
+  "path": "turn > ours_115m > fast > ami > eot_total_ms_p95"
+ },
+ "final/ami/fi/ours_115m_fast": {
+  "value": 11.5,
+  "shown": "11.5",
+  "dec": 1,
+  "scope": "audioforge 115m --turn-preset fast, ami",
+  "source": "runs/final_compare.json",
+  "path": "turn > ours_115m > fast > ami > false_interruption_pct"
+ },
+ "final/ami/missed/ours_115m_fast": {
+  "value": 34.0,
+  "shown": "34.0",
+  "dec": 1,
+  "scope": "audioforge 115m --turn-preset fast, ami",
+  "source": "runs/final_compare.json",
+  "path": "turn > ours_115m > fast > ami > missed_pct"
+ },
+ "final/asst/acc/ours_115m": {
+  "value": 92.7,
+  "shown": "92.7",
+  "dec": 1,
+  "scope": "audioforge 115m --turn-preset assistant, assistant clips",
+  "source": "runs/final_compare.json",
+  "path": "turn > ours_115m > assistant > asst > accuracy_pct"
+ },
+ "final/asst/p50/ours_115m": {
+  "value": 299.0,
+  "shown": "299",
+  "dec": 0,
+  "scope": "audioforge 115m --turn-preset assistant, assistant clips",
+  "source": "runs/final_compare.json",
+  "path": "turn > ours_115m > assistant > asst > p50"
+ },
+ "final/asst/p95/ours_115m": {
+  "value": 710.0,
+  "shown": "710",
+  "dec": 0,
+  "scope": "audioforge 115m --turn-preset assistant, assistant clips",
+  "source": "runs/final_compare.json",
+  "path": "turn > ours_115m > assistant > asst > p95"
+ },
+ "final/asst/ff/ours_115m": {
+  "value": 5.4,
+  "shown": "5.4",
+  "dec": 1,
+  "scope": "audioforge 115m --turn-preset assistant, assistant clips",
+  "source": "runs/final_compare.json",
+  "path": "turn > ours_115m > assistant > asst > false_fire_pct"
+ },
+ "final/asst/missed/ours_115m": {
+  "value": 5.1,
+  "shown": "5.1",
+  "dec": 1,
+  "scope": "audioforge 115m --turn-preset assistant, assistant clips",
+  "source": "runs/final_compare.json",
+  "path": "turn > ours_115m > assistant > asst > missed_pct"
+ },
+ "final/calls/p50/ours_115m_assistant": {
+  "value": 3232.0,
+  "shown": "3232",
+  "dec": 0,
+  "scope": "audioforge 115m --turn-preset assistant, calls",
+  "source": "runs/final_compare.json",
+  "path": "turn > ours_115m > assistant > calls > eot_total_ms_p50"
+ },
+ "final/calls/p95/ours_115m_assistant": {
+  "value": 4801.0,
+  "shown": "4801",
+  "dec": 0,
+  "scope": "audioforge 115m --turn-preset assistant, calls",
+  "source": "runs/final_compare.json",
+  "path": "turn > ours_115m > assistant > calls > eot_total_ms_p95"
+ },
+ "final/calls/fi/ours_115m_assistant": {
+  "value": 5.5,
+  "shown": "5.5",
+  "dec": 1,
+  "scope": "audioforge 115m --turn-preset assistant, calls",
+  "source": "runs/final_compare.json",
+  "path": "turn > ours_115m > assistant > calls > false_interruption_pct"
+ },
+ "final/calls/missed/ours_115m_assistant": {
+  "value": 33.9,
+  "shown": "33.9",
+  "dec": 1,
+  "scope": "audioforge 115m --turn-preset assistant, calls",
+  "source": "runs/final_compare.json",
+  "path": "turn > ours_115m > assistant > calls > missed_pct"
+ },
+ "final/ami/p50/ours_115m_assistant": {
+  "value": 1647.0,
+  "shown": "1647",
+  "dec": 0,
+  "scope": "audioforge 115m --turn-preset assistant, ami",
+  "source": "runs/final_compare.json",
+  "path": "turn > ours_115m > assistant > ami > eot_total_ms_p50"
+ },
+ "final/ami/p95/ours_115m_assistant": {
+  "value": 4886.0,
+  "shown": "4886",
+  "dec": 0,
+  "scope": "audioforge 115m --turn-preset assistant, ami",
+  "source": "runs/final_compare.json",
+  "path": "turn > ours_115m > assistant > ami > eot_total_ms_p95"
+ },
+ "final/ami/fi/ours_115m_assistant": {
+  "value": 7.0,
+  "shown": "7.0",
+  "dec": 1,
+  "scope": "audioforge 115m --turn-preset assistant, ami",
+  "source": "runs/final_compare.json",
+  "path": "turn > ours_115m > assistant > ami > false_interruption_pct"
+ },
+ "final/ami/missed/ours_115m_assistant": {
+  "value": 52.5,
+  "shown": "52.5",
+  "dec": 1,
+  "scope": "audioforge 115m --turn-preset assistant, ami",
+  "source": "runs/final_compare.json",
+  "path": "turn > ours_115m > assistant > ami > missed_pct"
+ },
+ "final/asst/acc/ours_0p6b_balanced": {
+  "value": 42.6,
+  "shown": "42.6",
+  "dec": 1,
+  "scope": "audioforge 0p6b --turn-preset balanced, assistant clips",
+  "source": "runs/final_compare.json",
+  "path": "turn > ours_0p6b > balanced > asst > accuracy_pct"
+ },
+ "final/asst/p50/ours_0p6b_balanced": {
+  "value": 634.0,
+  "shown": "634",
+  "dec": 0,
+  "scope": "audioforge 0p6b --turn-preset balanced, assistant clips",
+  "source": "runs/final_compare.json",
+  "path": "turn > ours_0p6b > balanced > asst > p50"
+ },
+ "final/asst/p95/ours_0p6b_balanced": {
+  "value": 794.0,
+  "shown": "794",
+  "dec": 0,
+  "scope": "audioforge 0p6b --turn-preset balanced, assistant clips",
+  "source": "runs/final_compare.json",
+  "path": "turn > ours_0p6b > balanced > asst > p95"
+ },
+ "final/asst/ff/ours_0p6b_balanced": {
+  "value": 100.0,
+  "shown": "100.0",
+  "dec": 1,
+  "scope": "audioforge 0p6b --turn-preset balanced, assistant clips",
+  "source": "runs/final_compare.json",
+  "path": "turn > ours_0p6b > balanced > asst > false_fire_pct"
+ },
+ "final/asst/missed/ours_0p6b_balanced": {
+  "value": 2.9,
+  "shown": "2.9",
+  "dec": 1,
+  "scope": "audioforge 0p6b --turn-preset balanced, assistant clips",
+  "source": "runs/final_compare.json",
+  "path": "turn > ours_0p6b > balanced > asst > missed_pct"
+ },
+ "final/calls/p50/ours_0p6b_balanced": {
+  "value": 730.0,
+  "shown": "730",
+  "dec": 0,
+  "scope": "audioforge 0p6b --turn-preset balanced, calls",
+  "source": "runs/final_compare.json",
+  "path": "turn > ours_0p6b > balanced > calls > eot_total_ms_p50"
+ },
+ "final/calls/p95/ours_0p6b_balanced": {
+  "value": 2036.0,
+  "shown": "2036",
+  "dec": 0,
+  "scope": "audioforge 0p6b --turn-preset balanced, calls",
+  "source": "runs/final_compare.json",
+  "path": "turn > ours_0p6b > balanced > calls > eot_total_ms_p95"
+ },
+ "final/calls/fi/ours_0p6b_balanced": {
+  "value": 19.3,
+  "shown": "19.3",
+  "dec": 1,
+  "scope": "audioforge 0p6b --turn-preset balanced, calls",
+  "source": "runs/final_compare.json",
+  "path": "turn > ours_0p6b > balanced > calls > false_interruption_pct"
+ },
+ "final/calls/missed/ours_0p6b_balanced": {
+  "value": 10.1,
+  "shown": "10.1",
+  "dec": 1,
+  "scope": "audioforge 0p6b --turn-preset balanced, calls",
+  "source": "runs/final_compare.json",
+  "path": "turn > ours_0p6b > balanced > calls > missed_pct"
+ },
+ "final/ami/p50/ours_0p6b_balanced": {
+  "value": 1180.0,
+  "shown": "1180",
+  "dec": 0,
+  "scope": "audioforge 0p6b --turn-preset balanced, ami",
+  "source": "runs/final_compare.json",
+  "path": "turn > ours_0p6b > balanced > ami > eot_total_ms_p50"
+ },
+ "final/ami/p95/ours_0p6b_balanced": {
+  "value": 4062.0,
+  "shown": "4062",
+  "dec": 0,
+  "scope": "audioforge 0p6b --turn-preset balanced, ami",
+  "source": "runs/final_compare.json",
+  "path": "turn > ours_0p6b > balanced > ami > eot_total_ms_p95"
+ },
+ "final/ami/fi/ours_0p6b_balanced": {
+  "value": 11.0,
+  "shown": "11.0",
+  "dec": 1,
+  "scope": "audioforge 0p6b --turn-preset balanced, ami",
+  "source": "runs/final_compare.json",
+  "path": "turn > ours_0p6b > balanced > ami > false_interruption_pct"
+ },
+ "final/ami/missed/ours_0p6b_balanced": {
+  "value": 33.0,
+  "shown": "33.0",
+  "dec": 1,
+  "scope": "audioforge 0p6b --turn-preset balanced, ami",
+  "source": "runs/final_compare.json",
+  "path": "turn > ours_0p6b > balanced > ami > missed_pct"
+ },
+ "final/asst/acc/ours_0p6b_fast": {
+  "value": 40.1,
+  "shown": "40.1",
+  "dec": 1,
+  "scope": "audioforge 0p6b --turn-preset fast, assistant clips",
+  "source": "runs/final_compare.json",
+  "path": "turn > ours_0p6b > fast > asst > accuracy_pct"
+ },
+ "final/asst/p50/ours_0p6b_fast": {
+  "value": 409.0,
+  "shown": "409",
+  "dec": 0,
+  "scope": "audioforge 0p6b --turn-preset fast, assistant clips",
+  "source": "runs/final_compare.json",
+  "path": "turn > ours_0p6b > fast > asst > p50"
+ },
+ "final/asst/p95/ours_0p6b_fast": {
+  "value": 602.0,
+  "shown": "602",
+  "dec": 0,
+  "scope": "audioforge 0p6b --turn-preset fast, assistant clips",
+  "source": "runs/final_compare.json",
+  "path": "turn > ours_0p6b > fast > asst > p95"
+ },
+ "final/asst/ff/ours_0p6b_fast": {
+  "value": 100.0,
+  "shown": "100.0",
+  "dec": 1,
+  "scope": "audioforge 0p6b --turn-preset fast, assistant clips",
+  "source": "runs/final_compare.json",
+  "path": "turn > ours_0p6b > fast > asst > false_fire_pct"
+ },
+ "final/asst/missed/ours_0p6b_fast": {
+  "value": 8.0,
+  "shown": "8.0",
+  "dec": 1,
+  "scope": "audioforge 0p6b --turn-preset fast, assistant clips",
+  "source": "runs/final_compare.json",
+  "path": "turn > ours_0p6b > fast > asst > missed_pct"
+ },
+ "final/calls/p50/ours_0p6b_fast": {
+  "value": 494.0,
+  "shown": "494",
+  "dec": 0,
+  "scope": "audioforge 0p6b --turn-preset fast, calls",
+  "source": "runs/final_compare.json",
+  "path": "turn > ours_0p6b > fast > calls > eot_total_ms_p50"
+ },
+ "final/calls/p95/ours_0p6b_fast": {
+  "value": 1977.0,
+  "shown": "1977",
+  "dec": 0,
+  "scope": "audioforge 0p6b --turn-preset fast, calls",
+  "source": "runs/final_compare.json",
+  "path": "turn > ours_0p6b > fast > calls > eot_total_ms_p95"
+ },
+ "final/calls/fi/ours_0p6b_fast": {
+  "value": 26.6,
+  "shown": "26.6",
+  "dec": 1,
+  "scope": "audioforge 0p6b --turn-preset fast, calls",
+  "source": "runs/final_compare.json",
+  "path": "turn > ours_0p6b > fast > calls > false_interruption_pct"
+ },
+ "final/calls/missed/ours_0p6b_fast": {
+  "value": 11.0,
+  "shown": "11.0",
+  "dec": 1,
+  "scope": "audioforge 0p6b --turn-preset fast, calls",
+  "source": "runs/final_compare.json",
+  "path": "turn > ours_0p6b > fast > calls > missed_pct"
+ },
+ "final/ami/p50/ours_0p6b_fast": {
+  "value": 1102.0,
+  "shown": "1102",
+  "dec": 0,
+  "scope": "audioforge 0p6b --turn-preset fast, ami",
+  "source": "runs/final_compare.json",
+  "path": "turn > ours_0p6b > fast > ami > eot_total_ms_p50"
+ },
+ "final/ami/p95/ours_0p6b_fast": {
+  "value": 4021.0,
+  "shown": "4021",
+  "dec": 0,
+  "scope": "audioforge 0p6b --turn-preset fast, ami",
+  "source": "runs/final_compare.json",
+  "path": "turn > ours_0p6b > fast > ami > eot_total_ms_p95"
+ },
+ "final/ami/fi/ours_0p6b_fast": {
+  "value": 17.0,
+  "shown": "17.0",
+  "dec": 1,
+  "scope": "audioforge 0p6b --turn-preset fast, ami",
+  "source": "runs/final_compare.json",
+  "path": "turn > ours_0p6b > fast > ami > false_interruption_pct"
+ },
+ "final/ami/missed/ours_0p6b_fast": {
+  "value": 27.0,
+  "shown": "27.0",
+  "dec": 1,
+  "scope": "audioforge 0p6b --turn-preset fast, ami",
+  "source": "runs/final_compare.json",
+  "path": "turn > ours_0p6b > fast > ami > missed_pct"
+ },
+ "final/asst/acc/ours_0p6b": {
+  "value": 93.0,
+  "shown": "93.0",
+  "dec": 1,
+  "scope": "audioforge 0p6b --turn-preset assistant, assistant clips",
+  "source": "runs/final_compare.json",
+  "path": "turn > ours_0p6b > assistant > asst > accuracy_pct"
+ },
+ "final/asst/p50/ours_0p6b": {
+  "value": 379.0,
+  "shown": "379",
+  "dec": 0,
+  "scope": "audioforge 0p6b --turn-preset assistant, assistant clips",
+  "source": "runs/final_compare.json",
+  "path": "turn > ours_0p6b > assistant > asst > p50"
+ },
+ "final/asst/p95/ours_0p6b": {
+  "value": 702.0,
+  "shown": "702",
+  "dec": 0,
+  "scope": "audioforge 0p6b --turn-preset assistant, assistant clips",
+  "source": "runs/final_compare.json",
+  "path": "turn > ours_0p6b > assistant > asst > p95"
+ },
+ "final/asst/ff/ours_0p6b": {
+  "value": 4.5,
+  "shown": "4.5",
+  "dec": 1,
+  "scope": "audioforge 0p6b --turn-preset assistant, assistant clips",
+  "source": "runs/final_compare.json",
+  "path": "turn > ours_0p6b > assistant > asst > false_fire_pct"
+ },
+ "final/asst/missed/ours_0p6b": {
+  "value": 9.7,
+  "shown": "9.7",
+  "dec": 1,
+  "scope": "audioforge 0p6b --turn-preset assistant, assistant clips",
+  "source": "runs/final_compare.json",
+  "path": "turn > ours_0p6b > assistant > asst > missed_pct"
+ },
+ "final/calls/p50/ours_0p6b_assistant": {
+  "value": 3749.0,
+  "shown": "3749",
+  "dec": 0,
+  "scope": "audioforge 0p6b --turn-preset assistant, calls",
+  "source": "runs/final_compare.json",
+  "path": "turn > ours_0p6b > assistant > calls > eot_total_ms_p50"
+ },
+ "final/calls/p95/ours_0p6b_assistant": {
+  "value": 4755.0,
+  "shown": "4755",
+  "dec": 0,
+  "scope": "audioforge 0p6b --turn-preset assistant, calls",
+  "source": "runs/final_compare.json",
+  "path": "turn > ours_0p6b > assistant > calls > eot_total_ms_p95"
+ },
+ "final/calls/fi/ours_0p6b_assistant": {
+  "value": 1.8,
+  "shown": "1.8",
+  "dec": 1,
+  "scope": "audioforge 0p6b --turn-preset assistant, calls",
+  "source": "runs/final_compare.json",
+  "path": "turn > ours_0p6b > assistant > calls > false_interruption_pct"
+ },
+ "final/calls/missed/ours_0p6b_assistant": {
+  "value": 43.1,
+  "shown": "43.1",
+  "dec": 1,
+  "scope": "audioforge 0p6b --turn-preset assistant, calls",
+  "source": "runs/final_compare.json",
+  "path": "turn > ours_0p6b > assistant > calls > missed_pct"
+ },
+ "final/ami/p50/ours_0p6b_assistant": {
+  "value": 1981.0,
+  "shown": "1981",
+  "dec": 0,
+  "scope": "audioforge 0p6b --turn-preset assistant, ami",
+  "source": "runs/final_compare.json",
+  "path": "turn > ours_0p6b > assistant > ami > eot_total_ms_p50"
+ },
+ "final/ami/p95/ours_0p6b_assistant": {
+  "value": 4901.0,
+  "shown": "4901",
+  "dec": 0,
+  "scope": "audioforge 0p6b --turn-preset assistant, ami",
+  "source": "runs/final_compare.json",
+  "path": "turn > ours_0p6b > assistant > ami > eot_total_ms_p95"
+ },
+ "final/ami/fi/ours_0p6b_assistant": {
+  "value": 1.0,
+  "shown": "1.0",
+  "dec": 1,
+  "scope": "audioforge 0p6b --turn-preset assistant, ami",
+  "source": "runs/final_compare.json",
+  "path": "turn > ours_0p6b > assistant > ami > false_interruption_pct"
+ },
+ "final/ami/missed/ours_0p6b_assistant": {
+  "value": 64.5,
+  "shown": "64.5",
+  "dec": 1,
+  "scope": "audioforge 0p6b --turn-preset assistant, ami",
+  "source": "runs/final_compare.json",
+  "path": "turn > ours_0p6b > assistant > ami > missed_pct"
+ },
+ "final/twer/ami/ours_115m": {
+  "value": 62.1,
+  "shown": "62.1",
+  "dec": 1,
+  "scope": "target-speaker WER %, ami eot-bench windows, primary, 5 s print",
+  "source": "runs/final_compare.json",
+  "path": "speaker > twer > ami > core115_tsvad_d2 > twer"
+ },
+ "final/twer/ami/ours_0p6b": {
+  "value": 63.21,
+  "shown": "63.2",
+  "dec": 1,
+  "scope": "target-speaker WER %, ami eot-bench windows, primary, 5 s print",
+  "source": "runs/final_compare.json",
+  "path": "speaker > twer > ami > core0p6b_tsvad_d2 > twer"
+ },
+ "final/twer/ami/nemotron3": {
+  "value": 74.66,
+  "shown": "74.7",
+  "dec": 1,
+  "scope": "target-speaker WER %, ami eot-bench windows, primary, 5 s print",
+  "source": "runs/final_compare.json",
+  "path": "speaker > twer > ami > nemotron3_best > twer"
+ },
+ "final/twer/ami/pyannote31": {
+  "value": 85.32,
+  "shown": "85.3",
+  "dec": 1,
+  "scope": "target-speaker WER %, ami eot-bench windows, primary, 5 s print",
+  "source": "runs/final_compare.json",
+  "path": "speaker > twer > ami > pyannote31_best > twer"
+ },
+ "final/twer/ami/nofilter": {
+  "value": 106.46,
+  "shown": "106.5",
+  "dec": 1,
+  "scope": "target-speaker WER %, ami eot-bench windows, primary, 5 s print",
+  "source": "runs/final_compare.json",
+  "path": "speaker > twer > ami > none > twer"
+ },
+ "final/twer/ami/oracle": {
+  "value": 47.43,
+  "shown": "47.4",
+  "dec": 1,
+  "scope": "target-speaker WER %, ami eot-bench windows, primary, 5 s print",
+  "source": "runs/final_compare.json",
+  "path": "speaker > twer > ami > oracle_d2 > twer"
+ },
+ "final/der/ami/ours_115m": {
+  "value": 50.94,
+  "shown": "50.9",
+  "dec": 1,
+  "scope": "target-speaker DER %, ami",
+  "source": "runs/final_compare.json",
+  "path": "speaker > frame > ami > ours_115m > der_pct"
+ },
+ "final/trackf1/ami/ours_115m": {
+  "value": 0.7428,
+  "shown": "0.743",
+  "dec": 3,
+  "scope": "tracking F1, ami",
+  "source": "runs/final_compare.json",
+  "path": "speaker > frame > ami > ours_115m > f1"
+ },
+ "final/der/ami/ours_0p6b": {
+  "value": 51.81,
+  "shown": "51.8",
+  "dec": 1,
+  "scope": "target-speaker DER %, ami",
+  "source": "runs/final_compare.json",
+  "path": "speaker > frame > ami > ours_0p6b > der_pct"
+ },
+ "final/trackf1/ami/ours_0p6b": {
+  "value": 0.7597,
+  "shown": "0.760",
+  "dec": 3,
+  "scope": "tracking F1, ami",
+  "source": "runs/final_compare.json",
+  "path": "speaker > frame > ami > ours_0p6b > f1"
+ },
+ "final/der/ami/nemotron3": {
+  "value": 69.47,
+  "shown": "69.5",
+  "dec": 1,
+  "scope": "target-speaker DER %, ami",
+  "source": "runs/final_compare.json",
+  "path": "speaker > frame > ami > nemotron3 > der_pct"
+ },
+ "final/trackf1/ami/nemotron3": {
+  "value": 0.6481,
+  "shown": "0.648",
+  "dec": 3,
+  "scope": "tracking F1, ami",
+  "source": "runs/final_compare.json",
+  "path": "speaker > frame > ami > nemotron3 > f1"
+ },
+ "final/der/ami/pyannote31": {
+  "value": 77.78,
+  "shown": "77.8",
+  "dec": 1,
+  "scope": "target-speaker DER %, ami",
+  "source": "runs/final_compare.json",
+  "path": "speaker > frame > ami > pyannote31 > der_pct"
+ },
+ "final/trackf1/ami/pyannote31": {
+  "value": 0.69,
+  "shown": "0.690",
+  "dec": 3,
+  "scope": "tracking F1, ami",
+  "source": "runs/final_compare.json",
+  "path": "speaker > frame > ami > pyannote31 > f1"
+ },
+ "final/eer/ami/ours_115m": {
+  "value": 19.78,
+  "shown": "19.8",
+  "dec": 1,
+  "scope": "within-meeting speaker EER %, ami dev, 200 segments",
+  "source": "runs/final_compare.json",
+  "path": "speaker_eer > ami > core_115m > eer_within_meeting_pct"
+ },
+ "final/eer/ami/ours_0p6b": {
+  "value": 13.64,
+  "shown": "13.6",
+  "dec": 1,
+  "scope": "within-meeting speaker EER %, ami dev, 200 segments",
+  "source": "runs/final_compare.json",
+  "path": "speaker_eer > ami > core_0p6b > eer_within_meeting_pct"
+ },
+ "final/eer/ami/titanet": {
+  "value": 11.97,
+  "shown": "12.0",
+  "dec": 1,
+  "scope": "within-meeting speaker EER %, ami dev, 200 segments",
+  "source": "runs/final_compare.json",
+  "path": "speaker_eer > ami > titanet_l > eer_within_meeting_pct"
+ },
+ "final/eer/ami/wespeaker": {
+  "value": 11.88,
+  "shown": "11.9",
+  "dec": 1,
+  "scope": "within-meeting speaker EER %, ami dev, 200 segments",
+  "source": "runs/final_compare.json",
+  "path": "speaker_eer > ami > wespeaker_pyannote > eer_within_meeting_pct"
+ },
+ "final/twer/icsi/ours_115m": {
+  "value": 37.14,
+  "shown": "37.1",
+  "dec": 1,
+  "scope": "target-speaker WER %, icsi eot-bench windows, primary, 5 s print",
+  "source": "runs/final_compare.json",
+  "path": "speaker > twer > icsi > core115_tsvad_d2 > twer"
+ },
+ "final/twer/icsi/ours_0p6b": {
+  "value": 31.69,
+  "shown": "31.7",
+  "dec": 1,
+  "scope": "target-speaker WER %, icsi eot-bench windows, primary, 5 s print",
+  "source": "runs/final_compare.json",
+  "path": "speaker > twer > icsi > core0p6b_tsvad_d2 > twer"
+ },
+ "final/twer/icsi/nemotron3": {
+  "value": 65.09,
+  "shown": "65.1",
+  "dec": 1,
+  "scope": "target-speaker WER %, icsi eot-bench windows, primary, 5 s print",
+  "source": "runs/final_compare.json",
+  "path": "speaker > twer > icsi > nemotron3_best > twer"
+ },
+ "final/twer/icsi/pyannote31": {
+  "value": 74.83,
+  "shown": "74.8",
+  "dec": 1,
+  "scope": "target-speaker WER %, icsi eot-bench windows, primary, 5 s print",
+  "source": "runs/final_compare.json",
+  "path": "speaker > twer > icsi > pyannote31_best > twer"
+ },
+ "final/twer/icsi/nofilter": {
+  "value": 100.77,
+  "shown": "100.8",
+  "dec": 1,
+  "scope": "target-speaker WER %, icsi eot-bench windows, primary, 5 s print",
+  "source": "runs/final_compare.json",
+  "path": "speaker > twer > icsi > none > twer"
+ },
+ "final/twer/icsi/oracle": {
+  "value": 31.33,
+  "shown": "31.3",
+  "dec": 1,
+  "scope": "target-speaker WER %, icsi eot-bench windows, primary, 5 s print",
+  "source": "runs/final_compare.json",
+  "path": "speaker > twer > icsi > oracle_d2 > twer"
+ },
+ "final/der/icsi/ours_115m": {
+  "value": 22.97,
+  "shown": "23.0",
+  "dec": 1,
+  "scope": "target-speaker DER %, icsi",
+  "source": "runs/final_compare.json",
+  "path": "speaker > frame > icsi > ours_115m > der_pct"
+ },
+ "final/trackf1/icsi/ours_115m": {
+  "value": 0.882,
+  "shown": "0.882",
+  "dec": 3,
+  "scope": "tracking F1, icsi",
+  "source": "runs/final_compare.json",
+  "path": "speaker > frame > icsi > ours_115m > f1"
+ },
+ "final/der/icsi/ours_0p6b": {
+  "value": 21.07,
+  "shown": "21.1",
+  "dec": 1,
+  "scope": "target-speaker DER %, icsi",
+  "source": "runs/final_compare.json",
+  "path": "speaker > frame > icsi > ours_0p6b > der_pct"
+ },
+ "final/trackf1/icsi/ours_0p6b": {
+  "value": 0.8944,
+  "shown": "0.894",
+  "dec": 3,
+  "scope": "tracking F1, icsi",
+  "source": "runs/final_compare.json",
+  "path": "speaker > frame > icsi > ours_0p6b > f1"
+ },
+ "final/der/icsi/nemotron3": {
+  "value": 74.91,
+  "shown": "74.9",
+  "dec": 1,
+  "scope": "target-speaker DER %, icsi",
+  "source": "runs/final_compare.json",
+  "path": "speaker > frame > icsi > nemotron3 > der_pct"
+ },
+ "final/trackf1/icsi/nemotron3": {
+  "value": 0.6977,
+  "shown": "0.698",
+  "dec": 3,
+  "scope": "tracking F1, icsi",
+  "source": "runs/final_compare.json",
+  "path": "speaker > frame > icsi > nemotron3 > f1"
+ },
+ "final/der/icsi/pyannote31": {
+  "value": 89.15,
+  "shown": "89.2",
+  "dec": 1,
+  "scope": "target-speaker DER %, icsi",
+  "source": "runs/final_compare.json",
+  "path": "speaker > frame > icsi > pyannote31 > der_pct"
+ },
+ "final/trackf1/icsi/pyannote31": {
+  "value": 0.6696,
+  "shown": "0.670",
+  "dec": 3,
+  "scope": "tracking F1, icsi",
+  "source": "runs/final_compare.json",
+  "path": "speaker > frame > icsi > pyannote31 > f1"
+ },
+ "final/eer/icsi/ours_115m": {
+  "value": 7.02,
+  "shown": "7.0",
+  "dec": 1,
+  "scope": "within-meeting speaker EER %, icsi dev, 200 segments",
+  "source": "runs/final_compare.json",
+  "path": "speaker_eer > icsi > core_115m > eer_within_meeting_pct"
+ },
+ "final/eer/icsi/ours_0p6b": {
+  "value": 3.57,
+  "shown": "3.6",
+  "dec": 1,
+  "scope": "within-meeting speaker EER %, icsi dev, 200 segments",
+  "source": "runs/final_compare.json",
+  "path": "speaker_eer > icsi > core_0p6b > eer_within_meeting_pct"
+ },
+ "final/eer/icsi/titanet": {
+  "value": 2.06,
+  "shown": "2.1",
+  "dec": 1,
+  "scope": "within-meeting speaker EER %, icsi dev, 200 segments",
+  "source": "runs/final_compare.json",
+  "path": "speaker_eer > icsi > titanet_l > eer_within_meeting_pct"
+ },
+ "final/eer/icsi/wespeaker": {
+  "value": 1.01,
+  "shown": "1.0",
+  "dec": 1,
+  "scope": "within-meeting speaker EER %, icsi dev, 200 segments",
+  "source": "runs/final_compare.json",
+  "path": "speaker_eer > icsi > wespeaker_pyannote > eer_within_meeting_pct"
+ },
+ "final/lid/2s/ours_115m": {
+  "value": 91.02,
+  "shown": "91.0",
+  "dec": 1,
+  "scope": "FLEURS-17 test, 2 s from speech onset",
+  "source": "runs/final_compare.json",
+  "path": "lid > core_115m > acc_2s_pct"
+ },
+ "final/lid/full/ours_115m": {
+  "value": 97.8,
+  "shown": "97.8",
+  "dec": 1,
+  "scope": "FLEURS-17 test, full clip",
+  "source": "runs/final_compare.json",
+  "path": "lid > core_115m > acc_full_pct"
+ },
+ "final/lid/2s/ours_0p6b": {
+  "value": 87.57,
+  "shown": "87.6",
+  "dec": 1,
+  "scope": "FLEURS-17 test, 2 s from speech onset",
+  "source": "runs/final_compare.json",
+  "path": "lid > core_0p6b > acc_2s_pct"
+ },
+ "final/lid/full/ours_0p6b": {
+  "value": 95.45,
+  "shown": "95.5",
+  "dec": 1,
+  "scope": "FLEURS-17 test, full clip",
+  "source": "runs/final_compare.json",
+  "path": "lid > core_0p6b > acc_full_pct"
+ },
+ "final/lid/2s/whisper_small": {
+  "value": 90.59,
+  "shown": "90.6",
+  "dec": 1,
+  "scope": "FLEURS-17 test, 2 s from speech onset",
+  "source": "runs/final_compare.json",
+  "path": "lid > whisper_small > acc_2s_pct"
+ },
+ "final/lid/full/whisper_small": {
+  "value": 99.06,
+  "shown": "99.1",
+  "dec": 1,
+  "scope": "FLEURS-17 test, full clip",
+  "source": "runs/final_compare.json",
+  "path": "lid > whisper_small > acc_full_pct"
+ },
+ "final/lid/2s/whisper_turbo": {
+  "value": 95.18,
+  "shown": "95.2",
+  "dec": 1,
+  "scope": "FLEURS-17 test, 2 s from speech onset",
+  "source": "runs/final_compare.json",
+  "path": "lid > whisper_turbo > acc_2s_pct"
+ },
+ "final/lid/full/whisper_turbo": {
+  "value": 99.33,
+  "shown": "99.3",
+  "dec": 1,
+  "scope": "FLEURS-17 test, full clip",
+  "source": "runs/final_compare.json",
+  "path": "lid > whisper_turbo > acc_full_pct"
+ },
+ "final/lid/2s/whisper_large": {
+  "value": 95.92,
+  "shown": "95.9",
+  "dec": 1,
+  "scope": "FLEURS-17 test, 2 s from speech onset",
+  "source": "runs/final_compare.json",
+  "path": "lid > whisper_large_v3 > acc_2s_pct"
+ },
+ "final/lid/full/whisper_large": {
+  "value": 99.45,
+  "shown": "99.5",
+  "dec": 1,
+  "scope": "FLEURS-17 test, full clip",
+  "source": "runs/final_compare.json",
+  "path": "lid > whisper_large_v3 > acc_full_pct"
+ },
+ "final/lid/2s/ambernet": {
+  "value": 95.1,
+  "shown": "95.1",
+  "dec": 1,
+  "scope": "FLEURS-17 test, 2 s from speech onset",
+  "source": "runs/final_compare.json",
+  "path": "lid > ambernet > acc_2s_pct"
+ },
+ "final/lid/full/ambernet": {
+  "value": 99.53,
+  "shown": "99.5",
+  "dec": 1,
+  "scope": "FLEURS-17 test, full clip",
+  "source": "runs/final_compare.json",
+  "path": "lid > ambernet > acc_full_pct"
+ },
+ "final/cost/115m/mps/chunk_ms": {
+  "value": 27.73,
+  "shown": "27.7",
+  "dec": 1,
+  "scope": "ms per 160 ms chunk, full single-mode engine, mps",
+  "source": "runs/final_compare.json",
+  "path": "cost > 115m > engine > mps > chunk_ms_p50"
+ },
+ "final/cost/115m/mps/streams": {
+  "value": 4.0,
+  "shown": "4",
+  "dec": 0,
+  "scope": "real-time streams, mps",
+  "source": "runs/final_compare.json",
+  "path": "cost_summary > 115m > mps > realtime_streams"
+ },
+ "final/cost/115m/mps/rss_mb": {
+  "value": 1155.1,
+  "shown": "1155",
+  "dec": 0,
+  "scope": "peak RSS MB, mps",
+  "source": "runs/final_compare.json",
+  "path": "cost > 115m > engine > mps > peak_rss_mb"
+ },
+ "final/cost/115m/cpu/chunk_ms": {
+  "value": 30.96,
+  "shown": "31.0",
+  "dec": 1,
+  "scope": "ms per 160 ms chunk, full single-mode engine, cpu",
+  "source": "runs/final_compare.json",
+  "path": "cost > 115m > engine > cpu > chunk_ms_p50"
+ },
+ "final/cost/115m/cpu/streams": {
+  "value": 4.0,
+  "shown": "4",
+  "dec": 0,
+  "scope": "real-time streams, cpu",
+  "source": "runs/final_compare.json",
+  "path": "cost_summary > 115m > cpu > realtime_streams"
+ },
+ "final/cost/115m/cpu/rss_mb": {
+  "value": 1150.9,
+  "shown": "1151",
+  "dec": 0,
+  "scope": "peak RSS MB, cpu",
+  "source": "runs/final_compare.json",
+  "path": "cost > 115m > engine > cpu > peak_rss_mb"
+ },
+ "final/cost/0p6b/mps/chunk_ms": {
+  "value": 43.73,
+  "shown": "43.7",
+  "dec": 1,
+  "scope": "ms per 160 ms chunk, full single-mode engine, mps",
+  "source": "runs/final_compare.json",
+  "path": "cost > 0p6b > engine > mps > chunk_ms_p50"
+ },
+ "final/cost/0p6b/mps/streams": {
+  "value": 3.0,
+  "shown": "3",
+  "dec": 0,
+  "scope": "real-time streams, mps",
+  "source": "runs/final_compare.json",
+  "path": "cost_summary > 0p6b > mps > realtime_streams"
+ },
+ "final/cost/0p6b/mps/rss_mb": {
+  "value": 4842.8,
+  "shown": "4843",
+  "dec": 0,
+  "scope": "peak RSS MB, mps",
+  "source": "runs/final_compare.json",
+  "path": "cost > 0p6b > engine > mps > peak_rss_mb"
+ },
+ "final/cost/0p6b/cpu/chunk_ms": {
+  "value": 99.42,
+  "shown": "99.4",
+  "dec": 1,
+  "scope": "ms per 160 ms chunk, full single-mode engine, cpu",
+  "source": "runs/final_compare.json",
+  "path": "cost > 0p6b > engine > cpu > chunk_ms_p50"
+ },
+ "final/cost/0p6b/cpu/streams": {
+  "value": 1.0,
+  "shown": "1",
+  "dec": 0,
+  "scope": "real-time streams, cpu",
+  "source": "runs/final_compare.json",
+  "path": "cost_summary > 0p6b > cpu > realtime_streams"
+ },
+ "final/cost/0p6b/cpu/rss_mb": {
+  "value": 4839.6,
+  "shown": "4840",
+  "dec": 0,
+  "scope": "peak RSS MB, cpu",
+  "source": "runs/final_compare.json",
+  "path": "cost > 0p6b > engine > cpu > peak_rss_mb"
+ },
+ "final/twer/ami/nemotron3_0p6bwords": {
+  "value": 71.64,
+  "shown": "71.6",
+  "source": "runs/final_compare.json speaker/twer/ami/0p6b_nemotron3_best"
+ },
+ "final/twer/icsi/nemotron3_0p6bwords": {
+  "value": 59.99,
+  "shown": "60.0",
+  "source": "runs/final_compare.json speaker/twer/icsi/0p6b_nemotron3_best"
+ }
+}

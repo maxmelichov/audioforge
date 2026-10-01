@@ -55,7 +55,8 @@ ms, `core_cost_contended`) were both taken while another job held the CPU and GP
   - licence: NVIDIA Open Model License Agreement (model card: "ready for commercial/non-commercial use").
 - **Heads and assets.**
   - `assets/served_heads_0p6b_v0.1.pt`: 118 tensors, 16.0 MB. `hub.build_served` rebuilds `served_0p6b_v0.1.afm`
-    bit-identically (tensor hash `564a419c…`).
+    bit-identically (tensor hash `564a419c…`). `served_heads_0p6b_v0.2.pt` (what ships since CORE_0P6B_TURN.md) has the
+    same tensors and hash with re-picked turn-preset constants.
   - `assets/tsvad_0p6b.pt`, `assets/lid_0p6b.pt`.
   - `audioforge-download --core 0.6b`, `audioforge-serve --core 0.6b`, `audioforge.load(core="0.6b")`,
     `audioforge.voiceprint(core="0.6b")`. Voice prints belong to one core.
@@ -114,11 +115,11 @@ Unless stated otherwise:
 | | within-meeting EER ICSI dev n = 200 | 4.0 % (7.0 shipped) | 3.6 % | −0.4 [−1.4, +0.7] | " |
 | tracking | target F1, AMI / ICSI eot-bench (primary, 5 s print) | 0.743 / 0.882 | 0.760 / 0.894 | | improve_115m.json, tsvad_frame |
 | | target-speaker DER, AMI / ICSI | 50.9 / 23.0 % | 51.8 / 21.1 % | | " |
-| end of turn | `balanced`: calls p50 / p95 ms, false interruptions, missed | 956 / 1919, 20.2 %, 7.3 % | 920 / 1870, 20.2 %, **11.0 %** | | core_0p6b.json eot |
-| | `balanced`: AMI | 1326, 10.5 %, 33.5 % | **1176**, 13.0 %, **28.0 %** | | " |
-| | `fast`: calls | 547 / 1862, 24.8 %, 5.5 % | 530 / 1817, **33.9 %**, 11.9 % | | " |
-| | `fast`: AMI | 1247, 11.5 %, 34.0 % | 1017, 19.5 %, 24.5 % | | " |
-| | `assistant`: smart-turn test (399): accuracy, p50 / p95 ms, false fires | 92.2 %, 292 / 704, 5.4 % | 91.2 %, 374 / 920, 7.1 % | | " (0.6B constants: 320 ms quiet, p > 0.99) |
+| end of turn | `balanced`: calls p50 / p95 ms, false interruptions, missed | 956 / 1919, 20.2 %, 7.3 % | v0.1: 920 / 1870, 20.2 %, **11.0 %**; **v0.2: 725, 19.3 %, 10.1 %** | | core_0p6b.json eot; v0.2: core_0p6b_turn.json evverify (CIs there) |
+| | `balanced`: AMI | 1326, 10.5 %, 33.5 % | v0.1: **1176**, 13.0 %, **28.0 %**; v0.2: 1177, 11.0 %, 33.0 % | | " |
+| | `fast`: calls | 547 / 1862, 24.8 %, 5.5 % | v0.1: 530 / 1817, **33.9 %**, 11.9 %; **v0.2: 487, 26.6 %, 11.0 %** | | " |
+| | `fast`: AMI | 1247, 11.5 %, 34.0 % | v0.1: 1017, 19.5 %, 24.5 %; v0.2: 1097, 17.0 %, 27.0 % | | " |
+| | `assistant`: smart-turn test (399): accuracy, p50 / p95 ms, false fires | 92.2 %, 292 / 704, 5.4 % | v0.1: 91.2 %, 374 / 920, 7.1 %; **v0.2: 93.0 %, 374, 4.5 %** | | " (v0.2 constants re-picked on held-out data, research/CORE_0P6B_TURN.md) |
 | LID | FLEURS-17 test, 2 s / full (cached clips), same training data (FLEURS train + extra English) | 84.6 / 94.5 % | **87.4 / 95.3 %** | | lid_fix, lid_fix_115m |
 | | EdAcc English called English, 2 s / full | 45.1 / 55.2 % | **71.2 / 83.3 %** | | " |
 | | shipped 115M head (trained with FLEURS `trainx`, 47 k more rows) | 91.0 / 97.8 % | | | runs/lid.json |
@@ -140,6 +141,14 @@ Unless stated otherwise:
   they keep the shared constants.
 
 ## Why end of turn did not improve
+
+**Follow-up (research/CORE_0P6B_TURN.md):** the cause is two heads, measured by swapping the 115M's signals into the
+0.6B session. The GRU VAD trained on AMI only has a 1-2 s tail and flickers on the TurnBench user channels. The v5
+classifier fires inside utterances under the assistant trigger. The shipped `served_heads_0p6b_v0.2.pt` keeps v0.1's
+tensors and re-picks every preset's constants on held-out data (rows above). A full head fix was built and measured,
+but not shipped (it raises balanced false interruptions on TurnBench).
+
+The original analysis:
 
 **The calls miss more turn ends** (12 of 109). The TurnBench user channels keep the 0.6B's VAD at 0.4–0.8 for 1–2 s
 after the user stops, so neither the head path nor the 640 ms fallback fires before the other party answers. The GRU

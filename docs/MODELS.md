@@ -7,6 +7,9 @@ disk, and its licence. audioforge's only model weights of its own are in `assets
   (research/TURN_V5.md). `served_heads_v0.2.pt` (104 tensors, 19.6 MB) is kept: `--heads-version 0.2`.
 - `tsvad_spk.pt`: the target-speaker head (1.0 MB).
 - `lid_distill.pt`: the language-ID head (3.7 MB).
+- `served_heads_0p6b_v0.2.pt` (`--core 0.6b`): the heads merged into nemotron-speech-streaming-en-0.6b (118 tensors,
+  16.0 MB). Same tensors as `served_heads_0p6b_v0.1.pt`, with the turn presets' constants re-picked on held-out data
+  (research/CORE_0P6B_TURN.md). `tsvad_0p6b.pt` and `lid_0p6b.pt` are that core's TS-VAD and LID heads.
 - `served_heads_v0.1.pt`: the 2026-09-27 measured heads, kept for reproducibility. The download command shows the licences of the components it is
 about to fetch and asks you to accept them (`--yes` / `AUDIOFORGE_ACCEPT_LICENSES=1` non-interactively).
 
@@ -66,6 +69,8 @@ you run is therefore bit-identical to the checkpoint the heads came from.
 | heads v0.3 (ships) | `served_heads_v0.3.pt` | 29481643 | `ea1e8331fa9b9efdee76f1b44d4352f9e1660f34e3da6491b5655ce56ab18848` |
 | heads v0.2 | `served_heads_v0.2.pt` | 19629563 | `cb5aa06974f27576c0f66b9453868701106969dea5d5ad100b06b2b779f121d2` |
 | heads v0.1 (measured) | `served_heads_v0.1.pt` | 19629955 | `834f3e94467bc4110555d8d4cbdbe0ce75254a80d8ca203ecd975d4f007286f5` |
+| 0.6B heads v0.2 (ships) | `served_heads_0p6b_v0.2.pt` | 16045591 | `ceff8c8912640e67500ca796d7c983d220ddf581845134e3e7ca68d7c32db3ff` |
+| 0.6B heads v0.1 | `served_heads_0p6b_v0.1.pt` | 16045143 | `664be5a0e498b9268d088ccf2fa079d909cd70311c4096f8d28f94258adc4e6e` |
 
 The heads file (`--heads-version`, default 0.3) is looked up in the checkout's `assets/` first, then in the models
 directory, then fetched from `https://github.com/maxmelichov/audioforge/releases/download/v0.1.0/<file>`.

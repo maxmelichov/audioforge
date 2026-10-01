@@ -36,6 +36,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 import sys
 import time
 from pathlib import Path
@@ -118,7 +119,11 @@ def words_of(tok, hyp):
     """[(id, frame)] -> [[normalized word, first frame, last frame]] (a piece starting with U+2581 starts a word)."""
     from audioforge.teachers import normalize_text
     groups = []
+    drop = {tok.token_id(sp) for sp in getattr(tok, "specials", [])  # Nemotron 3.5's language-tag pieces ("<en-US>")
+            if re.fullmatch(r"<[a-z]{2,3}-[A-Za-z]{2,4}>", sp)}
     for k, t in hyp:
+        if k in drop:
+            continue
         piece = tok.sp.id_to_piece(k)
         if not groups or piece.startswith("▁"):
             groups.append([[k], t, t])

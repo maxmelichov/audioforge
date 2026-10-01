@@ -102,6 +102,7 @@ from .server.constants import (
     TURN_MODELS,
     TURN_PRESET_DEFAULT,
     TURN_PRESETS,
+    V5_TURN_MODEL,
     VAD_HEAD_OTHERS_P,
     VAD_HEAD_SIL_THR,
     VAD_HEAD_USER_P,
@@ -242,14 +243,15 @@ def gpu_available(device) -> bool:
 def model_presets(asr_model) -> dict:
     """TURN_PRESETS with the served model's own constants merged in: a model may carry ``cfg["turn_presets"]`` (e.g.
     the 0.6B core's assistant preset, tuned for its heads, research/CORE_0P6B.md); a nested ``turn_model`` merges key
-    by key. Models without it get TURN_PRESETS unchanged."""
+    by key; a preset that has no ``turn_model`` of its own (balanced) gets one from the model on top of V5_TURN_MODEL
+    (the 0.6B core's balanced, research/CORE_0P6B_TURN.md). Models without it get TURN_PRESETS unchanged."""
     over = (getattr(asr_model, "cfg", None) or {}).get("turn_presets") or {}
     out = {}
     for name, pr in TURN_PRESETS.items():
         o = over.get(name) or {}
         m = {**pr, **{k: v for k, v in o.items() if k != "turn_model"}}
-        if "turn_model" in o and pr.get("turn_model") is not None:
-            m["turn_model"] = {**pr["turn_model"], **o["turn_model"]}
+        if o.get("turn_model") is not None:  # a preset without one (balanced) may get the v5 decider from the model
+            m["turn_model"] = {**(pr.get("turn_model") or V5_TURN_MODEL), **o["turn_model"]}
         out[name] = m
     return out
 
@@ -863,7 +865,7 @@ class Session:
         if isinstance(self.timeout, TimeoutPolicy):
             self.timeout.require_quiet = cfg.turn_policy == "timeout_quiet"
         self.head_pol.thr = cfg.theta
-        self.vh_pol.thr = cfg.theta
+        self.vh_pol.thr = self._vad_head_theta()
 
     def _vad_head_policy(self) -> VadHeadPolicy:
         """turn_policy vad_head with the session's preset: config.turn_preset if the client set one (that preset's
@@ -907,8 +909,17 @@ class Session:
             else:  # asked at SMARTTURN_QUIET_MS of VAD silence, the preset's smart-turn fallback (3 s)
                 k = max(1, int(round(SMARTTURN_QUIET_MS / FRAME_MS)))
                 fb = int(round(e.presets[pr or e.turn_preset]["smartturn_fallback_ms"] / FRAME_MS))
-        return VadHeadPolicy(self.cfg.theta, k, fb, thr, others=others, others_p=VAD_HEAD_OTHERS_P,
+        return VadHeadPolicy(self._vad_head_theta(), k, fb, thr, others=others, others_p=VAD_HEAD_OTHERS_P,
                              user_p=VAD_HEAD_USER_P, gate=gate, turn_model=tm, **st)
+
+    def _vad_head_theta(self) -> float:
+        """vad_head's turn-head threshold: the client's eot_threshold when set, else the session preset's own
+        ``theta`` (a per-model constant from cfg["turn_presets"], e.g. the 0.6B core's balanced), else POLICY_THETA."""
+        if self.cfg.eot_threshold is None and self.cfg.turn_policy == "vad_head":
+            t = self.e.presets[self.cfg.turn_preset or self.e.turn_preset].get("theta")
+            if t is not None:
+                return float(t)
+        return self.cfg.theta
 
     def _seg_model(self, v: int, onset_v: int):
         """turn head v5's answer for frame v as a VadHeadPolicy turn_model: (P(complete), ms)."""

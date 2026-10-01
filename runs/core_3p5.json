@@ -1,0 +1,1218 @@
+{
+ "import": {
+  "params_m": 638.44,
+  "n_tensors": 919,
+  "import": {
+   "load_sec": 6.671515226364136,
+   "n_tensors": 657,
+   "n_loaded": 655,
+   "zero_biases": 264,
+   "fb_max_abs_diff": 3.725290298461914e-09,
+   "window_max_abs_diff": 5.960464477539063e-08
+  },
+  "att_context_sizes": [
+   [
+    56,
+    3
+   ],
+   [
+    56,
+    0
+   ],
+   [
+    56,
+    6
+   ],
+   [
+    56,
+    13
+   ]
+  ],
+  "prompt": {
+   "num_prompts": 128,
+   "hidden": 2048,
+   "default": "en-US",
+   "tag_pieces": 39
+  },
+  "n_prompt_keys": 121,
+  "afm": "/Volumes/ExternalSSD/nvidia-audio-models/runs/nemo_nemotron_3p5_asr_streaming_0.6b.afm",
+  "afm_bytes": 2369951515,
+  "sec": 75.7,
+  "nemo_sha256": "210214ed94039bf6bfbb9a047c7fa289628db75b103e2bf6381fa78285436a74",
+  "nemo_bytes": 2368284501
+ },
+ "verify": {
+  "afm": "/Volumes/ExternalSSD/nvidia-audio-models/runs/nemo_nemotron_3p5_asr_streaming_0.6b.afm",
+  "afm_bytes": 2369951515,
+  "load_s": 8.0,
+  "n_tensors": 919,
+  "params_m": 638.44,
+  "largest_tensor_nonzero": true,
+  "encoder": {
+   "d_model": 1024,
+   "n_layers": 24,
+   "n_heads": 8,
+   "feat_in": 128,
+   "att_context_sizes": [
+    [
+     56,
+     3
+    ],
+    [
+     56,
+     0
+    ],
+    [
+     56,
+     6
+    ],
+    [
+     56,
+     13
+    ]
+   ]
+  },
+  "equality_70_1": {
+   "utterances": [
+    "1089-134686-0000",
+    "1089-134686-0001",
+    "1089-134686-0002"
+   ],
+   "max_abs_diff": [
+    1.9371509552001953e-06,
+    7.748603820800781e-07,
+    4.76837158203125e-07
+   ],
+   "act_scale": [
+    0.0179,
+    0.0177,
+    0.0175
+   ],
+   "frames_equal": [
+    true,
+    true,
+    true
+   ],
+   "session_equals_offline": [
+    true,
+    true,
+    true
+   ],
+   "text": [
+    {
+     "offline": "He hoped there would be stew for dinner, turnips and carrots and bruised potatoes and fat mutton pieces to be ladled out in thick peppered flour fatten sauce. ",
+     "session": "He hoped there would be stew for dinner, turnips and carrots and bruised potatoes and fat mutton pieces to be ladled out in thick peppered flour fatten sauce. ",
+     "ref": "he hoped there would be stew for dinner turnips and carrots and bruised potatoes and fat mutton pieces to be ladled out in thick peppered flour fattened sauce"
+    },
+    {
+     "offline": "Stuff it into you his belly counselled him",
+     "session": "Stuff it into you his belly counselled him",
+     "ref": "stuff it into you his belly counselled him"
+    },
+    {
+     "offline": "After early nightfall, the yellow lamps would light up here and there, the squalid quarter of the brothels. ",
+     "session": "After early nightfall, the yellow lamps would light up here and there, the squalid quarter of the brothels. ",
+     "ref": "after early nightfall the yellow lamps would light up here and there the squalid quarter of the brothels"
+    }
+   ]
+  }
+ },
+ "wer": {
+  "protocol": "masked [56,1] forward (== cache-aware streaming at 160 ms), greedy RNNT, batch 4; 115M / English 0.6B: hybrid_asr served_la1 / served_0p6b_la1 ([70,1])",
+  "sets": {
+   "libri": {
+    "115m": {
+     "normalize_text": {
+      "wer": 0.0229,
+      "ci95": [
+       0.0178,
+       0.0287
+      ],
+      "errors": 106,
+      "ref_words": 4634,
+      "n": 200
+     },
+     "nofill": {
+      "wer": 0.0229,
+      "ci95": [
+       0.0178,
+       0.0287
+      ],
+      "errors": 106,
+      "ref_words": 4631,
+      "n": 200
+     },
+     "whisper_norm": {
+      "wer": 0.0227,
+      "ci95": [
+       0.0174,
+       0.0292
+      ],
+      "errors": 106,
+      "ref_words": 4675,
+      "n": 200
+     }
+    },
+    "0p6b_en": {
+     "normalize_text": {
+      "wer": 0.022,
+      "ci95": [
+       0.0165,
+       0.0274
+      ],
+      "errors": 102,
+      "ref_words": 4634,
+      "n": 200
+     },
+     "nofill": {
+      "wer": 0.022,
+      "ci95": [
+       0.0165,
+       0.0274
+      ],
+      "errors": 102,
+      "ref_words": 4631,
+      "n": 200
+     },
+     "whisper_norm": {
+      "wer": 0.0207,
+      "ci95": [
+       0.0153,
+       0.0265
+      ],
+      "errors": 97,
+      "ref_words": 4675,
+      "n": 200
+     }
+    },
+    "3p5_enUS": {
+     "normalize_text": {
+      "wer": 0.0259,
+      "ci95": [
+       0.0195,
+       0.0323
+      ],
+      "errors": 120,
+      "ref_words": 4634,
+      "n": 200
+     },
+     "nofill": {
+      "wer": 0.0259,
+      "ci95": [
+       0.0195,
+       0.0323
+      ],
+      "errors": 120,
+      "ref_words": 4631,
+      "n": 200
+     },
+     "whisper_norm": {
+      "wer": 0.0259,
+      "ci95": [
+       0.0194,
+       0.033
+      ],
+      "errors": 121,
+      "ref_words": 4675,
+      "n": 200
+     }
+    },
+    "3p5_auto": {
+     "normalize_text": {
+      "wer": 0.025,
+      "ci95": [
+       0.0191,
+       0.0312
+      ],
+      "errors": 116,
+      "ref_words": 4634,
+      "n": 200
+     },
+     "nofill": {
+      "wer": 0.025,
+      "ci95": [
+       0.0191,
+       0.0312
+      ],
+      "errors": 116,
+      "ref_words": 4631,
+      "n": 200
+     },
+     "whisper_norm": {
+      "wer": 0.0242,
+      "ci95": [
+       0.0182,
+       0.0307
+      ],
+      "errors": 113,
+      "ref_words": 4675,
+      "n": 200
+     },
+     "tags": {
+      "<en-US>": 183,
+      "<vi-VN>": 8
+     },
+     "utts_without_tag": 36
+    },
+    "3p5_enUS_80ms": {
+     "normalize_text": {
+      "wer": 0.027,
+      "ci95": [
+       0.0211,
+       0.0329
+      ],
+      "errors": 125,
+      "ref_words": 4634,
+      "n": 200
+     },
+     "nofill": {
+      "wer": 0.027,
+      "ci95": [
+       0.0211,
+       0.0329
+      ],
+      "errors": 125,
+      "ref_words": 4631,
+      "n": 200
+     },
+     "whisper_norm": {
+      "wer": 0.0267,
+      "ci95": [
+       0.0207,
+       0.0334
+      ],
+      "errors": 125,
+      "ref_words": 4675,
+      "n": 200
+     }
+    },
+    "3p5_enUS_320ms": {
+     "normalize_text": {
+      "wer": 0.025,
+      "ci95": [
+       0.0197,
+       0.0309
+      ],
+      "errors": 116,
+      "ref_words": 4634,
+      "n": 200
+     },
+     "nofill": {
+      "wer": 0.025,
+      "ci95": [
+       0.0197,
+       0.0309
+      ],
+      "errors": 116,
+      "ref_words": 4631,
+      "n": 200
+     },
+     "whisper_norm": {
+      "wer": 0.0248,
+      "ci95": [
+       0.0193,
+       0.0308
+      ],
+      "errors": 116,
+      "ref_words": 4675,
+      "n": 200
+     }
+    },
+    "paired": {
+     "3p5_enUS - 0p6b_en / normalize_text": {
+      "delta": 0.0039,
+      "ci95": [
+       -0.0002,
+       0.0078
+      ]
+     },
+     "3p5_enUS - 0p6b_en / nofill": {
+      "delta": 0.0039,
+      "ci95": [
+       -0.0002,
+       0.0078
+      ]
+     },
+     "3p5_enUS - 115m / normalize_text": {
+      "delta": 0.003,
+      "ci95": [
+       -0.0011,
+       0.0068
+      ]
+     },
+     "3p5_enUS - 115m / nofill": {
+      "delta": 0.003,
+      "ci95": [
+       -0.0011,
+       0.0068
+      ]
+     },
+     "3p5_auto - 3p5_enUS / normalize_text": {
+      "delta": -0.0009,
+      "ci95": [
+       -0.0026,
+       0.0007
+      ]
+     },
+     "3p5_auto - 3p5_enUS / nofill": {
+      "delta": -0.0009,
+      "ci95": [
+       -0.0026,
+       0.0007
+      ]
+     },
+     "3p5_enUS_80ms - 0p6b_en / normalize_text": {
+      "delta": 0.005,
+      "ci95": [
+       0.0009,
+       0.0089
+      ]
+     },
+     "3p5_enUS_80ms - 0p6b_en / nofill": {
+      "delta": 0.005,
+      "ci95": [
+       0.0009,
+       0.0089
+      ]
+     },
+     "3p5_enUS_320ms - 0p6b_en / normalize_text": {
+      "delta": 0.003,
+      "ci95": [
+       -0.0013,
+       0.0072
+      ]
+     },
+     "3p5_enUS_320ms - 0p6b_en / nofill": {
+      "delta": 0.003,
+      "ci95": [
+       -0.0013,
+       0.0072
+      ]
+     }
+    }
+   },
+   "ami": {
+    "115m": {
+     "normalize_text": {
+      "wer": 0.2443,
+      "ci95": [
+       0.2204,
+       0.2722
+      ],
+      "errors": 799,
+      "ref_words": 3271,
+      "n": 200
+     },
+     "nofill": {
+      "wer": 0.214,
+      "ci95": [
+       0.1903,
+       0.2412
+      ],
+      "errors": 655,
+      "ref_words": 3061,
+      "n": 200
+     },
+     "whisper_norm": {
+      "wer": 0.2063,
+      "ci95": [
+       0.1833,
+       0.2327
+      ],
+      "errors": 649,
+      "ref_words": 3146,
+      "n": 200
+     }
+    },
+    "0p6b_en": {
+     "normalize_text": {
+      "wer": 0.1116,
+      "ci95": [
+       0.0946,
+       0.1321
+      ],
+      "errors": 365,
+      "ref_words": 3271,
+      "n": 200
+     },
+     "nofill": {
+      "wer": 0.1058,
+      "ci95": [
+       0.0888,
+       0.127
+      ],
+      "errors": 324,
+      "ref_words": 3061,
+      "n": 200
+     },
+     "whisper_norm": {
+      "wer": 0.1039,
+      "ci95": [
+       0.0867,
+       0.1253
+      ],
+      "errors": 327,
+      "ref_words": 3146,
+      "n": 200
+     }
+    },
+    "3p5_enUS": {
+     "normalize_text": {
+      "wer": 0.1843,
+      "ci95": [
+       0.1643,
+       0.2087
+      ],
+      "errors": 603,
+      "ref_words": 3271,
+      "n": 200
+     },
+     "nofill": {
+      "wer": 0.1522,
+      "ci95": [
+       0.1332,
+       0.1769
+      ],
+      "errors": 466,
+      "ref_words": 3061,
+      "n": 200
+     },
+     "whisper_norm": {
+      "wer": 0.1478,
+      "ci95": [
+       0.1285,
+       0.172
+      ],
+      "errors": 465,
+      "ref_words": 3146,
+      "n": 200
+     }
+    },
+    "3p5_auto": {
+     "normalize_text": {
+      "wer": 0.2042,
+      "ci95": [
+       0.1743,
+       0.2413
+      ],
+      "errors": 668,
+      "ref_words": 3271,
+      "n": 200
+     },
+     "nofill": {
+      "wer": 0.1715,
+      "ci95": [
+       0.1413,
+       0.211
+      ],
+      "errors": 525,
+      "ref_words": 3061,
+      "n": 200
+     },
+     "whisper_norm": {
+      "wer": 0.1605,
+      "ci95": [
+       0.1361,
+       0.1907
+      ],
+      "errors": 505,
+      "ref_words": 3146,
+      "n": 200
+     },
+     "tags": {
+      "<de-DE>": 1,
+      "<en-US>": 130,
+      "<fi-FI>": 1,
+      "<fr-FR>": 2,
+      "<hi-IN>": 3,
+      "<hu-HU>": 1
+     },
+     "utts_without_tag": 81
+    },
+    "3p5_enUS_80ms": {
+     "normalize_text": {
+      "wer": 0.1902,
+      "ci95": [
+       0.1702,
+       0.2144
+      ],
+      "errors": 622,
+      "ref_words": 3271,
+      "n": 200
+     },
+     "nofill": {
+      "wer": 0.1575,
+      "ci95": [
+       0.1374,
+       0.1823
+      ],
+      "errors": 482,
+      "ref_words": 3061,
+      "n": 200
+     },
+     "whisper_norm": {
+      "wer": 0.1558,
+      "ci95": [
+       0.1356,
+       0.18
+      ],
+      "errors": 490,
+      "ref_words": 3146,
+      "n": 200
+     }
+    },
+    "3p5_enUS_320ms": {
+     "normalize_text": {
+      "wer": 0.1724,
+      "ci95": [
+       0.1529,
+       0.1967
+      ],
+      "errors": 564,
+      "ref_words": 3271,
+      "n": 200
+     },
+     "nofill": {
+      "wer": 0.1408,
+      "ci95": [
+       0.122,
+       0.1653
+      ],
+      "errors": 431,
+      "ref_words": 3061,
+      "n": 200
+     },
+     "whisper_norm": {
+      "wer": 0.1376,
+      "ci95": [
+       0.1188,
+       0.1611
+      ],
+      "errors": 433,
+      "ref_words": 3146,
+      "n": 200
+     }
+    },
+    "paired": {
+     "3p5_enUS - 0p6b_en / normalize_text": {
+      "delta": 0.0728,
+      "ci95": [
+       0.0568,
+       0.0902
+      ]
+     },
+     "3p5_enUS - 0p6b_en / nofill": {
+      "delta": 0.0464,
+      "ci95": [
+       0.0299,
+       0.0636
+      ]
+     },
+     "3p5_enUS - 115m / normalize_text": {
+      "delta": -0.0599,
+      "ci95": [
+       -0.0799,
+       -0.0418
+      ]
+     },
+     "3p5_enUS - 115m / nofill": {
+      "delta": -0.0617,
+      "ci95": [
+       -0.0816,
+       -0.0441
+      ]
+     },
+     "3p5_auto - 3p5_enUS / normalize_text": {
+      "delta": 0.0199,
+      "ci95": [
+       0.002,
+       0.0482
+      ]
+     },
+     "3p5_auto - 3p5_enUS / nofill": {
+      "delta": 0.0193,
+      "ci95": [
+       -0.0013,
+       0.0516
+      ]
+     },
+     "3p5_enUS_80ms - 0p6b_en / normalize_text": {
+      "delta": 0.0786,
+      "ci95": [
+       0.0639,
+       0.0952
+      ]
+     },
+     "3p5_enUS_80ms - 0p6b_en / nofill": {
+      "delta": 0.0516,
+      "ci95": [
+       0.0355,
+       0.0678
+      ]
+     },
+     "3p5_enUS_320ms - 0p6b_en / normalize_text": {
+      "delta": 0.0608,
+      "ci95": [
+       0.047,
+       0.0769
+      ]
+     },
+     "3p5_enUS_320ms - 0p6b_en / nofill": {
+      "delta": 0.035,
+      "ci95": [
+       0.0218,
+       0.0501
+      ]
+     }
+    }
+   },
+   "icsi": {
+    "115m": {
+     "normalize_text": {
+      "wer": 0.2729,
+      "ci95": [
+       0.2475,
+       0.3024
+      ],
+      "errors": 698,
+      "ref_words": 2558,
+      "n": 200
+     },
+     "nofill": {
+      "wer": 0.2648,
+      "ci95": [
+       0.2376,
+       0.2966
+      ],
+      "errors": 653,
+      "ref_words": 2466,
+      "n": 200
+     },
+     "whisper_norm": {
+      "wer": 0.2621,
+      "ci95": [
+       0.2345,
+       0.2933
+      ],
+      "errors": 662,
+      "ref_words": 2526,
+      "n": 200
+     }
+    },
+    "0p6b_en": {
+     "normalize_text": {
+      "wer": 0.1435,
+      "ci95": [
+       0.123,
+       0.164
+      ],
+      "errors": 367,
+      "ref_words": 2558,
+      "n": 200
+     },
+     "nofill": {
+      "wer": 0.1383,
+      "ci95": [
+       0.118,
+       0.159
+      ],
+      "errors": 341,
+      "ref_words": 2466,
+      "n": 200
+     },
+     "whisper_norm": {
+      "wer": 0.1362,
+      "ci95": [
+       0.116,
+       0.1557
+      ],
+      "errors": 344,
+      "ref_words": 2526,
+      "n": 200
+     }
+    },
+    "3p5_enUS": {
+     "normalize_text": {
+      "wer": 0.2209,
+      "ci95": [
+       0.1954,
+       0.2474
+      ],
+      "errors": 565,
+      "ref_words": 2558,
+      "n": 200
+     },
+     "nofill": {
+      "wer": 0.2044,
+      "ci95": [
+       0.1789,
+       0.2316
+      ],
+      "errors": 504,
+      "ref_words": 2466,
+      "n": 200
+     },
+     "whisper_norm": {
+      "wer": 0.2027,
+      "ci95": [
+       0.178,
+       0.23
+      ],
+      "errors": 512,
+      "ref_words": 2526,
+      "n": 200
+     }
+    },
+    "3p5_auto": {
+     "normalize_text": {
+      "wer": 0.222,
+      "ci95": [
+       0.1969,
+       0.25
+      ],
+      "errors": 568,
+      "ref_words": 2558,
+      "n": 200
+     },
+     "nofill": {
+      "wer": 0.2044,
+      "ci95": [
+       0.1791,
+       0.2327
+      ],
+      "errors": 504,
+      "ref_words": 2466,
+      "n": 200
+     },
+     "whisper_norm": {
+      "wer": 0.2023,
+      "ci95": [
+       0.1766,
+       0.2312
+      ],
+      "errors": 511,
+      "ref_words": 2526,
+      "n": 200
+     },
+     "tags": {
+      "<de-DE>": 1,
+      "<en-US>": 130
+     },
+     "utts_without_tag": 74
+    },
+    "3p5_enUS_80ms": {
+     "normalize_text": {
+      "wer": 0.2318,
+      "ci95": [
+       0.2058,
+       0.2601
+      ],
+      "errors": 593,
+      "ref_words": 2558,
+      "n": 200
+     },
+     "nofill": {
+      "wer": 0.2145,
+      "ci95": [
+       0.1877,
+       0.2429
+      ],
+      "errors": 529,
+      "ref_words": 2466,
+      "n": 200
+     },
+     "whisper_norm": {
+      "wer": 0.2102,
+      "ci95": [
+       0.1845,
+       0.2397
+      ],
+      "errors": 531,
+      "ref_words": 2526,
+      "n": 200
+     }
+    },
+    "3p5_enUS_320ms": {
+     "normalize_text": {
+      "wer": 0.199,
+      "ci95": [
+       0.1747,
+       0.2232
+      ],
+      "errors": 509,
+      "ref_words": 2558,
+      "n": 200
+     },
+     "nofill": {
+      "wer": 0.1821,
+      "ci95": [
+       0.1583,
+       0.2072
+      ],
+      "errors": 449,
+      "ref_words": 2466,
+      "n": 200
+     },
+     "whisper_norm": {
+      "wer": 0.1797,
+      "ci95": [
+       0.1563,
+       0.2054
+      ],
+      "errors": 454,
+      "ref_words": 2526,
+      "n": 200
+     }
+    },
+    "paired": {
+     "3p5_enUS - 0p6b_en / normalize_text": {
+      "delta": 0.0774,
+      "ci95": [
+       0.0599,
+       0.0957
+      ]
+     },
+     "3p5_enUS - 0p6b_en / nofill": {
+      "delta": 0.0661,
+      "ci95": [
+       0.0504,
+       0.084
+      ]
+     },
+     "3p5_enUS - 115m / normalize_text": {
+      "delta": -0.052,
+      "ci95": [
+       -0.0766,
+       -0.0266
+      ]
+     },
+     "3p5_enUS - 115m / nofill": {
+      "delta": -0.0604,
+      "ci95": [
+       -0.0849,
+       -0.0339
+      ]
+     },
+     "3p5_auto - 3p5_enUS / normalize_text": {
+      "delta": 0.0012,
+      "ci95": [
+       -0.0098,
+       0.0121
+      ]
+     },
+     "3p5_auto - 3p5_enUS / nofill": {
+      "delta": 0.0,
+      "ci95": [
+       -0.0107,
+       0.0107
+      ]
+     },
+     "3p5_enUS_80ms - 0p6b_en / normalize_text": {
+      "delta": 0.0884,
+      "ci95": [
+       0.0734,
+       0.1059
+      ]
+     },
+     "3p5_enUS_80ms - 0p6b_en / nofill": {
+      "delta": 0.0762,
+      "ci95": [
+       0.0603,
+       0.0942
+      ]
+     },
+     "3p5_enUS_320ms - 0p6b_en / normalize_text": {
+      "delta": 0.0555,
+      "ci95": [
+       0.0405,
+       0.0702
+      ]
+     },
+     "3p5_enUS_320ms - 0p6b_en / nofill": {
+      "delta": 0.0438,
+      "ci95": [
+       0.0291,
+       0.0591
+      ]
+     }
+    }
+   }
+  }
+ },
+ "live_wer": {
+  "en-US": {
+   "all": {
+    "3p5": {
+     "n_sessions": 32,
+     "n_clips": 16,
+     "none_full": {
+      "wer": 16.99,
+      "ci_clip": [
+       13.59,
+       21.14
+      ],
+      "sub": 5.25,
+      "del": 10.92,
+      "ins": 0.82,
+      "S": 185,
+      "D": 385,
+      "I": 29,
+      "ref_words": 3525,
+      "hyp_words": 3169
+     },
+     "paired": {}
+    },
+    "0p6b": {
+     "n_sessions": 32,
+     "n_clips": 16,
+     "none_full": {
+      "wer": 13.7,
+      "ci_clip": [
+       10.77,
+       16.96
+      ],
+      "sub": 4.37,
+      "del": 7.77,
+      "ins": 1.56,
+      "S": 154,
+      "D": 274,
+      "I": 55,
+      "ref_words": 3525,
+      "hyp_words": 3306
+     },
+     "paired": {}
+    },
+    "115m": {
+     "n_sessions": 32,
+     "n_clips": 16,
+     "none_full": {
+      "wer": 22.47,
+      "ci_clip": [
+       18.81,
+       27.19
+      ],
+      "sub": 7.83,
+      "del": 12.62,
+      "ins": 2.01,
+      "S": 276,
+      "D": 445,
+      "I": 71,
+      "ref_words": 3525,
+      "hyp_words": 3151
+     },
+     "paired": {}
+    }
+   },
+   "user_channel": {
+    "3p5": {
+     "n_sessions": 16,
+     "n_clips": 16,
+     "none_full": {
+      "wer": 11.17,
+      "ci_clip": [
+       9.24,
+       13.44
+      ],
+      "sub": 5.25,
+      "del": 5.33,
+      "ins": 0.59,
+      "S": 71,
+      "D": 72,
+      "I": 8,
+      "ref_words": 1352,
+      "hyp_words": 1288
+     },
+     "paired": {}
+    },
+    "0p6b": {
+     "n_sessions": 16,
+     "n_clips": 16,
+     "none_full": {
+      "wer": 7.69,
+      "ci_clip": [
+       5.74,
+       9.39
+      ],
+      "sub": 3.99,
+      "del": 2.59,
+      "ins": 1.11,
+      "S": 54,
+      "D": 35,
+      "I": 15,
+      "ref_words": 1352,
+      "hyp_words": 1332
+     },
+     "paired": {}
+    },
+    "115m": {
+     "n_sessions": 16,
+     "n_clips": 16,
+     "none_full": {
+      "wer": 17.09,
+      "ci_clip": [
+       14.53,
+       20.59
+      ],
+      "sub": 8.28,
+      "del": 7.03,
+      "ins": 1.78,
+      "S": 112,
+      "D": 95,
+      "I": 24,
+      "ref_words": 1352,
+      "hyp_words": 1281
+     },
+     "paired": {}
+    }
+   }
+  },
+  "auto": {
+   "all": {
+    "3p5": {
+     "n_sessions": 32,
+     "n_clips": 16,
+     "none_full": {
+      "wer": 16.99,
+      "ci_clip": [
+       13.84,
+       20.82
+      ],
+      "sub": 5.11,
+      "del": 11.06,
+      "ins": 0.82,
+      "S": 180,
+      "D": 390,
+      "I": 29,
+      "ref_words": 3525,
+      "hyp_words": 3164
+     },
+     "paired": {}
+    },
+    "0p6b": {
+     "n_sessions": 32,
+     "n_clips": 16,
+     "none_full": {
+      "wer": 13.7,
+      "ci_clip": [
+       10.77,
+       16.96
+      ],
+      "sub": 4.37,
+      "del": 7.77,
+      "ins": 1.56,
+      "S": 154,
+      "D": 274,
+      "I": 55,
+      "ref_words": 3525,
+      "hyp_words": 3306
+     },
+     "paired": {}
+    },
+    "115m": {
+     "n_sessions": 32,
+     "n_clips": 16,
+     "none_full": {
+      "wer": 22.47,
+      "ci_clip": [
+       18.81,
+       27.19
+      ],
+      "sub": 7.83,
+      "del": 12.62,
+      "ins": 2.01,
+      "S": 276,
+      "D": 445,
+      "I": 71,
+      "ref_words": 3525,
+      "hyp_words": 3151
+     },
+     "paired": {}
+    }
+   },
+   "user_channel": {
+    "3p5": {
+     "n_sessions": 16,
+     "n_clips": 16,
+     "none_full": {
+      "wer": 11.24,
+      "ci_clip": [
+       9.2,
+       13.64
+      ],
+      "sub": 5.1,
+      "del": 5.62,
+      "ins": 0.52,
+      "S": 69,
+      "D": 76,
+      "I": 7,
+      "ref_words": 1352,
+      "hyp_words": 1283
+     },
+     "paired": {}
+    },
+    "0p6b": {
+     "n_sessions": 16,
+     "n_clips": 16,
+     "none_full": {
+      "wer": 7.69,
+      "ci_clip": [
+       5.74,
+       9.39
+      ],
+      "sub": 3.99,
+      "del": 2.59,
+      "ins": 1.11,
+      "S": 54,
+      "D": 35,
+      "I": 15,
+      "ref_words": 1352,
+      "hyp_words": 1332
+     },
+     "paired": {}
+    },
+    "115m": {
+     "n_sessions": 16,
+     "n_clips": 16,
+     "none_full": {
+      "wer": 17.09,
+      "ci_clip": [
+       14.53,
+       20.59
+      ],
+      "sub": 8.28,
+      "del": 7.03,
+      "ins": 1.78,
+      "S": 112,
+      "D": 95,
+      "I": 24,
+      "ref_words": 1352,
+      "hyp_words": 1281
+     },
+     "paired": {}
+    }
+   }
+  }
+ },
+ "core_cost": {
+  "mps": {
+   "utterances": 20,
+   "audio_s": 156.5,
+   "chunks": 988,
+   "chunk_ms_p50": 31.69,
+   "chunk_ms_p95": 37.18,
+   "chunk_ms_mean": 32.4,
+   "rtf": 0.2046,
+   "rtf_all": [
+    0.21,
+    0.2064,
+    0.2046
+   ],
+   "load_s": 8.3,
+   "threads": 2,
+   "perf": true,
+   "peak_rss_mb": 4837.6,
+   "mps_driver_mb": 3243.9,
+   "mps_current_mb": 2478.9
+  }
+ }
+}
