@@ -32,8 +32,16 @@ sys.path.insert(0, str(ROOT / "scripts" / "research"))
 NEMO = ROOT / "data/nemo/nemotron-speech-streaming-en-0.6b.nemo"
 AFM = Path(os.environ.get("AUDIOFORGE_0P6B_AFM",
                           "/Volumes/ExternalSSD/nvidia-audio-models/runs/nemo_nemotron_speech_streaming_en_0.6b.afm"))
-W = Path(os.environ.get("CORE_0P6B_W", "/Volumes/ExternalSSD/nvidia-audio-models/scratch/core_0p6b"))
-OUT = ROOT / "runs" / "core_0p6b.json"
+# --core 115m: the same stages on the DEFAULT 115M core (research/LAYER_SWEEP_115M.md; the shipped
+# stage1_served_v3.afm's frozen encoder + its served heads; caches under scratch/core_115m, results runs/core_115m.json)
+CORE = sys.argv[sys.argv.index("--core") + 1] if "--core" in sys.argv else "0.6b"
+C115 = CORE == "115m"
+AFM115 = Path(os.environ.get("CORE115_AFM", str(ROOT / "runs" / "stage1_served_v3.afm")))  # a candidate build overrides
+W = Path(os.environ.get("CORE_0P6B_W", "/Volumes/ExternalSSD/nvidia-audio-models/scratch/"
+                        + ("core_115m" if C115 else "core_0p6b")))
+OUT = ROOT / "runs" / ("core_115m.json" if C115 else "core_0p6b.json")
+D = 512 if C115 else 1024  # encoder width
+NB = 17 if C115 else 24  # encoder blocks
 SR, CHUNK = 16000, 2560
 ATT = [70, 1]
 
@@ -199,7 +207,7 @@ def stage_core_streams(a):
 
 # --------------------------------------------------------------------------- block probes
 PROBE_BLOCKS = (4, 8, 12, 16, 20, 24)  # 1-based; every 4th block of the 24
-VADW_OLD = Path("/Volumes/ExternalSSD/nvidia-audio-models/scratch/core_0p6b/vad/0p6b")  # IMPROVEMENTS item 6 cache
+VADW_OLD = Path("/Volumes/ExternalSSD/nvidia-audio-models/scratch/core_0p6b/vad/" + ("115m" if C115 else "0p6b"))  # IMPROVEMENTS item 6 cache
 
 
 def _vad_old(set_name, blocks):
@@ -262,7 +270,7 @@ HEADS_DIR = W / "heads"
 # (research/LAYER_SWEEP_0P6B.md; held-out meetings) put the speaker and TS-VAD probes' best blocks at 4-6, and the
 # block-5 head beats the block-11 one (c0p6b_fresh) on AMI within-meeting EER 13.6 vs 16.2 % (ICSI 3.6 vs 2.9 %)
 SPK_HEAD = Path("/Volumes/ExternalSSD/nvidia-audio-models/scratch/spk_frame/head_c0p6b5_fresh.pt")  # spk_frame.py
-SPK_TAP = 4  # 0-based: block 5
+SPK_TAP = 3 if C115 else 4  # 0-based: block 5 (115M: block 4, the shipped speaker head's tap)
 VAD_BLOCKS = PROBE_BLOCKS  # the VAD head reads a softmax mix of blocks 4/8/12/16/20/24 (vad_probe: mix6 best on ICSI)
 HEAD_CFGS = {
     # VAD v2 (user request, stage vad2 tag gru64_sa): causal GRU-64 frame head on the block mix, trained with
@@ -283,6 +291,8 @@ def load_core(device="cpu", heads=("vad", "spk"), cfgs=None, fresh=()):
     import torch
     import audioforge.train as AT
     from audioforge.model import SpeechModel
+    if C115:  # the shipped 115M (every served head as shipped; new heads are attached by the 115M stages)
+        return getattr(AT, "_orig_load_model", AT.load_model)(str(AFM115), "cpu").to(device).eval()
     base = getattr(AT, "_orig_load_model", AT.load_model)(str(AFM), "cpu")
     cfgs = {**HEAD_CFGS, **(cfgs or {})}
     cfg = copy.deepcopy(base.cfg)
@@ -445,7 +455,7 @@ def stage_vad_feats(a):
                   len(v["vad"])) for v in val]
         off = np.r_[0, np.cumsum(Ts)]
         N = int(off[-1])
-        X = np.memmap(VADW / f"{set_name}.f16", np.float16, "r+" if meta else "w+", shape=(N, len(blocks), 1024))
+        X = np.memmap(VADW / f"{set_name}.f16", np.float16, "r+" if meta else "w+", shape=(N, len(blocks), D))
         if not meta:
             lab = np.zeros(N, np.float32)
             cen = np.full(N, np.nan, np.float32)
@@ -482,7 +492,7 @@ def stage_vad_feats(a):
             if time.time() - t0 > a.budget:
                 log(f"vad_feats {set_name}: {done}/{len(val)} (budget)")
                 return
-        Xr = np.memmap(VADW / f"{set_name}.f16", np.float16, "r", shape=(N, len(blocks), 1024))
+        Xr = np.memmap(VADW / f"{set_name}.f16", np.float16, "r", shape=(N, len(blocks), D))
         assert np.any(Xr[-20:].astype(np.float32)), "read-back zero-filled"
         log(f"vad_feats {set_name}: {len(val)} windows, {N} frames ({time.time() - t0:.0f} s)")
 
@@ -490,7 +500,7 @@ def stage_vad_feats(a):
 def _vad_set(set_name):
     meta = json.loads((VADW / f"{set_name}.json").read_text())
     assert meta["done"] == meta["n"], (set_name, meta)
-    X = np.memmap(VADW / f"{set_name}.f16", np.float16, "r", shape=(meta["N"], len(meta.get("blocks", VAD_BLOCKS)), 1024))
+    X = np.memmap(VADW / f"{set_name}.f16", np.float16, "r", shape=(meta["N"], len(meta.get("blocks", VAD_BLOCKS)), D))
     return X, np.load(VADW / f"{set_name}_labels.npy"), np.load(VADW / f"{set_name}_centre.npy"), \
         np.load(VADW / f"{set_name}_win.npy")
 
@@ -585,6 +595,8 @@ def stage_vad_room115(a):
 # --------------------------------------------------------------------------- TS-VAD (scripts/research/tsvad.py recipe)
 TSV = W / "tsvad_b5"  # tsvad.CACHE layout (block 5; W / "tsvad" = the first block-11 pass): feats/<corpus>_<meeting>.npz, enroll/<...>.npz (+ sim_*)
 TSV_WORK = W / "tsvad_work_b5"  # tsvad.WORK layout: <corpus>/feat/<key>.npy, <corpus>/vprints.npz
+if C115:  # block SPK_TAP + 1; the shipped block-4 caches (tsvad.CACHE / tsvad.WORK) are linked in, never written
+    TSV, TSV_WORK = W / f"tsvad_b{SPK_TAP + 1}", W / f"tsvad_work_b{SPK_TAP + 1}"
 
 
 def _tsvad_mod(device="cpu"):
@@ -592,6 +604,17 @@ def _tsvad_mod(device="cpu"):
     enrollment clips / voice prints, caches under W."""
     import functools
     import tsvad as T
+    if C115 and not getattr(T, "_0p6b", False):
+        if SPK_TAP == 3 and not (TSV / "feats").exists():  # link the shipped block-4 train / enroll caches
+            for sub in ("feats", "enroll"):
+                (TSV / sub).mkdir(parents=True, exist_ok=True)
+                for f in sorted((T.CACHE / sub).glob("*.npz")):
+                    (TSV / sub / f.name).symlink_to(f)
+            for c in ("ami", "icsi"):
+                (TSV_WORK / c).mkdir(parents=True, exist_ok=True)
+                for f in ("feat", "vprints.npz"):
+                    if (T.WORK / c / f).exists() and not (TSV_WORK / c / f).exists():
+                        (TSV_WORK / c / f).symlink_to(T.WORK / c / f)
     if not getattr(T, "_0p6b", False):
         orig = T.block_feats
         T.block_feats = functools.partial(orig, layer=SPK_TAP)
@@ -733,7 +756,7 @@ def stage_tsvad_train(a):
     w = np.array([share[c] / max(1, (corpus == c).sum()) for c in corpus])
     data.w = w / w.sum()
     vdata = T.TrainData(val, "emb", p_drop=0.0, seed=123) if val else None
-    head = TSVADHead(1024, emb_dim=192, hidden=128, prenet=True).to(dev)
+    head = TSVADHead(D, emb_dim=192, hidden=128, prenet=True).to(dev)
     nparam = sum(p_.numel() for p_ in head.parameters())
     opt = torch.optim.AdamW(head.parameters(), lr=2e-3, weight_decay=1e-4)
     sched = torch.optim.lr_scheduler.OneCycleLR(opt, max_lr=2e-3, total_steps=a.steps, pct_start=0.05)
@@ -802,7 +825,7 @@ def stage_tsvad_eval(a):
     for tag in a.heads.split(","):
         ck = torch.load(HEADS_DIR / f"tsvad_{tag}.pt", map_location="cpu", weights_only=False)
         c = {k: v for k, v in ck["cfg"].items() if k not in ("type", "from_layers", "weight", "enroll_embedder")}
-        h = TSVADHead(1024, **c)
+        h = TSVADHead(D, **c)
         h.load_state_dict(ck["state_dict"])
         heads[tag] = h.eval()
     res = load_json("tsvad_frame", {})
@@ -1182,7 +1205,7 @@ def stage_build(a):
 
 # --------------------------------------------------------------------------- end-of-turn benchmarks (same harnesses)
 EOT_DUMP, ASST_DUMP = W / "eot_dump", W / "asst_dump"
-PRINTS = W / "prints_0p6b.json"
+PRINTS = Path(os.environ.get("CORE_PRINTS", str(W / "prints_0p6b.json")))
 
 
 def stage_prints(a):
@@ -1230,6 +1253,77 @@ def stage_prints(a):
         out[k] = [round(float(z), 6) for z in voiceprint(m, T0.clip_audio(ds, r["meeting"], r["print_ivs"]))]
     PRINTS.write_text(json.dumps(out))
     log(f"prints: {len(out)}")
+
+
+def stage_build115(a):
+    """A 115M candidate: stage1_served_v3.afm with heads replaced (every NVIDIA tensor and every other head unchanged):
+    --vad-tag T -> heads.vad = the vad2_T.pt head (frame_gru for gru64 / frame for mlp, its blocks; a learned mix
+    when > 1 block); --spk-tag T -> heads.spk = spk_frame head_T.pt (same 0.5 M SpeakerHead shape, block 4);
+    --seg-tag T -> heads.turn_seg = W/turn/T/model.pt (v5 classifier). -> W/cand_<--tag>.afm (tensor check)."""
+    import copy
+    import torch
+    from audioforge import hub
+    from audioforge.model import SpeechModel
+    from audioforge.train import load_model, save_model
+    torch.set_num_threads(2)
+    base = load_model(str(ROOT / "runs" / "stage1_served_v3.afm"), "cpu")
+    cfg = copy.deepcopy(base.cfg)
+    sd = {k: v for k, v in base.state_dict().items()}
+    changed = []
+    if a.vad_tag:
+        ck = torch.load(HEADS_DIR / f"vad2_{a.vad_tag}.pt", map_location="cpu", weights_only=False)
+        bl = [int(b) for b in ck["blocks"]]
+        typ = "frame_gru" if ck["arch"].startswith("gru") else "frame"
+        assert ck["arch"] in ("gru64", "mlp"), ck["arch"]
+        cfg["heads"]["vad"] = {"type": typ, "key": "vad", "hidden": 64, "from_layers": [b - 1 for b in bl], "weight": 0.5}
+        sd = {k: v for k, v in sd.items() if not k.startswith("heads.vad.") and k != "layer_mix.vad"}
+        st = ck["state_dict"]
+        if typ == "frame":  # _vad_net mlp (inp, out) -> FrameHead (net.0, net.2)
+            st = {"net.0.weight": st["inp.weight"], "net.0.bias": st["inp.bias"], "net.2.weight": st["out.weight"],
+                  "net.2.bias": st["out.bias"]}
+        sd.update({f"heads.vad.{k}": v for k, v in st.items()})
+        if len(bl) > 1:
+            sd["layer_mix.vad"] = ck["mix"]
+        changed.append(f"vad<-{a.vad_tag}")
+    if a.spk_tag:
+        ck = torch.load(Path("/Volumes/ExternalSSD/nvidia-audio-models/scratch/spk_frame") / f"head_{a.spk_tag}.pt",
+                        map_location="cpu", weights_only=False)
+        st = ck.get("state_dict", ck)
+        sd.update({f"heads.spk.{k}": v for k, v in st.items()})
+        changed.append(f"spk<-{a.spk_tag}")
+    if a.seg_tag and a.seg_tag != "none" and (W / "turn" / a.seg_tag / "model.pt").exists():
+        ck = torch.load(W / "turn" / a.seg_tag / "model.pt", map_location="cpu", weights_only=False)
+        cfg["heads"]["turn_seg"] = {"type": "turn_seg", "weight": 0.0, **ck["cfg"]}
+        sd = {k: v for k, v in sd.items() if not k.startswith("heads.turn_seg.")}
+        sd.update({f"heads.turn_seg.{k}": v for k, v in ck["state_dict"].items()})
+        changed.append(f"turn_seg<-{a.seg_tag}")
+    m = SpeechModel(cfg, base.tokenizer)
+    m.load_state_dict(sd, strict=True)
+    if getattr(a, "presets_json", None):
+        m.cfg["turn_presets"] = json.loads(a.presets_json)
+    m.cfg["name"] = f"stage1_served_cand_{a.tag}"
+    out = W / f"cand_{a.tag}.afm"
+    save_model(m.eval(), out)
+    back = load_model(str(out), "cpu")
+    assert hub.state_hash(back.state_dict()) == hub.state_hash(m.state_dict())
+    same = [k for k, v in base.state_dict().items() if not k.startswith(("heads.vad.", "heads.spk.", "heads.turn_seg.",
+                                                                          "layer_mix.vad"))]
+    bsd = back.state_dict()
+    assert all(torch.equal(base.state_dict()[k], bsd[k]) for k in same), "a frozen tensor changed"
+    log(f"build115 {out}: {changed}; {len(same)} other tensors identical")
+    save("build115", {"afm": str(out), "changed": changed}, sub=a.tag)
+
+
+def engine_115m(device, afm=None, tsvad=None, **kw):
+    """The 115M --mode single engine (single_model.single_engine's options): ``afm`` (default CORE115_AFM),
+    ``tsvad`` (default the shipped assets/tsvad_spk.pt or $CORE115_TSVAD)."""
+    from audioforge.serve import Engine
+    from audioforge.server.cli import MODES
+    opts = {**MODES["single"], "enroll": "explicit",
+            "tsvad": str(tsvad or os.environ.get("CORE115_TSVAD", ROOT / "assets" / "tsvad_spk.pt")),
+            "lid": str(ROOT / "assets" / "lid_distill.pt"),
+            "silero": str(ROOT / "data" / "silero" / "silero_vad_v5.onnx"), "preload_silero": True, **kw}
+    return Engine.load(str(afm or AFM115), None, device, threads=2, **opts)
 
 
 def engine_0p6b(device, **kw):
@@ -1285,6 +1379,8 @@ def stage_eot_dump(a):
     torch.set_num_threads(2)
     prints = json.loads(PRINTS.read_text()) if a.which == "calls" else {}
     od = EOT_DUMP if a.which == "calls" else ASST_DUMP
+    if C115:  # one dump directory per candidate (--tag)
+        od = W / f"{'eot' if a.which == 'calls' else 'asst'}_dump_{a.tag}"
     od.mkdir(parents=True, exist_ok=True)
     items = E.sessions() if a.which == "calls" else EA.clips()
     key = (lambda x: x["key"])
@@ -1292,7 +1388,7 @@ def stage_eot_dump(a):
     log(f"eot_dump {a.which}: {len(todo)} of {len(items)} to do")
     if not todo:
         return
-    eng = engine_0p6b(a.device)
+    eng = engine_115m(a.device) if C115 else engine_0p6b(a.device)
     eng.warmup()
     t0, n = time.time(), 0
     for it in todo:
@@ -1422,7 +1518,7 @@ def _tsvad_head(tag):
     from audioforge.heads.tsvad import TSVADHead
     ck = torch.load(HEADS_DIR / f"tsvad_{tag}.pt", map_location="cpu", weights_only=False)
     c = {k: v for k, v in ck["cfg"].items() if k not in ("type", "from_layers", "weight", "enroll_embedder")}
-    h = TSVADHead(1024, **c)
+    h = TSVADHead(D, **c)
     h.load_state_dict(ck["state_dict"])
     return h.eval()
 
@@ -1482,6 +1578,170 @@ def stage_tswer(a):
         res[corpus] = out
         log(corpus, json.dumps(out["primary"]))
     save("tswer", res)
+
+
+def _spk_head_115(spk_tag):
+    """The 115M speaker head: the shipped one (None) or a spk_frame head_<tag>.pt (same SpeakerHead shape)."""
+    import copy
+    import torch
+    m = load_core("cpu", heads=("spk",))
+    spk = copy.deepcopy(m.heads["spk"]).cpu().eval()
+    if spk_tag:
+        ck = torch.load(Path("/Volumes/ExternalSSD/nvidia-audio-models/scratch/spk_frame") / f"head_{spk_tag}.pt",
+                        map_location="cpu", weights_only=False)
+        spk.load_state_dict(ck.get("state_dict", ck))
+    return m, spk
+
+
+def _vprints_115(corpus, spk_tag, m, spk):
+    """tsvad.py vprints of a corpus re-embedded by another speaker head (the same audio intervals, 5 s prints)."""
+    import tsvad as T0
+    from audioforge.tsvad_stream import embed_frames
+    T = _tsvad_mod("cpu")
+    kidx, VP = T.load_vprints(corpus)
+    if not spk_tag:
+        return kidx, VP["spk_5p0"], VP["has_5p0"]
+    f = W / "vprints" / f"{corpus}_{spk_tag}.npy"
+    if f.exists():
+        return kidx, np.load(f), VP["has_5p0"]
+    _, _, ds = T.bench_windows(corpus)
+    keys = {i: k for k, i in kidx.items()}
+    meet = {T.wkey(v): v["meeting"] for v in T.bench_windows(corpus)[0]}
+    E = np.zeros_like(VP["spk_5p0"])
+    cache = {}
+    for w in range(len(keys)):
+        for c in range(E.shape[1]):
+            if not VP["has_5p0"][w, c]:
+                continue
+            iv = tuple(tuple(x) for x in VP["ivs_5p0"][w, c] if x[0] >= 0)
+            ck = (meet[keys[w]], iv)
+            if ck not in cache:
+                fs, _, _ = encode_blocks(m, [T0.clip_audio(ds, ck[0], list(iv))], (SPK_TAP + 1,))
+                cache[ck] = embed_frames(spk, fs[0][SPK_TAP + 1].astype(np.float32))
+            E[w, c] = cache[ck]
+    f.parent.mkdir(parents=True, exist_ok=True)
+    np.save(f, E)
+    return kidx, E, VP["has_5p0"]
+
+
+def stage_tswer115(a):
+    """Target-speaker WER on the 115M (tswer.py protocols, served 115M streaming RNNT words, keep rule tsvad_d2 =
+    served TS-VAD track P(target) > 0.5 dilated +-2 frames at the word's emission frame minus the measured lag): the
+    shipped head (recomputed; must equal runs/tswer.json's tsvad_d2 arm) and every head --heads tag,... (HEADS_DIR
+    tsvad_<tag>.pt; prints of --spk-tag's speaker head when given, from the same 5 s intervals). AMI / ICSI eot-bench
+    units (bootstrap by meeting) and the 32 live TurnBench sessions (mono + user channel; bootstrap by clip).
+    -> runs/core_115m.json tswer115.<label>."""
+    import copy
+    import torch
+    import tswer as TW
+    from audioforge.teachers import normalize_text
+    T = _tsvad_mod("cpu")
+    torch.set_num_threads(2)
+    m, spk = _spk_head_115(a.spk_tag)
+    spk0 = copy.deepcopy(load_core("cpu", heads=("spk",)).heads["spk"]).cpu().eval()
+    tags = [t for t in a.heads.split(",") if t]
+    heads = {t: _tsvad_head(t) for t in tags}
+    heads["shipped"] = _tsvad_head("shipped")
+    label = a.tag
+    res = {}
+    for corpus in (a.corpora or "ami,icsi").split(","):
+        ext, meta, ds = T.bench_windows(corpus)
+        asr = TW.load_asr(corpus, "served")
+        L = json.loads((TW.WORK / corpus / "lag.json").read_text())["lag_frames"]
+        kidx, VP0, has = _vprints_115(corpus, None, m, spk0)
+        _, VPn, _ = _vprints_115(corpus, a.spk_tag, m, spk)
+        rows = [json.loads(x) for x in (TW.WORK / corpus / "units.jsonl").read_text().splitlines() if x.strip()]
+        byk = {T.wkey(v): v for v in ext}
+        units = []
+        for r in rows:
+            v = byk[r["key"]]
+            f = T.win_feats(corpus, v)
+            spks = T.window_speakers(ds, v)
+            k = kidx[r["key"]]
+            for u in r["units"]:
+                c = u["col"]
+                if not has[k, c]:
+                    continue
+                ref = [x[0] for x in TW.ref_words(ds, v, spks[c])]
+                hyp = asr[r["key"]]["words"]
+                arms = {"stored_tsvad_d2": u["arms"]["tsvad_d2"], "none": u["arms"]["none"],
+                        "oracle_d2": u["arms"]["oracle_d2"]}
+                for t, h_ in heads.items():
+                    e, sp = (VP0[k, c], spk0) if t == "shipped" else (VPn[k, c], spk)
+                    mk = TW.served_tsvad(h_, sp, f, e)[:, 0] > 0.5
+                    kp = TW.keep_mask(hyp, mk, L, TW.DIL)
+                    hh = [x[0] for x, q in zip(hyp, kp) if q]
+                    s_, d_, i_, _, _ = TW.align_counts(ref, hh)
+                    arms[f"{t}_d2"] = [int(s_), int(d_), int(i_), int(len(hh))]
+                units.append({**u, "arms": arms})
+        (W / "tswer").mkdir(parents=True, exist_ok=True)
+        (W / "tswer" / f"{corpus}_{label}_units.jsonl").write_text("".join(json.dumps(u) + "\n" for u in units))
+        out = {}
+        for gname, us in (("primary", [u for u in units if u["col"] == 0]), ("all_speakers", units)):
+            arms = ["none", "oracle_d2", "stored_tsvad_d2"] + [f"{t}_d2" for t in heads]
+            draws, ncl = TW.boot(us, arms, "meeting")
+            out[gname] = {arm: {"twer": round(100 * TW.rate(TW.agg(us, arm)), 2), "ci_meeting": TW.ci(draws[arm])}
+                          for arm in arms}
+            out[gname]["paired_vs_shipped"] = {t: {"delta": round(out[gname][f"{t}_d2"]["twer"]
+                                                                  - out[gname]["shipped_d2"]["twer"], 2),
+                                                   "ci_meeting": TW.ci(draws[f"{t}_d2"] - draws["shipped_d2"])}
+                                               for t in tags}
+            out[gname]["n_units"], out[gname]["n_meetings"] = len(us), ncl
+        res[corpus] = out
+        log(corpus, json.dumps(out["primary"]))
+    # live: the 16 TurnBench clips x {mono, user channel}
+    lagf = json.loads((TW.WORK / "ami" / "lag.json").read_text())["lag_frames"]
+    clips = json.loads((TW.E2E / "clips.json").read_text())
+    prints = json.loads((TW.E2E / "prints.json").read_text())
+    sessions = []
+    for c in clips:
+        if c["set"] != "turnbench" or not c.get("text_user"):
+            continue
+        _, segs = TW.tb_user_words(c["conversation"], c["human_channel"], c["start"], c["start"] + c["dur"])
+        ref = normalize_text(c["text_user"]).split()
+        e0 = np.asarray(prints[c["name"]]["5.0"]["embedding"], np.float32)
+        if a.spk_tag:  # the same 5 s interval embedded by the new head (stage prints with CORE115_AFM = its build)
+            en = np.asarray(json.loads(PRINTS.read_text())[f"{c['name']}.user"], np.float32)
+        else:
+            en = e0
+        for cond in ("mono", "user"):
+            x = TW._wav(TW.E2E / "clips" / f"{c['name']}.{cond}.wav")
+            outs, Ls, top = encode_blocks(m, [x], (SPK_TAP + 1,), top=True)
+            n = Ls[0]
+            hw = TW.words_of(m.tokenizer, TW.greedy_timed(copy.deepcopy(m.heads["rnnt"]).cpu(), top[0, :n].float().cpu()))
+            f = outs[0][SPK_TAP + 1].astype(np.float32)
+            orc = np.zeros(n, bool)
+            for s0, e1 in segs:
+                orc[int(s0 / TW.FRAME_S): int(np.ceil(e1 / TW.FRAME_S))] = True
+            full = normalize_text(c["text_mono"] if cond == "mono" else c["text_user"]).split()
+            allw = [w[0] for w in hw]
+            arms = {"none_full": TW._counts(full, allw), "none": TW._counts(ref, allw)}
+            masks = {"oracle": orc}
+            for t, h_ in heads.items():
+                masks[t] = TW.served_tsvad(h_, spk0 if t == "shipped" else spk, f, e0 if t == "shipped" else en)[:, 0] > 0.5
+            for mn, mk in masks.items():
+                kp = TW.keep_mask(hw, mk, lagf, TW.DIL)
+                arms[f"{mn}_d{TW.DIL}"] = TW._counts(ref, [w[0] for w, q in zip(hw, kp) if q])
+            sessions.append({"key": f"{c['name']}|{cond}", "clip": c["name"], "cond": cond, "N": len(ref),
+                             "N_full": len(full), "arms": arms})
+    old = {u["key"]: u for u in json.loads((TW.LIVE_WORK / "sessions.json").read_text())["sessions"]}
+    for u in sessions:
+        u["arms"]["stored_tsvad_d2"] = old[u["key"]]["arms"]["tsvad_d2"]
+    live = {}
+    arms = ["none_full", "none", "oracle_d2", "stored_tsvad_d2"] + [f"{t}_d2" for t in heads]
+    for g, sel in (("all", lambda u: True), ("user_channel", lambda u: u["cond"] == "user"),
+                   ("mono", lambda u: u["cond"] == "mono")):
+        ss = [u for u in sessions if sel(u)]
+        live[g] = TW._live_group(ss, arms)
+        base, _ = TW._live_boot(ss, "shipped_d2")
+        live[g]["paired_vs_shipped"] = {}
+        for t in tags:
+            d_, _ = TW._live_boot(ss, f"{t}_d2")
+            live[g]["paired_vs_shipped"][t] = {"delta": round(live[g][f"{t}_d2"]["wer"] - live[g]["shipped_d2"]["wer"], 2),
+                                               "ci_clip": TW.ci(d_ - base)}
+    res["live"] = live
+    log("live", {g: {arm: r[arm]["wer"] for arm in arms} for g, r in live.items()})
+    save("tswer115", {"heads": tags, "spk_tag": a.spk_tag, **res}, sub=label)
 
 
 def stage_tswer_live(a):
@@ -1642,7 +1902,7 @@ def stage_lid_train(a):
 VAD_HOLD = ("TS3011b", "ES2015c")  # AMI train meetings held out of VAD training (early stopping / selection)
 
 
-def _vad_net(arch, d_in=1024, hidden=64):
+def _vad_net(arch, d_in=D, hidden=64):
     """mlp = the served FrameHead shape (Linear-SiLU-Linear, per frame); conv = Linear(1024,64)-SiLU-causal
     Conv1d(64,64,k=3)-SiLU-Linear(64,1) (2 past frames of state, ~78 K params); gru = Linear(1024,48)-SiLU-GRU(48)-
     Linear(48,1) (~64 K)."""
@@ -1694,7 +1954,7 @@ def _vad_src(name, blocks):
     if list(have) == list(blocks):
         X = Xm  # memory-mapped, read crop by crop
     else:
-        X = np.empty((len(Xm), len(blocks), 1024), np.float16)
+        X = np.empty((len(Xm), len(blocks), D), np.float16)
         for i in range(0, len(Xm), 8192):
             X[i:i + 8192] = Xm[i:i + 8192][:, [have.index(b) for b in blocks]]
     mp = VADW / f"{name}_meetings.json"
@@ -1947,10 +2207,10 @@ def stage_vad_cmp(a):
     save("vad_cmp", {"tag": a.tag, **res})
 
 # --------------------------------------------------------------------------- layer sweeps (research/LAYER_SWEEP_0P6B.md)
-ALL_BLOCKS = tuple(range(1, 25))
+ALL_BLOCKS = tuple(range(1, NB + 1))
 
 
-def _probe_configs(scores: dict, n_blocks=24):
+def _probe_configs(scores: dict, n_blocks=NB):
     """(a) every single block, (b) the learned softmax mix over all blocks, (c) concatenation of the top-3 singles."""
     return ([("b%d" % b, [b], "single") for b in range(1, n_blocks + 1)] + [("mix_all", list(range(1, n_blocks + 1)), "mix")])
 
@@ -1991,7 +2251,7 @@ def stage_sweep_vad(a):
         if name in res:
             continue
         idx = [b - 1 for b in blocks]
-        d_in = 1024 * (len(idx) if kind == "concat" else 1)
+        d_in = D * (len(idx) if kind == "concat" else 1)
         torch.manual_seed(0)
         net = torch.nn.Sequential(torch.nn.Dropout(0.2), torch.nn.Linear(d_in, 64), torch.nn.SiLU(),
                                   torch.nn.Linear(64, 1)).to(dev)
@@ -2072,7 +2332,7 @@ def stage_sweep_spk_feats(a):
     out = SWEEP / "spk_libri.npz"
     if not out.exists():
         data = SF.load_source("librispeech")
-        z = np.load(SF.feat_path("librispeech", "0p6b"), mmap_mode="r")
+        z = np.load(SF.feat_path("librispeech", "115m" if C115 else "0p6b"), mmap_mode="r")
         tch = np.load(SF.CACHE / "librispeech.teacher.npz")["whole"]
         spk = np.array([int(d.get("speaker", -1)) for d in data])
         rng = np.random.default_rng(0)
@@ -2080,7 +2340,7 @@ def stage_sweep_spk_feats(a):
         pick_s = set(rng.choice(spks, min(200, len(spks)), replace=False).tolist())
         idx = [i for s_ in sorted(pick_s) for i in np.nonzero(spk == s_)[0][:20]]
         part = SWEEP / "spk_libri.part.npz"
-        P = dict(np.load(part)) if part.exists() else {"X": np.zeros((0, 24, 2048), np.float16), "n": np.array(0)}
+        P = dict(np.load(part)) if part.exists() else {"X": np.zeros((0, NB, 2 * D), np.float16), "n": np.array(0)}
         done = int(P["n"])
         X = [P["X"]]
         for i in range(done, len(idx), 8):
@@ -2150,7 +2410,7 @@ def stage_sweep_spk(a):
             continue
         idx = [b - 1 for b in blocks]
         torch.manual_seed(0)
-        d_in = 2048 * (len(idx) if kind == "concat" else 1)
+        d_in = 2 * D * (len(idx) if kind == "concat" else 1)
         net = torch.nn.Linear(d_in, 192).to(dev)
         mix = torch.nn.Parameter(torch.zeros(len(idx), device=dev)) if kind == "mix" else None
         mu = Xl[:, idx].mean(0, keepdims=True)
@@ -2267,7 +2527,7 @@ def stage_sweep_tsvad(a):
             continue
         idx = [b - 1 for b in blocks]
         torch.manual_seed(0)
-        head = TSVADHead(1024 * (len(idx) if kind == "concat" else 1), emb_dim=192, hidden=128, prenet=True).to(dev)
+        head = TSVADHead(D * (len(idx) if kind == "concat" else 1), emb_dim=192, hidden=128, prenet=True).to(dev)
         mix = torch.nn.Parameter(torch.zeros(len(idx), device=dev)) if kind == "mix" else None
 
         def feats(d):
@@ -2355,16 +2615,42 @@ def _seg_sweep_ids():
     st = sorted([c["id"] for c in man if c["src"] == "st"], key=key)
     cu = sorted([c["id"] for c in cuts], key=key)
     ids = conv[: SEG_SWEEP_N // 2] + st[: SEG_SWEEP_N * 3 // 10] + cu[: SEG_SWEEP_N // 5]
+    if C115:  # the 115M's own served turn inputs (turn_v4 / turn_v5 caches)
+        allc = {c["id"]: c for c in V5.all_clips()}
+        return [i for i in ids if i in allc and V5.feat_path(allc[i]).exists()]
     return [i for i in ids if (TURN_INP / f"{i}.npz").exists()]
+
+
+def _stt_eval_ids():
+    """smart-turn human_5_all eval-split clip ids (stt_<i>) with cached served inputs on this core."""
+    if not C115:
+        return [p_.stem for p_ in sorted(TURN_INP.glob("stt_*.npz"))]
+    import turn_v5 as V5
+    from audioforge.datasets import smartturn as ST
+    meta = json.loads(ST.build_cache(verbose=False).read_text())
+    return [f"stt_{i:05d}" for i in ST.split_indices(meta)["eval"] if (V5.STEST4 / f"st_{i:05d}.npz").exists()]
+
+
+def _served_inp(cid):
+    """The served turn inputs (vad, pu, po, y, n) file of a turn clip id on this core."""
+    if not C115:
+        return TURN_INP / f"{cid}.npz"
+    import turn_v5 as V5
+    if cid.startswith("stt_"):
+        return V5.STEST4 / f"st_{cid[4:]}.npz"
+    if not hasattr(_served_inp, "idx"):
+        _served_inp.idx = {x["id"]: x for x in V5.all_clips()}
+    c = _served_inp.idx.get(cid)
+    return V5.feat_path(c) if c else V5.FEATS4 / f"{cid}.npz"
 
 
 def stage_sweep_seg_feats(a):
     """All 24 blocks of the v5 sweep subset + the smart-turn eval clips (stt_*) -> SWEEP/blk24/<id>.npz."""
     import torch
     torch.set_num_threads(2)
-    od = SWEEP / "blk24"
+    od = SWEEP / f"blk{NB}"
     od.mkdir(parents=True, exist_ok=True)
-    ids = _seg_sweep_ids() + [p_.stem for p_ in sorted(TURN_INP.glob("stt_*.npz"))]
+    ids = _seg_sweep_ids() + _stt_eval_ids()
     todo = [i for i in ids if not (od / f"{i}.npz").exists()]
     log(f"sweep_seg_feats: {len(todo)} of {len(ids)}")
     if not todo:
@@ -2381,6 +2667,10 @@ def stage_sweep_seg_feats(a):
         cs = todo[i:i + 8]
         outs, L, _ = encode_blocks(m, [items[c]() for c in cs], ALL_BLOCKS)
         for c, o in zip(cs, outs):
+            if C115:  # the served inputs' frame count (turn_v5 blocks: |T - L| <= 1)
+                T_ = len(np.load(_served_inp(c))["pu"])
+                assert abs(T_ - len(o[1])) <= 1, (c, T_, len(o[1]))
+                o = {b: np.concatenate([o[b], o[b][-1:]])[:T_] for b in ALL_BLOCKS}
             np.savez(od / f"{c}.tmp.npz", **{f"b{b}": o[b] for b in ALL_BLOCKS})
             (od / f"{c}.tmp.npz").rename(od / f"{c}.npz")
     log(f"sweep_seg_feats: {len(todo) - min(len(todo), i + 8)} left ({time.time() - t0:.0f} s)")
@@ -2398,13 +2688,18 @@ def stage_sweep_seg(a):
     import torch.nn.functional as F
     import turn_v4 as V4
     from audioforge.heads.turn_seg import SegTurn
-    V5 = _v5_mod()
+    if C115:
+        import turn_v5 as V5
+    else:
+        V5 = _v5_mod()
     torch.set_num_threads(2)
     dev = a.device
-    V5.BLK = SWEEP / "blk24"  # SegData keeps only the clips with a block file: the sweep subset
+    V5.BLK = SWEEP / f"blk{NB}"  # SegData keeps only the clips with a block file: the sweep subset
     res = load_json("sweep_seg", {})
-    # the mix reads the 12 even blocks (2, 4, .., 24): 24 blocks of 1000 clips do not fit in RAM next to the model
-    cfgs = [c for c in _probe_configs(res) if c[0] != "mix_all"] + [("mix_even", list(range(2, 25, 2)), "mix")]
+    # the mix reads the 12 even blocks (2, 4, .., 24): 24 blocks of 1000 clips do not fit in RAM next to the model;
+    # 115M: the 9 odd blocks (1, 3, .., 17)
+    cfgs = [c for c in _probe_configs(res) if c[0] != "mix_all"] + \
+        ([("mix_odd", list(range(1, 18, 2)), "mix")] if C115 else [("mix_even", list(range(2, 25, 2)), "mix")])
     if a.rerun:  # re-run named configs with the held-out smart-turn-clip accuracy recorded (key <name>_r)
         cfgs = [(f"{n}_r", b, k) for n, b, k in cfgs if n in a.rerun.split(",")] + \
                ([("concat_top3_r", _top3(res, "auc"), "concat")] if "concat_top3" in a.rerun.split(",") else [])
@@ -2416,12 +2711,12 @@ def stage_sweep_seg(a):
             super().__init__()
             self.nb = nb
             self.mix = nn.Parameter(torch.zeros(nb))
-            self.seg = SegTurn(d_in=1024, n_extra=3, d=256, n_layers=2, heads=4, ff=1024, win=V5.WIN, use_text=True,
+            self.seg = SegTurn(d_in=D, n_extra=3, d=256, n_layers=2, heads=4, ff=1024, win=V5.WIN, use_text=True,
                                dropout=0.2, block="mix")
 
         def forward(self, x, *rest):
             B, T_, D = x.shape
-            x = (x.reshape(B, T_, self.nb, 1024) * self.mix.softmax(0)[None, None, :, None]).sum(2)
+            x = (x.reshape(B, T_, self.nb, D) * self.mix.softmax(0)[None, None, :, None]).sum(2)
             return self.seg(x, *rest)
     for name, blocks, kind in cfgs:
         if name in res:
@@ -2432,7 +2727,7 @@ def stage_sweep_seg(a):
         trn, va = S[S[:, 7] == 0], S[S[:, 7] == 1]
         torch.manual_seed(0)
         model = (MixSeg(len(blocks)) if kind == "mix" else
-                 SegTurn(d_in=1024 * len(blocks), n_extra=3, d=256, n_layers=2, heads=4, ff=1024, win=V5.WIN,
+                 SegTurn(d_in=D * len(blocks), n_extra=3, d=256, n_layers=2, heads=4, ff=1024, win=V5.WIN,
                          use_text=True, dropout=0.2, block=bstr)).to(dev)
         opt = torch.optim.AdamW(model.parameters(), lr=1e-4 if kind != "mix" else 3e-4, weight_decay=0.05)
         kinds = trn[:, 4].astype(int)
@@ -2470,7 +2765,7 @@ def stage_sweep_seg(a):
         pt, yt = [], []
         for i in ST.split_indices(meta)["eval"]:
             cid = f"stt_{i:05d}"
-            fp, bp = TURN_INP / f"{cid}.npz", SWEEP / "blk24" / f"{cid}.npz"
+            fp, bp = _served_inp(cid), SWEEP / f"blk{NB}" / f"{cid}.npz"
             if not (fp.exists() and bp.exists()):
                 continue
             d = V5.npz(fp)
@@ -2887,8 +3182,8 @@ STAGES = {"vad_probe": stage_vad_probe, "vad_feats": stage_vad_feats, "vad_train
           "sweep_report": stage_sweep_report, "cost": stage_cost, "preset_scan": stage_preset_scan, "vad_swap": stage_vad_swap, "served_check": stage_served_check, "vad_cmp": stage_vad_cmp, "tsvad_feats": stage_tsvad_feats, "tsvad_sim": stage_tsvad_sim,
           "tsvad_train": stage_tsvad_train, "tsvad_win": stage_tsvad_win, "tsvad_eval": stage_tsvad_eval,
           "turn_cache": stage_turn_cache, "seg_train": stage_seg_train, "turn_train": stage_turn_train,
-          "build": stage_build, "prints": stage_prints, "eot_dump": stage_eot_dump, "eot_score": stage_eot_score,
-          "tswer": stage_tswer, "tswer_live": stage_tswer_live, "lid_feats": stage_lid_feats,
+          "build": stage_build, "build115": stage_build115, "prints": stage_prints, "eot_dump": stage_eot_dump, "eot_score": stage_eot_score,
+          "tswer": stage_tswer, "tswer115": stage_tswer115, "tswer_live": stage_tswer_live, "lid_feats": stage_lid_feats,
           "lid_teacher": stage_lid_teacher, "lid_teacher_run": stage_lid_teacher_run, "lid_probe": stage_lid_probe, "lid_train": stage_lid_train, "verify": stage_verify, "core": stage_core, "core_streams": stage_core_streams}
 
 
@@ -2945,6 +3240,10 @@ def main():
     ap.add_argument("--turn-tag", default="f1")
     ap.add_argument("--n-utt", type=int, default=20)
     ap.add_argument("--repeats", type=int, default=3)
+    ap.add_argument("--core", default="0.6b", choices=("0.6b", "115m"))
+    ap.add_argument("--vad-tag", default=None)
+    ap.add_argument("--spk-tag", default=None)
+    ap.add_argument("--presets-json", default=None)
     a = ap.parse_args()
     STAGES[a.stage](a)
 
