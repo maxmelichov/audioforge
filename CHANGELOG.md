@@ -6,6 +6,27 @@ versions follow [Semantic Versioning](https://semver.org/). Every measured numbe
 
 ## [Unreleased]
 
+### Changed (2026-10-02): 0.6B heads v0.4, real two-party channels for the turn heads (research/TURN_DATA.md)
+- New data, all licensed for commercial training, split once by recording into train / held-out / never touched
+  (disjointness checked by id, `turn_data.py splits`): AMI individual headsets (CC BY 4.0; 45 / 18 / 16 meetings),
+  otoSpeech-full-duplex-280h raw channels (CC BY 4.0; 64 / 32 / 32 sessions); AppTek call-center dialogues
+  (CC BY-SA 4.0, evaluation only per its card; 48 held-out / 48 never-touched calls). Level-varied and G.711 / Opus
+  8 kHz copies for training.
+- The test of the data failed: no source reproduces the TurnBench behaviour that blocked the `Q` heads (on every
+  never-touched scope `Q` interrupts 6-15 points more than v0.2 on `balanced`, TurnBench 34, and less on `fast`,
+  TurnBench 9 more). `balanced` / `fast` therefore stay as they are (identical decisions; calls missed 10.1 %, the
+  ≤ 7.5 % goal is not met).
+- `assets/served_heads_0p6b_v0.4.pt` (hub `HEADS_0P6B` 0.4, the default; `served_0p6b_v0.4.afm`): v0.3 +
+  `turn_seg_a` (the `assistant` preset's own v5 classifier, trained with the real channels) + `turn_vad` (the
+  stateless block-12 VAD it reads). Smart-turn v3.2 test, `assistant`: 93.0 → 96.5 % accuracy, 4.5 → 3.1 % false fires,
+  379 → 351 ms p50. It interrupts AMI test meetings more (4.0 → 22.5 %). +0.4 ms per chunk (MPS).
+- Serving: a preset's `turn_model.head` may name its own classifier (`ASRStream.attach_seg2`); a turn_seg head may read
+  `turn_vad` as its VAD channel (cfg `vad_input`); `VadHeadPolicy(vad_m=…)` / a preset's `model_clock: "turn_vad"`
+  runs the classifier's clock on the stateless VAD (no shipped preset uses it).
+- `scripts/research/turn_data.py`; `core_0p6b_turn.py` options `--ihm*`, `--base`, `--turn-vad`, `--seg-a`;
+  `tests/test_turn_data.py`.
+
+
 ### Changed (2026-10-02): LID heads v2, `--beam`, test-split comparison (research/FIXALL.md, research/FINAL_COMPARE.md)
 - LID heads v2 on both cores: hidden 1024 (2.37 M / 2.89 M parameters), AmberNet distillation, the 0.6B now also trained on
   FLEURS `trainx`. FLEURS-17 test at 2 s / full clip: 115M 90.9 / 97.8 → 92.4 / 98.2 %, 0.6B 87.6 / 95.5 → 92.7 / 98.6 %.

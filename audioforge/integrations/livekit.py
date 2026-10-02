@@ -121,6 +121,10 @@ class AudioforgeOptions:
     # FINAL_TRANSCRIPT + END_OF_SPEECH are emitted when the turn's offline final (same t) arrives. Servers without
     # --final-asr send no "source" and every final is used, whatever this says.
     final_source: str = "stream"
+    # server --final-chunk-ms (dual rate, research/DUAL_RATE.md): "fast" (default) uses the 160 ms pass's final_fast,
+    # sent at the turn end, so the reply is not delayed; "slow" holds the turn until the slow pass's final (source
+    # "slow", same t) and uses its text. Servers without the flag send plain finals, used whatever this says.
+    final_text: str = "fast"
     # the server's turn_end_hint -> PREFLIGHT_TRANSCRIPT (LiveKit preemptive generation); off = hints only recorded
     turn_hints: bool = False
 
@@ -129,10 +133,17 @@ class AudioforgeOptions:
             raise ValueError(f"turn_policy must be one of {POLICIES}, got {self.turn_policy!r}")
         if self.final_source not in ("stream", "offline"):
             raise ValueError(f"final_source must be stream|offline, got {self.final_source!r}")
+        if self.final_text not in ("fast", "slow"):
+            raise ValueError(f"final_text must be fast|slow, got {self.final_text!r}")
+        if self.final_text == "slow" and self.final_source == "offline":
+            raise ValueError("final_text='slow' and final_source='offline' each pick a second final: use one")
 
     def use_final(self, msg: dict) -> bool:
-        """Whether this final message is part of the transcript under ``final_source``."""
-        src = msg.get("source")
+        """Whether this final (or final_fast) message is part of the transcript under ``final_source`` /
+        ``final_text``."""
+        src = "stream" if msg.get("type") == "final_fast" else msg.get("source")
+        if self.final_text == "slow" or src == "slow":
+            return src is None or (src == "slow" and self.final_text == "slow")
         return src is None or (src == "stream") == (self.final_source == "stream")
 
     @property
@@ -370,11 +381,12 @@ class AudioforgeFrontend:
 
     def __init__(self, url: str = DEFAULT_URL, *, turn_policy: str = "timeout", timeout_ms: int = 1000,
                  eot_threshold: float | None = None, language: str = "en", connect_timeout: float = 10.0,
-                 end_timeout: float = 10.0, final_source: str = "stream", turn_hints: bool = False):
+                 end_timeout: float = 10.0, final_source: str = "stream", turn_hints: bool = False,
+                 final_text: str = "fast"):
         self.opts = AudioforgeOptions(url=url, turn_policy=turn_policy, timeout_ms=timeout_ms,
                                       eot_threshold=eot_threshold, language=language,
                                       connect_timeout=connect_timeout, end_timeout=end_timeout,
-                                      final_source=final_source, turn_hints=turn_hints)
+                                      final_source=final_source, turn_hints=turn_hints, final_text=final_text)
         self._link: _Link | None = None
         self._owners: set = set()
         self._lock: asyncio.Lock | None = None
@@ -546,9 +558,11 @@ class _SpeechMapper:
                 self.turn_end_by_t[msg["t"]] = msg
             else:  # "both": the non-cutting policy's decision is reported in the next final's metadata
                 self.other_turn_end = msg
-        elif typ == "final":
-            if not self.opts.use_final(msg):  # --final-asr: the other source's final of this turn
+        elif typ in ("final", "final_fast"):
+            if not self.opts.use_final(msg):  # --final-asr / --final-chunk-ms: the other source's final of this turn
                 return out
+            if typ == "final_fast":  # --final-chunk-ms: the fast pass's final is the streaming final
+                msg = dict(msg, type="final", source="stream")
             te = self.pending_turn_end
             if msg.get("source") not in (None, "stream"):  # an offline final: its own turn's decision
                 te = self.turn_end_by_t.pop(msg["t"], te)
@@ -611,7 +625,7 @@ class AudioforgeSTT(stt.STT):
         finals, spk = [], None
         while (item := await q.get()) is not None:
             m, _ = item
-            if m["type"] == "final" and m["text"].strip() and self._fe.opts.use_final(m):
+            if m["type"] in ("final", "final_fast") and m["text"].strip() and self._fe.opts.use_final(m):
                 finals.append(m["text"].strip())
                 spk = m["speaker"] if spk is None else spk
             if m["type"] == "stats":

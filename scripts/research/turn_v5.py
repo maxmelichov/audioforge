@@ -1367,10 +1367,12 @@ def run_policy(d, db, rule, gcache):
                         model_quiet_only=rule.get("mqo", False), reset_thr=rule.get("rt"))
     out = []
     pu, po, vad, t = h["pu"], h["po"], h["vad"], h["t"]
+    vm = h["vad_m"] if rule.get("mclock") else None  # research/TURN_DATA.md: the classifier's clock on a second VAD
     reask = rule.get("reask", False)
     for v in range(len(p)):
         n0 = len(pol.model_calls)
-        ev = pol.update(p[v], vad[v], pu[v], po[v], float(db[v]) if rule["gate"] else None)
+        ev = pol.update(p[v], vad[v], pu[v], po[v], float(db[v]) if rule["gate"] else None,
+                        None if vm is None else float(vm[v]))
         if reask and len(pol.model_calls) > n0 and not pol.model_calls[-1]["complete"]:
             pol._asked = -1  # re-classify at every further quiet frame of the same run
         if ev is not None:

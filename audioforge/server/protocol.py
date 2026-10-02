@@ -45,6 +45,9 @@ SCHEMA = {  # type -> {key: allowed python types}; None allowed where listed
     "partial": {"t": _NUM, "text": (str,)},
     "turn_end": {"t": _NUM, "policy": (str,), "p": _NUM + (type(None),), "silence_ms": (int,)},
     "final": {"t": _NUM, "text": (str,), "speaker": (int, type(None))},
+    # --final-chunk-ms (dual rate) only: the fast pass's final, sent at the turn_end; the `final` that follows carries
+    # the slow pass's text (source "slow", pass "slow" | "fast")
+    "final_fast": {"t": _NUM, "text": (str,), "speaker": (int, type(None))},
     "stats": {"rtf": _NUM, "chunk_ms_p50": _NUM, "chunk_ms_p95": _NUM, "first_partial_ms": _NUM + (type(None),),
               "peak_rss_mb": _NUM},
     "enrolled": {"t": _NUM, "column": (int,)},  # --enroll only: the voice enrollment completed on this column
@@ -63,7 +66,9 @@ OPTIONAL_KEYS = {"stats": {"degraded": (dict,), "speakers_seen": (int,),  # degr
                  # smartturn's compute for a "model" decision; stats.turn_model: that model's per-session counters
                  "turn_end": {"hinted_at": _NUM + (type(None),), "path": (str,), "model_ms": _NUM},
                  # speaker_conf / diar_shed: only with --diar-labels registry or --shed-diar hold (DIARIZATION_FIX.md)
-                 "final": {"speaker_conf": _NUM + (type(None),), "diar_shed": (bool,)}}
+                 "final": {"speaker_conf": _NUM + (type(None),), "diar_shed": (bool,), "pass": (str,)},
+                 "final_fast": {"speaker_conf": _NUM + (type(None),), "diar_shed": (bool,)},
+                 "ready": {"final_chunk_ms": _NUM}}  # pass / final_chunk_ms: --final-chunk-ms only
 # present only with --final-asr: every final has "source"; the offline model's finals add start / end / latency_ms
 FINAL_ASR_KEYS = {"ready": {"final_asr": (str,)},
                   "final": {"source": (str,)},
@@ -79,7 +84,8 @@ DEBUG_KEYS = {"frame": {"spk_t"}, "turn_end": {"frame_t"}, "ready": {"diar_lag_m
                         "send_lag_ms_max", "diar_lag_ms_mean_measured", "n_chunks", "turn_input",
                         "enroll_ms_p50", "enroll_ms_max", "enroll_ms_mean", "enroll_n_embed",
                         "silero_ms_p50", "silero_ms_p95", "silero_ms_mean", "silero_chunks", "lid_ms_mean",
-                        "lookahead_ms_mean"}}
+                        "lookahead_ms_mean", "final_flush_n", "final_flush_miss", "final_flush_ms_p50",
+                        "final_flush_ms_p95"}}
 
 
 def validate(msg: dict, debug: bool = False) -> None:

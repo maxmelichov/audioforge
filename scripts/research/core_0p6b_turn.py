@@ -359,6 +359,33 @@ def _oto_vad_set(blocks, which, n_max=None, seed=0, quiet=False):
     return np.concatenate(X), np.concatenate(Y), np.concatenate(Wn), cl
 
 
+TDIR = Path("/Volumes/ExternalSSD/nvidia-audio-models/scratch/turndata")  # research/TURN_DATA.md (turn_data.py)
+
+
+def _ihm_vad_set(blocks, split, n_max=None, seed=0):
+    """(X, y, win, clips) of AMI individual-headset user-channel windows (turn_data.py man/feats): label 1 = the
+    user's words, 0 = nobody's, -1 (no loss, not scored) = only the other participants speak (their crosstalk on the
+    user's headset is neither the user's speech nor silence: the meeting-mix VAD calls it speech)."""
+    import random
+    cl = json.loads((TDIR / f"man_{split}.json").read_text())
+    cl = [c for c in cl if (TDIR / f"blk_{split}" / f"{c['id']}.npz").exists()]
+    if n_max and len(cl) > n_max:
+        cl = random.Random(seed).sample(cl, n_max)
+    X, Y, Wn = [], [], []
+    for i, c in enumerate(cl):
+        z = np.load(TDIR / f"blk_{split}" / f"{c['id']}.npz")
+        T = len(np.load(TDIR / f"inp_{split}" / f"{c['id']}.npz")["pu"])
+        x = np.stack([z[f"b{b}"][:T] for b in blocks], 1)
+        T = len(x)
+        y = _act_labels(c, T)
+        oth = _act_labels({"act": c["oth"]}, T)
+        y[(oth > 0.5) & (y < 0.5)] = -1.0
+        X.append(x)
+        Y.append(y)
+        Wn.append(np.full(T, i, np.int32))
+    return np.concatenate(X), np.concatenate(Y), np.concatenate(Wn), cl
+
+
 def _vad_arch(arch, d_in, nb):
     """mlp = the served FrameHead shape (per frame, stateless); gru64 = the shipped 0.6B FrameGRUHead shape; gru16 =
     a 16-unit GRU (shorter memory); conv = causal 3-frame conv (2 past frames of state). nb > 1: softmax block mix."""
@@ -485,6 +512,11 @@ def stage_vadtrain(a):
         Xo, yo, wo, _ = _oto_vad_set(blocks, "train", a.otoq, a.seed + 1, quiet=True)
         idx = np.nonzero(np.r_[True, wo[1:] != wo[:-1]])[0]
         srcs.append(("otoq", Xo, yo, idx, np.r_[idx[1:], len(wo)]))
+    if a.ihm:
+        for j, sp in enumerate(a.ihm_splits.split(",")):
+            Xo, yo, wo, _ = _ihm_vad_set(blocks, sp, a.ihm, a.seed + 2 + j)
+            idx = np.nonzero(np.r_[True, wo[1:] != wo[:-1]])[0]
+            srcs.append(("ihm", Xo, yo, idx, np.r_[idx[1:], len(wo)]))
     Xv2, yv2, winv2, _ = C._vad_src("icsival150_all", blocks)
     Xv2 = np.asarray(Xv2)
     Xv3, yv3, winv3, _ = _oto_vad_set(blocks, "val")
@@ -497,11 +529,17 @@ def stage_vadtrain(a):
     room = ("room", Xr, yr, ridx[:-nrv], rend[:-nrv])
     rv0 = ridx[-nrv]
     Xrv, yrv, winrv = Xr[rv0:], yr[rv0:], winr[rv0:]
+    vext = ()
+    if a.ihm_val:  # + the new held-out scopes (real-channel dev windows) in the selection mean
+        vext = tuple(_ihm_vad_set(blocks, sp)[:3] for sp in a.ihm_val.split(","))
     log(f"data {time.time() - t0:.0f} s: " + ", ".join(f"{s_[0]} {len(s_[1])}" for s_ in srcs) +
         f"; val ami {len(Xv1)} icsi {len(Xv2)} oto {len(Xv3)} room {len(Xrv)}")
     conv = (a.oto > 0) + (a.otoq > 0)
     share = {"ami": (1 - a.oto_share) / (1 + 2 * a.sa) if conv else 1 / (1 + 2 * a.sa),
              "oto": a.oto_share / max(conv, 1), "otoq": a.oto_share / max(conv, 1)}
+    if a.ihm:  # the IHM windows take --ihm-share of the non-room crops, scaled out of the others
+        share = {k: v * (1 - a.ihm_share) for k, v in share.items()}
+        share["ihm"] = a.ihm_share / len(a.ihm_splits.split(","))
     sw = np.array([share[s_[0]] for s_ in srcs])
 
     def crops(src, n, g):
@@ -528,9 +566,10 @@ def stage_vadtrain(a):
     def val_score():
         pr = vad_predict(net, Xrv, winrv, dev)
         aucs = []
-        for Xs, ys, ws in ((Xv1, yv1, winv1), (Xv2, yv2, winv2), (Xv3, yv3, winv3), (Xv4, yv4, winv4)):
+        for Xs, ys, ws in ((Xv1, yv1, winv1), (Xv2, yv2, winv2), (Xv3, yv3, winv3), (Xv4, yv4, winv4)) + vext:
             p_ = vad_predict(net, Xs, ws, dev)
-            aucs.append(roc_auc_score(np.r_[ys, yrv] > 0.5, np.r_[p_, pr]))
+            m_ = np.r_[ys, yrv] >= 0
+            aucs.append(roc_auc_score((np.r_[ys, yrv] > 0.5)[m_], np.r_[p_, pr][m_]))
         net.train()
         return float(np.mean(aucs)), aucs
     B = 64
@@ -580,7 +619,8 @@ def stage_vadtrain(a):
                 break
     net.load_state_dict(best_state)
     r = {"val_auc": round(best, 4), "hist": hist, "args": {k: getattr(a, k) for k in
-                                                           ("arch", "vblocks", "oto", "otoq", "oto_share", "offw", "crop", "sa", "steps", "seed")},
+                                                           ("arch", "vblocks", "oto", "otoq", "oto_share", "offw", "crop", "sa", "steps", "seed",
+                                                            "ihm", "ihm_share", "ihm_val", "ihm_splits")},
          "params": sum(p_.numel() for p_ in net.parameters())}
     for sn in ("ami_dev", "icsi_dev"):
         Xs, ys, ws, _ = C._vad_src(sn, blocks)
@@ -595,7 +635,12 @@ def stage_vadtrain(a):
     r["oto_val"] = {"auc": round(float(roc_auc_score(yv3 > 0.5, po)), 4), **offset_lag(po, yv3, winv3)}
     po = vad_predict(net, Xv4, winv4, dev)
     r["oto_val_quiet"] = {"auc": round(float(roc_auc_score(yv4 > 0.5, po)), 4), **offset_lag(po, yv4, winv4)}
-    log(a.tag, json.dumps({k: r[k] for k in ("val_auc", "ami_dev", "icsi_dev", "room_held", "oto_val", "oto_val_quiet")}))
+    for sp, (Xv5, yv5, winv5) in zip(a.ihm_val.split(",") if a.ihm_val else [], vext):
+        po = vad_predict(net, Xv5, winv5, dev)
+        m_ = yv5 >= 0
+        r[f"{sp}_auc"] = round(float(roc_auc_score(yv5[m_] > 0.5, po[m_])), 4)
+        r[f"{sp}_lag"] = offset_lag(po, np.where(m_, yv5, 0.0), winv5)
+    log(a.tag, json.dumps({k: r[k] for k in r if k not in ("hist", "args", "params")}))
     torch.save({"arch": a.arch, "blocks": blocks, "state_dict": {k: v.cpu() for k, v in net.state_dict().items()},
                 "eval": {k: r[k] for k in ("val_auc", "ami_dev", "icsi_dev", "room_held", "oto_val", "oto_val_quiet")}},
                HEADS / f"vad_{a.tag}.pt")
@@ -773,11 +818,30 @@ def heads_on(d, vad_fn, seg, turn, dev, vad_blocks=None):
     return out
 
 
+_IHM_SPLIT = {}
+
+
+def _ihm_split(cid):
+    """The turn_data.py split whose cache holds a real-channel window (inp_<split>/<id>.npz)."""
+    if cid not in _IHM_SPLIT:
+        for d_ in sorted(TDIR.glob("inp_*")):
+            if (d_ / f"{cid}.npz").exists():
+                _IHM_SPLIT[cid] = d_.name[4:]
+                break
+        else:
+            _IHM_SPLIT[cid] = "train" if cid.startswith("ihm_") else "otrain"  # (not cached: a missing file)
+    return _IHM_SPLIT[cid]
+
+
 def inp_path(cid):
+    if cid.startswith(("ihm_", "o2_", "at_")):
+        return TDIR / f"inp_{_ihm_split(cid)}" / f"{cid}.npz"
     return (TF / "quiet" / "inp" if cid.startswith("q_") else C.TURN_INP) / f"{cid}.npz"
 
 
 def blk_path(cid):
+    if cid.startswith(("ihm_", "o2_", "at_")):
+        return TDIR / f"blk_{_ihm_split(cid)}" / f"{cid}.npz"
     return (TF / "quiet" / "blk" if cid.startswith("q_") else C.TURN_BLK) / f"{cid}.npz"
 
 
@@ -837,7 +901,7 @@ def ho_score(sig, meta, rule, comp, gcache=None):
     import eot_assistant as EA
     import turn_v5 as V5
     gcache = {} if gcache is None else gcache
-    pk = "p" if rule["mode"] == "head" else "p5"
+    pk = "p" if rule["mode"] == "head" else rule.get("p5key", "p5")  # p5b: a preset's own classifier (turn_seg_a)
     per = {"calls": [], "quiet": [], "meet": []}
     times, comps, asess = {}, {}, []
     for k, m in meta.items():
@@ -845,6 +909,8 @@ def ho_score(sig, meta, rule, comp, gcache=None):
         T = min(len(s["vad"]), m["T"])
         h = {"v": list(range(T)), "t": [round((v + 1) * FRAME, 4) for v in range(T)], "p": s[pk][:T],
              "vad": s["vad"][:T], "pu": s["pu"][:T], "po": s["po"][:T]}
+        if "vad_m" in s:  # research/TURN_DATA.md: the classifier's clock on a second VAD
+            h["vad_m"] = s["vad_m"][:T]
         db = np.load(HO / "db" / f"{k}.npy")[:T]
         tt = [x + comp for x, _ in V5.run_policy({"head": h}, db, rule, gcache.setdefault(k, {}))]
         ss = {"key": k, **m}
@@ -926,7 +992,7 @@ def ev_score(D, A, rule, comp_scale=1.0, boot=0, seed=0):
     import eot_latency as E
     import eot_assistant as EA
     import turn_v5 as V5
-    pk = "p" if rule["mode"] == "head" else "p5"
+    pk = "p" if rule["mode"] == "head" else rule.get("p5key", "p5")  # p5b: a preset's own classifier (turn_seg_a)
     sess = [s_ for s_ in E.sessions() if s_["key"] in D]
     asess = EA.sessions(A)
     per = {"calls": [], "ami": []}
@@ -1055,6 +1121,7 @@ def stage_vadall(a):
     od.mkdir(parents=True, exist_ok=True)
     fn, bl = load_vad(a.vad, a.device)
     ids = sorted(p_.name[:-4] for p_ in C.TURN_INP.glob("*.npz")) + sorted(p_.name[:-4] for p_ in (Q / "inp").glob("q_*.npz"))
+    ids += sorted(p_.name[:-4] for d_ in sorted(TDIR.glob("inp_*")) for p_ in d_.glob("*.npz"))
     todo = [i for i in ids if not (od / f"{i}.npy").exists()]
     log(f"vadall {a.vad}: {len(todo)} of {len(ids)}")
     t0 = time.time()
@@ -1082,7 +1149,7 @@ def _v5_vad(vad_tag):
     def npz(path, _o=V5._npz_orig, _t=vad_tag):
         d = _o(path)
         f = VADC / _t / (Path(path).name[:-4] + ".npy")
-        if Path(path).parent in (C.TURN_INP, Q / "inp") and f.exists():
+        if (Path(path).parent in (C.TURN_INP, Q / "inp") or Path(path).parent.parent == TDIR) and f.exists():
             d["vad"] = np.load(f)[: len(d["pu"])]
         return d
     V5.npz = npz
@@ -1199,6 +1266,36 @@ def stage_segtrain(a):
             return Q / "inp" / f"{c['id']}.npz" if c["id"].startswith("q_") else _o(c)
         V5.all_clips, V5.feat_path, V5.BLK = all_clips, feat_path, union
         log(f"+ {len(qtrain)} quiet-channel oto training windows")
+    if not hasattr(V5, "_val_groups_orig"):
+        V5._val_groups_orig = V5.val_groups
+    V5.val_groups = V5._val_groups_orig
+    if a.ihm_train:  # + the AMI individual-headset training windows (research/TURN_DATA.md) as conversational clips;
+        # they are never validation clips and stay out of the held-out group draw (the turn_v4 / v5 split is unchanged)
+        union2 = TF / ("blk_union_" + a.ihm_train.replace(",", "_"))
+        if not (union2 / "done").exists():
+            union2.mkdir(exist_ok=True)
+            for d_ in (C.TURN_BLK, Q / "blk", *(TDIR / f"blk_{sp}" for sp in a.ihm_train.split(","))):
+                for f in d_.glob("*.npz"):
+                    if not (union2 / f.name).exists():
+                        (union2 / f.name).symlink_to(f)
+            (union2 / "done").write_text("1")
+        itrain = [dict(c, src="ihm", group=("ihm", c["meeting"])) for sp in a.ihm_train.split(",")
+                  for c in json.loads((TDIR / f"man_{sp}.json").read_text()) if (TDIR / f"blk_{sp}" / f"{c['id']}.npz").exists()]
+        isplit = {c["id"]: sp for sp in a.ihm_train.split(",") for c in json.loads((TDIR / f"man_{sp}.json").read_text())}
+        prev_all, prev_fp = V5.all_clips, V5.feat_path
+
+        def all_clips(with_cuts=True, _o=prev_all):
+            return _o(with_cuts) + itrain
+
+        def feat_path(c, _o=prev_fp):
+            return TDIR / f"inp_{isplit[c['id']]}" / f"{c['id']}.npz" if c["id"] in isplit else _o(c)
+
+        def val_groups(man, *k, _o=V5._val_groups_orig, **kw):
+            return _o([c for c in man if c["src"] != "ihm"], *k, **kw)
+        V5.all_clips, V5.feat_path, V5.BLK, V5.val_groups = all_clips, feat_path, union2, val_groups
+        if not a.quiet_train:
+            raise SystemExit("--ihm-train is built on top of --quiet-train (the kd1stq recipe)")
+        log(f"+ {len(itrain)} real-channel training windows ({a.ihm_train})")
     od = TF / "seg" / a.tag
     od.mkdir(parents=True, exist_ok=True)
     dev = a.device
@@ -1236,7 +1333,7 @@ def stage_segtrain(a):
         step, hist, best = ck["step"], ck["hist"], ck["best"]
     log(f"{a.tag}: {npar / 1e6:.2f}M params; train {len(tr)} val {len(va)}; data {time.time() - t0:.0f} s; step {step}")
     args = {"tag": a.tag, "block": str(a.block), "vad": a.vad, "kd": a.kd, "steps": a.steps, "lr": a.lr,
-            "seed": a.seed, "pros": False, "st3dips": a.st3dips, "quiet_train": a.quiet_train}
+            "seed": a.seed, "pros": False, "st3dips": a.st3dips, "quiet_train": a.quiet_train, "ihm_train": a.ihm_train}
     if step < a.steps:
         kinds = tr[:, 4].astype(int)
         kw = {0: 1.0, 1: 1.5, 2: 0.5, 3: 0.7, 4: 0.5, 5: a.st3dips}
@@ -1509,7 +1606,7 @@ def stage_build(a):
     from audioforge.model import SpeechModel
     from audioforge.train import load_model, save_model
     torch.set_num_threads(2)
-    base = load_model(str(C.SERVED_0P6B), "cpu")
+    base = load_model(str(a.base or C.SERVED_0P6B), "cpu")  # --base: e.g. served_0p6b_v0.3.afm (speech head kept)
     cfg = copy.deepcopy(base.cfg)
     sd = {k: v.clone() for k, v in base.state_dict().items()}
     changed = []
@@ -1545,6 +1642,29 @@ def stage_build(a):
             cfg["heads"]["turn"]["from_layers"] = [int(ck["block"]) - 1]
         sd.update({f"heads.turn.{k}": v for k, v in ck["state_dict"].items()})
         changed.append(f"turn={a.turn}")
+    if a.turn_vad:  # research/TURN_DATA.md: a stateless turn VAD (the v5 classifier's clock: a preset's model_clock)
+        ck = torch.load(HEADS / f"vad_{a.turn_vad}.pt", map_location="cpu", weights_only=False)
+        assert ck["arch"] == "mlp" and len(ck["blocks"]) == 1, "turn_vad: a one-block stateless head"
+        st = ck["state_dict"]
+        for k in [k for k in sd if k.startswith("heads.turn_vad.")]:
+            del sd[k]
+        cfg["heads"]["turn_vad"] = {"type": "frame", "key": "turn_vad", "hidden": int(st["inp.weight"].shape[0]),
+                                    "from_layers": [int(ck["blocks"][0]) - 1], "weight": 0.0}
+        sd.update({"heads.turn_vad.net.0.weight": st["inp.weight"], "heads.turn_vad.net.0.bias": st["inp.bias"],
+                   "heads.turn_vad.net.2.weight": st["out.weight"], "heads.turn_vad.net.2.bias": st["out.bias"]})
+        changed.append(f"turn_vad={a.turn_vad}")
+    if a.seg_a:  # research/TURN_DATA.md: a second v5 classifier, a preset's own (turn_model "head": "turn_seg_a")
+        ck = torch.load(TF / "seg" / a.seg_a / "model.pt", map_location="cpu", weights_only=False)
+        cfg["heads"]["turn_seg_a"] = {"type": "turn_seg", "weight": 0.0, **ck["cfg"]}
+        if a.seg_a_vad_input:
+            cfg["heads"]["turn_seg_a"]["vad_input"] = a.seg_a_vad_input
+        for k in [k for k in sd if k.startswith("heads.turn_seg_a.")]:
+            del sd[k]
+        sd.update({f"heads.turn_seg_a.{k}": v for k, v in ck["state_dict"].items()})
+        changed.append(f"turn_seg_a={a.seg_a}")
+    if a.seg_vad_input:
+        cfg["heads"]["turn_seg"]["vad_input"] = a.seg_vad_input
+        changed.append(f"turn_seg.vad_input={a.seg_vad_input}")
     cfg["turn_presets"] = json.loads(a.presets_json) if a.presets_json else cfg.get("turn_presets")
     cfg["name"] = f"served_0p6b_v{a.version}" if a.ship else f"served_0p6b_cand_{a.tag}"
     m = SpeechModel(cfg, base.tokenizer)
@@ -1553,7 +1673,8 @@ def stage_build(a):
     save_model(m.eval(), out)
     back = load_model(str(out), "cpu")
     assert hub.state_hash(back.state_dict()) == hub.state_hash(m.state_dict())
-    keep = [k for k in base.state_dict() if not k.startswith(("heads.vad.", "heads.turn_seg.", "heads.turn.", "layer_mix.vad"))]
+    keep = [k for k in base.state_dict() if not k.startswith(("heads.vad.", "heads.turn_seg.", "heads.turn.", "layer_mix.vad",
+                                                              "heads.turn_vad.", "heads.turn_seg_a."))]
     bsd = back.state_dict()
     assert all(torch.equal(base.state_dict()[k], bsd[k]) for k in keep), "a frozen tensor changed"
     rec = {"afm": str(out), "changed": changed, "turn_presets": cfg["turn_presets"], "n_unchanged": len(keep)}
@@ -1694,7 +1815,10 @@ def engine_cand(afm, device):
 
 
 def cand_afm(tag):
-    return C.W / "served_0p6b_v0.2.afm" if tag == "v0.2" else TF / f"cand_{tag}.afm"
+    """v0.2 / v0.3 / v0.4 ... = the shipped served_0p6b_v<x>.afm when built, else TF/cand_<tag>.afm."""
+    if tag.startswith("v0.") and (C.W / f"served_0p6b_{tag}.afm").exists():
+        return C.W / f"served_0p6b_{tag}.afm"
+    return TF / f"cand_{tag}.afm"
 
 
 def stage_evdump(a):
@@ -1733,6 +1857,8 @@ def stage_evdump(a):
         if s.asr.seg is None and eng.seg_name is not None:
             sh = eng.asr.heads[eng.seg_name]
             s.asr.attach_seg(sh, next(sh.parameters()).device)
+        if "turn_seg_a" in s.asr.m.heads and s.asr.seg2 is None:  # research/TURN_DATA.md: the second classifier
+            s.asr.attach_seg2("turn_seg_a", next(s.asr.m.heads["turn_seg_a"].parameters()).device)
         rec = []
         C._record(s, rec, enrolled_only=a.which == "asst")
         msgs = []
@@ -1741,7 +1867,7 @@ def stage_evdump(a):
         msgs += s.finish()
         cm = np.asarray(list(s.chunk_ms), float)
         d = {"key": k, "audio_s": round(len(x) / SR, 3),
-             "head": {kk: [r[j] for r in rec] for j, kk in enumerate(("v", "t", "p", "vad", "pu", "po", "p5"))},
+             "head": {kk: [r[j] for r in rec] for j, kk in enumerate(("v", "t", "p", "vad", "pu", "po", "p5", "vad_m", "p5b"))},
              "tok_at": [int(q) for q in s.asr.tok_at],
              "chunk_ms": {"p50": round(float(np.median(cm)), 2), "p95": round(float(np.percentile(cm, 95)), 2),
                           "mean": round(float(cm.mean()), 2), "n": int(len(cm))}, "device": a.device}
@@ -1771,7 +1897,11 @@ def served_rules(afm):
             r.update({"mode": "head", "quiet_db": None, "th": float(pr[name].get("theta", POLICY_THETA["vad_head"]))})
         else:
             r.update({"mode": "model", "quiet_db": tm.get("quiet_db"), "mqo": tm.get("quiet_db") is not None,
-                      "mvt": tm["vad_thr"], "mp": tm["p"], "reask": bool(tm.get("reask"))})
+                      "mvt": tm["vad_thr"], "mp": tm["p"], "reask": bool(tm.get("reask")),
+                      "mclock": pr[name].get("model_clock") == "turn_vad" and "turn_vad" in m.heads})
+            sname = next((k for k, v in m.head_cfg.items() if v["type"] == "turn_seg"), None)
+            if tm.get("head") and tm["head"] != sname and tm["head"] in m.heads:
+                r["p5key"] = "p5b"  # the preset's own classifier (recorded as p5b in the dumps)
         out[name] = r
     return out
 
@@ -1823,15 +1953,17 @@ def stage_servedcheck(a):
             if s.asr.seg is None and eng.seg_name is not None:
                 sh = eng.asr.heads[eng.seg_name]
                 s.asr.attach_seg(sh, next(sh.parameters()).device)
+            if "turn_seg_a" in s.asr.m.heads and s.asr.seg2 is None:  # research/TURN_DATA.md: the second classifier
+                s.asr.attach_seg2("turn_seg_a", next(s.asr.m.heads["turn_seg_a"].parameters()).device)
             rec = []
             C._record(s, rec, enrolled_only=True)
             msgs = []
             for i in range(0, len(x), 320):
                 msgs += s.process(x[i:i + 320])
             msgs += s.finish()
-            h = {k: [r[j] for r in rec] for j, k in enumerate(("v", "t", "p", "vad", "pu", "po", "p5"))}
+            h = {k: [r[j] for r in rec] for j, k in enumerate(("v", "t", "p", "vad", "pu", "po", "p5", "vad_m", "p5b"))}
             if rules[preset]["mode"] == "model":
-                h["p"] = h["p5"]
+                h["p"] = h[rules[preset].get("p5key", "p5")]
             db = V5.ready_db(x, max(h["v"]) + 1, h["v"], h["t"])
             r = dict(rules[preset])
             off = [round(t_, 3) for t_, _ in V5.run_policy({"head": h}, db[np.asarray(h["v"])], r, {})]
@@ -1951,6 +2083,16 @@ def main():
     ap.add_argument("--sa", action="store_true")
     ap.add_argument("--steps", type=int, default=3000)
     ap.add_argument("--patience", type=int, default=6)
+    ap.add_argument("--base", default=None)
+    ap.add_argument("--turn-vad", default=None)
+    ap.add_argument("--seg-vad-input", default=None)
+    ap.add_argument("--seg-a", default=None)
+    ap.add_argument("--seg-a-vad-input", default=None)
+    ap.add_argument("--ihm", type=int, default=0)  # research/TURN_DATA.md: AMI individual-headset training windows
+    ap.add_argument("--ihm-share", type=float, default=0.2)
+    ap.add_argument("--ihm-val", default="")  # e.g. "dev,odev"
+    ap.add_argument("--ihm-splits", default="train")
+    ap.add_argument("--ihm-train", default="")  # e.g. "train,otrain" (turn_data.py manifests)
     a = ap.parse_args()
     STAGES[a.stage](a)
 

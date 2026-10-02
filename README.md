@@ -96,7 +96,7 @@ transcribe after the speaker stops)
 | system | right about "done" | answers after you stop, p50 | cuts off unfinished sentences |
 |---|---:|---:|---:|
 | ours 115M | 92.7 % | 299 ms | 5.4 % |
-| ours 0.6B | **93.0 %** | 379 ms | **4.5 %** |
+| ours 0.6B | **96.5 %** | 351 ms | **3.1 %** |
 | LiveKit turn detector + Silero | 72.7 % | 547 ms | 44.6 % |
 | Pipecat smart-turn v3.2 + Silero | 69.7 % | **211 ms** | 40.2 % |
 | NVIDIA Parakeet-Realtime-EOU | 48.4 % | 462 ms | 91.5 % |
@@ -128,7 +128,7 @@ threads, 5 real-time streams on the GPU, 1.2 GB; 0.6B 42.9 ms GPU / 97.1 ms CPU,
 
 ## Where it loses
 
-- **Turn answers are not the fastest.** Pipecat smart-turn answers assistant speech sooner (211 ms vs 299 / 379 ms
+- **Turn answers are not the fastest.** Pipecat smart-turn answers assistant speech sooner (211 ms vs 299 / 351 ms
   p50) and meeting turns sooner, at many more cut-offs. The `assistant` preset misses many meeting turns, so
   conversations use `balanced`; no single preset wins every column.
 - **Words:** Parakeet-TDT v3 (offline) beats the 0.6B on ICSI test meetings (7.6 vs 10.3 %) and on LibriSpeech
@@ -179,7 +179,7 @@ Voice prints belong to one core, so re-enroll after switching. Numbers on the sa
 | turn end, calls (`balanced`): p50, false interruptions, missed | 956 ms, 20.2 %, **7.3 %** | **725 ms, 19.3 %**, 10.1 % |
 | turn end, calls (`fast`): p50, false interruptions, missed | 547 ms, **24.8 %, 5.5 %** | **487 ms**, 26.6 %, 11.0 % |
 | turn end, AMI (`balanced`): p50, false interruptions, missed | 1326 ms, **10.5 %**, 33.5 % | **1177 ms**, 11.0 %, **33.0 %** |
-| speech to an agent (`assistant`): accuracy, p50, false fires | 92.2 %, **292 ms**, 5.4 % | **93.0 %**, 374 ms, **4.5 %** |
+| speech to an agent (`assistant`): accuracy, p50, false fires | 92.2 %, **292 ms**, 5.4 % | **96.5 %**, 351 ms, **3.1 %** |
 | compute per 160 ms chunk, CPU 2 threads / Apple GPU | **30 / 29 ms** | 96 / 39 ms |
 | real-time streams, CPU 2 threads / Apple GPU | **4 / 5** | 1 / 3 |
 | memory | **1.1 GB** | 5.0 GB (+3.3 GB GPU) |

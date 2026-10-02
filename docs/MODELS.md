@@ -11,9 +11,12 @@ disk, and its licence. audioforge's only model weights of its own are in `assets
 - `tsvad_spk.pt`: the target-speaker head (1.0 MB).
 - `lid_115m_v2.pt`: the language-ID head (2.37 M parameters, 9.5 MB; FLEURS-17 test 92.4 % at 2 s, 98.2 % full clip;
   research/FIXALL.md step 3). `lid_distill.pt` (v1, 0.92 M, 90.9 / 97.8 %) is kept for reproduction.
-- `served_heads_0p6b_v0.3.pt` (`--core 0.6b`): the heads merged into nemotron-speech-streaming-en-0.6b (123 tensors,
-  16.3 MB): v0.2 + the same kind of `speech` head (blocks 8-16; ICSI dev F1 0.906 → 0.951, AMI 0.951 → 0.950,
-  research/FIXALL.md). v0.2 (`served_heads_0p6b_v0.2.pt`, v0.1's tensors with the turn presets' constants re-picked
+- `served_heads_0p6b_v0.4.pt` (`--core 0.6b`): the heads merged into nemotron-speech-streaming-en-0.6b (213 tensors,
+  27.0 MB): v0.3 + `turn_seg_a`, the `assistant` preset's own v5 turn classifier (2.59 M parameters, trained with
+  real two-party channels: AMI individual headsets and otoSpeech-280h raw channels), and `turn_vad`, the stateless
+  block-12 VAD that classifier reads (65.7 K). `balanced` / `fast` and every other head are unchanged
+  (research/TURN_DATA.md). v0.3 (`served_heads_0p6b_v0.3.pt`, 123 tensors, 16.3 MB: v0.2 + the same kind of `speech`
+  head, blocks 8-16; ICSI dev F1 0.906 → 0.951, AMI 0.951 → 0.950, research/FIXALL.md) is kept. v0.2 (`served_heads_0p6b_v0.2.pt`, v0.1's tensors with the turn presets' constants re-picked
   on held-out data, research/CORE_0P6B_TURN.md) is kept. `tsvad_0p6b.pt` and `lid_0p6b_v2.pt` (2.89 M; FLEURS-17 test 92.7 / 98.6 %, was 87.6 / 95.5 % with `lid_0p6b.pt`) are that core's TS-VAD and LID heads.
 - `served_heads_v0.1.pt`: the 2026-09-27 measured heads, kept for reproducibility. The download command shows the licences of the components it is
 about to fetch and asks you to accept them (`--yes` / `AUDIOFORGE_ACCEPT_LICENSES=1` non-interactively).
@@ -77,7 +80,8 @@ you run is therefore bit-identical to the checkpoint the heads came from.
 | heads v0.3 | `served_heads_v0.3.pt` | 29481643 | `ea1e8331fa9b9efdee76f1b44d4352f9e1660f34e3da6491b5655ce56ab18848` |
 | heads v0.2 | `served_heads_v0.2.pt` | 19629563 | `cb5aa06974f27576c0f66b9453868701106969dea5d5ad100b06b2b779f121d2` |
 | heads v0.1 (measured) | `served_heads_v0.1.pt` | 19629955 | `834f3e94467bc4110555d8d4cbdbe0ce75254a80d8ca203ecd975d4f007286f5` |
-| 0.6B heads v0.3 (ships) | `served_heads_0p6b_v0.3.pt` | 16309976 | `3245e5ee5bc05beb5f2bc9f412c89b455c0b2faa6ab592ddd7c6bab3aa4568f1` |
+| 0.6B heads v0.4 (ships) | `served_heads_0p6b_v0.4.pt` | 26952298 | `2062496c631372387356bacc93241d5a2a30f5de751c7210fe8cf03e7e0b0ed1` |
+| 0.6B heads v0.3 | `served_heads_0p6b_v0.3.pt` | 16309976 | `3245e5ee5bc05beb5f2bc9f412c89b455c0b2faa6ab592ddd7c6bab3aa4568f1` |
 | 0.6B heads v0.2 | `served_heads_0p6b_v0.2.pt` | 16045591 | `ceff8c8912640e67500ca796d7c983d220ddf581845134e3e7ca68d7c32db3ff` |
 | 0.6B heads v0.1 | `served_heads_0p6b_v0.1.pt` | 16045143 | `664be5a0e498b9268d088ccf2fa079d909cd70311c4096f8d28f94258adc4e6e` |
 
@@ -108,3 +112,6 @@ turn detectors (LiveKit Model License, evaluation only), pyannote, SpeechBrain, 
 | AMI Meeting Corpus | CC BY 4.0 | turn / speaker / VAD heads, meeting ASR adaptation and the 0.6B -> 115M distillation (`scripts/research/distill_0p6b_to_115m/`) | headset mix |
 | ICSI Meeting Corpus | ICSI release terms (research) | same | headset mix |
 | LibriSpeech | CC BY 4.0 | anchor / WER gate | |
+| AMI Meeting Corpus, individual headsets (45 train meetings; 18 dev meetings held out; the 16 test meetings never touched) | CC BY 4.0 | 0.6B heads v0.4: `turn_vad` / `turn_seg_a` training, held-out selection (research/TURN_DATA.md) | one participant's headset = the user channel |
+| otoSpeech-full-duplex-280h (raw channels; 64 train / 32 held-out / 32 never-touched sessions) | CC BY 4.0; no speaker identification, redactions respected | same | labels from Silero VAD v5 per channel minus bleed |
+| AppTek Call-Center Dialogues (48 held-out / 48 never-touched calls) | CC BY-SA 4.0; the card excludes training | held-out selection and never-touched reporting only, never trained on | one file per party |

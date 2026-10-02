@@ -77,6 +77,14 @@ class ASRStream(StreamingSession):
         self.seg_block = None
         self.pros = None  # heads.prosody.Prosody when the v5 model reads prosody
         self.pros_frames = _Ring(512)
+        # an optional stateless turn VAD (research/TURN_DATA.md, 0.6B heads v0.4): the v5 classifier's clock (a preset's
+        # ``model_clock``) and, when the model says so (cfg heads.turn_seg.vad_input), the classifier's VAD channel;
+        # arming, the fallback and everything else keep reading heads.vad
+        self.turn_vad_name = "turn_vad" if "turn_vad" in model.heads else None
+        self.turn_vad_p = _Ring()
+        self.seg_vad = (model.head_cfg.get("turn_seg") or {}).get("vad_input")
+        self.seg2 = None  # a preset's own v5 classifier (turn_model "head"; attach_seg2), fed like self.seg
+        self.seg2_name = self.seg2_block = self.seg2_vad = None
 
     BEAM_MAX_FRAMES = 3750  # 5 min of one segment: beyond this the final falls back to the greedy text
 
@@ -131,6 +139,20 @@ class ASRStream(StreamingSession):
     def seg_prob(self, v: int) -> float:
         """P(the user's turn is complete) of the v5 classifier on the window ending at frame v."""
         return self.seg.prob(v, self.tokens)
+
+    def attach_seg2(self, name: str, device="cpu"):
+        """A second v5 classifier (heads.<name>, research/TURN_DATA.md: the 0.6B assistant preset's own), kept like
+        ``attach_seg``'s from the next frame on; its VAD channel is heads.vad or, with cfg vad_input "turn_vad", the
+        stateless turn VAD."""
+        from ..heads.turn_seg import SegTurnStream
+        model = self.m.heads[name]
+        self.seg2, self.seg2_name = SegTurnStream(model, device), name
+        self.seg2_block = [int(b) for b in str(model.cfg["block"]).split("+")]
+        self.seg2_vad = self.m.head_cfg[name].get("vad_input")
+        self.seg2_v0 = self.n_frames  # frames before attachment were not pushed
+
+    def seg2_prob(self, v: int) -> float:
+        return self.seg2.prob(v - self.seg2_v0, self.tokens)
 
     def reset_state(self):
         """Drop the recurrent state (encoder caches, transducer prediction state, turn GRU) after a non-finite
@@ -203,6 +225,8 @@ class ASRStream(StreamingSession):
             # speech probability; the turn rules, TS-VAD, LID gating and the v5 classifier keep reading heads.vad
             sp = (self.m.heads["speech"](self.m.head_input("speech", enc, hid)).sigmoid()[0].tolist()
                   if "speech" in self.m.heads else None)
+            tv = (self.m.heads["turn_vad"](self.m.head_input("turn_vad", enc, hid)).sigmoid()[0].tolist()
+                  if self.turn_vad_name else None)
             e_turn = self.m.head_input(self.turn_name, enc, hid) if self.turn is not None else None
             if self.keep_spk:  # the speaker head's tap of this chunk (no extra encoder pass): per-turn voice ids
                 for fr in self.m.head_input("spk", enc, hid)[0].float().cpu().numpy():
@@ -215,6 +239,9 @@ class ASRStream(StreamingSession):
                 self.lid_events += self.lid.feed(enc, hid, vad, ends)
             if self.seg is not None:
                 seg_x = torch.cat([hid[b - 1] for b in self.seg_block], -1)[0].float().cpu().numpy()
+            if self.seg2 is not None:
+                seg2_x = (seg_x if self.seg is not None and self.seg2_block == self.seg_block else
+                          torch.cat([hid[b - 1] for b in self.seg2_block], -1)[0].float().cpu().numpy())
             snaps = []
             for j in range(n):
                 if self.vad_gate is not None:
@@ -244,10 +271,19 @@ class ASRStream(StreamingSession):
                     pr = None
                     if self.pros is not None:
                         pr = self.pros_frames[v] if v < len(self.pros_frames) else np.zeros(12, np.float32)
-                    self.seg.push(seg_x[j], float(vad[j]), pu, po, len(self.tokens), pr)
+                    sv = tv[j] if (tv is not None and self.seg_vad == "turn_vad") else vad[j]
+                    self.seg.push(seg_x[j], float(sv), pu, po, len(self.tokens), pr)
+                if self.seg2 is not None:
+                    v = self.n_frames
+                    en = self.tsvad is not None and getattr(self.tsvad, "enrolled", False) and v < len(self.tsvad_p)
+                    pu, po = (float(self.tsvad_p[v][0]), float(self.tsvad_p[v][1])) if en else (0.0, 0.0)
+                    sv = tv[j] if (tv is not None and self.seg2_vad == "turn_vad") else vad[j]
+                    self.seg2.push(seg2_x[j], float(sv), pu, po, len(self.tokens), None)
                 out.append({"v": self.n_frames, "vad": float(vad[j]), "eot": eot})
                 if sp is not None:
                     out[-1]["speech"] = float(sp[j])
+                if tv is not None:
+                    self.turn_vad_p.append(float(tv[j]))
                 self.n_frames += 1
             if self.turn is not None and self.turn_input in ("diar", "tsvad"):
                 self.pending.append({"mel": chunk, "last": last, "v0": self.n_frames - n, "n": n, "snaps": snaps,
@@ -282,7 +318,7 @@ class LookaheadStream(StreamingSession):
     longer chunks). Decoded frame by frame so ``tok_at[v]`` = tokens emitted at frames <= v; ``ready_t(v)`` = the
     audio time at which frame v is decoded (its chunk's audio + the STFT half window)."""
 
-    def __init__(self, model, right: int):
+    def __init__(self, model, right: int, snapshot: bool = False):
         left = model.encoder.att_context_size[0]
         super().__init__(model, att_context_size=[left, int(right)])
         self.frame_events = {}  # text only: no frame heads
@@ -290,6 +326,10 @@ class LookaheadStream(StreamingSession):
         self.n_frames = 0
         self.tok_at: list[int] = []
         self.ms = 0.0
+        # --final-chunk-ms (dual rate): the state before the last encoded chunk, so a flush can rewind when that chunk
+        # read audio past the decision time (a client block that ended after the chunk did)
+        self.snapshot = bool(snapshot)
+        self._snap = None
 
     def _decode(self, f):
         for j in range(f.shape[0]):
@@ -300,6 +340,55 @@ class LookaheadStream(StreamingSession):
     def ready_t(self, v: int) -> float:
         """Audio time (s) by which the lookahead pass can decode frame ``v`` (its chunk and lookahead have arrived)."""
         return self.frame_ready_samples(v) / SR
+
+    # ------------------------------------------------------------ dual rate: flush a partial chunk at turn_end
+    def _state(self) -> dict:
+        """Everything a chunk changes (tensors are replaced, never written in place, so shallow copies suffice)."""
+        st = self.enc_state
+        enc = StreamState(offset=st.offset, mel_cache=st.mel_cache, att=list(st.att), conv=list(st.conv),
+                          started=st.started, mel_start=st.mel_start, n_mel=st.n_mel)
+        return {"enc_state": enc, "pred": self.pred, "skip": self.skip, "_pg": self._pg, "n_tok": len(self.tokens),
+                "n_frames": self.n_frames, "mel_fed": self.mel_fed}
+
+    def _before_chunk(self, chunk: torch.Tensor) -> None:
+        if self.snapshot:
+            self._snap = (self._state(), chunk)
+
+    @torch.no_grad()
+    def flush_view(self, upto_samples: int):
+        """A throw-away copy of this pass that has also encoded the audio up to ``upto_samples`` (the decision
+        time) as a partial attention chunk, as the offline forward encodes the last chunk of an utterance. This
+        stream is not changed: its next full chunk sees the later audio as usual. Returns None when the pass already
+        encoded a chunk that read audio past ``upto_samples`` and the one-chunk snapshot cannot rewind it (only
+        when one client block spans more than a whole slow chunk)."""
+        lim = max((int(upto_samples) - self.half) // self.hop + 1, 0)  # mel frames complete by upto_samples
+        buf = torch.cat(self.mel_buf, -1) if self.mel_buf else None
+        if self.mel_fed <= lim:
+            base, mel0, mel = self._state(), self.mel_fed, buf
+            n_tok = len(self.tokens)
+        elif self._snap is not None and self._snap[0]["mel_fed"] <= lim:
+            base, chunk = self._snap
+            base = dict(base, enc_state=StreamState(**{k: getattr(base["enc_state"], k) for k in (
+                "offset", "mel_cache", "started", "mel_start", "n_mel")}, att=list(base["enc_state"].att),
+                conv=list(base["enc_state"].conv)))
+            mel0, mel = base["mel_fed"], chunk if buf is None else torch.cat([chunk, buf], -1)
+            n_tok = base["n_tok"]
+        else:
+            return None
+        v = object.__new__(type(self))
+        v.__dict__.update(self.__dict__)
+        v.snapshot, v._snap, v.mel_buf = False, None, []
+        v.tokens, v.tok_at = self.tokens[:n_tok], self.tok_at[:base["n_frames"]]
+        for k in ("enc_state", "pred", "skip", "_pg", "n_frames", "mel_fed"):
+            setattr(v, k, base[k])
+        n = 0 if mel is None else min(mel.shape[-1], lim - mel0)
+        if n > 0:
+            enc, hid, v.enc_state = self.m.encoder.stream_step(mel[..., :n], v.enc_state, self.att, final=False,
+                                                               return_hidden=True)
+            if enc.shape[1]:
+                v._decode(self.m.head_input(self.head_name, enc, hid)[0])
+            v.mel_fed += n
+        return v
 
 
 # --------------------------------------------------------------------------- CPU fast path

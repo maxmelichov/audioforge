@@ -237,7 +237,8 @@ Sent once, immediately after the connection opens.
 | `enroll` | string | the `--enroll` mode | `--enroll` other than `dominant` |
 | `enrolled` | bool | always `false` in `ready` | with `enroll` |
 | `primary_column` | int or null | always `null` in `ready` | with `enroll` |
-| `final_asr` | string | comma-separated final sources besides `stream`, e.g. `tdt_v3`, `lookahead`, or `lookahead,tdt_v3` | `--final-asr` and/or `--asr-lookahead` |
+| `final_asr` | string | comma-separated final sources besides `stream`, e.g. `tdt_v3`, `lookahead`, `slow`, or `lookahead,tdt_v3` | `--final-asr`, `--asr-lookahead` and/or `--final-chunk-ms` |
+| `final_chunk_ms` | number | chunk of the slow pass that writes the `final` text (560 or 1120) | `--final-chunk-ms` 560 / 1120 only |
 
 ### 5.2 `frame`
 
@@ -297,10 +298,11 @@ Sent right after every cutting `turn_end` (same `t`), and once at end of stream.
 | `speaker` | int or null | default (`--diar-labels column`): the primary column at the decision (the timeout's firing column, else the current primary), 0-3 (0-7 with 8 columns). With `--diar-labels registry`: a stable per-session speaker id (0, 1, 2, ... in order of first appearance, keyed by voice, so the same person keeps the id across column permutations and re-entries; may exceed the column count); `null` when the turn had too little speech to identify ([CONFIGURATION.md §7.4](CONFIGURATION.md#74-multi-speaker-rooms---diar-labels---shed-diar-timeout_any)) | always |
 | `speaker_conf` | number in [0, 1] or null | `registry`: cosine of the turn's voice to the assigned speaker (a new speaker: how far the closest known one was below the join threshold, 1 for the first); `null` when `speaker` fell back to the column's last id or is `null` | only with `--diar-labels registry` or `--shed-diar hold`; then on every `stream` final together with `diar_shed` |
 | `diar_shed` | bool | true when the diarizer did not run on part of this turn (load shedding): the speaker came from held columns / the voice registry, not from a live diarizer frame | with `speaker_conf` |
-| `source` | string | `stream` for the streaming model's final; `lookahead` for the `--asr-lookahead` pass; `tdt_v3` (or the `.nemo` file's stem when `--final-asr` is a path) for the offline pass | only when `--final-asr` or `--asr-lookahead` is on; then on every final |
+| `source` | string | `stream` for the streaming model's final; `lookahead` for the `--asr-lookahead` pass; `slow` for the `--final-chunk-ms` pass; `tdt_v3` (or the `.nemo` file's stem when `--final-asr` is a path) for the offline pass | only when `--final-asr`, `--asr-lookahead` or `--final-chunk-ms` is on; then on every final |
+| `pass` | string | `slow`: the text is the slow pass's; `fast`: the slow pass was dropped (load shedding level 2 or an error) and the text is the fast pass's | `--final-chunk-ms` finals only |
 | `start` | number or null | start of the transcribed span, s. tdt_v3: turn onset (first frame with VAD > 0.5 after the previous cut) minus 0.3 s, never before the previous span's end. lookahead: the lookahead segment's first frame | finals whose `source` is not `stream` |
 | `end` | number or null | end of the transcribed span, s. tdt_v3: last VAD speech frame plus 0.5 s, capped at `t`. lookahead: the frame where the lookahead segment was cut | finals whose `source` is not `stream` |
-| `latency_ms` | number | tdt_v3: wall time from submitting the job (right after the `turn_end` is computed) to sending this message. lookahead: **audio-time** wait past the decision time (0 when the policy already waited long enough) | finals whose `source` is not `stream` |
+| `latency_ms` | number | tdt_v3: wall time from submitting the job (right after the `turn_end` is computed) to sending this message. lookahead: **audio-time** wait past the decision time (0 when the policy already waited long enough). slow: the turn_end flush's compute in ms (with `--final-flush off`: the audio-time wait for the slow chunk) | finals whose `source` is not `stream` |
 
 Details of the extra finals:
 
@@ -312,6 +314,16 @@ Details of the extra finals:
   `final_asr_failed` `error` (once per session) and completes the turn with a final under the offline `source` that
   carries the **streaming** text, so a client waiting for that source still gets the turn. A dead worker is restarted
   in the background, at most once per 60 s. The `stats` message is sent only after every pending offline final.
+- **`slow` (`--final-chunk-ms 560|1120`, dual rate, research/DUAL_RATE.md).** The heads, partials and turn
+  decisions keep the 160 ms pass. At a cutting `turn_end` the server sends that pass's final at once as a
+  **`final_fast`** message (exactly the fields the plain `final` has without the flag, so a client can hand it to
+  the LLM with no added delay), then a `final` with `source: "slow"` and `pass` holding the text of a second,
+  text-only pass of the same frozen encoder at 560 ms (`[70,6]`) or 1120 ms (`[70,13]`) chunks over the same
+  frames (`start` / `end` = the span, the same cut as `final_fast`). The slow pass's chunk holding the turn's last
+  frames is normally not complete at the decision; the server encodes the audio up to the decision time as a partial
+  chunk (a throw-away copy of the pass; the pass itself is unchanged) and sends the slow final right after the
+  `turn_end` batch, without waiting for the rest of the chunk. A client that wants the better text replaces the
+  `final_fast` text with the `final` of the same `t`.
 - **`lookahead` (`--asr-lookahead R`).** A second, text-only pass of the same ASR model with R frames of right
   context. Its final for a segment is sent once that pass has decoded 3 frames past the segment's last VAD speech
   frame (capped at the streaming cut). Partials, heads and events are unchanged by it. If the pass is dropped
@@ -491,7 +503,8 @@ Within one processed block of audio the server sends, in this order:
 3. `enrolled` messages;
 4. `language` messages;
 5. for each turn event in decision-time order: `turn_end`, then its `final` when the policy cuts (with
-   `--final-asr` / `--asr-lookahead` that `final` has `source: "stream"`), interleaved in the same order with
+   `--final-asr` / `--asr-lookahead` that `final` has `source: "stream"`; with `--final-chunk-ms` it is a
+   `final_fast`, and the `source: "slow"` finals follow as a separate send right after the block), interleaved in the same order with
    `turn_end_hint` / `turn_end_hint_cancel` (a `turn_end` before a hint of the same decision time);
 6. a `segment_cap` `error` and a `final` without `turn_end`, if the segment has been open for 300 s;
 7. `final` messages with `source: "lookahead"` whose frames are now decoded;

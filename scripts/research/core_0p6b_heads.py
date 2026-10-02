@@ -1467,8 +1467,11 @@ def _record(s, rec, enrolled_only=False):
             pu, po = (float(tp[v][0]), float(tp[v][1])) if v < len(tp) else (0.0, 0.0)
             t0 = time.perf_counter()
             p5 = float(_s.asr.seg_prob(v)) if _s.asr.seg is not None else None
+            p5b = float(_s.asr.seg2_prob(v)) if getattr(_s.asr, "seg2", None) is not None else None  # its own classifier
             _s._rec_extra = getattr(_s, "_rec_extra", 0.0) + time.perf_counter() - t0
-            rec.append((int(v), round(_s._asr_ready_t(v), 4), float(p_), round(float(vad), 5), pu, po, p5))
+            tvp = _s.asr.turn_vad_p if getattr(_s.asr, "turn_vad_name", None) else []
+            tv = round(float(tvp[v]), 5) if v < len(tvp) else None  # research/TURN_DATA.md: the stateless turn VAD
+            rec.append((int(v), round(_s._asr_ready_t(v), 4), float(p_), round(float(vad), 5), pu, po, p5, tv, p5b))
         return out
     s.asr.run_turn_on_diar = rtod
     orig_proc = s.process
@@ -1526,6 +1529,8 @@ def stage_eot_dump(a):
         if s.asr.seg is None and eng.seg_name is not None:  # record the v5 classifier's p on every frame too
             sh = eng.asr.heads[eng.seg_name]
             s.asr.attach_seg(sh, next(sh.parameters()).device)
+        if "turn_seg_a" in s.asr.m.heads and s.asr.seg2 is None:  # research/TURN_DATA.md: the second classifier
+            s.asr.attach_seg2("turn_seg_a", next(s.asr.m.heads["turn_seg_a"].parameters()).device)
         rec = []
         _record(s, rec, enrolled_only=a.which == "asst")
         msgs = []
@@ -1534,7 +1539,7 @@ def stage_eot_dump(a):
         msgs += s.finish()
         cm = np.asarray(list(s.chunk_ms), float)
         d = {"key": k, "audio_s": round(len(x) / SR, 3),
-             "head": {kk: [r[j] for r in rec] for j, kk in enumerate(("v", "t", "p", "vad", "pu", "po", "p5"))},
+             "head": {kk: [r[j] for r in rec] for j, kk in enumerate(("v", "t", "p", "vad", "pu", "po", "p5", "vad_m", "p5b"))},
              "tok_at": [int(q) for q in s.asr.tok_at], "text": s.asr.text if hasattr(s.asr, "text") else None,
              "chunk_ms": {"p50": round(float(np.median(cm)), 2), "p95": round(float(np.percentile(cm, 95)), 2),
                           "mean": round(float(cm.mean()), 2), "n": int(len(cm))},
@@ -3310,13 +3315,15 @@ def stage_served_check(a):
             if s.asr.seg is None and eng.seg_name is not None:
                 sh = eng.asr.heads[eng.seg_name]
                 s.asr.attach_seg(sh, next(sh.parameters()).device)
+            if "turn_seg_a" in s.asr.m.heads and s.asr.seg2 is None:  # research/TURN_DATA.md: the second classifier
+                s.asr.attach_seg2("turn_seg_a", next(s.asr.m.heads["turn_seg_a"].parameters()).device)
             rec = []
             _record(s, rec, enrolled_only=True)
             msgs = []
             for i in range(0, len(x), 320):
                 msgs += s.process(x[i:i + 320])
             msgs += s.finish()
-            h = {k: [r[j] for r in rec] for j, k in enumerate(("v", "t", "p", "vad", "pu", "po", "p5"))}
+            h = {k: [r[j] for r in rec] for j, k in enumerate(("v", "t", "p", "vad", "pu", "po", "p5", "vad_m", "p5b"))}
             if rules[preset]["mode"] == "model":
                 h["p"] = h["p5"]
             db = V5.ready_db(x, max(h["v"]) + 1, h["v"], h["t"])

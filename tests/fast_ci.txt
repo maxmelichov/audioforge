@@ -57,3 +57,4 @@ tests/test_vad_layers.py
 tests/test_yield_tokens.py
 tests/test_single_mode.py
 tests/test_fixall.py
+tests/test_turn_data.py

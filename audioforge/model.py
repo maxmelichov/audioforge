@@ -201,7 +201,8 @@ class GradScale(torch.autograd.Function):
 def build_head(cfg: dict, d_model: int, tokenizer=None) -> nn.Module:
     cfg = dict(cfg)
     t = cfg.pop("type")
-    for k in ("weight", "condition_on_speaker", "grad_scale", "from_layers"):
+    for k in ("weight", "condition_on_speaker", "grad_scale", "from_layers",
+              "vad_input"):  # vad_input: a serve-time option of turn_seg heads (research/TURN_DATA.md)
         cfg.pop(k, None)
     V = tokenizer.vocab_size if tokenizer is not None else None
     if t == "ctc":
@@ -658,6 +659,7 @@ class StreamingSession:
             n = self._next_chunk_mels()
             last = bool(final) and mel.shape[-1] <= n  # NeMo-aligned encoders emit their trailing frame
             chunk, mel = mel[..., :n], mel[..., n:]
+            self._before_chunk(chunk)
             self.mel_fed += chunk.shape[-1]
             enc, hid, self.enc_state = self.m.encoder.stream_step(chunk, self.enc_state, self.att, final=last,
                                                                   return_hidden=True)
@@ -668,6 +670,10 @@ class StreamingSession:
                 self.frame_events[k].extend(self.m.heads[k].decode(e, torch.tensor([e.shape[1]]))[0].tolist())
         self.mel_buf = [mel] if mel.shape[-1] else []
         return self.text
+
+    def _before_chunk(self, chunk: torch.Tensor) -> None:
+        """Hook: called with each mel chunk right before it is encoded (serve's dual-rate pass snapshots its state
+        here, audioforge.server.streams.LookaheadStream)."""
 
     def _decode(self, f):
         h = self.head

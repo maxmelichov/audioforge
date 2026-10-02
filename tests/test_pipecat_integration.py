@@ -756,3 +756,42 @@ def test_local_pipeline_hint_text_mismatch_answers_the_final():
     assert [d[2] for d in raw["spec_discarded"]] == ["mismatch"] and raw["spec_kept"] == []
     assert [sp for _, sp, _ in raw["llm_runs"]] == [True, False]
     assert raw["llm_runs"][1][2] == "hello world again and" and len(raw["responses"]) == 1
+
+
+@pytest.mark.parametrize("final_text", ["fast", "slow"])
+def test_stt_final_text_with_dual_rate_server(final_text):
+    """Server --final-chunk-ms (research/DUAL_RATE.md): each turn has a final_fast (160 ms pass, at the turn end) and
+    a final with source "slow". final_text="fast" (default) pushes final_fast and completes at once; "slow" pushes
+    the slow text and completes only once the turn's slow final has arrived."""
+    hub = AudioforgeHub()
+    stt = AudioforgeSTTService(url="ws://unused", hub=hub, final_text=final_text)
+    turn = AudioforgeTurnAnalyzer(hub, policy="timeout", wait_for_silence=False)
+    pushed = []
+
+    async def fake_push(frame, direction=FrameDirection.DOWNSTREAM):
+        pushed.append(frame)
+
+    stt.push_frame = fake_push
+    states = []
+
+    async def go():
+        await stt.handle_server_message({"type": "ready", "model": "m", "chunk_ms": 160, "frame_ms": 80,
+                                         "diar_config": "x", "column_lag_ms": 160, "final_asr": "slow",
+                                         "final_chunk_ms": 1120})
+        await stt.handle_server_message({"type": "turn_end", "t": 2.0, "policy": "timeout", "p": None, "silence_ms": 1000})
+        await stt.handle_server_message({"type": "final_fast", "t": 2.0, "text": "hello their", "speaker": 0})
+        states.append(turn.append_audio(b"\x00\x00" * 320, False))
+        await stt.handle_server_message({"type": "final", "t": 2.0, "text": "hello there", "speaker": 0,
+                                         "source": "slow", "pass": "slow", "start": 0.0, "end": 1.92,
+                                         "latency_ms": 4.0})
+        states.append(turn.append_audio(b"\x00\x00" * 320, False))
+
+    asyncio.run(go())
+    texts = [f.text for f in pushed if type(f).__name__ == "TranscriptionFrame"]
+    assert texts == (["hello their"] if final_text == "fast" else ["hello there"])
+    C, I = EndOfTurnState.COMPLETE, EndOfTurnState.INCOMPLETE
+    assert states == ([C, C] if final_text == "fast" else [I, C])
+    with pytest.raises(ValueError):
+        AudioforgeSTTService(url="ws://unused", final_text="bogus")
+    with pytest.raises(ValueError):
+        AudioforgeSTTService(url="ws://unused", final_text="slow", final_source="offline")

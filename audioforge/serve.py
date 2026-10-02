@@ -291,7 +291,8 @@ class Engine:
                  lid_langs: list | None = None, lid_max_ms: float | None = None, final_asr=None, final_asr_worker: str = "process",
                  final_asr_threads: int | None = 2, final_asr_device: str = "cpu", asr_lookahead: int | None = None,
                  asr_chunk_ms: int | None = None, asr_vad_gate: float | None = None, asr_vad_hangover_ms: float = 1200.0,
-                 asr_beam: int = 0,
+                 asr_beam: int = 0, final_chunk_ms: int | None = None, final_flush: bool = True,
+                 final_cut: str = "turn",
                  max_session_s: float = DEFAULT_MAX_SESSION_S, idle_timeout_s: float = DEFAULT_IDLE_TIMEOUT_S,
                  log_json: bool = False, perf: str | None = "default", tsvad: str | None = None,
                  tsvad_print_s: float = 5.0, tsvad_refresh_s: float = 0.0, diar_off: bool = False,
@@ -472,6 +473,25 @@ class Engine:
             att = [att[0], int(asr_chunk_ms) // FRAME_MS - 1]
         self.asr_att = att
         self.chunk_ms = (att[1] + 1) * FRAME_MS
+        # --final-chunk-ms (dual rate, research/DUAL_RATE.md): the heads, partials and turn decisions keep this fast
+        # pass; a second, text-only pass of the same frozen encoder at a longer chunk ([L, F/80 - 1]: 560 ms = [70,6],
+        # 1120 ms = [70,13], both trained by NVIDIA) writes the `final` text. The fast pass's final is sent at once as
+        # `final_fast`. Equal to the fast chunk (or None) = single rate, protocol unchanged.
+        self.dual, self.final_chunk_ms, self.final_flush = False, None, bool(final_flush)
+        # where a slow final ends: "turn" = the fast final's cut (the frames available at the decision), "speech" =
+        # 3 frames past the last VAD speech frame (the --asr-lookahead rule); chosen on held-out train meetings
+        if final_cut not in ("turn", "speech"):
+            raise ValueError(f"final_cut {final_cut!r}: turn | speech")
+        self.final_cut = final_cut
+        if final_chunk_ms is not None and int(final_chunk_ms) != self.chunk_ms:
+            fc = int(final_chunk_ms)
+            if fc % FRAME_MS or fc < self.chunk_ms:
+                raise ValueError(f"--final-chunk-ms {fc}: a multiple of {FRAME_MS} and >= the fast chunk "
+                                 f"({self.chunk_ms} ms)")
+            if self.asr_lookahead:
+                raise ValueError("--final-chunk-ms and --asr-lookahead both add a second text pass: use one")
+            self.dual, self.final_chunk_ms, self.asr_lookahead = True, fc, fc // FRAME_MS - 1
+        self.la_source = "slow" if self.dual else "lookahead"  # the second pass's `source`
         self.lag = diar_lag_ms(att[1] + 1, 0) if diar_off else diar_lag_ms(self.diar_cfg["chunk_len"],
                                                                  self.diar_cfg["chunk_right_context"])
         # Silero VAD v5 for hybrid_silero / hybrid_dyn: loaded at the first session that asks for such a policy
@@ -504,7 +524,7 @@ class Engine:
                   f"loaded in {time.perf_counter() - t0:.1f}s, worker RSS {self.final_asr.rss_mb} MB")
         elif final_asr is not None:
             self.final_asr = final_asr
-        self.final_sources = (["lookahead"] if self.asr_lookahead else []) + (
+        self.final_sources = ([self.la_source] if self.asr_lookahead else []) + (
             [self.final_asr.source] if self.final_asr is not None else [])
 
     def get_silero(self):
@@ -697,6 +717,8 @@ class Engine:
             m.update(enroll=self.enroll, enrolled=False, primary_column=None)
         if self.final_sources:
             m["final_asr"] = ",".join(self.final_sources)
+        if self.dual:
+            m["final_chunk_ms"] = self.final_chunk_ms
         if self.debug:
             m.update(diar_lag_ms=list(self.lag), turn_input=self.turn_input, threads=self.threads)
             if self.enroll != "dominant":
@@ -819,7 +841,13 @@ class Session:
         self._abuf0 = 0
         # --final-asr: the turn audio and served VAD since the current segment, and the offline jobs to submit
         self.fa = e.final_asr is not None
-        self.la = LookaheadStream(e.asr, e.asr_lookahead) if e.asr_lookahead else None
+        self.la = (LookaheadStream(e.asr, e.asr_lookahead, snapshot=e.dual and e.final_flush) if e.asr_lookahead
+                   else None)
+        self.flush_ms: deque = deque(maxlen=STAT_KEEP)  # --final-chunk-ms: compute of each turn_end flush
+        self.flush_miss = 0  # flushes that could not rewind (the slow final then used the full chunk)
+        # --final-chunk-ms: the WebSocket handler sets this so a turn_end batch (turn_end, final_fast) is sent before
+        # the flush is computed; it then calls flush_slow(). In process (False) the slow final is in the same batch.
+        self.defer_slow = False
         self.la_pending: deque = deque()  # lookahead finals waiting for their frames: dicts (see _lookahead_due)
         self.la_seg = 0  # lookahead frame where the current lookahead segment starts
         self.final_jobs: list[dict] = []
@@ -895,6 +923,11 @@ class Session:
                 head = e.asr.heads[e.seg_name]
                 self.asr.attach_seg(head, next(head.parameters()).device)  # the model's device (cpu / mps / cuda)
             tm = self._seg_model
+            h2 = v5.get("head")  # research/TURN_DATA.md: a preset's own classifier (e.g. the 0.6B assistant's)
+            if h2 and h2 != e.seg_name and h2 in e.asr.heads:
+                if self.asr.seg2_name != h2:
+                    self.asr.attach_seg2(h2, next(e.asr.heads[h2].parameters()).device)
+                tm = self._seg2_model
             if v5.get("quiet_db") is not None:
                 quiet_db = v5["quiet_db"]
                 g = ENERGY_GATE
@@ -912,6 +945,9 @@ class Session:
                 k = max(1, int(round(SMARTTURN_QUIET_MS / FRAME_MS)))
                 fb = int(round(e.presets[pr or e.turn_preset]["smartturn_fallback_ms"] / FRAME_MS))
         rt = e.presets[pr or e.turn_preset].get("reset_thr") if e.smartturn is None else None
+        # model_clock (research/TURN_DATA.md): the v5 classifier's clock on the model's stateless turn VAD
+        mc = e.presets[pr or e.turn_preset].get("model_clock") if (tm is not None and e.smartturn is None) else None
+        self._mclock = mc == "turn_vad" and getattr(self.asr, "turn_vad_name", None) is not None
         return VadHeadPolicy(self._vad_head_theta(), k, fb, thr, others=others, others_p=VAD_HEAD_OTHERS_P,
                              user_p=VAD_HEAD_USER_P, gate=gate, turn_model=tm, reset_thr=rt, **st)
 
@@ -929,6 +965,12 @@ class Session:
         import time as _t
         t0 = _t.perf_counter()
         return self.asr.seg_prob(v), (_t.perf_counter() - t0) * 1000
+
+    def _seg2_model(self, v: int, onset_v: int):
+        """the preset's own v5 classifier (turn_model "head") for frame v: (P(complete), ms)."""
+        import time as _t
+        t0 = _t.perf_counter()
+        return self.asr.seg2_prob(v), (_t.perf_counter() - t0) * 1000
 
     # ---- per-frame energy (the energy gate) and the recent audio (--turn-model smartturn)
     def _energy(self, v: int) -> float:
@@ -967,7 +1009,10 @@ class Session:
 
     def _vad_head_update(self, v: int, p: float, vad: float, pu=None, po=None):
         """vad_head on frame v -> the turn-end event or None; tells the smart-turn trigger where a turn ended."""
-        ev = self.vh_pol.update(p, vad, pu, po, self._energy(v) if self.vh_pol.gate is not None else None)
+        vm = None
+        if getattr(self, "_mclock", False) and v < len(self.asr.turn_vad_p):
+            vm = float(self.asr.turn_vad_p[v])
+        ev = self.vh_pol.update(p, vad, pu, po, self._energy(v) if self.vh_pol.gate is not None else None, vm)
         if ev is not None and self.st_trig is not None:
             self.st_trig.turn_ended(self._ready_sample(v))
         if ev is not None and ev.get("path") == "model":
@@ -1212,10 +1257,14 @@ class Session:
         speaker, extra = self._attribute(self.seg_frame0, f, speaker)
         fin = {"type": "final", "t": round(t_dec, 3), "text": text, "speaker": speaker, **extra}
         out.append(fin)
-        if self.e.final_sources:
+        if self.e.dual:  # --final-chunk-ms: the fast text now as final_fast, the slow pass's final right after it
+            fin["type"] = "final_fast"
+        elif self.e.final_sources:
             fin["source"] = "stream"
         if self.la is not None:
             self._lookahead_due(f, t_dec, speaker, text)
+            if self.e.dual and not self.defer_slow:
+                self._lookahead_emit(out, flush=True)
         if self.fa:
             self._final_job(round(t_dec * SR), f, t_dec, speaker, out, text)
         self.seg_tok, self.seg_frame0 = cut, f
@@ -1257,6 +1306,8 @@ class Session:
         sp = [v for v in range(f0, min(n_frames, self._fvad0 + len(self._fvad)))
               if self._fvad[v - self._fvad0] > ACT_THRESHOLD] if self.asr.vad_name is not None else [n_frames - 1]
         need = min(n_frames, sp[-1] + 1 + LOOKAHEAD_MARGIN_FRAMES) if sp else min(n_frames, self.la.n_frames)
+        if self.e.dual and self.e.final_cut == "turn":  # --final-chunk-ms: the same frames as final_fast
+            need = n_frames
         self.la_pending.append({"t": round(t_dec, 3), "t_dec": t_dec, "speaker": speaker, "need": max(need, 0),
                                 "stream_text": stream_text, "cut_frames": n_frames})
         if not self.fa:  # (with --final-asr, _final_job keeps the segment bookkeeping)
@@ -1272,27 +1323,62 @@ class Session:
             self._notice("lookahead_dropped", f"lookahead pass dropped ({reason}); finals with source lookahead "
                                               f"now carry the streaming text")
 
-    def _lookahead_emit(self, out: list):
-        """Send the lookahead finals whose frames are decoded (FIFO), each cutting the lookahead tokens there."""
-        la = self.la
-        while self.la_pending and (la.n_frames >= self.la_pending[0]["need"] or self.finished or self.la_dropped):
+    def _lookahead_emit(self, out: list, flush: bool = False):
+        """Send the lookahead finals whose frames are decoded (FIFO), each cutting the lookahead tokens there.
+
+        ``flush`` (--final-chunk-ms at a turn_end): a final whose frames the slow pass has not decoded yet is not
+        held back for up to a whole slow chunk: a throw-away copy of the pass encodes the audio up to the decision
+        time as a partial chunk (``LookaheadStream.flush_view``) and the final is sent now. ``latency_ms`` is then
+        that compute; without a flush it is the audio-time wait for the chunk."""
+        la, src = self.la, self.e.la_source
+        flush = flush and self.e.final_flush
+        while self.la_pending and (la.n_frames >= self.la_pending[0]["need"] or self.finished or self.la_dropped
+                                   or flush):
             p = self.la_pending.popleft()
+            view, comp = la, 0.0
+            if (flush and not self.la_dropped and not self.finished and p["need"] > 0
+                    and la.ready_t(p["need"] - 1) > p["t_dec"]):
+                # the frames' chunk needs audio past the decision time (or is not decoded yet): flush
+                tf = time.perf_counter()
+                try:
+                    view = la.flush_view(round(p["t_dec"] * SR))
+                except Exception as ex:  # noqa: BLE001 - the second pass must never take the session down
+                    self._drop_lookahead(f"{type(ex).__name__}: {ex}")
+                    view = la
+                comp = (time.perf_counter() - tf) * 1000
+                self.flush_ms.append(comp)
+                if view is None:  # one block spanned more than a slow chunk: no rewind, use the decoded chunk
+                    self.flush_miss += 1
+                    view = la
             if self.la_dropped:
                 cut = max(self.la_seg, p["cut_frames"])
                 text, lat = p["stream_text"], 0.0
             else:
-                cut = min(max(p["need"], self.la_seg), la.n_frames)
-                a = la.tok_at[self.la_seg - 1] if self.la_seg > 0 else 0
-                b = la.tok_at[cut - 1] if cut > 0 else 0
+                cut = min(max(p["need"], self.la_seg), view.n_frames)
+                a = view.tok_at[self.la_seg - 1] if self.la_seg > 0 else 0
+                b = view.tok_at[cut - 1] if cut > 0 else 0
                 tok = self.e.asr.tokenizer
-                text = tok.decode(la.tokens[a:b]) if tok is not None else ""
-                ready = la.ready_t(cut - 1) if cut > 0 else 0.0
-                lat = max(0.0, min(ready, self.samples / SR) - p["t_dec"]) * 1000
-            out.append({"type": "final", "t": p["t"], "text": text, "speaker": p["speaker"], "source": "lookahead",
-                        "start": round(self.la_seg * FRAME_MS / 1000, 3), "end": round(cut * FRAME_MS / 1000, 3),
-                        "latency_ms": round(lat, 1)})
-            self.final_lat_ms["lookahead"].append(lat)
+                text = tok.decode(view.tokens[a:b]) if tok is not None else ""
+                if view is la:
+                    ready = la.ready_t(cut - 1) if cut > 0 else 0.0
+                    lat = max(0.0, min(ready, self.samples / SR) - p["t_dec"]) * 1000
+                else:
+                    lat = comp
+            msg = {"type": "final", "t": p["t"], "text": text, "speaker": p["speaker"], "source": src,
+                   "start": round(self.la_seg * FRAME_MS / 1000, 3), "end": round(cut * FRAME_MS / 1000, 3),
+                   "latency_ms": round(lat, 1)}
+            if self.e.dual:  # which pass wrote the text: slow, or fast after the slow pass was dropped
+                msg["pass"] = "fast" if self.la_dropped else "slow"
+            out.append(msg)
+            self.final_lat_ms[src].append(lat)
             self.la_seg = cut
+
+    def flush_slow(self) -> list[dict]:
+        """--final-chunk-ms with ``defer_slow``: the slow finals of the turn_ends just sent (flushed now)."""
+        out: list[dict] = []
+        if self.la is not None and self.la_pending:
+            self._lookahead_emit(out, flush=True)
+        return out
 
     def take_final_jobs(self) -> list[dict]:
         """--final-asr: the queued offline jobs ({"msg": the final to complete, "audio"}), oldest first."""
@@ -1581,8 +1667,8 @@ class Session:
             self._notice("segment_cap", f"segment open for {MAX_SEGMENT_S:.0f} s without a turn_end: cut with a final")
             out += self.take_notices()
             self._emit_final(self.asr.n_frames * FRAME_MS / 1000, self.asr.n_frames, self.timeout.primary, out)
-        if self.la is not None and not final:
-            self._lookahead_emit(out)
+        if self.la is not None and not final and not (self.e.dual and self.e.final_flush):
+            self._lookahead_emit(out)  # (dual rate with the flush: every slow final is sent at its turn_end)
         text = self._seg_text()
         if text != self.last_partial and lvl < 2:
             self.last_partial = text
@@ -1628,8 +1714,9 @@ class Session:
         bt = self.asr.beam_cut(self.asr.n_frames) if self.asr.beam_k else None
         if bt is not None and self.e.asr.tokenizer is not None:
             text = self.e.asr.tokenizer.decode(bt)
-        out.append({"type": "final", "t": self.t, "text": text, "speaker": spk, **extra})
-        if self.e.final_sources:
+        out.append({"type": "final_fast" if self.e.dual else "final", "t": self.t, "text": text, "speaker": spk,
+                    **extra})
+        if self.e.final_sources and not self.e.dual:
             out[-1]["source"] = "stream"
         if self.la is not None:
             self._lookahead_due(self.asr.n_frames, self.t, spk, out[-1]["text"])
@@ -1678,6 +1765,9 @@ class Session:
                      final_asr_rss_mb=getattr(self.e.final_asr, "rss_mb", None))
             if self.e.debug and self.la is not None:
                 m["lookahead_ms_mean"] = round(self.la.ms / max(1, len(self.chunk_ms)), 3)
+            if self.e.debug and self.e.dual:
+                m.update(final_flush_n=len(self.flush_ms), final_flush_miss=self.flush_miss,
+                         final_flush_ms_p50=_pct(self.flush_ms, 50), final_flush_ms_p95=_pct(self.flush_ms, 95))
         if self.asr.lid is not None:
             m["lang"] = self.asr.lid.current
             if self.e.debug:
@@ -1932,6 +2022,7 @@ async def handle(ws, engine: Engine, log=_log):
             while conn.n_in >= FRAME_SAMPLES // 4 or (conn.end and conn.n_in):
                 if session is None:
                     session = Session(engine, cfg)
+                session.defer_slow = True  # --final-chunk-ms: turn_end + final_fast go out before the flush
                 conn.session = session
                 backlog = conn.n_in / SR * 1000
                 shed = engine.global_shed()
@@ -1942,6 +2033,8 @@ async def handle(ws, engine: Engine, log=_log):
                 subs = submit_finals()
                 await send(msgs)
                 schedule(subs)
+                if session.la_pending and engine.dual:  # the slow finals of the turn_ends just sent
+                    await send(await run(session.flush_slow))
                 if conn.closed:
                     break
                 if session.samples >= max_session:

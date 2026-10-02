@@ -260,9 +260,11 @@ class VadHeadPolicy:
         self._asked = -1  # turn_model: the speech frame whose silence run was already classified
 
     def update(self, p: float, vad: float, p_user: float | None = None, p_other: float | None = None,
-               energy_db: float | None = None) -> dict | None:
+               energy_db: float | None = None, vad_m: float | None = None) -> dict | None:
         """The turn head's p, the served VAD, (enrolled TS-VAD track) P(user), P(other) and (with a gate) the
-        frame's log energy on the next frame -> None, or the turn-end event."""
+        frame's log energy on the next frame -> None, or the turn-end event. ``vad_m`` (research/TURN_DATA.md): a
+        second, stateless VAD for the classifier's clock only (``turn_model``); arming, the gate, the fallback and the
+        head path keep reading ``vad``. None = the classifier's clock reads ``vad`` too (the default)."""
         v, self.v = self.v, self.v + 1
         gated = self.gate is not None and energy_db is not None
         quiet = False
@@ -274,11 +276,13 @@ class VadHeadPolicy:
             speech = arm = vad >= self.vad_thr
         if speech:
             self.last = v
-        if vad >= self.model_vad_thr and not quiet:
+        vm = vad if vad_m is None else vad_m
+        if vm >= self.model_vad_thr and not quiet:
             self.last_m = v
-        if self.reset_thr is not None and vad >= self.reset_thr and not (quiet and not self.model_quiet_only):
-            self.last = v
-            if not quiet:
+        if self.reset_thr is not None and not (quiet and not self.model_quiet_only):
+            if vad >= self.reset_thr:
+                self.last = v
+            if vm >= self.reset_thr and not quiet:
                 self.last_m = v
         if arm:
             if not self.armed:

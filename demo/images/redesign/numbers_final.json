@@ -1304,16 +1304,16 @@
   "path": "turn > ours_0p6b > balanced > asst > accuracy_pct"
  },
  "final/asst/p50/ours_0p6b_balanced": {
-  "value": 634.0,
-  "shown": "634",
+  "value": 639.0,
+  "shown": "639",
   "dec": 0,
   "scope": "audioforge 0p6b --turn-preset balanced, assistant clips",
   "source": "runs/final_compare.json",
   "path": "turn > ours_0p6b > balanced > asst > p50"
  },
  "final/asst/p95/ours_0p6b_balanced": {
-  "value": 794.0,
-  "shown": "794",
+  "value": 799.0,
+  "shown": "799",
   "dec": 0,
   "scope": "audioforge 0p6b --turn-preset balanced, assistant clips",
   "source": "runs/final_compare.json",
@@ -1368,16 +1368,16 @@
   "path": "no_public_test_split"
  },
  "final/ami/p50/ours_0p6b_balanced": {
-  "value": 1497.0,
-  "shown": "1497",
+  "value": 1498.0,
+  "shown": "1498",
   "dec": 0,
   "scope": "audioforge 0p6b --turn-preset balanced, ami",
   "source": "runs/final_compare.json",
   "path": "turn > ours_0p6b > balanced > ami > eot_total_ms_p50"
  },
  "final/ami/p95/ours_0p6b_balanced": {
-  "value": 4074.0,
-  "shown": "4074",
+  "value": 4075.0,
+  "shown": "4075",
   "dec": 0,
   "scope": "audioforge 0p6b --turn-preset balanced, ami",
   "source": "runs/final_compare.json",
@@ -1408,16 +1408,16 @@
   "path": "turn > ours_0p6b > fast > asst > accuracy_pct"
  },
  "final/asst/p50/ours_0p6b_fast": {
-  "value": 409.0,
-  "shown": "409",
+  "value": 414.0,
+  "shown": "414",
   "dec": 0,
   "scope": "audioforge 0p6b --turn-preset fast, assistant clips",
   "source": "runs/final_compare.json",
   "path": "turn > ours_0p6b > fast > asst > p50"
  },
  "final/asst/p95/ours_0p6b_fast": {
-  "value": 602.0,
-  "shown": "602",
+  "value": 607.0,
+  "shown": "607",
   "dec": 0,
   "scope": "audioforge 0p6b --turn-preset fast, assistant clips",
   "source": "runs/final_compare.json",
@@ -1472,8 +1472,8 @@
   "path": "no_public_test_split"
  },
  "final/ami/p50/ours_0p6b_fast": {
-  "value": 1337.0,
-  "shown": "1337",
+  "value": 1338.0,
+  "shown": "1338",
   "dec": 0,
   "scope": "audioforge 0p6b --turn-preset fast, ami",
   "source": "runs/final_compare.json",
@@ -1504,40 +1504,40 @@
   "path": "turn > ours_0p6b > fast > ami > missed_pct"
  },
  "final/asst/acc/ours_0p6b": {
-  "value": 93.0,
-  "shown": "93.0",
+  "value": 96.5,
+  "shown": "96.5",
   "dec": 1,
   "scope": "audioforge 0p6b --turn-preset assistant, assistant clips",
   "source": "runs/final_compare.json",
   "path": "turn > ours_0p6b > assistant > asst > accuracy_pct"
  },
  "final/asst/p50/ours_0p6b": {
-  "value": 379.0,
-  "shown": "379",
+  "value": 351.0,
+  "shown": "351",
   "dec": 0,
   "scope": "audioforge 0p6b --turn-preset assistant, assistant clips",
   "source": "runs/final_compare.json",
   "path": "turn > ours_0p6b > assistant > asst > p50"
  },
  "final/asst/p95/ours_0p6b": {
-  "value": 702.0,
-  "shown": "702",
+  "value": 763.0,
+  "shown": "763",
   "dec": 0,
   "scope": "audioforge 0p6b --turn-preset assistant, assistant clips",
   "source": "runs/final_compare.json",
   "path": "turn > ours_0p6b > assistant > asst > p95"
  },
  "final/asst/ff/ours_0p6b": {
-  "value": 4.5,
-  "shown": "4.5",
+  "value": 3.1,
+  "shown": "3.1",
   "dec": 1,
   "scope": "audioforge 0p6b --turn-preset assistant, assistant clips",
   "source": "runs/final_compare.json",
   "path": "turn > ours_0p6b > assistant > asst > false_fire_pct"
  },
  "final/asst/missed/ours_0p6b": {
-  "value": 9.7,
-  "shown": "9.7",
+  "value": 4.0,
+  "shown": "4.0",
   "dec": 1,
   "scope": "audioforge 0p6b --turn-preset assistant, assistant clips",
   "source": "runs/final_compare.json",
@@ -1576,32 +1576,32 @@
   "path": "no_public_test_split"
  },
  "final/ami/p50/ours_0p6b_assistant": {
-  "value": 1619.0,
-  "shown": "1619",
+  "value": 1497.0,
+  "shown": "1497",
   "dec": 0,
   "scope": "audioforge 0p6b --turn-preset assistant, ami",
   "source": "runs/final_compare.json",
   "path": "turn > ours_0p6b > assistant > ami > eot_total_ms_p50"
  },
  "final/ami/p95/ours_0p6b_assistant": {
-  "value": 4943.0,
-  "shown": "4943",
+  "value": 4379.0,
+  "shown": "4379",
   "dec": 0,
   "scope": "audioforge 0p6b --turn-preset assistant, ami",
   "source": "runs/final_compare.json",
   "path": "turn > ours_0p6b > assistant > ami > eot_total_ms_p95"
  },
  "final/ami/fi/ours_0p6b_assistant": {
-  "value": 4.0,
-  "shown": "4.0",
+  "value": 22.5,
+  "shown": "22.5",
   "dec": 1,
   "scope": "audioforge 0p6b --turn-preset assistant, ami",
   "source": "runs/final_compare.json",
   "path": "turn > ours_0p6b > assistant > ami > false_interruption_pct"
  },
  "final/ami/missed/ours_0p6b_assistant": {
-  "value": 53.0,
-  "shown": "53.0",
+  "value": 34.5,
+  "shown": "34.5",
   "dec": 1,
   "scope": "audioforge 0p6b --turn-preset assistant, ami",
   "source": "runs/final_compare.json",

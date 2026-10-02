@@ -117,7 +117,7 @@ FLAGS: tuple[Flag, ...] = (
          {"choices": ["115m", "0.6b"], "default": None}, launcher=True, doc_default="`115m`",
          doc="which streaming core the launcher loads from the models directory: `115m` (NVIDIA FastConformer 114M + "
          "our heads, real time on 2 CPU threads) or `0.6b` (NVIDIA nemotron-speech-streaming-en-0.6b, NVIDIA Open Model "
-         "License, with every head retrained on it: `served_0p6b_v0.3.afm`, `tsvad_0p6b.pt`, `lid_0p6b_v2.pt`; about half the "
+         "License, with every head retrained on it: `served_0p6b_v0.4.afm`, `tsvad_0p6b.pt`, `lid_0p6b_v2.pt`; about half the "
          "meeting WER, but ~96 ms of CPU per 160 ms chunk on 2 threads: one real-time stream per process against the 115M's 4, "
          "3 on an Apple GPU with `--device mps`, 5 GB RSS). Voice prints "
          "belong to one core: re-enroll after switching. Install with `audioforge-download --core 0.6b`; "
@@ -266,6 +266,18 @@ FLAGS: tuple[Flag, ...] = (
          advanced=True, section=S8),
     Flag(("--asr-lookahead",), "transcripts", "second, text-only ASR pass at attention context [70, R], e.g. 13",
          {"type": int, "metavar": "R"}, advanced=True, doc_default="off", section=S8),
+    Flag(("--final-chunk-ms",), "transcripts", "dual rate: the final transcript from a second pass at this chunk",
+         {"type": int, "choices": [160, 560, 1120], "metavar": "MS"},
+         doc="dual rate (research/DUAL_RATE.md): the heads, partials and turn decisions keep the 160 ms pass; a "
+         "second, text-only pass of the same frozen encoder at 560 ms ([70,6]) or 1120 ms ([70,13]) chunks writes "
+         "the `final` text (`source: slow`). The 160 ms text is sent at once at the turn end as `final_fast`, so a "
+         "client can answer from it and replace it. 160 = single rate", doc_default="160 (single rate)",
+         section=S8),
+    Flag(("--final-flush",), "transcripts", "--final-chunk-ms: encode the partial slow chunk at the turn end",
+         {"choices": ["on", "off"], "default": "on"}, advanced=True,
+         doc="--final-chunk-ms: at a turn end, encode the audio since the last slow chunk as a partial chunk so the "
+         "slow `final` is sent at once (`on`); `off` waits for the whole slow chunk (up to 1.12 s of audio)",
+         section=S8),
     Flag(("--asr-chunk-ms",), "transcripts", "streaming chunk of the ASR pass: 160 ([70,1]) or 80 ([70,0], no lookahead)",
          {"type": int, "choices": [80, 160], "metavar": "MS"}, advanced=True,
          doc="streaming chunk of the one ASR pass (transcript, VAD, turn and TS-VAD heads): 160 = attention context "
@@ -515,6 +527,7 @@ def load_engine(a):
                        final_asr=a.final_asr,
                        final_asr_worker=a.final_asr_worker, final_asr_threads=a.final_asr_threads,
                        final_asr_device=a.final_asr_device, asr_lookahead=a.asr_lookahead, asr_chunk_ms=a.asr_chunk_ms,
+                       final_chunk_ms=a.final_chunk_ms, final_flush=a.final_flush == "on",
                        asr_vad_gate=a.asr_vad_gate, asr_vad_hangover_ms=a.asr_vad_hangover_ms, asr_beam=a.beam,
                        max_session_s=a.max_session_s, idle_timeout_s=a.idle_timeout_s, log_json=a.log_json,
                        perf=a.perf, tsvad=a.tsvad, tsvad_print_s=a.tsvad_print_s,

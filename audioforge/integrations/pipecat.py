@@ -165,6 +165,7 @@ class AudioforgeHub:
     def __init__(self, policy: str | None = None):
         self.policy = policy
         self.final_source = "stream"  # set by AudioforgeSTTService(final_source=...)
+        self.final_text = "fast"  # set by AudioforgeSTTService(final_text=...)
         self._turn_listeners: list[Callable[[TurnEnd], None]] = []
         self._hint_listeners: list[Callable[[TurnHint], None]] = []
         self._frame_listeners: list[Callable[[float, float], None]] = []
@@ -268,7 +269,7 @@ class AudioforgeSTTService(WebsocketSTTService):
     def __init__(self, *, url: str = "ws://127.0.0.1:8765", hub: AudioforgeHub | None = None,
                  turn_policy: str | None = None, timeout_ms: int = 1000, eot_threshold: float | None = None,
                  end_timeout: float = 5.0, enroll: str | None = None, final_source: str = "stream",
-                 turn_hints: bool = False, **kwargs):
+                 turn_hints: bool = False, final_text: str = "fast", **kwargs):
         """
         Args:
             url: the audioforge server (``python -m audioforge.serve``).
@@ -285,6 +286,10 @@ class AudioforgeSTTService(WebsocketSTTService):
                 model's finals instead, and the turn analyzer reports COMPLETE only once the turn's offline final
                 (same t) has arrived, so the LLM sees the offline transcript. Finals without "source" (server without
                 the flag) are always pushed.
+            final_text: with a server running --final-chunk-ms (dual rate, research/DUAL_RATE.md): "fast" (default)
+                pushes the 160 ms pass's ``final_fast`` (sent at the turn end: no added reply latency) and ignores the
+                slow finals; "slow" pushes the slow pass's finals (source "slow") instead and holds COMPLETE until the
+                turn's slow final has arrived (normally in the same message batch as the turn end).
             turn_hints: push the server's turn_end_hint as an ``EagerTranscriptionFrame`` and its cancel as an
                 ``EagerEndOfTurnCancelFrame`` (Pipecat eager end of turn; pair with
                 ``AudioforgeEagerTurnStopStrategy``). Off by default: every hint then costs an LLM call, including
@@ -301,7 +306,12 @@ class AudioforgeSTTService(WebsocketSTTService):
         self.hub = hub or AudioforgeHub()
         if final_source not in ("stream", "offline"):
             raise ValueError("final_source must be stream|offline")
+        if final_text not in ("fast", "slow"):
+            raise ValueError("final_text must be fast|slow")
+        if final_text == "slow" and final_source == "offline":
+            raise ValueError("final_text='slow' and final_source='offline' each pick a second final: use one")
         self.hub.final_source = final_source
+        self.hub.final_text = final_text
         self._turn_policy = turn_policy
         self._timeout_ms = int(timeout_ms)
         self._eot_threshold = None if eot_threshold is None else float(eot_threshold)
@@ -495,12 +505,15 @@ class AudioforgeSTTService(WebsocketSTTService):
             if self._eager_pending:
                 self._eager_pending = False
                 await self.push_frame(EagerEndOfTurnCancelFrame())
-        elif typ == "final":
+        elif typ in ("final", "final_fast"):
             self.hub.finals.append(msg)
-            src = msg.get("source")
-            if src not in (None, "stream"):
+            src = "stream" if typ == "final_fast" else msg.get("source")  # --final-chunk-ms: final_fast = streaming
+            if self.hub.final_text == "slow" or src == "slow":
+                use = src is None or (src == "slow" and self.hub.final_text == "slow")
+            else:
+                use = src is None or (src == "stream") == (self.hub.final_source == "stream")
+            if src not in (None, "stream") and (src == "slow") == (self.hub.final_text == "slow"):
                 self.hub.offline_final_t.add(float(msg["t"]))
-            use = src is None or (src == "stream") == (self.hub.final_source == "stream")
             text = (msg.get("text") or "").strip()
             if text and use:
                 f = TranscriptionFrame(text=text, user_id=self._user_id, timestamp=time_now_iso8601(), result=msg,
@@ -620,7 +633,7 @@ class AudioforgeTurnAnalyzer(BaseTurnAnalyzer):
     def _final_ready(self) -> bool:
         """final_source "offline" with a --final-asr server: the pending turn's offline final has arrived."""
         h = self._hub
-        if h.final_source == "stream" or not (h.ready or {}).get("final_asr"):
+        if (h.final_source == "stream" and h.final_text == "fast") or not (h.ready or {}).get("final_asr"):
             return True
         return self._pending is not None and any(abs(t - self._pending.t) < 1e-6 for t in h.offline_final_t)
 

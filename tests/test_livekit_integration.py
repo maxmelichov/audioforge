@@ -744,3 +744,27 @@ def test_agent_session_preemptive_generation_on_the_hint(turn_hints):
     assert any(e["kind"] == "agent_reply" for e in res["events"])
     used = [m for m in msgs if "using preemptive generation" in m]
     assert bool(used) == turn_hints, [m for m in msgs if "preemptive" in m]
+
+
+def test_speech_mapper_final_text_with_dual_rate_server():
+    """Server --final-chunk-ms (research/DUAL_RATE.md): final_text="fast" (default) emits FINAL_TRANSCRIPT +
+    END_OF_SPEECH on final_fast and ignores the slow final; "slow" holds the turn until the slow final (same t)."""
+    te = {"type": "turn_end", "t": 2.0, "policy": "timeout", "p": None, "silence_ms": 1040}
+    ff = {"type": "final_fast", "t": 2.0, "text": "hello their", "speaker": 1}
+    fsl = {"type": "final", "t": 2.0, "text": "hello there", "speaker": 1, "source": "slow", "pass": "slow",
+           "start": 0.0, "end": 1.92, "latency_ms": 4.0}
+    for ft, want in (("fast", "hello their"), ("slow", "hello there")):
+        m = _SpeechMapper(AudioforgeOptions(final_text=ft))
+        m.on_message({"type": "partial", "t": 0.4, "text": "hello"}, _wall)
+        assert m.on_message(te, _wall) == []
+        ev1 = m.on_message(ff, _wall)
+        ev2 = m.on_message(fsl, _wall)
+        evs = ev1 + ev2
+        assert [e.type for e in evs] == [SE.FINAL_TRANSCRIPT, SE.END_OF_SPEECH]
+        assert evs[0].alternatives[0].text == want
+        assert (ev1 == []) == (ft == "slow")
+        assert evs[0].alternatives[0].metadata["audioforge"]["turn_end"]["silence_ms"] == 1040
+    with pytest.raises(ValueError):
+        AudioforgeOptions(final_text="bogus")
+    with pytest.raises(ValueError):
+        AudioforgeOptions(final_text="slow", final_source="offline")

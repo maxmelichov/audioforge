@@ -781,6 +781,8 @@ def stage_eotdump(a):
         if s.asr.seg is None and eng.seg_name is not None:
             sh = eng.asr.heads[eng.seg_name]
             s.asr.attach_seg(sh, next(sh.parameters()).device)
+        if "turn_seg_a" in s.asr.m.heads and s.asr.seg2 is None:  # research/TURN_DATA.md: the second classifier
+            s.asr.attach_seg2("turn_seg_a", next(s.asr.m.heads["turn_seg_a"].parameters()).device)
         rec = []
         C._record(s, rec, enrolled_only=a.which == "asst")
         msgs = []
@@ -789,7 +791,7 @@ def stage_eotdump(a):
         msgs += s.finish()
         cm = np.asarray(list(s.chunk_ms), float)
         dd = {"key": k, "audio_s": round(len(x) / SR, 3),
-              "head": {kk: [r[j] for r in rec] for j, kk in enumerate(("v", "t", "p", "vad", "pu", "po", "p5"))},
+              "head": {kk: [r[j] for r in rec] for j, kk in enumerate(("v", "t", "p", "vad", "pu", "po", "p5", "vad_m", "p5b"))},
               "tok_at": [int(q) for q in s.asr.tok_at],
               "chunk_ms": {"p50": round(float(np.median(cm)), 2), "p95": round(float(np.percentile(cm, 95)), 2),
                            "mean": round(float(cm.mean()), 2), "n": int(len(cm))}, "device": a.device,

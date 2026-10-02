@@ -2,7 +2,8 @@
 
 **Status: test-split pass.** Both cores are the shipped builds:
 - the 115M with served heads v0.4: v0.3 + the `speech` detector head, and LID head v2;
-- the English 0.6B (nemotron-speech-streaming-en-0.6b) with heads v0.3: v0.2 + `speech`, and LID head v2.
+- the English 0.6B (nemotron-speech-streaming-en-0.6b) with heads v0.4: v0.3 (v0.2 + `speech`) + the `assistant`
+  preset's own turn classifier and turn VAD (research/TURN_DATA.md), and LID head v2.
 
 Every headline number below is on a standard public **test** split, with every baseline re-run on exactly the same
 audio. Where no labelled public test split exists, the row is labelled and kept out of the headline tables.
@@ -29,7 +30,7 @@ All numbers are in `runs/final_compare.json` (script `scripts/research/final_com
   - pyannote's segmentation model is better on AMI (0.975), but it reads 10 s ahead, so it cannot run live. It is the
     worst on ICSI.
 - **Turn taking.** On speech aimed at an assistant (smart-turn v3.2 test), our `assistant` preset is right on 93 % of
-  clips with either core. It answers in 0.30 s (115M) or 0.38 s (0.6B). Pipecat's smart-turn stack is right on 70 %,
+  clips with the 115M and 97 % with the 0.6B. It answers in 0.30 s (115M) or 0.35 s (0.6B). Pipecat's smart-turn stack is right on 70 %,
   LiveKit's on 73 % and NVIDIA's Parakeet-EOU on 48 %.
   - On AMI test meetings our default `balanced` preset interrupts on 16 % (115M) / 10 % (0.6B) of turns and misses
     36 / 34 %.
@@ -54,7 +55,7 @@ research/FIXALL.md ("first pass, dev splits").
 |---|---|---|---|---|
 | words: the frozen NVIDIA encoders + RNNT (115M, 0.6B); not trained by us | NVIDIA's own data (not disclosed per split; may include AMI / ICSI train and LibriSpeech train) | – (greedy); `--beam 8` picked on held-out AMI / ICSI **train** meetings TS3011b, ES2015c, Bro026, Bmr022 | LibriSpeech test-clean / test-other (300 random utterances each), AMI **test** meetings (IS1009b, ES2004b, TS3003b, EN2002a; 200 segments), ICSI **test** meetings (Bmr013, Bmr018, Bro021; 200 segments), 32 live sessions | yes (for every system; NVIDIA's training data is unknown, the same caveat applies to Parakeet-TDT) |
 | speech detector `speech` (115M v0.4, 0.6B v0.3) | AMI train (1200 windows), ICSI train (10 meetings), oto train conversations (clean + quiet variants), room tone | AMI TS3011b / ES2015c, ICSI Bro026 / Bmr022, oto held-out conversations, held-out room tone | AMI **test** meetings, ICSI **test** meetings (64 × 20 s each) | yes |
-| turn heads (VAD `vad`, per-frame turn head, v5 classifier `turn_seg`) | turn_v4 / v5 mixes: oto, AMI / ICSI train, smart-turn v3.2 **train**, cuts | turn_v4 / v5 held-out split (oto conversations, AMI ES2015c, smart-turn train clips held out) | smart-turn v3.2 **test** (399 clips); AMI **test** meetings (200 turns, see Turn taking); calls = TurnBench dev + oto conversations (no labelled public test split: TurnBench's test labels are withheld) | assistant: yes. AMI: yes. Calls: **not a test split**, and the 115M's `fast` / `assistant` constants were tuned on these calls and on the assistant clips (TURN_V5.md); the 0.6B's were picked on held-out data |
+| turn heads (VAD `vad`, per-frame turn head, v5 classifier `turn_seg`; 0.6B v0.4 also `turn_vad` / `turn_seg_a`) | turn_v4 / v5 mixes: oto, AMI / ICSI train, smart-turn v3.2 **train**, cuts; v0.4's two heads also AMI individual-headset **train** meetings and otoSpeech-280h train sessions (research/TURN_DATA.md) | turn_v4 / v5 held-out split (oto conversations, AMI ES2015c, smart-turn train clips held out) | smart-turn v3.2 **test** (399 clips); AMI **test** meetings (200 turns, see Turn taking); calls = TurnBench dev + oto conversations (no labelled public test split: TurnBench's test labels are withheld) | assistant: yes. AMI: yes. Calls: **not a test split**, and the 115M's `fast` / `assistant` constants were tuned on these calls and on the assistant clips (TURN_V5.md); the 0.6B's were picked on held-out data |
 | speaker head `spk` | LibriSpeech train-clean-100 (251 speakers), AMI train, ICSI train | first pass: AMI / ICSI **dev** segments (spk_frame `ami_n200`) | within-meeting EER on AMI / ICSI **test** meetings (200 segments each) | yes (now); the dev numbers of the first pass were also the selection set, so they are dropped |
 | TS-VAD (`tsvad_spk.pt`, `tsvad_0p6b.pt`) | AMI / ICSI train windows | AMI / ICSI held-out train meetings (layer sweeps) | eot-bench v2 windows of the AMI **test** meetings (941) and the ICSI **test** meetings (847) | yes (now); the first pass used AMI dev, the speaker-tracking development set |
 | LID head (`lid_distill.pt`, `lid_0p6b.pt`) | FLEURS train (+ trainx), extra English | FLEURS **dev** (step choice) | FLEURS **test** (2550 clips) | yes |
@@ -150,9 +151,9 @@ How the rows are scored:
 | **audioforge 115M `assistant`** | **92.7 %** [90.2, 95.0] | 299 / 710 | **5.4 %** | 5.1 % | 1327 | 23.5 % | 40.0 % |
 | audioforge 115M `balanced` (default) | 43.9 % | 1226 / 1587 | 100 % | 0.0 % | 1527 [1327, 1806] | 15.5 % [10.5, 20.5] | 36.0 % [30.0, 42.0] |
 | audioforge 115M `fast` | 41.6 % | 461 / 698 | 100 % | 4.0 % | 1246 | 20.5 % | 37.5 % |
-| **audioforge 0.6B `assistant`** | **93.0 %** [90.5, 95.5] | 379 / 702 | **4.5 %** | 9.7 % | 1619 | 4.0 % | 53.0 % |
-| audioforge 0.6B `balanced` (default) | 42.6 % | 634 / 794 | 100 % | 2.9 % | 1497 [1418, 1657] | 10.0 % [6.0, 14.5] | 33.5 % [27.0, 40.0] |
-| audioforge 0.6B `fast` | 40.1 % | 409 / 602 | 100 % | 8.0 % | 1337 | 16.0 % | **27.5 %** |
+| **audioforge 0.6B `assistant`** | **96.5 %** [94.5, 98.2] | 351 / 763 | **3.1 %** | 4.0 % | 1497 | 22.5 % | 34.5 % |
+| audioforge 0.6B `balanced` (default) | 42.6 % | 639 / 799 | 100 % | 2.9 % | 1498 [1418, 1657] | 10.0 % [6.0, 14.5] | 33.5 % [27.0, 40.0] |
+| audioforge 0.6B `fast` | 40.1 % | 414 / 607 | 100 % | 8.0 % | 1338 | 16.0 % | **27.5 %** |
 | Pipecat smart-turn v3.2 + Silero (defaults) | 69.7 % [65.2, 74.2] | **211** / 242 | 40.2 % | 13.1 % | 752 [496, 1296] | 39.5 % [33.0, 47.0] | 53.0 % [45.5, 60.0] |
 | LiveKit Agents 1.8 EnglishModel + Silero | 72.7 % [67.9, 76.9] | 547 / 3016 | 44.6 % | 4.6 % | **745** [641, 1330] | 13.0 % [8.5, 18.0] | 72.0 % [66.0, 78.0] |
 | NVIDIA Parakeet-Realtime-EOU 120M | 48.4 % [43.6, 53.1] | 462 / 1210 | 91.5 % | 0.6 % | 1251 | **4.5 %** | 86.0 % |
@@ -171,7 +172,10 @@ On AMI test meetings no system has both few interruptions and few misses:
 Caveat for the 115M's `fast` and `assistant` rows: their constants were tuned in an earlier round on the assistant
 clips and the call sessions (research/TURN_V5.md). With constants picked on held-out data only, the 115M's assistant
 row would read 95.0 % / 354 ms / 3.1 % (research/FIXALL.md step 2). The 0.6B's constants were picked on held-out
-data.
+data. The 0.6B's heads v0.4 change only `assistant` (its own classifier, trained with real two-party channels, asked
+at 160 ms of quiet): before (v0.3) 93.0 % [90.5, 95.5] / 379 ms / 4.5 %, AMI test 1619 / 4.0 % / 53.0 %. It now
+interrupts more on meetings; `balanced` / `fast` make the same decisions as v0.3 (their totals differ by the measured
+chunk compute only). research/TURN_DATA.md.
 
 **Two-party calls: no labelled public test split.** TurnBench publishes only its dev split with labels; its test
 split's labels are withheld for the submission site. The call rows therefore use the 16 TurnBench **dev** clips plus
@@ -182,8 +186,8 @@ constants were tuned on them. They are kept out of the headline table above:
 |---|---|---|---|
 | audioforge 115M `balanced` | 955 / 1918 | 20.2 % [13.1, 29.2] | 7.3 % [3.5, 12.0] |
 | audioforge 115M `fast` | 547 / 1861 | 24.8 % | 5.5 % |
-| audioforge 0.6B `balanced` | 730 / 2036 | 19.3 % [12.1, 26.4] | 10.1 % [4.9, 16.0] |
-| audioforge 0.6B `fast` | 494 / 1977 | 26.6 % | 11.0 % |
+| audioforge 0.6B `balanced` | 729 / 2034 | 19.3 % [12.1, 26.4] | 10.1 % [4.9, 16.0] |
+| audioforge 0.6B `fast` | 492 / 1974 | 26.6 % | 11.0 % |
 | Pipecat smart-turn v3.2 + Silero | 237 / 3217 | 35.8 % [25.7, 46.6] | 24.8 % [16.1, 33.6] |
 | LiveKit Agents 1.8 + Silero | 567 / 3127 | 26.6 % [20.2, 34.0] | 22.9 % [15.1, 30.2] |
 | NVIDIA Parakeet-Realtime-EOU | 1277 / 5362 | 7.3 % | 30.3 % |
@@ -261,7 +265,7 @@ Streams = interleaved sessions on 40 s AMI windows, real time while p95 of the s
 | audioforge 0.6B (heads v0.3) | 42.9 / 49.0 | 97.1 / 105.1 | 3 | 1 | 4.9 GB (+3.3 GB MPS) |
 
 The previous heads cost 28.2 / 30.3 ms (115M, MPS / CPU) and 43.0 / 98.7 ms (0.6B) in the same back-to-back runs
-(research/FIXALL.md latency gate). The LID head v2 adds nothing measurable (±0.2 ms).
+(research/FIXALL.md latency gate). The LID head v2 adds nothing measurable (±0.2 ms). The 0.6B's heads v0.4 add +0.4 ms (MPS) and +0.2-0.6 ms (CPU) per chunk in back-to-back runs against v0.3, with the same 3 real-time MPS streams (research/TURN_DATA.md); the row above is v0.3's.
 
 **Model sizes** (parameters counted from the weight files):
 
@@ -315,9 +319,11 @@ too. The full list (182 image numbers) is the diff of `numbers_final.json`. The 
   - Speech detection: the served `speech` head (the client's frame probability).
   - Turn: the served `--mode single` engine on MPS. Each session is dumped once, and each preset is applied with the
     served policy twin (`core_0p6b_turn.served_rules` / `ev_score`). The twin reproduces the served turn_ends.
-- **audioforge 0.6B**: `served_0p6b_v0.3.afm` (`assets/served_heads_0p6b_v0.3.pt`: v0.2 + the `speech` head) +
+- **audioforge 0.6B**: `served_0p6b_v0.4.afm` (`assets/served_heads_0p6b_v0.4.pt`: v0.3 + `turn_vad` / `turn_seg_a` for
+  the `assistant` preset; v0.3 = v0.2 + the `speech` head) +
   `assets/lid_0p6b_v2.pt` on nvidia/nemotron-speech-streaming-en-0.6b, NVIDIA Open Model License. Same harnesses as
-  the 115M. The turn rows of both cores read `heads.vad`, unchanged from v0.3 / v0.2 (identical turn ends, research/FIXALL.md).
+  the 115M. The turn rows of both cores read `heads.vad`, unchanged from v0.3 / v0.2 (identical turn ends, research/FIXALL.md);
+  the 0.6B's `assistant` preset reads its own classifier (heads v0.4, research/TURN_DATA.md; served == offline 32 / 32).
 - **Whisper small**: faster-whisper 1.2.1 int8, CPU 2 threads, beam 1, English. MIT.
 - **Whisper large-v3 / large-v3-turbo**: transformers 5.17, fp16 on MPS, greedy, English. Clips over 30 s use
   sequential long-form decoding. MIT. For LID, the language-token posterior after `<|startoftranscript|>`.
