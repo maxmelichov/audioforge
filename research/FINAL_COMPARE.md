@@ -103,6 +103,62 @@ live transcript. It was measured through the served engine on MPS, on 12 two-min
 
 The baselines are offline and have no streaming latency.
 
+### Final transcript ready after you stop
+
+The time from the moment the user stops talking to the turn's final transcript being ready, for every system. Lower
+is better. ms, [95 % CI].
+
+| system | device | p50 ms | p95 ms | p50, turns < 2 s (9) | p50, 2-5 s (17) | p50, > 5 s (30) |
+|---|---|---|---|---|---|---|
+| **audioforge 115M**, `--final-chunk-ms 1120` | MPS | **25** [22, 28] | **48** [36, 66] | 26 | 27 | 24 |
+| audioforge 0.6B, `--final-chunk-ms 1120` | MPS | 49 [46, 51] | 71 [59, 77] | 50 | 49 | 48 |
+| NVIDIA Parakeet-TDT 0.6B v3 (offline) | CPU, 2 threads | 341 [305, 375] | 617 [493, 885] | 257 | 300 | 411 |
+| Whisper large-v3-turbo | MPS, fp16 | 282 [265, 305] | 498 [396, 1314] | 243 | 263 | 333 |
+| Whisper large-v3 | MPS, fp16 | 576 [494, 711] | 1631 [1097, 4762] | 382 | 455 | 825 |
+| Whisper small (LiveKit default STT) | CPU, int8, 2 threads | 1424 [1377, 1468] | 2308 [1704, 3584] | 1306 | 1358 | 1526 |
+
+- **Audio and turns.** The user channel of the 16 TurnBench clips of the live set. This is the "user" half of the 32
+  live sessions (the other half is the mono mix of the same calls). There are 56 labelled user turns (clips.json
+  `user_turns`): 1.1-39.7 s long, p50 5.4 s, p95 21.6 s. As for the live words rows, these sessions are a public test
+  set. They are not used for any training or selection of the words path.
+- **Clock start.** The clock starts at the labelled end of each user turn. No end-of-turn detector is part of this
+  number: every system is told that the turn has ended at the same moment. End-of-turn timing is in "Turn taking".
+- **Offline systems (Parakeet-TDT, Whisper).** At the turn end the system gets the whole turn's audio, as an
+  end-of-utterance STT does in Pipecat / LiveKit. The clock runs until the text comes back. The settings are the
+  ones in the words table, batch 1. Turns > 30 s use Whisper's sequential long-form decoding.
+- **audioforge.** The served single-mode engine with `--final-chunk-ms 1120` runs over the whole session in 20 ms
+  blocks. The block that holds a turn end is cut at the end sample. The clock covers three steps:
+  1. processing that last piece of audio;
+  2. the slow pass's flush, a partial chunk up to the turn end (`LookaheadStream.flush_view`, the same code the
+     engine runs at its own `turn_end`);
+  3. decoding the turn's tokens.
+
+  The flush alone takes 21 / 39 ms p50 / p95 (115M) and 45 / 60 ms (0.6B).
+- **Setup.** Every model is warmed up first: load time and first-call compile are left out. One stream, nothing else
+  running on the Mac (Apple M5), one process per system through `scripts/dev/gate.sh`. Each system runs on its
+  device in this report.
+- **CI.** 1000 bootstrap resamples over turns.
+- **Why these numbers are not the ones in research/DUAL_RATE.md.** That file reports 9 / 22 ms (115M) and 36 / 48 ms
+  (0.6B) for the same engine. Those were timed after the engine's *own* `turn_end` decisions: 87 / 83 decisions on
+  all 32 sessions, mono and user. There the slow pass often had its frames decoded already (flush 0 ms). At the
+  labelled turn ends a flush is almost always needed, and the time of the last block is included. So the numbers here
+  are higher, and they are the ones to compare with the offline systems.
+- **Length.** Offline systems cost more on longer turns. Parakeet-TDT's p50 goes from 257 ms (< 2 s) to 411 ms
+  (> 5 s), and Whisper large-v3's from 382 to 825 ms. Whisper small pads every input to 30 s, so it costs ~1.3 s even
+  on short turns. The streaming cores already hold the turn's encoder state, so their time does not grow with turn
+  length.
+- **Words during the turn.** audioforge also streams partial words while the user is talking: a word appears
+  ~0.29 s after it is said (p50 274 / 291 ms above). The offline systems produce nothing until the turn ends.
+- The tails of Whisper large-v3 (max 5.0 s) and turbo (max 1.4 s) come from the long turns: > 30 s turns use the
+  long-form path.
+- The run took ~13 min wall-clock: 115M 193 s, 0.6B 287 s, Parakeet-TDT 36 s, Whisper large-v3 58 s, turbo 25 s,
+  small 95 s, each including the model load. Numbers: `runs/final_compare.json` `final_latency`. Per-turn rows:
+  `/Volumes/ExternalSSD/nvidia-audio-models/scratch/finallat/<system>.jsonl`.
+
+    PYTHONPATH=. scripts/dev/gate.sh .venv/bin/python scripts/research/final_latency.py run --system \
+        <ours_115m_1120|ours_0p6b_1120|parakeet_tdt|whisper_large|whisper_turbo|whisper_small>
+    .venv/bin/python scripts/research/final_latency.py report; python3 demo/images/redesign/export_final.py
+
 ## Speech detection
 
 AMI test and ICSI test meetings, 64 × 20 s windows each, 80 ms frames, label = anyone speaking.

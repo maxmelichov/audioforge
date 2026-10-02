@@ -375,6 +375,102 @@
   "source": "runs/final_compare.json",
   "path": "stt_latency > 0p6b > p50_ms"
  },
+ "final/finallat/p50/ours_115m_1120": {
+  "value": 24.7,
+  "shown": "25",
+  "dec": 0,
+  "scope": "final transcript ready after the user stops talking, ms p50, 56 labelled user turns, live sessions (user channel), warm, batch 1",
+  "source": "runs/final_compare.json",
+  "path": "final_latency > systems > ours_115m_1120 > p50"
+ },
+ "final/finallat/p95/ours_115m_1120": {
+  "value": 47.9,
+  "shown": "48",
+  "dec": 0,
+  "scope": "final transcript ready after the user stops talking, ms p95, 56 labelled user turns, live sessions (user channel), warm, batch 1",
+  "source": "runs/final_compare.json",
+  "path": "final_latency > systems > ours_115m_1120 > p95"
+ },
+ "final/finallat/p50/ours_0p6b_1120": {
+  "value": 48.7,
+  "shown": "49",
+  "dec": 0,
+  "scope": "final transcript ready after the user stops talking, ms p50, 56 labelled user turns, live sessions (user channel), warm, batch 1",
+  "source": "runs/final_compare.json",
+  "path": "final_latency > systems > ours_0p6b_1120 > p50"
+ },
+ "final/finallat/p95/ours_0p6b_1120": {
+  "value": 71.2,
+  "shown": "71",
+  "dec": 0,
+  "scope": "final transcript ready after the user stops talking, ms p95, 56 labelled user turns, live sessions (user channel), warm, batch 1",
+  "source": "runs/final_compare.json",
+  "path": "final_latency > systems > ours_0p6b_1120 > p95"
+ },
+ "final/finallat/p50/parakeet_tdt": {
+  "value": 341.2,
+  "shown": "341",
+  "dec": 0,
+  "scope": "final transcript ready after the user stops talking, ms p50, 56 labelled user turns, live sessions (user channel), warm, batch 1",
+  "source": "runs/final_compare.json",
+  "path": "final_latency > systems > parakeet_tdt > p50"
+ },
+ "final/finallat/p95/parakeet_tdt": {
+  "value": 616.8,
+  "shown": "617",
+  "dec": 0,
+  "scope": "final transcript ready after the user stops talking, ms p95, 56 labelled user turns, live sessions (user channel), warm, batch 1",
+  "source": "runs/final_compare.json",
+  "path": "final_latency > systems > parakeet_tdt > p95"
+ },
+ "final/finallat/p50/whisper_large": {
+  "value": 576.1,
+  "shown": "576",
+  "dec": 0,
+  "scope": "final transcript ready after the user stops talking, ms p50, 56 labelled user turns, live sessions (user channel), warm, batch 1",
+  "source": "runs/final_compare.json",
+  "path": "final_latency > systems > whisper_large > p50"
+ },
+ "final/finallat/p95/whisper_large": {
+  "value": 1630.6,
+  "shown": "1631",
+  "dec": 0,
+  "scope": "final transcript ready after the user stops talking, ms p95, 56 labelled user turns, live sessions (user channel), warm, batch 1",
+  "source": "runs/final_compare.json",
+  "path": "final_latency > systems > whisper_large > p95"
+ },
+ "final/finallat/p50/whisper_turbo": {
+  "value": 282.4,
+  "shown": "282",
+  "dec": 0,
+  "scope": "final transcript ready after the user stops talking, ms p50, 56 labelled user turns, live sessions (user channel), warm, batch 1",
+  "source": "runs/final_compare.json",
+  "path": "final_latency > systems > whisper_turbo > p50"
+ },
+ "final/finallat/p95/whisper_turbo": {
+  "value": 498.4,
+  "shown": "498",
+  "dec": 0,
+  "scope": "final transcript ready after the user stops talking, ms p95, 56 labelled user turns, live sessions (user channel), warm, batch 1",
+  "source": "runs/final_compare.json",
+  "path": "final_latency > systems > whisper_turbo > p95"
+ },
+ "final/finallat/p50/whisper_small": {
+  "value": 1423.6,
+  "shown": "1424",
+  "dec": 0,
+  "scope": "final transcript ready after the user stops talking, ms p50, 56 labelled user turns, live sessions (user channel), warm, batch 1",
+  "source": "runs/final_compare.json",
+  "path": "final_latency > systems > whisper_small > p50"
+ },
+ "final/finallat/p95/whisper_small": {
+  "value": 2308.1,
+  "shown": "2308",
+  "dec": 0,
+  "scope": "final transcript ready after the user stops talking, ms p95, 56 labelled user turns, live sessions (user channel), warm, batch 1",
+  "source": "runs/final_compare.json",
+  "path": "final_latency > systems > whisper_small > p95"
+ },
  "final/vad/ami/f1/ours_115m": {
   "value": 0.9586,
   "shown": "0.959",

@@ -63,6 +63,13 @@ def main():
             "WER %, Nemotron 3.5 ASR 0.6B: not measured on the test splits")
     for c in ("115m", "0p6b"):
         put(f"final/sttlat/p50/ours_{c}", f"stt_latency > {c} > p50_ms", 0, "streaming word latency p50 (ms), AMI test windows")
+    # final transcript ready after the user stops talking (scripts/research/final_latency.py): ms from the labelled
+    # user turn end to the turn's final text, user channel of the live sessions, each system on its FINAL_COMPARE device
+    for k in ("ours_115m_1120", "ours_0p6b_1120", "parakeet_tdt", "whisper_large", "whisper_turbo", "whisper_small"):
+        for q in ("p50", "p95"):
+            put(f"final/finallat/{q}/{k}", f"final_latency > systems > {k} > {q}", 0,
+                f"final transcript ready after the user stops talking, ms {q}, 56 labelled user turns, live sessions "
+                f"(user channel), warm, batch 1")
     # ---- speech detection
     vad = {"ours_115m": "core_115m", "ours_0p6b": "core_0p6b", "silero": "silero_v5", "marblenet": "marblenet_v2",
            "pyannote": "pyannote_seg3", "ten_vad": "ten_vad"}

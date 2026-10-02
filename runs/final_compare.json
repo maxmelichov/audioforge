@@ -7192,5 +7192,210 @@
    },
    "note": "superseded by heads v0.4 (kept for the record)"
   }
+ },
+ "final_latency": {
+  "what": "final transcript ready after the user stops talking: ms from the end of each labelled user turn (clips.json user_turns) to that turn's final text, user channel of the 16 TurnBench clips of the live set (the 'user' half of the 32 live sessions), batch 1, one stream, warm models",
+  "method": "run --system S    S: ours_115m_1120 / ours_0p6b_1120 (served single-mode engine on MPS, fed in 20 ms blocks; at\n                    each labelled turn end the block is cut at the end sample and the clock covers the processing of\n                    that last piece + the slow pass's flush (``LookaheadStream.flush_view``, a partial chunk up to the\n                    turn end) + the token decode of the turn), or parakeet_tdt (CPU 2 threads), whisper_large /\n                    whisper_turbo (transformers fp16 MPS, greedy), whisper_small (faster-whisper int8 CPU 2 threads):\n                    the whole turn's audio is handed over at the turn end (an end-of-utterance STT, as in Pipecat /\n                    LiveKit) and the clock runs to the returned text. Warm-up calls first (not timed), batch 1.\n  report            -> runs/final_compare.json \"final_latency\" (p50 / p95 + 95 % bootstrap CI over turns, by length)",
+  "bootstrap": "1000 resamples over turns, 95 % percentile interval",
+  "systems": {
+   "ours_115m_1120": {
+    "label": "audioforge 115M, --final-chunk-ms 1120 (served engine, MPS)",
+    "device": "mps",
+    "n_turns": 56,
+    "p50": 24.7,
+    "p50_ci95": [
+     22.3,
+     27.6
+    ],
+    "p95": 47.9,
+    "p95_ci95": [
+     36.4,
+     66.0
+    ],
+    "max": 92.7,
+    "by_length_p50": {
+     "lt2s": {
+      "n": 9,
+      "p50": 25.7
+     },
+     "2to5s": {
+      "n": 17,
+      "p50": 27.0
+     },
+     "gt5s": {
+      "n": 30,
+      "p50": 24.0
+     }
+    },
+    "flush_only": {
+     "p50": 21.0,
+     "p95": 38.8
+    }
+   },
+   "ours_0p6b_1120": {
+    "label": "audioforge 0.6B, --final-chunk-ms 1120 (served engine, MPS)",
+    "device": "mps",
+    "n_turns": 56,
+    "p50": 48.7,
+    "p50_ci95": [
+     46.2,
+     50.6
+    ],
+    "p95": 71.2,
+    "p95_ci95": [
+     59.0,
+     77.2
+    ],
+    "max": 78.0,
+    "by_length_p50": {
+     "lt2s": {
+      "n": 9,
+      "p50": 50.0
+     },
+     "2to5s": {
+      "n": 17,
+      "p50": 48.6
+     },
+     "gt5s": {
+      "n": 30,
+      "p50": 48.1
+     }
+    },
+    "flush_only": {
+     "p50": 45.3,
+     "p95": 59.9
+    }
+   },
+   "parakeet_tdt": {
+    "label": "NVIDIA Parakeet-TDT 0.6B v3, offline (audioforge.nemo_import, CPU 2 threads)",
+    "device": "cpu",
+    "n_turns": 56,
+    "p50": 341.2,
+    "p50_ci95": [
+     305.4,
+     375.0
+    ],
+    "p95": 616.8,
+    "p95_ci95": [
+     492.8,
+     884.9
+    ],
+    "max": 1032.1,
+    "by_length_p50": {
+     "lt2s": {
+      "n": 9,
+      "p50": 257.4
+     },
+     "2to5s": {
+      "n": 17,
+      "p50": 299.8
+     },
+     "gt5s": {
+      "n": 30,
+      "p50": 410.9
+     }
+    }
+   },
+   "whisper_large": {
+    "label": "Whisper large-v3 (transformers fp16 MPS, greedy)",
+    "device": "mps",
+    "n_turns": 56,
+    "p50": 576.1,
+    "p50_ci95": [
+     494.1,
+     710.9
+    ],
+    "p95": 1630.6,
+    "p95_ci95": [
+     1096.8,
+     4761.8
+    ],
+    "max": 5037.5,
+    "by_length_p50": {
+     "lt2s": {
+      "n": 9,
+      "p50": 381.5
+     },
+     "2to5s": {
+      "n": 17,
+      "p50": 454.7
+     },
+     "gt5s": {
+      "n": 30,
+      "p50": 825.3
+     }
+    }
+   },
+   "whisper_turbo": {
+    "label": "Whisper large-v3-turbo (transformers fp16 MPS, greedy)",
+    "device": "mps",
+    "n_turns": 56,
+    "p50": 282.4,
+    "p50_ci95": [
+     265.4,
+     304.6
+    ],
+    "p95": 498.4,
+    "p95_ci95": [
+     396.1,
+     1313.9
+    ],
+    "max": 1434.6,
+    "by_length_p50": {
+     "lt2s": {
+      "n": 9,
+      "p50": 243.2
+     },
+     "2to5s": {
+      "n": 17,
+      "p50": 262.7
+     },
+     "gt5s": {
+      "n": 30,
+      "p50": 333.3
+     }
+    }
+   },
+   "whisper_small": {
+    "label": "Whisper small (faster-whisper int8, CPU 2 threads; LiveKit's default)",
+    "device": "cpu",
+    "n_turns": 56,
+    "p50": 1423.6,
+    "p50_ci95": [
+     1376.6,
+     1467.7
+    ],
+    "p95": 2308.1,
+    "p95_ci95": [
+     1704.0,
+     3584.4
+    ],
+    "max": 3914.4,
+    "by_length_p50": {
+     "lt2s": {
+      "n": 9,
+      "p50": 1306.2
+     },
+     "2to5s": {
+      "n": 17,
+      "p50": 1357.5
+     },
+     "gt5s": {
+      "n": 30,
+      "p50": 1526.2
+     }
+    }
+   }
+  },
+  "turn_length_s": {
+   "n": 56,
+   "p50": 5.42,
+   "p95": 21.62,
+   "min": 1.11,
+   "max": 39.69,
+   "lt2s": 9,
+   "2to5s": 17,
+   "gt5s": 30
+  }
  }
 }
