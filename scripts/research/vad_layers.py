@@ -206,6 +206,13 @@ def load_set(name: str, n_train: int = N_TRAIN) -> list[dict]:
     elif name == "icsi_dev":
         from audioforge.datasets.icsi import recipe_data
         val = recipe_data({"data": {"icsi": {"mode": "diar", "val_split": "dev", "n_val": 64, "seed": 0}}}, "val")
+    elif name in ("ami_eval", "icsi_eval"):  # the corpora's eval meetings (research/FIXALL.md test-split audit)
+        if name == "ami_eval":
+            from audioforge.datasets.ami import recipe_data
+        else:
+            from audioforge.datasets.icsi import recipe_data
+        val = recipe_data({"data": {name.split("_")[0]: {"mode": "diar", "val_split": "eval", "n_val": 64, "seed": 0}}},
+                          "val")
     else:
         raise ValueError(name)
     return [derive_labels(dict(v), ["vad"]) for v in val]

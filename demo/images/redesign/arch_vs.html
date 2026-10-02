@@ -244,12 +244,7 @@ function notext() { const s = document.createElement("style"); s.textContent = "
 
 const FOCUS = {
   asr: { title: "Words", sub: "The frozen NVIDIA model and its decoder transcribe. Nothing changed here: pick the size you can afford.",
-    keep: e => /Audio|Decoder|Streaming words|every 160 ms|^first$/.test(e.textContent.trim()) || e.classList.contains("wave"), core: true,
-    rows: [["Live two-party calls, WER %", "lower is better", [["Nemotron 0.6B","13.7","us"],["FastConformer 115M","23.2","us2"],["Whisper small (LiveKit default)","19.3","base"]]],
-           ["Meetings (AMI), WER %", "lower is better", [["Nemotron 0.6B","11.2","us"],["FastConformer 115M","24.4","us2"]]],
-           ["Read speech (LibriSpeech), WER %", "lower is better", [["Nemotron 0.6B","2.2","us"],["FastConformer 115M","2.3","us2"],["Whisper small","2.4","base"]]],
-           ["Compute per 160 ms of audio, Mac GPU", "ms", [["Nemotron 0.6B","39","us"],["FastConformer 115M","29","us2"]]]],
-    foot: "Same audio for every row. Words stream every 160 ms; a word appears about 0.4 s after it is spoken (115M, median)." },
+    keep: e => /Audio|Decoder|Streaming words|every 160 ms|^first$/.test(e.textContent.trim()) || e.classList.contains("wave"), core: true, rows: [], foot: "" },
   vad: { title: "Speech detector", sub: "A 33K head on blocks 2-6 (66K on blocks 8-16 of the 0.6B) says speech or not every 80 ms. It replaces Silero.",
     keep: e => /Speech detector|Speech\?/.test(e.textContent.trim()) || (/every 80 ms/.test(e.textContent.trim()) && parseFloat(e.style.top) < 400), core: false,
     rows: [["AMI meetings, F1", "higher is better", [["FastConformer 115M","0.951","us2"],["Nemotron 0.6B","0.951","us"],["NVIDIA MarbleNet v2","0.937","base"],["Silero v5","0.915","base"]]],
@@ -310,26 +305,27 @@ const TODAY = [["mic", "Microphone", ""], ["vad", "Silero / TEN VAD", "speech or
   ["lid", "Whisper / AmberNet", "which language"], ["llm", "LLM + TTS", ""]];
 // bars: kind us = Nemotron 0.6B (dark orange), us2 = FastConformer 115M (light orange), base = best in use (grey), na = not measured
 const NV = k => { const e = (window.NF || {})[k]; if (!e) throw new Error("numbers_final has no " + k); return typeof e.value === "number" ? e.value : null; };
-const B = (label, key, kind) => ({ label, v: NV(key), kind, key });
+const B = (label, key, kind) => ({ label, v: key == null ? null : NV(key), kind, key });
 const F = "final/";
 const VS = {
   asr: { title: "Words", hot: "asr", what: "Today: a separate speech-to-text model that waits for you to stop. Here: the same NVIDIA model that feeds every head, streaming as you talk.",
-    charts: [{ name: "Live calls, your voice", unit: "wrong words per 100 · lower is better", lower: true, dec: 1, bars: [B("ours 0.6B", F+"wer/live_user/ours_0p6b", "us"), B("ours 115M", F+"wer/live_user/ours_115m", "us2"), B("Parakeet-TDT 0.6B", F+"wer/live_user/parakeet_tdt", "base"), B("Whisper large-v3", F+"wer/live_user/whisper_large", "base"), B("Whisper small", F+"wer/live_user/whisper_small", "base")] },
-             { name: "Meetings, AMI", unit: "wrong words per 100 · lower is better", lower: true, dec: 1, bars: [B("ours 0.6B", F+"wer/ami/ours_0p6b", "us"), B("ours 115M", F+"wer/ami/ours_115m", "us2"), B("Parakeet-TDT 0.6B", F+"wer/ami/parakeet_tdt", "base"), B("Whisper large-v3", F+"wer/ami/whisper_large", "base"), B("Whisper small", F+"wer/ami/whisper_small", "base")] },
-             { name: "Read speech, LibriSpeech", unit: "wrong words per 100 · lower is better", lower: true, dec: 1, bars: [B("ours 0.6B", F+"wer/libri/ours_0p6b", "us"), B("ours 115M", F+"wer/libri/ours_115m", "us2"), B("Parakeet-TDT 0.6B", F+"wer/libri/parakeet_tdt", "base"), B("Whisper large-v3", F+"wer/libri/whisper_large", "base"), B("Whisper small", F+"wer/libri/whisper_small", "base")] }] },
-  vad: { title: "Speech detector", hot: "vad", what: "Today: Silero or TEN VAD, a separate model. Here: a small head on the same model’s features, taught by TEN VAD and pyannote. Live-capable detectors only.",
-    charts: [{ name: "Meetings, AMI (our training set)", unit: "F1 at threshold 0.5 · higher is better", lower: false, domain: [0.8, 1.0, 0.1], dec: 3, bars: [B("ours 0.6B", F+"vad/ami/f1/ours_0p6b", "us"), B("ours 115M", F+"vad/ami/f1/ours_115m", "us2"), B("MarbleNet v2", F+"vad/ami/f1/marblenet", "base"), B("TEN VAD", F+"vad/ami/f1/ten_vad", "base"), B("Silero v5", F+"vad/ami/f1/silero", "base")] },
-             { name: "Speech missed, AMI (our training set)", unit: "per 100 speech frames, same false alarms · lower is better", lower: true, dec: 1, bars: [B("ours 0.6B", F+"vad/ami/miss/ours_0p6b", "us"), B("ours 115M", F+"vad/ami/miss/ours_115m", "us2"), B("MarbleNet v2", F+"vad/ami/miss/marblenet", "base"), B("TEN VAD", F+"vad/ami/miss/ten_vad", "base"), B("Silero v5", F+"vad/ami/miss/silero", "base")] },
-             { name: "Meetings, ICSI (unseen meetings)", unit: "F1 at threshold 0.5 · higher is better", lower: false, domain: [0.8, 1.0, 0.1], dec: 3, bars: [B("ours 0.6B", F+"vad/icsi/f1/ours_0p6b", "us"), B("ours 115M", F+"vad/icsi/f1/ours_115m", "us2"), B("MarbleNet v2", F+"vad/icsi/f1/marblenet", "base"), B("TEN VAD", F+"vad/icsi/f1/ten_vad", "base"), B("Silero v5", F+"vad/icsi/f1/silero", "base")] }] },
+    charts: [{ name: "Live calls, your voice", unit: "wrong words per 100 · lower is better", lower: true, dec: 1, bars: [B("ours 0.6B", F+"wer/live_user/ours_0p6b", "us"), B("ours 115M", F+"wer/live_user/ours_115m", "us2"), B("Parakeet-TDT", F+"wer/live_user/parakeet_tdt", "base"), B("Whisper large-v3", F+"wer/live_user/whisper_large", "base")] },
+             { name: "Meetings, AMI test", unit: "wrong words per 100 · lower is better", lower: true, dec: 1, bars: [B("ours 0.6B", F+"wer/ami/ours_0p6b", "us"), B("ours 115M", F+"wer/ami/ours_115m", "us2"), B("Parakeet-TDT", F+"wer/ami/parakeet_tdt", "base"), B("Whisper large-v3", F+"wer/ami/whisper_large", "base")] },
+             { name: "Read speech, LibriSpeech test-clean", unit: "wrong words per 100 · lower is better", lower: true, dec: 1, bars: [B("ours 0.6B", F+"wer/libri/ours_0p6b", "us"), B("ours 115M", F+"wer/libri/ours_115m", "us2"), B("Parakeet-TDT", F+"wer/libri/parakeet_tdt", "base"), B("Whisper large-v3", F+"wer/libri/whisper_large", "base")] },
+             { name: "A word appears on screen", unit: "ms after it is said, median · lower is better", lower: true, bars: [B("ours 0.6B", F+"sttlat/p50/ours_0p6b", "us"), B("ours 115M", F+"sttlat/p50/ours_115m", "us2"), B("Parakeet-TDT", null, "off"), B("Whisper large-v3", null, "off")] }] },
+  vad: { title: "Speech detector", hot: "vad", what: "Today: Silero or TEN VAD, a separate model. Here: a small head on the same model’s features. A decision every 80 ms, reacts to speech in 80 ms. Live-capable detectors only.",
+    charts: [{ name: "Meetings, AMI test", unit: "F1 at threshold 0.5 · higher is better", lower: false, domain: [0.8, 1.0, 0.1], dec: 3, bars: [B("ours 0.6B", F+"vad/ami/f1/ours_0p6b", "us"), B("ours 115M", F+"vad/ami/f1/ours_115m", "us2"), B("MarbleNet v2", F+"vad/ami/f1/marblenet", "base"), B("TEN VAD", F+"vad/ami/f1/ten_vad", "base"), B("Silero v5", F+"vad/ami/f1/silero", "base")] },
+             { name: "Speech missed, AMI test", unit: "per 100 speech frames, same false alarms · lower is better", lower: true, dec: 1, bars: [B("ours 0.6B", F+"vad/ami/miss/ours_0p6b", "us"), B("ours 115M", F+"vad/ami/miss/ours_115m", "us2"), B("MarbleNet v2", F+"vad/ami/miss/marblenet", "base"), B("TEN VAD", F+"vad/ami/miss/ten_vad", "base"), B("Silero v5", F+"vad/ami/miss/silero", "base")] },
+             { name: "Meetings, ICSI test", unit: "F1 at threshold 0.5 · higher is better", lower: false, domain: [0.8, 1.0, 0.1], dec: 3, bars: [B("ours 0.6B", F+"vad/icsi/f1/ours_0p6b", "us"), B("ours 115M", F+"vad/icsi/f1/ours_115m", "us2"), B("MarbleNet v2", F+"vad/icsi/f1/marblenet", "base"), B("TEN VAD", F+"vad/icsi/f1/ten_vad", "base"), B("Silero v5", F+"vad/icsi/f1/silero", "base")] }] },
   spk: { title: "Speaker tracker", hot: "spk", what: "Today: a diarizer plus a voice-print model. Here: a 5 s sample and a 0.26M head on block 4. No diarizer.",
-    charts: [{ name: "Your words only, ICSI meetings", unit: "wrong words per 100 of yours · same 5 s voice print for all", lower: true, dec: 1, bars: [B("ours 0.6B", F+"twer/icsi/ours_0p6b", "us"), B("ours 115M", F+"twer/icsi/ours_115m", "us2"), B("pyannote 3.1", F+"twer/icsi/pyannote31", "base"), B("Nemotron-3", F+"twer/icsi/nemotron3_0p6bwords", "base"), B("no filter", F+"twer/icsi/nofilter", "base")] },
-             { name: "Your words only, AMI meetings", unit: "wrong words per 100 of yours · lower is better", lower: true, dec: 1, bars: [B("ours 0.6B", F+"twer/ami/ours_0p6b", "us"), B("ours 115M", F+"twer/ami/ours_115m", "us2"), B("pyannote 3.1", F+"twer/ami/pyannote31", "base"), B("Nemotron-3", F+"twer/ami/nemotron3_0p6bwords", "base"), B("no filter", F+"twer/ami/nofilter", "base")] },
-             { name: "Tracking F1, ICSI", unit: "is it you, every 80 ms · higher is better", lower: false, domain: [0.5, 1.0, 0.25], dec: 3, bars: [B("ours 0.6B", F+"trackf1/icsi/ours_0p6b", "us"), B("ours 115M", F+"trackf1/icsi/ours_115m", "us2"), B("pyannote 3.1", F+"trackf1/icsi/pyannote31", "base"), B("Nemotron-3", F+"trackf1/icsi/nemotron3", "base")] }] },
+    charts: [{ name: "Your words only, ICSI test", unit: "wrong words per 100 of yours · same 5 s voice print for all", lower: true, dec: 1, bars: [B("ours 0.6B", F+"twer/icsi/ours_0p6b", "us"), B("ours 115M", F+"twer/icsi/ours_115m", "us2"), B("pyannote", F+"twer/icsi/pyannote31", "base"), B("Nemotron-3", F+"twer/icsi/nemotron3_0p6bwords", "base"), B("none", F+"twer/icsi/nofilter", "base"), B("perfect filter", F+"twer/icsi/oracle_0p6bwords", "ref")] },
+             { name: "Your words only, AMI test", unit: "wrong words per 100 of yours · lower is better", lower: true, dec: 1, bars: [B("ours 0.6B", F+"twer/ami/ours_0p6b", "us"), B("ours 115M", F+"twer/ami/ours_115m", "us2"), B("pyannote 3.1", F+"twer/ami/pyannote31", "base"), B("Nemotron-3", F+"twer/ami/nemotron3_0p6bwords", "base"), B("perfect filter", F+"twer/ami/oracle_0p6bwords", "ref")] },
+             { name: "Tracking F1, ICSI test", unit: "is it you, every 80 ms · higher is better", lower: false, domain: [0.5, 1.0, 0.25], dec: 3, bars: [B("ours 0.6B", F+"trackf1/icsi/ours_0p6b", "us"), B("ours 115M", F+"trackf1/icsi/ours_115m", "us2"), B("pyannote 3.1", F+"trackf1/icsi/pyannote31", "base"), B("Nemotron-3", F+"trackf1/icsi/nemotron3", "base")] }] },
   turn: { title: "Turn detection", hot: "turn", what: "Today: smart-turn or LiveKit’s detector, a separate model on top of Silero. Here: a classifier on the same model’s features plus the words.",
     charts: [{ name: "Right about “you’re done”", unit: "per 100 clips, speech to an agent · higher is better", lower: false, domain: [0, 100, 50], dec: 1, bars: [B("ours 0.6B", F+"asst/acc/ours_0p6b", "us"), B("ours 115M", F+"asst/acc/ours_115m", "us2"), B("LiveKit detector", F+"asst/acc/livekit", "base"), B("Pipecat smart-turn", F+"asst/acc/pipecat", "base"), B("Parakeet EOU", F+"asst/acc/parakeet_eou", "base")] },
              { name: "Answers after you stop", unit: "median, ms · lower is better", lower: true, bars: [B("ours 0.6B", F+"asst/p50/ours_0p6b", "us"), B("ours 115M", F+"asst/p50/ours_115m", "us2"), B("LiveKit detector", F+"asst/p50/livekit", "base"), B("Pipecat smart-turn", F+"asst/p50/pipecat", "base"), B("Parakeet EOU", F+"asst/p50/parakeet_eou", "base")] },
              { name: "Cuts you off mid-sentence", unit: "per 100 unfinished sentences · lower is better", lower: true, dec: 1, bars: [B("ours 0.6B", F+"asst/ff/ours_0p6b", "us"), B("ours 115M", F+"asst/ff/ours_115m", "us2"), B("LiveKit detector", F+"asst/ff/livekit", "base"), B("Pipecat smart-turn", F+"asst/ff/pipecat", "base"), B("Parakeet EOU", F+"asst/ff/parakeet_eou", "base")] }] },
-  lid: { title: "Language detector", hot: "lid", what: "Today: Whisper’s language detection or AmberNet. Here: a 0.92M head on the same features. Optional.",
+  lid: { title: "Language detector", hot: "lid", what: "Today: Whisper’s language detection or AmberNet. Here: a 2.4M (115M) / 2.9M (0.6B) head on the same features. Optional.",
     charts: [{ name: "Right language from 2 s", unit: "per 100 clips, FLEURS 17 languages · higher is better", lower: false, domain: [0, 100, 50], dec: 1, bars: [B("ours 115M", F+"lid/2s/ours_115m", "us2"), B("ours 0.6B", F+"lid/2s/ours_0p6b", "us"), B("Whisper turbo", F+"lid/2s/whisper_turbo", "base"), B("AmberNet", F+"lid/2s/ambernet", "base"), B("Whisper small", F+"lid/2s/whisper_small", "base")] },
              { name: "Right language, whole clip", unit: "per 100 clips · higher is better", lower: false, domain: [0, 100, 50], dec: 1, bars: [B("ours 115M", F+"lid/full/ours_115m", "us2"), B("ours 0.6B", F+"lid/full/ours_0p6b", "us"), B("Whisper large-v3", F+"lid/full/whisper_large", "base"), B("AmberNet", F+"lid/full/ambernet", "base"), B("Whisper small", F+"lid/full/whisper_small", "base")] }] },
 };
@@ -347,20 +343,30 @@ function barchart(x, y, w, h, spec, sc) {
   const px0 = P + tw, px1 = w - P, pw = px1 - px0; let svg = "";
   tl.forEach((e, i) => { const yy = pb - ph * (ticks[i] - lo) / (hi - lo); e.style.left = (px0 - 8 - e.offsetWidth) + "px"; e.style.top = (yy - e.offsetHeight / 2) + "px"; e.style.color = "#6B7280"; e.style.fontSize = "19px"; if (i) svg += `<line x1="${px0}" y1="${yy}" x2="${px1}" y2="${yy}" stroke="#ECEEF1" stroke-width="1.5"/>`; });
   svg += `<line x1="${px0}" y1="${pb - ph - 4}" x2="${px0}" y2="${pb}" stroke="#9AA3AE" stroke-width="1.5"/><line x1="${px0}" y1="${pb}" x2="${px1}" y2="${pb}" stroke="#9AA3AE" stroke-width="1.5"/>`;
-  const n = spec.bars.length, slot = pw / n, bw = Math.min(64, slot * 0.6);
+  const n = spec.bars.length, slot = pw / n, bw = Math.min(64, slot * 0.55);
   const bases = spec.bars.filter(b => b.kind === "base" && b.v != null).map(b => b.v), best = bases.length ? (spec.lower ? Math.min(...bases) : Math.max(...bases)) : null;
+  const xls = [];
   spec.bars.forEach((b, i) => {
     const cx = px0 + slot * (i + 0.5), col = b.kind === "us" ? css("--ours") : b.kind === "us2" ? "#F4A66B" : "#C8CDD4";
-    const xl = mk("xl" + (b.kind === "us" || b.kind === "us2" ? " us" : ""), b.label, 0, 0); xl.style.width = (slot - 6) + "px"; xl.style.left = (cx - (slot - 6) / 2) + "px"; xl.style.top = (pb + 6) + "px";
+    const xl = mk("xl" + (b.kind === "us" || b.kind === "us2" ? " us" : ""), b.label, 0, 0); xl.style.width = (slot - 6) + "px"; xl.style.left = (cx - (slot - 6) / 2) + "px"; xl.style.top = (pb + 6) + "px"; xls.push(xl);
+    if (b.kind === "off") { svg += `<rect x="${cx - bw / 2}" y="${pb - ph * 0.5}" width="${bw}" height="${ph * 0.5}" rx="3" fill="none" stroke="#C8CDD4" stroke-width="1.5" stroke-dasharray="5 4"/>`;
+      const nm = mk("nm", "waits for the end of speech", 0, 0); nm.style.width = (bw + 30) + "px"; nm.style.left = (cx - (bw + 30) / 2) + "px"; nm.style.top = (pb - ph * 0.25 - nm.offsetHeight / 2) + "px"; return; }
     if (b.v == null) { svg += `<rect x="${cx - bw / 2}" y="${pb - ph * 0.5}" width="${bw}" height="${ph * 0.5}" rx="3" fill="none" stroke="#C8CDD4" stroke-width="1.5" stroke-dasharray="5 4"/>`;
       const nm = mk("nm", "still running", 0, 0); nm.style.width = bw + 20 + "px"; nm.style.left = (cx - (bw + 20) / 2) + "px"; nm.style.top = (pb - ph * 0.25 - nm.offsetHeight / 2) + "px"; return; }
-    const bh = ph * (b.v - lo) / (hi - lo); svg += `<rect x="${cx - bw / 2}" y="${pb - bh}" width="${bw}" height="${bh}" rx="3" fill="${col}"/>`;
-    const vl = mk("val" + (b.kind !== "base" ? " us" : ""), spec.dec != null ? b.v.toFixed(spec.dec) : String(b.v), 0, 0); vl.style.left = (cx - vl.offsetWidth / 2) + "px"; vl.style.top = (pb - bh - 4 - vl.offsetHeight) + "px";
-    if (b.kind !== "base" && best != null) { const rel = spec.lower ? 100 * (1 - b.v / best) : 100 * (b.v / best - 1), better = rel > 0.5, tie = Math.abs(rel) <= 0.5 || Math.abs(b.v - best) < (spec.dec >= 2 ? 0.0015 : spec.dec === 1 ? 0.05 : 0.5);
+    const bh = ph * (b.v - lo) / (hi - lo);
+    if (b.kind === "ref") svg += `<rect x="${cx - bw / 2}" y="${pb - bh}" width="${bw}" height="${bh}" rx="3" fill="#FFFFFF" stroke="#6B7280" stroke-width="1.8" stroke-dasharray="6 4"/>`;
+    else svg += `<rect x="${cx - bw / 2}" y="${pb - bh}" width="${bw}" height="${bh}" rx="3" fill="${col}"/>`;
+    const vl = mk("val" + (b.kind === "us" || b.kind === "us2" ? " us" : ""), spec.dec != null ? b.v.toFixed(spec.dec) : String(b.v), 0, 0); vl.style.left = (cx - vl.offsetWidth / 2) + "px"; vl.style.top = (pb - bh - 4 - vl.offsetHeight) + "px";
+    if ((b.kind === "us" || b.kind === "us2") && best != null) { const rel = spec.lower ? 100 * (1 - b.v / best) : 100 * (b.v / best - 1), better = rel > 0.5, tie = Math.abs(rel) <= 0.5 || Math.abs(b.v - best) < (spec.dec >= 2 ? 0.0015 : spec.dec === 1 ? 0.05 : 0.5);
       const diff = b.v - best, ad = Math.abs(diff), dd = spec.dec != null && spec.dec >= 2 ? ad.toFixed(3) : spec.dec === 1 ? ad.toFixed(1) : String(Math.round(ad));
-      const d = mk("dl", tie ? "same" : `${diff > 0 ? "+" : "−"}${dd}${spec.unitShort ? " " + spec.unitShort : ""}`, 0, 0);
+      const d = mk("dl", tie ? "same" : `${diff > 0 ? "+" : "−"}${dd}`, 0, 0);
       d.style.color = tie ? "#4B5563" : better ? "#0A5C2B" : "#9B1C1C"; d.style.left = (cx - d.offsetWidth / 2) + "px"; d.style.top = (pb - bh - 4 - vl.offsetHeight - 4 - d.offsetHeight) + "px"; }
   });
+  // no text overlap: shrink the x labels until no two label boxes (and no label and value) intersect
+  const boxes = () => [...c.querySelectorAll(".xl, .val, .dl, .nm")].map(e => { const r = e.getBoundingClientRect(); return { e, l: r.left, t: r.top, r: r.right, b: r.bottom }; });
+  const hit = () => { const B_ = boxes(); for (let i = 0; i < B_.length; i++) for (let j = i + 1; j < B_.length; j++) { const a = B_[i], b_ = B_[j]; if (Math.min(a.r, b_.r) - Math.max(a.l, b_.l) > 1 && Math.min(a.b, b_.b) - Math.max(a.t, b_.t) > 1) return true; } return false; };
+  for (let fs = 19; fs >= 13 && hit(); fs--) xls.forEach(e => e.style.fontSize = fs + "px");
+  window.OVERLAPS = (window.OVERLAPS || 0) + (hit() ? 1 : 0);
   const sv = document.createElementNS("http://www.w3.org/2000/svg", "svg"); sv.setAttribute("width", w); sv.setAttribute("height", h); Object.assign(sv.style, { position: "absolute", left: 0, top: 0 }); sv.innerHTML = svg; c.prepend(sv);
 }
 function buildVs(W, H, key) {
@@ -381,26 +387,26 @@ function buildVs(W, H, key) {
   const M = 64, s = 0.52, left = 520;
   st.style.transform = `scale(${s})`; st.style.position = "absolute"; st.style.left = (left + 60) + "px"; st.style.top = (M + 118 + 44 - 185 * s) + "px";
   // page title
-  const h = document.createElement("div"); h.className = "col-h"; h.style.fontSize = "44px"; h.textContent = "audioforge · " + V.title; Object.assign(h.style, { left: M + "px", top: M + "px" }); sc.appendChild(h);
+  const h = document.createElement("div"); h.className = "col-h"; h.style.fontSize = "40px"; h.textContent = "audioforge · " + V.title; Object.assign(h.style, { left: M + "px", top: M + "px" }); sc.appendChild(h);
   const w = document.createElement("div"); w.className = "col-s"; w.style.fontSize = "24px"; w.textContent = V.what; Object.assign(w.style, { left: M + "px", top: (M + 54) + "px", width: (W - 2 * M) + "px" }); sc.appendChild(w);
   // column headers
   const y0 = M + 118;
   const ch1 = document.createElement("div"); ch1.className = "col-h"; ch1.textContent = "Today: one model per job"; Object.assign(ch1.style, { left: M + "px", top: y0 + "px", color: "#3F4753" }); sc.appendChild(ch1);
   const ch2 = document.createElement("div"); ch2.className = "col-h"; ch2.textContent = "audioforge: one frozen model, small heads"; Object.assign(ch2.style, { left: (left + 60) + "px", top: y0 + "px", color: css("--ours") }); sc.appendChild(ch2);
   // the today chain
-  let ty = y0 + 46; const bh = 44, gap = 10, bw = left - M - 30;
+  let ty = y0 + 44; const bh = 40, gap = 10, bw = left - M - 30;
   TODAY.forEach(([k, m, a], i) => {
     const b = document.createElement("div"); b.className = "tb" + (k === V.hot ? " hot" : (k === "mic" || k === "llm" ? "" : " dim2"));
     b.innerHTML = `<div class="m">${m}</div>` + (a ? `<div class="a">${a}</div>` : ""); Object.assign(b.style, { left: M + "px", top: ty + "px", width: bw + "px", height: (a ? bh + 16 : bh) + "px" }); sc.appendChild(b);
     const hh = a ? bh + 16 : bh;
-    if (i < TODAY.length - 1) { const ar = document.createElement("div"); ar.className = "col-s"; ar.textContent = "↓"; Object.assign(ar.style, { left: (M + bw / 2 - 7) + "px", top: (ty + hh - 8) + "px", fontSize: "20px", color: "#9AA3AE" }); sc.appendChild(ar); }
+    if (i < TODAY.length - 1) { const ar = document.createElement("div"); Object.assign(ar.style, { position: "absolute", left: (M + bw / 2 - 1) + "px", top: (ty + hh) + "px", width: "2px", height: gap + "px", background: "#C3C9D1" }); sc.appendChild(ar); }
     ty += hh + gap;
   });
   // the bar charts along the bottom
   const ch = 330, tt = H - M - ch, n = V.charts.length, cwid = (W - 2 * M - 24 * (n - 1)) / n;
   V.charts.forEach((spec, i) => barchart(M + i * (cwid + 24), tt, cwid, ch, spec, sc));
-  const lg = document.createElement("div"); lg.className = "col-s"; lg.innerHTML = `<span class="sw" style="background:${css("--ours")}"></span><b>ours 0.6B</b> (Nemotron Speech)&nbsp;&nbsp;&nbsp;<span class="sw" style="background:#F4A66B"></span><b>ours 115M</b> (FastConformer)&nbsp;&nbsp;&nbsp;<span class="sw" style="background:#C8CDD4"></span>best in use today · green/red = difference to the best grey bar`;
-  Object.assign(lg.style, { right: M + "px", top: (M + 8) + "px", fontSize: "20px" }); lg.style.left = "auto"; sc.appendChild(lg);
+  const lg = document.createElement("div"); lg.className = "col-s"; lg.innerHTML = `<span class="sw" style="background:${css("--ours")}"></span><b>ours 0.6B</b>&nbsp;&nbsp;&nbsp;<span class="sw" style="background:#F4A66B"></span><b>ours 115M</b>&nbsp;&nbsp;&nbsp;<span class="sw" style="background:#C8CDD4"></span>best in use today&nbsp;&nbsp;&nbsp;<span class="sw" style="background:#fff;border:1.5px dashed #6B7280"></span>reference&nbsp;&nbsp;&nbsp;green / red = gap to the best grey bar`;
+  Object.assign(lg.style, { right: M + "px", top: (M + 14) + "px", fontSize: "20px" }); lg.style.left = "auto"; sc.appendChild(lg);
   Object.assign(sc.style, { left: 0, top: 0, width: W + "px", height: H + "px" });
 }
 window.build = build; window.notext = notext; window.buildFocus = buildFocus; window.buildVs = buildVs;

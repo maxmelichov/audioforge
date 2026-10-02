@@ -45,23 +45,28 @@ def main():
     # ---- words: WER %, Whisper normalizer
     asr = {"ours_115m": "core_115m", "ours_0p6b": "core_0p6b", "whisper_small": "whisper_small",
            "whisper_turbo": "whisper_turbo", "whisper_large": "whisper_large_v3", "parakeet_tdt": "tdt_v3"}
-    for st, label in (("libri", "LibriSpeech test-clean first 200"), ("ami", "AMI dev 200 segments"),
-                      ("icsi", "ICSI dev 200 segments")):
+    # test splits only (research/FIXALL.md test audit): LibriSpeech test-clean / test-other (300 seeded random
+    # utterances each), AMI / ICSI test (eval) meetings (200 segments each)
+    asr["ours_115m_beam8"] = "core_115m_beam8"
+    for key, st, label in (("libri", "ls_clean", "LibriSpeech test-clean, 300 random utterances"),
+                           ("libri_other", "ls_other", "LibriSpeech test-other, 300 random utterances"),
+                           ("ami", "ami_eval", "AMI test meetings, 200 segments"),
+                           ("icsi", "icsi_eval", "ICSI test meetings, 200 segments")):
         for k, s in asr.items():
-            put(f"final/wer/{st}/{k}", f"words > {st} > whisper_norm|all > {s} > wer_pct", 1, f"WER %, {label}, Whisper normalizer")
+            put(f"final/wer/{key}/{k}", f"words > {st} > whisper_norm|all > {s} > wer_pct", 1, f"WER %, {label}, Whisper normalizer")
     for sub, label in (("all", "live"), ("user_channel", "live_user")):
         for k, s in asr.items():
             put(f"final/wer/{label}/{k}", f"words > live > whisper_norm|{sub} > {s} > wer_pct", 1,
                 f"WER %, 32 live two-party sessions ({sub}), every word, Whisper normalizer")
-    for st in ("libri", "ami", "icsi"):
-        put(f"final/wer/{st}/nemotron35", f"words_nemotron35 > {st} > whisper_norm > wer_pct", 1,
-            "WER %, Nemotron 3.5 ASR 0.6B (multilingual), en-US prompt (runs/core_3p5.json via final_compare)")
+    for st in ("libri", "ami", "icsi"):  # measured on the first-pass dev sets only: not a test-split number
+        put(f"final/wer/{st}/nemotron35", f"words_nemotron35_test > {st} > whisper_norm > wer_pct", 1,
+            "WER %, Nemotron 3.5 ASR 0.6B: not measured on the test splits")
     for c in ("115m", "0p6b"):
         put(f"final/sttlat/p50/ours_{c}", f"stt_latency > {c} > p50_ms", 0, "streaming word latency p50 (ms), AMI test windows")
     # ---- speech detection
     vad = {"ours_115m": "core_115m", "ours_0p6b": "core_0p6b", "silero": "silero_v5", "marblenet": "marblenet_v2",
            "pyannote": "pyannote_seg3", "ten_vad": "ten_vad"}
-    for sn, lab in (("ami_dev", "ami"), ("icsi_dev", "icsi")):
+    for sn, lab in (("ami_eval", "ami"), ("icsi_eval", "icsi")):  # the corpora's test (eval) meetings
         for k, s in vad.items():
             put(f"final/vad/{lab}/f1/{k}", f"vad > {sn} > {s} > f1_at_0.5", 3, f"VAD F1 at 0.5, {sn}")
             put(f"final/vad/{lab}/auc/{k}", f"vad > {sn} > {s} > auc", 3, f"VAD ROC-AUC, {sn}")
@@ -73,10 +78,11 @@ def main():
         for m, q, d in (("acc", "accuracy_pct", 1), ("p50", "p50", 0), ("p95", "p95", 0), ("ff", "false_fire_pct", 1),
                         ("missed", "missed_pct", 1)):
             put(f"final/asst/{m}/{k}", f"turn > {s} > asst > {q}", d, "smart-turn v3.2 test, 399 assistant-directed clips")
-        for ds in ("calls", "ami"):
+        for ds in ("calls", "ami"):  # calls: no labelled public test split (TurnBench test labels withheld) -> None
             for m, q, d in (("p50", "eot_total_ms_p50", 0), ("p95", "eot_total_ms_p95", 0),
                             ("fi", "false_interruption_pct", 1), ("missed", "missed_pct", 1)):
-                put(f"final/{ds}/{m}/{k}", f"turn > {s} > {ds} > {q}", d, f"end of turn, {ds}")
+                put(f"final/{ds}/{m}/{k}", f"turn > {s} > {ds} > {q}" if ds == "ami" and R.get("ami_turn_split") == "eval"
+                    else "no_public_test_split", d, f"end of turn, {ds} ({'AMI test meetings' if ds == 'ami' else 'no public labelled test split'})")
     put("final/asst/acc/smartturn_alone", "turn > smartturn_classifier_alone > asst > accuracy_pct", 1,
         "smart-turn v3.2 classifier alone, one call per whole clip (upper bound, no timing)")
     for c in ("115m", "0p6b"):
@@ -89,25 +95,34 @@ def main():
             for ds in ("calls", "ami"):
                 for m, q, d in (("p50", "eot_total_ms_p50", 0), ("p95", "eot_total_ms_p95", 0),
                                 ("fi", "false_interruption_pct", 1), ("missed", "missed_pct", 1)):
-                    put(f"final/{ds}/{m}/ours_{c}_{preset}", f"turn > ours_{c} > {preset} > {ds} > {q}", d,
+                    put(f"final/{ds}/{m}/ours_{c}_{preset}", f"turn > ours_{c} > {preset} > {ds} > {q}"
+                        if ds == "ami" and R.get("ami_turn_split") == "eval" else "no_public_test_split", d,
                         f"audioforge {c} --turn-preset {preset}, {ds}")
     # ---- speaker
+    # target-speaker rows: ICSI test meetings (re-pooled per-unit counts); AMI test windows were not run -> None
+    T = "speaker_test > icsi > twer"
+    for k, path in (("ours_115m", f"{T} > ours_115m > twer"), ("ours_0p6b", f"{T} > ours_0p6b > twer"),
+                    ("nemotron3", f"{T} > nemotron3_best_115m > twer"),
+                    ("nemotron3_0p6bwords", f"{T} > nemotron3_best_0p6b > twer"),
+                    ("pyannote31", f"{T} > pyannote31_best_115m > twer"), ("nofilter", f"{T} > none_115m > twer"),
+                    ("oracle", f"{T} > oracle_115m > twer"), ("oracle_0p6bwords", f"{T} > oracle_0p6b > twer")):
+        put(f"final/twer/icsi/{k}", path, 1, "target-speaker WER %, ICSI test meetings (eot-bench v2 windows), primary, 5 s print")
+        put(f"final/twer/ami/{k}", path.replace("speaker_test > icsi", "speaker_test > ami_eval"), 1,
+            "target-speaker WER %, AMI test meetings (eot-bench v2 windows), primary, 5 s print")
+    FR = "speaker_test > icsi > frame_best"
+    for k, path in (("ours_115m", f"{FR} > ours_115m"), ("ours_0p6b", f"{FR} > ours_0p6b"),
+                    ("nemotron3", f"{FR} > nemotron3"), ("pyannote31", f"{FR} > pyannote31")):
+        put(f"final/der/icsi/{k}", f"{path} > der_pct", 1, "target-speaker DER %, ICSI test meetings")
+        put(f"final/trackf1/icsi/{k}", f"{path} > f1", 3, "tracking F1, ICSI test meetings")
+        put(f"final/der/ami/{k}", f"{path.replace('speaker_test > icsi', 'speaker_test > ami_eval')} > der_pct", 1,
+            "target-speaker DER %, AMI test meetings")
+        put(f"final/trackf1/ami/{k}", f"{path.replace('speaker_test > icsi', 'speaker_test > ami_eval')} > f1", 3,
+            "tracking F1, AMI test meetings")
     for corpus in ("ami", "icsi"):
-        for k, path in (("ours_115m", f"speaker > twer > {corpus} > core115_tsvad_d2 > twer"),
-                        ("ours_0p6b", f"speaker > twer > {corpus} > core0p6b_tsvad_d2 > twer"),
-                        ("nemotron3", f"speaker > twer > {corpus} > nemotron3_best > twer"),
-                        ("nemotron3_0p6bwords", f"speaker > twer > {corpus} > 0p6b_nemotron3_best > twer"),
-                        ("pyannote31", f"speaker > twer > {corpus} > pyannote31_best > twer"),
-                        ("nofilter", f"speaker > twer > {corpus} > none > twer"),
-                        ("oracle", f"speaker > twer > {corpus} > oracle_d2 > twer")):
-            put(f"final/twer/{corpus}/{k}", path, 1, f"target-speaker WER %, {corpus} eot-bench windows, primary, 5 s print")
-        for k in ("ours_115m", "ours_0p6b", "nemotron3", "pyannote31"):
-            put(f"final/der/{corpus}/{k}", f"speaker > frame > {corpus} > {k} > der_pct", 1, f"target-speaker DER %, {corpus}")
-            put(f"final/trackf1/{corpus}/{k}", f"speaker > frame > {corpus} > {k} > f1", 3, f"tracking F1, {corpus}")
         for k, s in (("ours_115m", "core_115m"), ("ours_0p6b", "core_0p6b"), ("titanet", "titanet_l"),
                      ("wespeaker", "wespeaker_pyannote")):
-            put(f"final/eer/{corpus}/{k}", f"speaker_eer > {corpus} > {s} > eer_within_meeting_pct", 1,
-                f"within-meeting speaker EER %, {corpus} dev, 200 segments")
+            put(f"final/eer/{corpus}/{k}", f"speaker_eer > {corpus}_eval > {s} > eer_within_meeting_pct", 1,
+                f"within-meeting speaker EER %, {corpus} test meetings, 200 segments")
     # ---- language
     for k, s in (("ours_115m", "core_115m"), ("ours_0p6b", "core_0p6b"), ("whisper_small", "whisper_small"),
                  ("whisper_turbo", "whisper_turbo"), ("whisper_large", "whisper_large_v3"), ("ambernet", "ambernet")):

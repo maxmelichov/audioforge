@@ -32,7 +32,7 @@ def _load(name):
 
 def _tiny_models_dir(tmp_path: Path) -> Path:
     """A models directory holding a tiny served .afm (hub.SERVED) (ASR + VAD + turn + a single-tap speaker head),
-    tsvad_spk.pt and lid_distill.pt for it; no diarizer, TitaNet, AmberNet, TDT or Silero."""
+    tsvad_spk.pt and lid_115m_v2.pt for it; no diarizer, TitaNet, AmberNet, TDT or Silero."""
     from audioforge.heads.tsvad import TSVADHead
     from audioforge.lid import save_head
     from audioforge.model import SpeechModel
@@ -59,7 +59,7 @@ def _tiny_models_dir(tmp_path: Path) -> Path:
     donor = SpeechModel(lcfg, CharTokenizer(list("abc ")))
     with torch.no_grad():
         donor.heads["lid"].cls[-1].bias.copy_(torch.tensor([8.0, 0.0]))  # confidently "en"
-    save_head(donor, "lid", d / "lid_distill.pt")
+    save_head(donor, "lid", d / "lid_115m_v2.pt")
     return d
 
 
@@ -138,7 +138,7 @@ def test_download_default_set_is_single_model(tmp_path, monkeypatch):
         p = ROOT / "assets" / name
         assert p.stat().st_size == size and hub.sha256_file(p) == sha and hub.heads_path(None, tmp_path, ver) == p
     assert hub.SERVED == hub.HEADS[hub.HEADS_VERSION][3] == "stage1_served_v4.afm"
-    for key in ("tsvad", "lid"):  # the shipped head files match their pinned sha256 (lid_distill.pt may be absent)
+    for key in ("tsvad", "lid"):  # the shipped head files match their pinned sha256 (the LID head may be absent)
         c = hub.COMPONENTS[key]
         p = ROOT / "assets" / c.filename
         if key == "lid" and not p.exists():

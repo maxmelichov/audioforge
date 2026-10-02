@@ -57,6 +57,9 @@ WORK = Path("/Volumes/ExternalSSD/nvidia-audio-models/scratch/eot_latency")
 # another reference label set ({session key: [[start, end], ...]} replacing user_turns, e.g. the audible-end labels)
 DUMP = Path(os.environ.get("EOT_DUMP", "/Volumes/ExternalSSD/nvidia-audio-models/scratch/tswer_fix/eot_dump"))
 LABELS = os.environ.get("EOT_LABELS")
+# EOT_AMI_SPLIT=eval: the AMI turns come from the AMI eval (test) meetings instead of dev (research/FIXALL.md test audit)
+AMI_SPLIT = os.environ.get("EOT_AMI_SPLIT", "dev")
+AMI_DIR = WORK / ("ami_eval" if AMI_SPLIT == "eval" else "ami")
 DUMP_PRE_PRINTFIX = WORK / "dump3"
 DUMP_OLD = WORK / "dump2"
 # baselines4: the Pipecat row from Pipecat's own LocalSmartTurnAnalyzerV3 (scripts/research/smartturn_audit.py);
@@ -88,10 +91,10 @@ def sessions() -> list[dict]:
         out.append({"key": f"{r['name']}.user", "set": r["set"], "cond": "user", "wav": str(E2E / "clips" / f"{r['name']}.user.wav"),
                     "pad_s": 6.0, "user_turns": turns, "scored": r["scored"], "next_onset": nxt,
                     "embedding": emb["embedding"] if emb else None})
-    ami = WORK / "ami" / "clips.json"
+    ami = AMI_DIR / "clips.json"
     if ami.exists():
         for r in json.loads(ami.read_text()):
-            out.append({"key": f"{r['name']}.mono", "set": "ami", "cond": "mono", "wav": str(WORK / "ami" / f"{r['name']}.wav"),
+            out.append({"key": f"{r['name']}.mono", "set": "ami", "cond": "mono", "wav": str(AMI_DIR / f"{r['name']}.wav"),
                         "pad_s": 0.0, "user_turns": [tuple(r["user_turn"])], "scored": [True],
                         "next_onset": [r["next_onset"]], "embedding": r["embedding"]})
     if LABELS:  # another reference label set: same turns, other ends (next onsets unchanged)
@@ -121,9 +124,9 @@ def cmd_prepare_ami(a):
     from audioforge.train import load_model
     from audioforge.tsvad_stream import voiceprint
     torch.set_num_threads(2)
-    out = WORK / "ami"
+    out = AMI_DIR
     out.mkdir(parents=True, exist_ok=True)
-    base, ext, meta, ds, _ = ES.v2_data()
+    base, ext, meta, ds, _ = ES.v2_data() if AMI_SPLIT == "dev" else ES.v2_data_split(AMI_SPLIT)
     idx = sorted(random.Random(0).sample(range(len(ext)), N_AMI))
     model = load_model(str(ROOT / "runs" / "stage1_served.afm"), "cpu").eval()
     refs, segcache = [], {}

@@ -1359,7 +1359,7 @@ def stage_prints(a):
             chan = np.asarray(ch.T if ch.shape[0] != 2 else ch, np.float32)[h]
         x = np.concatenate([chan[int(p_ * SR): int(q * SR)] for p_, q in ivs])
         out[f"{name}.user"] = [round(float(z), 6) for z in voiceprint(m, x)]
-    ami = json.loads((E.WORK / "ami" / "clips.json").read_text())
+    ami = json.loads((E.AMI_DIR / "clips.json").read_text())
     import eval_stage1 as ES
     ds = None
     for r in ami:
@@ -1367,7 +1367,7 @@ def stage_prints(a):
         if k in out:
             continue
         if ds is None:
-            _, _, _, ds, _ = ES.v2_data()
+            _, _, _, ds, _ = ES.v2_data() if E.AMI_SPLIT == "dev" else ES.v2_data_split(E.AMI_SPLIT)
         out[k] = [round(float(z), 6) for z in voiceprint(m, T0.clip_audio(ds, r["meeting"], r["print_ivs"]))]
     PRINTS.write_text(json.dumps(out))
     log(f"prints: {len(out)}")

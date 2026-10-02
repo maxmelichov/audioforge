@@ -604,6 +604,17 @@ def v2_data(trail_sec: float = 6.0):
     return base, ext, meta, ds, meta_base
 
 
+def v2_data_split(split: str = "eval", trail_sec: float = 6.0):
+    """v2_data's windows cut the same way from another split's meetings (split = eval: the AMI test meetings on disk;
+    research/FIXALL.md test audit): (base, ext, meta, ds, meta_base); no cached Sortformer tracks are checked."""
+    from audioforge.datasets.ami import AMI, recipe_data, subset
+    base = recipe_data({"data": {"ami": {"mode": "turn", "val_split": split, "n_val": 10 ** 6, "seed": 0}}}, "val")
+    ds = AMI(subset({split: 4})[split], verbose=False)
+    chk, meta_base = turn_windows(ds, 2.0)
+    ext, meta = turn_windows(ds, trail_sec, starts=[v["start"] for v in chk])
+    return chk, ext, meta, ds, meta_base
+
+
 V2_DIAR_CONFIGS = ("low_latency", "low_latency_032")  # audioforge.streaming_diar.SORTFORMER_PRESETS names
 
 

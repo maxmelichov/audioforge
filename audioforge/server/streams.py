@@ -28,8 +28,16 @@ class ASRStream(StreamingSession):
     (as ``heads.turn.decoded_text_state``). turn_input "diar": chunks wait in ``pending`` for the diarizer."""
 
     def __init__(self, model, vad: str | None = "vad", turn: str | None = "turn", turn_input: str = "session",
-                 lid=None, vad_gate: float | None = None, vad_hangover_frames: int = 15, att_context_size=None):
+                 lid=None, vad_gate: float | None = None, vad_hangover_frames: int = 15, att_context_size=None,
+                 beam: int = 0):
         super().__init__(model, att_context_size=att_context_size)
+        # --beam K (research/FIXALL.md step 5): an RNNT beam search runs next to the greedy decoder over the same
+        # encoder frames; finals take its best hypothesis for the segment (beam_cut), while partials, the turn heads'
+        # token inputs and everything else keep the greedy tokens, so turn taking does not change
+        self.beam_k = int(beam or 0)
+        if self.beam_k and (getattr(self.head, "is_tdt", True) or not hasattr(self.head, "beam_stream")):
+            raise ValueError("--beam needs a plain RNNT transducer head")
+        self._beam_reset(0)
         self.lid = lid  # audioforge.lid.LIDStream (--lid) or None
         # --asr-vad-gate: the transducer is not decoded on a frame whose VAD <= vad_gate once vad_hangover_frames
         # such frames have passed since the last speech frame (the encoder and the heads still run every frame);
@@ -69,6 +77,45 @@ class ASRStream(StreamingSession):
         self.seg_block = None
         self.pros = None  # heads.prosody.Prosody when the v5 model reads prosody
         self.pros_frames = _Ring(512)
+
+    BEAM_MAX_FRAMES = 3750  # 5 min of one segment: beyond this the final falls back to the greedy text
+
+    def _beam_reset(self, b0: int):
+        self.beam_b0, self.beam_frames, self.beam_best = b0, [], []
+        if self.beam_k and getattr(self, "_beam_head", None) is None:
+            # the beam's many small joint / prediction-net calls run on a CPU copy of the head (on an Apple GPU they
+            # cost ~15 ms per chunk in launch overhead, on CPU ~1.5 ms; research/FIXALL.md step 5)
+            import copy
+            self._beam_head = copy.deepcopy(self.head).cpu().eval() if self.dev.type != "cpu" else self.head
+        self.beam_stream = self._beam_head.beam_stream(self.beam_k, 3) if self.beam_k else None
+
+    def _beam_feed(self, f):
+        if len(self.beam_frames) >= self.BEAM_MAX_FRAMES:
+            self._beam_reset(self.beam_b0 + len(self.beam_frames) + 1)
+            self.beam_b0 = -1  # lost: finals of this segment use the greedy text
+            return
+        if self.beam_b0 < 0:
+            return
+        f = f.detach().float().cpu()
+        self.beam_frames.append(f)
+        self.beam_stream.feed(f)
+        self.beam_best.append(tuple(self.beam_stream.tokens))
+
+    def beam_cut(self, f: int):
+        """The beam's best tokens for the current segment through ASR frame f (exclusive), then a new segment from f
+        (the frames after f are re-fed); None when the segment outgrew BEAM_MAX_FRAMES (use the greedy text)."""
+        if not self.beam_k:
+            return None
+        if self.beam_b0 < 0:
+            self._beam_reset(f)
+            return None
+        rel = f - self.beam_b0
+        toks = list(self.beam_best[rel - 1]) if 0 < rel <= len(self.beam_best) else []
+        rest = self.beam_frames[max(rel, 0):]
+        self._beam_reset(f)
+        for x in rest:
+            self._beam_feed(x)
+        return toks
 
     def attach_seg(self, model, device="cpu"):
         """Turn head v5 (research/TURN_V5.md): keep the segment classifier's per-frame inputs (its encoder block of
@@ -180,6 +227,8 @@ class ASRStream(StreamingSession):
                     self.n_gated += 1
                 else:
                     self._decode(f_asr[j: j + 1])
+                if self.beam_k:
+                    self._beam_feed(f_asr[j: j + 1])
                 snap = (self.pred[0] if self.pred is not None else None, list(self.tokens[-self.k:]))
                 eot = None
                 if self.turn is not None and self.turn_input == "session":

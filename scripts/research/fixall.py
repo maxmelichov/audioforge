@@ -693,6 +693,13 @@ def stage_lteach(a):
         return
     rows, off = lid_rows(a.set)
     rows = [r for r in rows if r["id"] in off]
+    if a.n_per_lang:  # a seeded subset per language (the teacher costs ~0.25 s per row on MPS)
+        import random
+        keep = []
+        for lang in sorted({r["lang"] for r in rows}):
+            rl = [r for r in rows if r["lang"] == lang]
+            keep += sorted(random.Random(0).sample(rl, min(a.n_per_lang, len(rl))), key=lambda r: r["id"])
+        rows = keep
     n = len(rows)
     P = dict(np.load(part)) if part.exists() else {"p2": np.zeros((n, 17), np.float32), "pf": np.zeros((n, 17), np.float32),
                                                    "n": np.array(0)}
@@ -722,7 +729,7 @@ def stage_lteach(a):
             o = int(off[r["id"]])
             aud.append(np.asarray(x[o: o + 20 * SR], np.float32))
         P["p2"][i:i + len(rs)] = probs([x[: 2 * SR] for x in aud])
-        P["pf"][i:i + len(rs)] = probs(aud)
+        P["pf"][i:i + len(rs)] = probs(aud) if a.full_view else P["p2"][i:i + len(rs)]
         i += len(rs)
     if i < n:
         np.savez(part, p2=P["p2"], pf=P["pf"], n=np.array(i))
@@ -897,7 +904,9 @@ def stage_tscan(a):
     T = _T()
     TURN.mkdir(parents=True, exist_ok=True)
     meta = T.ho_meta()
-    sig = T.load_ho(f"p6_{a.tags}.npz")
+    is115 = a.tags == "115m"  # the 115M's own shipped heads (core_0p6b_turn ho115 signals)
+    sig = T.load_ho("p_115m.npz" if is115 else f"p6_{a.tags}.npz")
+    comp = T.COMP["115m" if is115 else "0p6b"]
     t0 = time.time()
     for fam in a.fam.split(","):
         f = TURN / f"scan_{a.tags}_{fam}.json"
@@ -905,7 +914,7 @@ def stage_tscan(a):
         G = tgrid(fam)
         gc = {}
         for r in G[len(rows):]:
-            rows.append({"rule": r, **T.ho_score(sig, meta, r, T.COMP["0p6b"], gc)})
+            rows.append({"rule": r, **T.ho_score(sig, meta, r, comp, gc)})
             if over(a, t0):
                 break
         f.write_text(json.dumps(rows))
@@ -971,6 +980,8 @@ def stage_ltrain(a):
     SSD runs/lid_fix/<tag>.pt, runs/fixall.json ltrain.<tag>."""
     import lid_fix as LF
     from scipy.special import softmax
+    if CORE == "0p6b":  # lid_fix pointed at the 0.6B (1024-d heads, its cache under scratch/core_0p6b/lid)
+        LF = C._lid_mod(a.device)
     W_ = {}
     for set_ in ("train", "trainx"):
         f = TEACH / f"lid_whisper_{set_}.npz"
@@ -992,7 +1003,10 @@ def stage_ltrain(a):
                 continue
             p2, pf = W_[rid]
             onset = sh[s_].metas[si]["onset"][i]
-            pw = p2 if (f0 <= onset + 1 and f1 - f0 <= 38) else pf
+            short = f0 <= onset + 1 and f1 - f0 <= 38
+            if not short and np.array_equal(p2, pf):  # 2 s-only teacher: long windows keep AmberNet alone
+                continue
+            pw = p2 if short else pf
             pw = np.clip(pw.astype(np.float64), 1e-6, 1)
             if Tn[j] is None:
                 ens = pw
@@ -1019,7 +1033,453 @@ def stage_ltrain(a):
     LF.stage_train(la)
 
 
-STAGES = {"vman": stage_vman, "vteach": stage_vteach, "vfeat": stage_vfeat, "vtrain": stage_vtrain, "vserved": stage_vserved, "wprep": stage_wprep, "wdec": stage_wdec, "wscore": stage_wscore, "lteach": stage_lteach, "vbuild": stage_vbuild, "servedeq": stage_servedeq, "texport": stage_texport, "tscan": stage_tscan, "tpick": stage_tpick, "ltrain": stage_ltrain}
+def stage_lfeat6(a):
+    """0.6B LID frame cache of FLEURS trainx ('on' view; blocks 16 / 20, the 0.6B head's taps), through
+    core_0p6b_heads' lid_fix wrapper (its cache layout under scratch/core_0p6b/lid) -> resumable per shard."""
+    assert CORE == "0p6b"
+    # the 'on' view starts where the 115M cache's does (its audio_offset), so frame counts and the AmberNet window
+    # teachers keyed by (shard, row, frames) line up (llink6 checks them row by row); read before _lid_mod repoints
+    # lid_fix at the 0.6B cache
+    _, off = lid_rows("trainx")
+    L = C._lid_mod(a.device)
+    orig_view = L._view_audio
+
+    def view_audio(r, view, onsets, cap, rng):
+        return orig_view(r, view, {r["id"]: [(off[r["id"]] + 0.5) / SR + 0.1]}, cap, rng)
+    L._view_audio = view_audio
+    L.stage_feats(argparse.Namespace(set="trainx", view="on", blocks="16,20", device=a.device, batch_sec=240.0,
+                                     cap=None, stride=1, budget=a.budget))
+    d = L.shard_dir("trainx", "on")
+    n = len(list(d.glob("s[0-9]*.json")))
+    log(f"lfeat6: {n} trainx shards" + (" STAGE_COMPLETE" if n >= 86 else ""))
+
+
+def stage_llink6(a):
+    """The 115M cache's AmberNet window teachers (t####.npz, keyed by shard / row / frame window of the 'on' view)
+    linked into the 0.6B trainx cache where every row's ids / frame counts / onsets match (core_0p6b_heads
+    stage_lid_teacher, for trainx)."""
+    assert CORE == "0p6b"
+    src = SSD / "cache" / "lid_fix" / "trainx" / "on"
+    d1 = C.LIDC / "trainx" / "on"
+    ok = bad = 0
+    for f in sorted(d1.glob("s[0-9]*.json")):
+        m1, m0 = json.loads(f.read_text()), json.loads((src / f.name).read_text())
+        t0 = src / f"t{f.stem[1:]}.npz"
+        if m1["ids"] == m0["ids"] and m1["n"] == m0["n"] and m1["onset"] == m0["onset"] and t0.exists():
+            if not (d1 / t0.name).exists():
+                (d1 / t0.name).symlink_to(t0)
+            ok += 1
+        else:
+            bad += 1
+    log(f"llink6 trainx: {ok} shards linked, {bad} mismatched")
+    save("llink6", {"linked": ok, "mismatch": bad})
+
+
+# =========================================================================== 4. speaker head: TitaNet-L + WeSpeaker teachers
+SPK_SRC = ("ami_asr", "icsi_asr", "librispeech")
+SPKC = SSD / "cache" / "spk_frame"
+
+
+def _spk_feat(name):
+    return SPKC / (f"{name}.npz" if CORE == "115m" else f"0p6b5_{name}.npz")
+
+
+def stage_steach(a):
+    """WeSpeaker ResNet34 (pyannote/wespeaker-voxceleb-resnet34-LM, the best within-meeting EER in FINAL_COMPARE) on
+    every item and crop of spk_frame's training sources (same audio spans as its TitaNet-L teacher file) ->
+    TEACH/spk_wespeaker_<src>.npz {whole (N, 256), crop (M, 256)}. Resumable per source."""
+    import torch
+    import spk_frame as SF
+    torch.set_num_threads(2)
+    TEACH.mkdir(parents=True, exist_ok=True)
+    os.environ["HF_HUB_OFFLINE"] = "1"
+    from pyannote.audio import Inference, Model
+    pm = Model.from_pretrained("pyannote/wespeaker-voxceleb-resnet34-LM")
+    inf = Inference(pm, window="whole", device=torch.device(a.device))
+
+    def emb(x):
+        return np.asarray(inf({"waveform": torch.from_numpy(np.asarray(x, np.float32))[None], "sample_rate": SR})).reshape(-1)
+    t0 = time.time()
+    for name in SPK_SRC:
+        f = TEACH / f"spk_wespeaker_{name}.npz"
+        if f.exists():
+            continue
+        z = np.load(SPKC / f"{name}.npz")  # the 115M cache: ids / crops (frame grid shared with the 0.6B cache)
+        items = SF.load_source(name)
+        from audioforge.data import segment_id
+        by = {segment_id(v): v for v in items}
+        ids = list(z["ids"])
+        W = np.zeros((len(ids), 256), np.float32)
+        for i, k in enumerate(ids):
+            W[i] = emb(by[k]["audio"])
+        Cc = np.zeros((len(z["crops"]), 256), np.float32)
+        for j, (i, f0, f1) in enumerate(z["crops"]):
+            Cc[j] = emb(np.asarray(by[ids[i]]["audio"], np.float32)[f0 * HOP: f1 * HOP])
+        np.savez(f, whole=W, crop=Cc)
+        log(f"steach {name}: {len(ids)} items, {len(Cc)} crops ({time.time() - t0:.0f} s)")
+        if over(a, t0):
+            return
+    log("steach STAGE_COMPLETE")
+
+
+def _spk_hold(meetings):
+    """held-out meetings for the speaker probe: ICSI_HOLD / AMI_HOLD when present among the items, else the two
+    last meetings of the corpus in sorted order (never trained on by the candidates)."""
+    ms = sorted(set(meetings))
+    h = [m for m in ms if m in ICSI_HOLD + AMI_HOLD]
+    return h if len(h) >= 2 else ms[-2:]
+
+
+def _eer_within(E, spk, meet):
+    import torch
+    from audioforge.metrics import eer
+    X = E / np.linalg.norm(E, axis=1, keepdims=True)
+    iu = np.triu_indices(len(X), 1)
+    s = (X[iu[0]] * X[iu[1]]).sum(1)
+    lab = spk[iu[0]] == spk[iu[1]]
+    same = meet[iu[0]] == meet[iu[1]]
+    return float(eer(torch.tensor(s[same]), torch.tensor(lab[same].astype(np.int64))))
+
+
+def stage_strain(a):
+    """A speaker head (SpeakerHead: attentive stats pooling -> --hidden (0 = the shipped single linear) -> 192, BN) on
+    the cached tap of this core (115M block 4, 0.6B block 5; spk_frame caches), distilled jointly: cos + relational to
+    TitaNet-L (192-d) and relational to WeSpeaker ResNet34 (--lam weight), AAM (--aam-margin) on AMI speakers. AMI /
+    ICSI items of held-out meetings (_spk_hold) are never trained on; held-out within-meeting EER (whole items) of the
+    candidate, the served head, TitaNet-L and WeSpeaker on those items selects -> HEADS/spk_<core>_<tag>.pt."""
+    import torch
+    import torch.nn.functional as F
+    from audioforge.heads.audio import SpeakerHead
+    from audioforge.train import load_model
+    torch.set_num_threads(2)
+    torch.manual_seed(a.seed)
+    dev = a.device
+    S, HOLD = [], {}
+    for name in SPK_SRC:
+        z = dict(np.load(_spk_feat(name)))
+        t = np.load(SPKC / f"{name}.teacher.npz")
+        w = np.load(TEACH / f"spk_wespeaker_{name}.npz")
+        z.update(tw=t["whole"], tc=t["crop"], ww=w["whole"], wc=w["crop"])
+        z["meet"] = np.array([str(i).split(":")[0] for i in z["ids"]])
+        if name != "librispeech":
+            HOLD[name] = _spk_hold(z["meet"])
+        z["hold"] = np.isin(z["meet"], HOLD.get(name, []))
+        z["crop_ok"] = ~z["hold"][z["crops"][:, 0]] if len(z["crops"]) else np.zeros(0, bool)
+        S.append(z)
+    D = S[0]["feats"].shape[1]
+    nspk = int(S[0]["speaker"].max()) + 1
+    head = SpeakerHead(D, nspk, 192, margin=a.aam_margin, hidden=a.hidden).to(dev)
+    opt = torch.optim.AdamW(head.parameters(), lr=5e-4, weight_decay=1e-3)
+    sched = torch.optim.lr_scheduler.CosineAnnealingLR(opt, a.steps)
+    rng = np.random.default_rng(a.seed)
+    wsrc = np.array([1.0, 1.0, 1.0]) / 3
+
+    def one(s):
+        z = S[s]
+        while True:
+            if rng.random() < 0.7 and len(z["crops"]):
+                k = int(rng.integers(len(z["crops"])))
+                if not z["crop_ok"][k]:
+                    continue
+                i, f0, f1 = z["crops"][k]
+                tn, ws = z["tc"][k], z["wc"][k]
+            else:
+                i = int(rng.integers(len(z["lens"])))
+                if z["hold"][i]:
+                    continue
+                f0, f1 = 0, int(z["lens"][i])
+                tn, ws = z["tw"][i], z["ww"][i]
+            break
+        o = int(z["off"][i])
+        x = z["feats"][o + f0: o + f1]
+        if len(x) > 150:
+            q = int(rng.integers(0, len(x) - 150 + 1))
+            x = x[q: q + 150]
+        return x, tn, ws, (int(z["speaker"][i]) if s == 0 else -1)
+
+    def rel(e, t):
+        t = F.normalize(t, dim=-1)
+        off = ~torch.eye(len(e), dtype=torch.bool, device=e.device)
+        return F.mse_loss((e @ e.T)[off], (t @ t.T)[off])
+
+    def embed_items(z, idx):
+        out = []
+        head.eval()
+        with torch.no_grad():
+            for i in idx:
+                o, n = int(z["off"][i]), int(z["lens"][i])
+                x = torch.from_numpy(z["feats"][o:o + n].astype(np.float32))[None].to(dev)
+                out.append(head.embed(x, torch.tensor([n], device=dev))[0].cpu().numpy())
+        head.train()
+        return np.stack(out)
+
+    def ho_eval():
+        r = {}
+        for s, name in enumerate(SPK_SRC[:2]):
+            z = S[s]
+            idx = np.nonzero(z["hold"])[0]
+            r[name] = round(100 * _eer_within(embed_items(z, idx), z["speaker"][idx], z["meet"][idx]), 2)
+        return r
+    t0 = time.time()
+    best, best_state, hist = 1e9, None, []
+    for step in range(1, a.steps + 1):
+        src = rng.choice(3, 128, p=wsrc)
+        xs = [one(int(s)) for s in src]
+        L = max(len(x[0]) for x in xs)
+        X = np.zeros((len(xs), L, D), np.float32)
+        for j, x in enumerate(xs):
+            X[j, : len(x[0])] = x[0]
+        X = torch.from_numpy(X).to(dev)
+        ln = torch.tensor([len(x[0]) for x in xs], device=dev)
+        tn = torch.from_numpy(np.stack([x[1] for x in xs])).to(dev)
+        ws = torch.from_numpy(np.stack([x[2] for x in xs])).to(dev)
+        sp = torch.tensor([x[3] for x in xs], device=dev)
+        e = head.embed(X, ln)
+        loss = 0.5 * (1 - (e * F.normalize(tn, dim=-1)).sum(-1)).mean() + rel(e, tn) + a.lam * rel(e, ws)
+        m = sp >= 0
+        if m.sum() > 1:
+            loss = loss + head.aam_loss(e[m], sp[m])
+        opt.zero_grad()
+        loss.backward()
+        opt.step()
+        sched.step()
+        if step % 500 == 0 or step == a.steps:
+            r = ho_eval()
+            sc = r["ami_asr"] + r["icsi_asr"]
+            hist.append({"step": step, "loss": round(float(loss), 4), **r})
+            log(json.dumps(hist[-1]))
+            if sc < best:
+                best, best_state = sc, {k: v.detach().cpu().clone() for k, v in head.state_dict().items()}
+            if over(a, t0):
+                break
+    head.load_state_dict(best_state)
+    # references on the same held-out items: TitaNet-L, WeSpeaker (whole items), the served head
+    ref = {}
+    served = load_model(str(served_afm()), "cpu").heads["spk"].to(dev).eval()
+    for s, name in enumerate(SPK_SRC[:2]):
+        z = S[s]
+        idx = np.nonzero(z["hold"])[0]
+        sp, mt = z["speaker"][idx], z["meet"][idx]
+        ref[name] = {"titanet_l": round(100 * _eer_within(z["tw"][idx], sp, mt), 2),
+                     "wespeaker": round(100 * _eer_within(z["ww"][idx], sp, mt), 2)}
+        with torch.no_grad():
+            Es = []
+            for i in idx:
+                o, n = int(z["off"][i]), int(z["lens"][i])
+                x = torch.from_numpy(z["feats"][o:o + n].astype(np.float32))[None].to(dev)
+                Es.append(served.embed(x, torch.tensor([n], device=dev))[0].cpu().numpy())
+        ref[name]["served_head"] = round(100 * _eer_within(np.stack(Es), sp, mt), 2)
+        ref[name]["n_items"], ref[name]["meetings"] = int(len(idx)), sorted(set(mt.tolist()))
+    r = {"best_ho": ho_eval(), "hist": hist, "ref_ho": ref, "args": {k: getattr(a, k) for k in ("hidden", "lam", "aam_margin", "steps", "seed")},
+         "sec": round(time.time() - t0)}
+    log(a.tag, json.dumps({k: r[k] for k in ("best_ho", "ref_ho")}))
+    HEADS.mkdir(parents=True, exist_ok=True)
+    torch.save({"state_dict": {k: v.cpu() for k, v in head.state_dict().items()}, "hidden": a.hidden, "res": r},
+               HEADS / f"spk_{CORE}_{a.tag}.pt")
+    save(f"strain_{CORE}", r, sub=a.tag)
+
+
+def stage_beamcost(a):
+    """Served cost of --beam K: the --mode single engine on the bundled call (balanced preset), chunk compute p50 / p95
+    per 160 ms chunk with and without the beam (3 runs each, the best p50 kept), plus whether turn ends are unchanged
+    -> runs/fixall.json beamcost.<core>."""
+    import torch
+    import audioforge.serve as S
+    from audioforge.data import load_wav
+    from audioforge.serve import Engine
+    from audioforge.server.cli import MODES
+    torch.set_num_threads(2)
+    x = load_wav(str(ROOT / "examples" / "audio" / "two_party_call_16s.wav"), SR).astype(np.float32)
+    vp = (ROOT / "examples" / "audio" / "two_party_call_16s.voiceprint.json") if CORE == "115m" else \
+        (SSD / "scratch" / "core_0p6b" / "two_party_call_16s.voiceprint_0p6b.json")
+    emb = json.loads(vp.read_text())
+    res = {}
+    for k in (0, int(a.beams.split(",")[-1])):
+        opts = {**MODES["single"], "enroll": "explicit",
+                "tsvad": str(ROOT / "assets" / ("tsvad_spk.pt" if CORE == "115m" else "tsvad_0p6b.pt")), "asr_beam": k}
+        eng = Engine.load(str(served_afm()), None, a.device, threads=2, **opts)
+        eng.warmup()
+        best = None
+        for _ in range(3):
+            s = S.Session(eng, S.SessionConfig(turn_policy="vad_head"))
+            s.arm_enrollment("enroll", 0, embedding=emb)
+            msgs = []
+            for i in range(0, len(x), 2560):
+                msgs += s.process(x[i:i + 2560])
+            msgs += s.finish()
+            cm = np.array(list(s.chunk_ms))
+            r = {"chunk_ms_p50": round(float(np.percentile(cm, 50)), 2), "chunk_ms_p95": round(float(np.percentile(cm, 95)), 2),
+                 "turn_ends": [round(m["t"], 3) for m in msgs if m["type"] == "turn_end"],
+                 "finals": [m["text"] for m in msgs if m["type"] == "final"]}
+            if best is None or r["chunk_ms_p50"] < best["chunk_ms_p50"]:
+                best = r
+        res[f"beam{k}"] = best
+        log(k, json.dumps({kk: v for kk, v in best.items() if kk != "finals"}))
+    res["turn_ends_equal"] = res["beam0"]["turn_ends"] == res[f"beam{int(a.beams.split(',')[-1])}"]["turn_ends"]
+    save(f"beamcost_{CORE}", res, sub=a.device)
+
+
+def stage_tenergy(a):
+    """Frame energies (dBFS per 80 ms frame, turn_v5.frame_abs_db) of the end-of-turn sessions that have none yet
+    (EOT_AMI_SPLIT=eval: the AMI test-meeting turns) -> turn_v5.ENERGY/<key>.npy, read by the policy twin's energy gate."""
+    import eot_latency as E
+    import turn_v5 as V5
+    n = 0
+    for s in E.sessions():
+        f = V5.ENERGY / f"{s['key']}.npy"
+        if f.exists():
+            continue
+        x = E.read_audio(s)
+        np.save(f, V5.frame_abs_db(x, len(x) // HOP + 2))
+        n += 1
+    log(f"tenergy: {n} new STAGE_COMPLETE")
+
+
+def stage_tpick115(a):
+    """The 115M without its speaker-conditioned second encoder pass: balanced decided by the v5 classifier (the
+    model-mode rules of tgrid('balanced'), which read only first-pass signals) instead of the per-frame turn head.
+    Held-out pick: the fastest model-mode rule no worse than the shipped 115M balanced on every held-out scope
+    (calls, quiet calls, AMI: FI and missed) AND not slower on calls / quiet p50 (latency gate) -> tpick115."""
+    T = _T()
+    meta = T.ho_meta()
+    sig = T.load_ho("p_115m.npz")
+    shipped = C._preset_rules() if hasattr(C, "_preset_rules") else None
+    base = T.ho_score(sig, meta, shipped["balanced"], T.COMP["115m"])
+    rows = json.loads((TURN / "scan_115m_balanced.json").read_text())
+    ok = [r for r in rows if r["rule"]["mode"] == "model" and _nonreg_ok(r, base, "balanced")
+          and r["calls"]["eot_total_ms_p50"] <= base["calls"]["eot_total_ms_p50"]
+          and r["quiet"]["eot_total_ms_p50"] <= base["quiet"]["eot_total_ms_p50"]]
+    pk = min(ok, key=lambda r: (r["calls"]["eot_total_ms_p50"] + r["quiet"]["eot_total_ms_p50"],
+                                r["calls"]["false_interruption_pct"])) if ok else None
+    log(f"115M shipped balanced held-out: {T.short(base)}")
+    log(f"v5-only balanced: {len(ok)} of {sum(r['rule']['mode'] == 'model' for r in rows)} pass; pick "
+        f"{T.short(pk) if pk else None} {pk['rule'] if pk else ''}")
+    save("tpick115", {"shipped_rule": shipped["balanced"], "shipped_heldout": base, "n_pass": len(ok), "pick": pk})
+
+
+def stage_twsub(a):
+    """Target-speaker WER on the ICSI TEST meetings (Bmr013, Bmr018, Bro021): the eot-bench v2 ICSI windows are the
+    dev + eval meetings (bench_turn_icsi.ICSI_MEETINGS), so the per-unit S / D / I counts already stored for every arm
+    (tswer units: 115M words + Nemotron-3 binders + none / oracle; core_0p6b tswer units: the 0.6B track; final_compare
+    pya units: pyannote 3.1 and Nemotron-3 on both word sets) are re-aggregated over the test meetings' primary units
+    only. Same keep rule, words and prints as FINAL_COMPARE. Window and meeting bootstrap (3 meetings: coarse) ->
+    runs/fixall.json twsub. A full-set re-aggregation is checked against runs/tswer.json."""
+    import tswer as TW
+    corpus = a.set if a.set in ("icsi", "ami_eval") else "icsi"
+    test = ("Bmr013", "Bmr018", "Bro021") if corpus == "icsi" else ("IS1009b", "ES2004b", "TS3003b", "EN2002a")
+    U = {}
+    for f, wrapped in ((SSD / f"scratch/tswer/{corpus}/units.jsonl", True),
+                       (SSD / f"scratch/core_0p6b/tswer/{corpus}_units.jsonl", False),
+                       (SSD / f"scratch/final_compare/pya/{corpus}/units.jsonl", True)):
+        for ln in f.read_text().splitlines():
+            if not ln.strip():
+                continue
+            r = json.loads(ln)
+            for u in (r["units"] if wrapped else [r]):
+                if u["col"] != 0:
+                    continue
+                k = u["key"]
+                U.setdefault(k, {"key": k, "meeting": u["meeting"], "col": 0, "N": u["N"], "arms": {}})
+                assert U[k]["N"] == u["N"], k
+                U[k]["arms"].update(u["arms"])
+    allu = [u for u in U.values() if "tsvad_d2" in u["arms"] and "core0p6b_tsvad_d2" in u["arms"] and "pya_spk_d2" in u["arms"]]
+    full = round(100 * TW.rate(TW.agg(allu, "tsvad_d2")), 2)
+    ref = (json.loads((ROOT / "runs/tswer.json").read_text())["results"]["icsi"]["primary"]["arms"]["tsvad_d2"]["twer"]
+           if corpus == "icsi" else None)
+    log(f"check: full {corpus} 115M tsvad_d2 {full} vs runs/tswer.json {ref}")
+    units = [u for u in allu if u["meeting"] in test]
+    arms = {"ours_115m": "tsvad_d2", "ours_0p6b": "core0p6b_tsvad_d2", "none_115m": "none", "oracle_115m": "oracle_d2",
+            "none_0p6b": "0p6b_none", "oracle_0p6b": "0p6b_oracle_d2", "n3_spk_115m": "n3_spk_d2", "n3_tn_115m": "n3_tn_d2",
+            "n3_spk_0p6b": "0p6b_n3_spk_d2", "n3_tn_0p6b": "0p6b_n3_tn_d2", "pya_spk_115m": "pya_spk_d2",
+            "pya_tn_115m": "pya_tn_d2", "pya_spk_0p6b": "0p6b_pya_spk_d2", "pya_tn_0p6b": "0p6b_pya_tn_d2"}
+    bw, _ = TW.boot(units, list(arms.values()), "key")
+    bm, nm = TW.boot(units, list(arms.values()), "meeting")
+    res = {"meetings": list(test), "n_units": len(units), "check_full_115m": [full, ref]}
+    for name, arm in arms.items():
+        res[name] = {"twer": round(100 * TW.rate(TW.agg(units, arm)), 2), "ci_window": TW.ci(bw[arm]),
+                     "ci_meeting": TW.ci(bm[arm])}
+    for w in ("115m", "0p6b"):
+        res[f"nemotron3_best_{w}"] = min((res[f"n3_spk_{w}"], res[f"n3_tn_{w}"]), key=lambda r: r["twer"])
+        res[f"pyannote31_best_{w}"] = min((res[f"pya_spk_{w}"], res[f"pya_tn_{w}"]), key=lambda r: r["twer"])
+    log(json.dumps({k: (v["twer"] if isinstance(v, dict) and "twer" in v else v) for k, v in res.items()}))
+    save("twsub" if corpus == "icsi" else f"twsub_{corpus}", res)
+
+
+def stage_frsub(a):
+    """Target-speaker DER / tracking F1 on the ICSI TEST meetings (frame protocol of FINAL_COMPARE: primary target,
+    all frames, p > 0.5): the stored per-window frame counts re-pooled over the test meetings' windows for the 115M
+    TS-VAD track and the Nemotron-3 / pyannote 3.1 columns bound by the print (tsvad framecounts_nemotron3,
+    final_compare pya framecounts); the 0.6B TS-VAD head re-run on the same windows (core_0p6b_heads
+    stage_tsvad_eval, windows filtered) -> runs/fixall.json frsub (needs --core 0.6b)."""
+    assert CORE == "0p6b"
+    test = ("Bmr013", "Bmr018", "Bro021")
+    out = {"meetings": list(test)}
+
+    def pool(d, systems):
+        fs = [f for f in sorted(d.glob("*.npz")) if f.stem.split("_")[0] in test]
+        cnt = sum(np.load(f)["counts"] for f in fs)
+        r = {}
+        for i, sname in enumerate(systems):
+            tp, fp, fn, neg = (float(x) for x in cnt[i, 0, 0])
+            r[sname] = {"f1": round(2 * tp / max(2 * tp + fp + fn, 1), 4), "der_pct": round(100 * (fn + fp) / max(tp + fn, 1), 2),
+                        "target_frames": int(tp + fn), "n_windows": len(fs)}
+        return r
+    sysn = ("tsvad_spk_vp5p0", "{a}_vp_spk_vp5p0", "{a}_vp_titanet_vp5p0", "{a}_oracle_column")
+    out["nemotron3"] = pool(SSD / "scratch/tsvad/icsi/framecounts_nemotron3", [x.format(a="nemotron3") for x in sysn])
+    out["pyannote31"] = pool(SSD / "scratch/final_compare/pya/icsi/framecounts", [x.format(a="pyannote31") for x in sysn])
+    T = C._tsvad_mod("cpu")
+    orig_bw = T.bench_windows
+
+    def bw(corpus):
+        ext, meta, ds = orig_bw(corpus)
+        keep = [i for i, v in enumerate(ext) if v["meeting"] in test]
+        return [ext[i] for i in keep], [meta[i] for i in keep], ds
+    T.bench_windows = bw
+    got = {}
+    orig_save = C.save
+    C.save = lambda key, val, sub=None: got.update({key: val})
+    C.stage_tsvad_eval(argparse.Namespace(heads="a", corpora="icsi"))
+    # check: the same code on every ICSI window reproduces runs/core_0p6b.json tsvad_frame
+    T.bench_windows = orig_bw
+    full = {}
+    C.save = lambda key, val, sub=None: full.update({key: val})
+    C.stage_tsvad_eval(argparse.Namespace(heads="a", corpora="icsi"))
+    C.save = orig_save
+    out["check_full_0p6b_f1"] = [full["tsvad_frame"]["icsi"]["primary"]["tsvad_a_vp5p0"]["all"]["f1"],
+                                 json.loads((ROOT / "runs/core_0p6b.json").read_text())["tsvad_frame"]["icsi"]["primary"]["tsvad_a_vp5p0"]["all"]["f1"]]
+    r6 = got["tsvad_frame"]["icsi"]["primary"]["tsvad_a_vp5p0"]["all"]
+    tf, nf = r6["target_frames"], r6["nontarget_frames"]
+    out["ours_0p6b"] = {"f1": r6["f1"], "der_pct": round(100 * (r6["miss"] * tf + r6["fa"] * nf) / tf, 2), "target_frames": tf}
+    log(json.dumps(out))
+    save("frsub", out)
+
+
+def stage_frami(a):
+    """Target-speaker DER / tracking F1 on the AMI TEST windows (ami_eval): every window's stored frame counts pooled
+    (tsvad framecounts_nemotron3: the 115M track + Nemotron-3 binders; final_compare pya framecounts: pyannote
+    binders) and the 0.6B track from runs/core_0p6b.json tsvad_frame.ami_eval -> runs/fixall.json frsub_ami_eval."""
+    out = {"set": "ami_eval"}
+
+    def pool(d, systems):
+        fs = sorted(d.glob("*.npz"))
+        cnt = sum(np.load(f)["counts"] for f in fs)
+        r = {}
+        for i, sname in enumerate(systems):
+            tp, fp, fn, neg = (float(x) for x in cnt[i, 0, 0])
+            r[sname] = {"f1": round(2 * tp / max(2 * tp + fp + fn, 1), 4), "der_pct": round(100 * (fn + fp) / max(tp + fn, 1), 2),
+                        "target_frames": int(tp + fn), "n_windows": len(fs)}
+        return r
+    sysn = ("tsvad_spk_vp5p0", "{a}_vp_spk_vp5p0", "{a}_vp_titanet_vp5p0", "{a}_oracle_column")
+    out["nemotron3"] = pool(SSD / "scratch/tsvad/ami_eval/framecounts_nemotron3", [x.format(a="nemotron3") for x in sysn])
+    out["pyannote31"] = pool(SSD / "scratch/final_compare/pya/ami_eval/framecounts", [x.format(a="pyannote31") for x in sysn])
+    r6 = json.loads((ROOT / "runs/core_0p6b.json").read_text())["tsvad_frame"]["ami_eval"]["primary"]["tsvad_a_vp5p0"]["all"]
+    tf, nf = r6["target_frames"], r6["nontarget_frames"]
+    out["ours_0p6b"] = {"f1": r6["f1"], "der_pct": round(100 * (r6["miss"] * tf + r6["fa"] * nf) / tf, 2), "target_frames": tf}
+    log(json.dumps(out))
+    save("frsub_ami_eval", out)
+
+
+STAGES = {"vman": stage_vman, "vteach": stage_vteach, "vfeat": stage_vfeat, "vtrain": stage_vtrain, "vserved": stage_vserved, "wprep": stage_wprep, "wdec": stage_wdec, "wscore": stage_wscore, "lteach": stage_lteach, "vbuild": stage_vbuild, "servedeq": stage_servedeq, "texport": stage_texport, "tscan": stage_tscan, "tpick": stage_tpick, "ltrain": stage_ltrain, "lfeat6": stage_lfeat6, "llink6": stage_llink6, "steach": stage_steach, "strain": stage_strain, "beamcost": stage_beamcost, "tenergy": stage_tenergy, "tpick115": stage_tpick115, "twsub": stage_twsub, "frsub": stage_frsub, "frami": stage_frami}
 
 
 def main():
@@ -1049,6 +1509,9 @@ def main():
     ap.add_argument("--old", default="")
     ap.add_argument("--tags", default="")
     ap.add_argument("--wmix", type=float, default=0.5)
+    ap.add_argument("--n-per-lang", type=int, default=0)
+    ap.add_argument("--aam-margin", type=float, default=0.2)
+    ap.add_argument("--full-view", action="store_true")
     ap.add_argument("--lblocks", default="8-12")
     ap.add_argument("--fam", default="balanced,fast,assistant")
     ap.add_argument("--new", default="")

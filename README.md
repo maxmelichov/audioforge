@@ -73,20 +73,21 @@ events = s.feed(pcm) + s.end()              # the protocol's messages as dicts
 
 ## Results
 
-One measurement pass on 2026-10-01: both cores and the best open models in use today, the same audio and labels for
-every system in a row. Full tables with 95 % confidence intervals: [`research/FINAL_COMPARE.md`](research/FINAL_COMPARE.md).
-Ours = audioforge on the 115M core (heads v0.3) and on the English 0.6B core (heads v0.2).
+Public **test** splits only (2026-10-02): both cores and the best open models in use today, every baseline re-run on
+the same audio and labels. Full tables with 95 % confidence intervals, and which audio each head was trained and
+selected on: [`research/FINAL_COMPARE.md`](research/FINAL_COMPARE.md). Ours = audioforge on the 115M core (heads v0.4)
+and on the English 0.6B core (heads v0.3).
 
 **Words** (WER %, Whisper normaliser; ours stream at 160 ms, a word shows up about 0.3 s after it is said; the others
 transcribe after the speaker stops)
 
-| system | LibriSpeech | AMI meetings | ICSI meetings | live calls, user channel |
-|---|---:|---:|---:|---:|
-| ours 0.6B | 2.1 | 10.4 | 13.6 | **5.7** |
-| ours 115M | 2.3 | 20.6 | 26.2 | 15.4 |
-| Parakeet-TDT 0.6B v3 | 1.9 | **9.5** | **10.4** | 7.7 |
-| Whisper large-v3 | 1.4 | 12.4 | 12.8 | 8.5 |
-| Whisper small (LiveKit default) | 2.3 | 14.5 | 18.2 | 10.1 |
+| system | LibriSpeech test-clean | LibriSpeech test-other | AMI test meetings | ICSI test meetings | live calls, user channel |
+|---|---:|---:|---:|---:|---:|
+| ours 0.6B | 2.7 | 5.7 | **7.9** | 10.3 | **5.7** |
+| ours 115M | 2.4 | 6.8 | 16.1 | 18.4 | 15.4 |
+| Parakeet-TDT 0.6B v3 | **1.8** | **3.4** | 8.3 | **7.6** | 7.7 |
+| Whisper large-v3 | 2.0 | 3.6 | 10.7 | 13.2 | 8.5 |
+| Whisper small (LiveKit default) | 3.7 | 7.5 | 11.9 | 15.0 | 10.1 |
 
 ![words](demo/images/compare_asr.png)
 
@@ -100,40 +101,42 @@ transcribe after the speaker stops)
 | Pipecat smart-turn v3.2 + Silero | 69.7 % | **211 ms** | 40.2 % |
 | NVIDIA Parakeet-Realtime-EOU | 48.4 % | 462 ms | 91.5 % |
 
-On human two-party calls (109 turn ends, default `balanced` preset): ours 115M 955 ms / 20.2 % false interruptions /
-7.3 % missed, ours 0.6B 730 ms / 19.3 % / 10.1 %, LiveKit 567 ms / 26.6 % / 22.9 %, Pipecat 237 ms / 35.8 % / 24.8 %.
+On AMI test meetings (200 turns, default `balanced` preset): ours 115M 1527 ms / 15.5 % interruptions / 36.0 % missed,
+ours 0.6B 1497 ms / 10.0 % / 33.5 %, LiveKit 745 ms / 13.0 % / 72.0 %, Pipecat 752 ms / 39.5 % / 53.0 %. Two-party call
+rows are in FINAL_COMPARE.md, outside the headline: no labelled public test split exists for them.
 
 ![turn taking](demo/images/compare_turn.png)
 
-**Speech detection** (F1 at threshold 0.5): AMI ours 0.951 (115M) / 0.950 (0.6B), MarbleNet v2 0.937, TEN VAD 0.925,
-Silero v5 0.915. On unseen ICSI meetings: ours 0.951 (0.6B) / 0.947 (115M), TEN VAD 0.935, Silero and MarbleNet 0.929.
-Our speech heads were trained on AMI, other ICSI meetings and phone-call channels (research/FIXALL.md).
+**Speech detection** (F1 at threshold 0.5, test meetings): AMI ours 0.959 (115M) / 0.957 (0.6B), MarbleNet v2 0.941,
+TEN VAD 0.928, Silero v5 0.899 (pyannote 0.975, offline). ICSI ours 0.940 (0.6B) / 0.938 (115M), Silero 0.922, TEN VAD
+0.920, MarbleNet 0.914.
 
 ![speech detection](demo/images/compare_vad.png)
 
-**Your words only** (target-speaker WER %, same 5 s voice print for every system): ICSI meetings ours 0.6B 31.7,
-ours 115M 37.1, Nemotron-3 diarizer 60.0, pyannote 3.1 74.8, no filter 100.8.
+**Your words only** (target-speaker WER %, same 5 s voice print for every system, test meetings): ICSI ours 0.6B 29.0,
+ours 115M 34.9, Nemotron-3 diarizer 59.4, pyannote 3.1 69.0; AMI ours 47.1 / 51.5, Nemotron-3 64.4, pyannote 77.1.
 
 ![speaker tracking](demo/images/compare_spk.png)
 
-**Language ID** (FLEURS 17 languages, 2 s of speech): Whisper large-v3 95.9 %, AmberNet 95.1 %, ours 115M 91.0 %,
-Whisper small 90.6 %, ours 0.6B 87.6 %.
+**Language ID** (FLEURS 17 languages, test, 2 s of speech): Whisper large-v3 95.9 %, AmberNet 95.1 %, ours 0.6B
+92.7 %, ours 115M 92.4 %, Whisper small 90.6 %.
 
 ![language](demo/images/compare_lid.png)
 
-**Cost on an Apple-silicon laptop** (whole engine, per 160 ms of audio): 115M 27.7 ms on the GPU, 31.0 ms on 2 CPU
-threads, 4 real-time streams, 1.2 GB; 0.6B 43.7 ms GPU / 99.4 ms CPU, 3 streams on the GPU, 4.8 GB.
+**Cost on an Apple-silicon laptop** (whole engine, per 160 ms of audio): 115M 28.6 ms on the GPU, 30.4 ms on 2 CPU
+threads, 5 real-time streams on the GPU, 1.2 GB; 0.6B 42.9 ms GPU / 97.1 ms CPU, 3 streams on the GPU, 4.9 GB.
 
 ## Where it loses
 
 - **Turn answers are not the fastest.** Pipecat smart-turn answers assistant speech sooner (211 ms vs 299 / 379 ms
-  p50) and calls sooner, at many more cut-offs. The `assistant` preset misses a third of human call turns, so calls
-  use `balanced`; no single preset wins every column.
-- **Words of the 115M core** are behind every offline baseline on meetings and calls. Use the 0.6B core
-  (`--core 0.6b`) for transcript quality. Parakeet-TDT v3 still beats the 0.6B on ICSI meetings (10.4 vs 13.6 %).
-- **Language ID:** Whisper and AmberNet beat our heads, most at 2 s.
-- **Speaker embeddings alone:** TitaNet-L and WeSpeaker match voices better than our speaker heads (EER AMI 12 % vs
-  14-20 %); our tracker still gives the best target-speaker WER.
+  p50) and meeting turns sooner, at many more cut-offs. The `assistant` preset misses many meeting turns, so
+  conversations use `balanced`; no single preset wins every column.
+- **Words:** Parakeet-TDT v3 (offline) beats the 0.6B on ICSI test meetings (7.6 vs 10.3 %) and on LibriSpeech
+  (3.4 vs 5.7 % on test-other). The 115M core is behind every offline baseline on meetings; use `--core 0.6b` for
+  transcript quality.
+- **Language ID:** Whisper large-v3 and AmberNet beat our heads, most at 2 s (95.9 vs 92.7 %).
+- **Speaker embeddings alone:** TitaNet-L and WeSpeaker match voices better than our speaker heads (EER AMI test
+  1.9 % vs 3.8-5.0 %); our tracker still gives the best target-speaker WER.
 - Not measured: paid APIs (Deepgram Nova-3, AssemblyAI).
 
 ## Modes and the voice sample

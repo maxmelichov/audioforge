@@ -117,7 +117,7 @@ FLAGS: tuple[Flag, ...] = (
          {"choices": ["115m", "0.6b"], "default": None}, launcher=True, doc_default="`115m`",
          doc="which streaming core the launcher loads from the models directory: `115m` (NVIDIA FastConformer 114M + "
          "our heads, real time on 2 CPU threads) or `0.6b` (NVIDIA nemotron-speech-streaming-en-0.6b, NVIDIA Open Model "
-         "License, with every head retrained on it: `served_0p6b_v0.3.afm`, `tsvad_0p6b.pt`, `lid_0p6b.pt`; about half the "
+         "License, with every head retrained on it: `served_0p6b_v0.3.afm`, `tsvad_0p6b.pt`, `lid_0p6b_v2.pt`; about half the "
          "meeting WER, but ~96 ms of CPU per 160 ms chunk on 2 threads: one real-time stream per process against the 115M's 4, "
          "3 on an Apple GPU with `--device mps`, 5 GB RSS). Voice prints "
          "belong to one core: re-enroll after switching. Install with `audioforge-download --core 0.6b`; "
@@ -279,10 +279,16 @@ FLAGS: tuple[Flag, ...] = (
          doc_default="off"),
     Flag(("--asr-vad-hangover-ms",), "transcripts", "--asr-vad-gate: decoding continues this long after speech",
          {"type": float, "default": 1200.0, "metavar": "MS"}, advanced=True),
+    Flag(("--beam",), "transcripts", "RNNT beam search width for finals (0 = greedy)",
+         {"type": int, "default": 0, "metavar": "K"}, advanced=True,
+         doc="finals take the best hypothesis of an RNNT beam search of width K (up to 3 tokens per frame) run next "
+         "to the greedy decoder; partials and the turn heads keep the greedy tokens. 115M: -1.3 / -2.3 WER points on "
+         "held-out ICSI / AMI at K = 8, about 1 ms per 80 ms frame on CPU; the 0.6B does not gain (research/FIXALL.md)",
+         doc_default="0 (greedy)"),
     # --- language ID
     Flag(("--lid",), "lid", "spoken language ID: head, a head file or ambernet", {"metavar": "head|PATH|ambernet"},
          advanced=True, doc="spoken language ID: `head` (the shipped distilled head on the shared encoder, "
-         "`lid_distill.pt`), a head file (`audioforge.lid.save_head`), or `ambernet` / an AmberNet `.nemo`; emits "
+         "`lid_115m_v2.pt`), a head file (`audioforge.lid.save_head`), or `ambernet` / an AmberNet `.nemo`; emits "
          "`language` messages and `stats.lang`", doc_default="off", section=S9),
     Flag(("--lid-threshold",), "lid", "--lid: posterior needed to announce a language",
          {"type": float, "default": 0.9, "metavar": "P"}, advanced=True, section=S9),
@@ -509,7 +515,7 @@ def load_engine(a):
                        final_asr=a.final_asr,
                        final_asr_worker=a.final_asr_worker, final_asr_threads=a.final_asr_threads,
                        final_asr_device=a.final_asr_device, asr_lookahead=a.asr_lookahead, asr_chunk_ms=a.asr_chunk_ms,
-                       asr_vad_gate=a.asr_vad_gate, asr_vad_hangover_ms=a.asr_vad_hangover_ms,
+                       asr_vad_gate=a.asr_vad_gate, asr_vad_hangover_ms=a.asr_vad_hangover_ms, asr_beam=a.beam,
                        max_session_s=a.max_session_s, idle_timeout_s=a.idle_timeout_s, log_json=a.log_json,
                        perf=a.perf, tsvad=a.tsvad, tsvad_print_s=a.tsvad_print_s,
                        tsvad_refresh_s=a.tsvad_refresh_s, diar_off=a.diar_off, diar_labels=a.diar_labels,

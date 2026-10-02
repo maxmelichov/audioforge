@@ -70,3 +70,21 @@ def test_vad_head_policy_reset_thr():
         return [v for v, x in enumerate(vad) if pol.update(0.0, x) is not None]
     assert fire(None) == [8]  # fallback: 4 frames since the last frame >= 0.4 (frame 4)
     assert fire(0.25) == [11]  # the 0.3 frames (unsure) restart the silence clock: 4 frames after frame 7
+
+
+def test_asr_stream_beam_cut_segments():
+    m = _model(speech=False)
+    x = (np.random.default_rng(1).standard_normal(16000 * 3) * 0.1).astype(np.float32)
+    s = ASRStream(m, turn=None, beam=4)
+    for i in range(0, len(x), 700):
+        s.feed_frames(x[i:i + 700])
+    s.feed_frames(np.zeros(0, np.float32), final=True)
+    frames = torch.cat(s.beam_frames, 0)
+    n = s.n_frames
+    assert frames.shape[0] == n
+    cut = n // 2
+    first = s.beam_cut(cut)
+    assert first == m.heads["rnnt"].beam_search(frames[:cut], beam=4, max_sym=3)
+    second = s.beam_cut(n)  # the frames after the first cut were re-fed into a fresh beam
+    assert second == m.heads["rnnt"].beam_search(frames[cut:], beam=4, max_sym=3)
+    assert s.beam_frames == [] and s.beam_b0 == n

@@ -53,13 +53,13 @@ def test_download_core_0p6b_set(tmp_path, monkeypatch):
 
 
 def test_launcher_core_0p6b_resolves_its_own_files(tmp_path, capsys):
-    for name in (hub.SERVED_0P6B, "tsvad_0p6b.pt", "lid_0p6b.pt"):
+    for name in (hub.SERVED_0P6B, "tsvad_0p6b.pt", "lid_0p6b_v2.pt"):
         (tmp_path / name).write_bytes(b"x")
     argv = launch.resolve_models(["--device", "mps"], str(tmp_path), mode="single", core="0.6b")
     val = lambda f: argv[argv.index(f) + 1]  # noqa: E731
     assert val("--asr") == str(tmp_path / hub.SERVED_0P6B)
     assert val("--tsvad") == str(tmp_path / "tsvad_0p6b.pt")
-    assert val("--lid") == str(tmp_path / "lid_0p6b.pt")
+    assert val("--lid") == str(tmp_path / "lid_0p6b_v2.pt")
     assert "one real-time stream" not in capsys.readouterr().err  # a GPU device was given
     launch.resolve_models([], str(tmp_path), mode="single", core="0.6b")
     assert "one real-time stream" in capsys.readouterr().err  # CPU: the cost is stated

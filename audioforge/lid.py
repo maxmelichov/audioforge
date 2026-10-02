@@ -12,12 +12,12 @@ import numpy as np
 import torch
 
 LID_NAME = "lid"
-HEAD_FILE = "lid_distill.pt"  # the served head of research/archive/LID.md "Fix pass, 2026-09-29" (``serve --lid head``)
+HEAD_FILE = "lid_115m_v2.pt"  # the served head of research/archive/LID.md "Fix pass, 2026-09-29" (``serve --lid head``)
 HEAD_MAX_MS = 3000.0  # its pre-registered rule: announce at the threshold, or the top language after 3 s of speech
 
 
 def resolve_head(value, models_dir=None) -> str:
-    """``--lid head`` -> the shipped head file (<models dir>/lid_distill.pt, else <repo>/assets/, else <repo>/runs/); any
+    """``--lid head`` -> the shipped head file (<models dir>/lid_115m_v2.pt, else <repo>/assets/, else <repo>/runs/); any
     other value (a head-file path) is returned unchanged."""
     if value != "head":
         return value

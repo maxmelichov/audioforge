@@ -291,6 +291,7 @@ class Engine:
                  lid_langs: list | None = None, lid_max_ms: float | None = None, final_asr=None, final_asr_worker: str = "process",
                  final_asr_threads: int | None = 2, final_asr_device: str = "cpu", asr_lookahead: int | None = None,
                  asr_chunk_ms: int | None = None, asr_vad_gate: float | None = None, asr_vad_hangover_ms: float = 1200.0,
+                 asr_beam: int = 0,
                  max_session_s: float = DEFAULT_MAX_SESSION_S, idle_timeout_s: float = DEFAULT_IDLE_TIMEOUT_S,
                  log_json: bool = False, perf: str | None = "default", tsvad: str | None = None,
                  tsvad_print_s: float = 5.0, tsvad_refresh_s: float = 0.0, diar_off: bool = False,
@@ -324,6 +325,7 @@ class Engine:
         self.turn_hint_p = None if turn_hint_p is None else float(turn_hint_p)
         self.asr_lookahead = int(asr_lookahead) if asr_lookahead else None
         self.asr_vad_gate = None if asr_vad_gate is None else float(asr_vad_gate)
+        self.asr_beam = int(asr_beam or 0)
         self.asr_vad_hangover = max(1, int(round(float(asr_vad_hangover_ms) / FRAME_MS)))
         self.max_session_s, self.idle_timeout_s = float(max_session_s), float(idle_timeout_s)
         self.log_json = bool(log_json)
@@ -732,7 +734,7 @@ class Session:
             from .lid import LIDStream
             lid = LIDStream(e.asr, e.lid_name, threshold=e.lid_threshold, min_ms=e.lid_min_ms, max_ms=e.lid_max_ms)
         self.asr = ASRStream(e.asr, e.vad_name, e.turn_name, e.turn_input, lid=lid, vad_gate=e.asr_vad_gate,
-                             vad_hangover_frames=e.asr_vad_hangover, att_context_size=e.asr_att)
+                             vad_hangover_frames=e.asr_vad_hangover, att_context_size=e.asr_att, beam=e.asr_beam)
         if e.diar_off:  # --diar-off: the TS-VAD track stands in for the diarizer's columns (no Sortformer pass)
             from .tsvad_stream import TSVADColumns
             self.diar = TSVADColumns(self.asr, e.num_spks)
@@ -1204,6 +1206,9 @@ class Session:
         cut = max(self.seg_tok, self.asr.tok_at[f - 1] if f > 0 else 0)
         tok = self.e.asr.tokenizer
         text = tok.decode(self.asr.tokens[self.seg_tok:cut]) if tok is not None else ""
+        bt = self.asr.beam_cut(f) if self.asr.beam_k else None
+        if bt is not None and tok is not None:  # --beam: the final holds the beam's best hypothesis
+            text = tok.decode(bt)
         speaker, extra = self._attribute(self.seg_frame0, f, speaker)
         fin = {"type": "final", "t": round(t_dec, 3), "text": text, "speaker": speaker, **extra}
         out.append(fin)
@@ -1619,7 +1624,11 @@ class Session:
         self.finished = True  # (set before the flush: _asr_frames_at then counts the final partial chunk)
         out = self.process(np.zeros(0, np.float32) if samples is None else samples, final=True, arrived=arrived)
         spk, extra = self._attribute(self.seg_frame0, self.asr.n_frames, self.timeout.primary)
-        out.append({"type": "final", "t": self.t, "text": self._seg_text(), "speaker": spk, **extra})
+        text = self._seg_text()
+        bt = self.asr.beam_cut(self.asr.n_frames) if self.asr.beam_k else None
+        if bt is not None and self.e.asr.tokenizer is not None:
+            text = self.e.asr.tokenizer.decode(bt)
+        out.append({"type": "final", "t": self.t, "text": text, "speaker": spk, **extra})
         if self.e.final_sources:
             out[-1]["source"] = "stream"
         if self.la is not None:

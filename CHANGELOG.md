@@ -6,6 +6,22 @@ versions follow [Semantic Versioning](https://semver.org/). Every measured numbe
 
 ## [Unreleased]
 
+### Changed (2026-10-02): LID heads v2, `--beam`, test-split comparison (research/FIXALL.md, research/FINAL_COMPARE.md)
+- LID heads v2 on both cores: hidden 1024 (2.37 M / 2.89 M parameters), AmberNet distillation, the 0.6B now also trained on
+  FLEURS `trainx`. FLEURS-17 test at 2 s / full clip: 115M 90.9 / 97.8 → 92.4 / 98.2 %, 0.6B 87.6 / 95.5 → 92.7 / 98.6 %.
+  No measurable cost (±0.2 ms per chunk). Files `assets/lid_115m_v2.pt`, `assets/lid_0p6b_v2.pt` (hub `lid`, `lid_0p6b`).
+  A Whisper large-v3 teacher was tried and hurt on dev.
+- `serve --beam K`: finals from an RNNT beam search (≤ 3 tokens per frame) run on a CPU copy of the transducer next to
+  the greedy decoder; partials and turn taking keep the greedy tokens. 115M at K = 8: AMI test WER 16.1 → 14.6 %, live
+  calls 20.3 → 18.6 %; +1.5 ms (CPU) / +2.2 ms (MPS) per chunk, so it is off by default. The 0.6B does not gain.
+- `VadHeadPolicy(reset_thr=…)` / a preset's `reset_thr`: a two-threshold silence clock (off by default; no shipped preset
+  uses it).
+- `SpeakerHead(hidden=…)`: optional two-layer projection (off by default).
+- research/FINAL_COMPARE.md now reports public test splits only: LibriSpeech test-clean / test-other, AMI / ICSI test
+  meetings, smart-turn v3.2 test, AMI test turns, FLEURS test. Every baseline was re-run on the same audio. The dev-split
+  first pass moved to research/FIXALL.md.
+
+
 ### Added (2026-10-01): speech-detector head on both cores (research/FIXALL.md step 1)
 - `heads.speech`: a stateless speech detector (served FrameHead shape on a learned block mix: 115M blocks 2-6, 0.6B
   blocks 8-16), trained on AMI + ICSI train meetings + oto user channels (clean and quiet-channel variants) with

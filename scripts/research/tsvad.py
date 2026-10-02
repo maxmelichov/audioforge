@@ -402,6 +402,9 @@ def bench_windows(corpus: str):
     if corpus == "ami":
         import eval_stage1 as E
         base, ext, meta, ds, _ = E.v2_data()
+    elif corpus == "ami_eval":  # the same windows cut from the AMI test (eval) meetings (research/FIXALL.md test audit)
+        import eval_stage1 as E
+        base, ext, meta, ds, _ = E.v2_data_split("eval")
     else:
         import bench_turn_icsi as M
         base, ext, meta, ds, _ = M.icsi_data()

@@ -31,9 +31,9 @@ from .server import cli
 __all__ = ["CORE_FILES", "TSVAD_FILE", "core_files", "find_head", "pick_mode", "resolve_models", "serve_main"]
 
 TSVAD_FILE = "tsvad_spk.pt"  # the TS-VAD head of research/IMPROVE_115M.md part A (serve --turn-input tsvad)
-LID_FILE = "lid_distill.pt"  # the distilled language-ID head (serve --lid head); optional, see docs/MODELS.md
+LID_FILE = "lid_115m_v2.pt"  # the distilled language-ID head (serve --lid head); optional, see docs/MODELS.md
 # --core 0.6b (research/CORE_0P6B.md): the same roles on nemotron-speech-streaming-en-0.6b (heads retrained on it)
-CORE_FILES = {"115m": (TSVAD_FILE, LID_FILE), "0.6b": ("tsvad_0p6b.pt", "lid_0p6b.pt")}
+CORE_FILES = {"115m": (TSVAD_FILE, LID_FILE), "0.6b": ("tsvad_0p6b.pt", "lid_0p6b_v2.pt")}
 
 
 def core_files(core: str) -> tuple[str, str]:
@@ -75,7 +75,7 @@ def _strip(argv: list[str], flags: tuple[str, ...]) -> list[str]:
 
 
 def find_head(name: str, models_dir: str | None = None):
-    """A small head file (``tsvad_spk.pt``, ``lid_distill.pt``): the models directory, else this checkout's assets/,
+    """A small head file (``tsvad_spk.pt``, ``lid_115m_v2.pt``): the models directory, else this checkout's assets/,
     else its runs/."""
     from .paths import ROOT
     return next((p for p in (hub.models_dir(models_dir) / name, ROOT / "assets" / name, ROOT / "runs" / name)

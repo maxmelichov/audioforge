@@ -207,10 +207,13 @@ class SpeakerHead(Head):
     key = "speaker"
 
     def __init__(self, d_model: int, num_speakers: int, emb_dim: int = 192, margin: float = 0.2,
-                 scale: float = 30.0, distill: dict | None = None, aam_weight: float = 1.0):
+                 scale: float = 30.0, distill: dict | None = None, aam_weight: float = 1.0, hidden: int = 0):
         super().__init__()
         self.pool = AttentiveStatsPool(d_model)
-        self.emb = nn.Sequential(nn.Linear(2 * d_model, emb_dim), nn.BatchNorm1d(emb_dim))
+        # hidden > 0: a two-layer projection (research/FIXALL.md step 4); 0 = the shipped single linear layer
+        self.emb = (nn.Sequential(nn.Linear(2 * d_model, hidden), nn.SiLU(), nn.Linear(hidden, emb_dim),
+                                  nn.BatchNorm1d(emb_dim)) if hidden else
+                    nn.Sequential(nn.Linear(2 * d_model, emb_dim), nn.BatchNorm1d(emb_dim)))
         self.W = nn.Parameter(torch.randn(num_speakers, emb_dim) * 0.01)
         self.m, self.s = margin, scale
         self.distill = dict(distill) if distill else None

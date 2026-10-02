@@ -5353,6 +5353,162 @@
    },
    "n_windows": 1312,
    "n_targets": 3596
+  },
+  "ami_eval": {
+   "primary": {
+    "tsvad_a_vp5p0": {
+     "all": {
+      "f1": 0.8285,
+      "precision": 0.7951,
+      "miss": 0.1352,
+      "fa": 0.1878,
+      "target_frames": 70185,
+      "nontarget_frames": 83281,
+      "der": 0.358
+     },
+     "single": {
+      "f1": 0.8724,
+      "precision": 0.8432,
+      "miss": 0.0962,
+      "fa": 0.1559,
+      "target_frames": 47818,
+      "nontarget_frames": 51548,
+      "der": 0.2643
+     },
+     "overlap": {
+      "f1": 0.7879,
+      "precision": 0.7944,
+      "miss": 0.2185,
+      "fa": 0.4682,
+      "target_frames": 22367,
+      "nontarget_frames": 9664,
+      "der": 0.4208
+     },
+     "silence": {
+      "f1": 0.0,
+      "precision": 0.0,
+      "miss": null,
+      "fa": 0.1395,
+      "target_frames": 0,
+      "nontarget_frames": 22069
+     }
+    },
+    "tsvad_a_vp1p5": {
+     "all": {
+      "f1": 0.7621,
+      "precision": 0.7659,
+      "miss": 0.2417,
+      "fa": 0.1953,
+      "target_frames": 70185,
+      "nontarget_frames": 83281,
+      "der": 0.4734
+     },
+     "single": {
+      "f1": 0.7794,
+      "precision": 0.7995,
+      "miss": 0.2397,
+      "fa": 0.1768,
+      "target_frames": 47818,
+      "nontarget_frames": 51548,
+      "der": 0.4303
+     },
+     "overlap": {
+      "f1": 0.7705,
+      "precision": 0.7876,
+      "miss": 0.2459,
+      "fa": 0.4706,
+      "target_frames": 22367,
+      "nontarget_frames": 9664,
+      "der": 0.4492
+     },
+     "silence": {
+      "f1": 0.0,
+      "precision": 0.0,
+      "miss": null,
+      "fa": 0.118,
+      "target_frames": 0,
+      "nontarget_frames": 22069
+     }
+    }
+   },
+   "all_speakers": {
+    "tsvad_a_vp5p0": {
+     "all": {
+      "f1": 0.7644,
+      "precision": 0.7111,
+      "miss": 0.1737,
+      "fa": 0.1819,
+      "target_frames": 170080,
+      "nontarget_frames": 313874,
+      "der": 0.5094
+     },
+     "single": {
+      "f1": 0.8017,
+      "precision": 0.7385,
+      "miss": 0.1233,
+      "fa": 0.1472,
+      "target_frames": 99322,
+      "nontarget_frames": 209582,
+      "der": 0.4339
+     },
+     "overlap": {
+      "f1": 0.7443,
+      "precision": 0.7333,
+      "miss": 0.2445,
+      "fa": 0.4589,
+      "target_frames": 70758,
+      "nontarget_frames": 42358,
+      "der": 0.5192
+     },
+     "silence": {
+      "f1": 0.0,
+      "precision": 0.0,
+      "miss": null,
+      "fa": 0.11,
+      "target_frames": 0,
+      "nontarget_frames": 61934
+     }
+    },
+    "tsvad_a_vp1p5": {
+     "all": {
+      "f1": 0.7075,
+      "precision": 0.6758,
+      "miss": 0.2577,
+      "fa": 0.1929,
+      "target_frames": 170080,
+      "nontarget_frames": 313874,
+      "der": 0.6137
+     },
+     "single": {
+      "f1": 0.7131,
+      "precision": 0.6799,
+      "miss": 0.2503,
+      "fa": 0.1672,
+      "target_frames": 99322,
+      "nontarget_frames": 209582,
+      "der": 0.6031
+     },
+     "overlap": {
+      "f1": 0.7286,
+      "precision": 0.7252,
+      "miss": 0.268,
+      "fa": 0.4635,
+      "target_frames": 70758,
+      "nontarget_frames": 42358,
+      "der": 0.5455
+     },
+     "silence": {
+      "f1": 0.0,
+      "precision": 0.0,
+      "miss": null,
+      "fa": 0.095,
+      "target_frames": 0,
+      "nontarget_frames": 61934
+     }
+    }
+   },
+   "n_windows": 941,
+   "n_targets": 2959
   }
  },
  "spk_paired": {
@@ -7930,6 +8086,72 @@
     },
     "n_units": 3596,
     "n_meetings": 5
+   }
+  },
+  "ami_eval": {
+   "primary": {
+    "core115_tsvad_d2": {
+     "twer": 51.49,
+     "ci_meeting": [
+      41.13,
+      58.83
+     ]
+    },
+    "core0p6b_tsvad_d2": {
+     "twer": 47.12,
+     "ci_meeting": [
+      32.27,
+      57.65
+     ]
+    },
+    "asr0p6b_mask115_d2": {
+     "twer": 42.56,
+     "ci_meeting": [
+      30.77,
+      50.91
+     ]
+    },
+    "0p6b_minus_115m": {
+     "delta": -4.37,
+     "ci_meeting": [
+      -8.86,
+      1.08
+     ]
+    },
+    "n_units": 940,
+    "n_meetings": 4
+   },
+   "all_speakers": {
+    "core115_tsvad_d2": {
+     "twer": 69.85,
+     "ci_meeting": [
+      60.03,
+      81.15
+     ]
+    },
+    "core0p6b_tsvad_d2": {
+     "twer": 68.64,
+     "ci_meeting": [
+      50.31,
+      88.23
+     ]
+    },
+    "asr0p6b_mask115_d2": {
+     "twer": 61.25,
+     "ci_meeting": [
+      51.2,
+      76.71
+     ]
+    },
+    "0p6b_minus_115m": {
+     "delta": -1.21,
+     "ci_meeting": [
+      -9.72,
+      7.07
+     ]
+    },
+    "n_units": 2959,
+    "n_meetings": 4
    }
   }
  },

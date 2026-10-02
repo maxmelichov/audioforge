@@ -24,7 +24,7 @@ measured with.
 
 Second core (``--core 0.6b``, research/CORE_0P6B.md): NVIDIA's ``nemotron-speech-streaming-en-0.6b`` (NVIDIA Open
 Model License; 618 M parameters, every tensor unchanged) plus heads retrained on it (``assets/served_heads_0p6b_v0.3.pt``
--> ``served_0p6b_v0.3.afm``; v0.2 + the speech detector head, research/FIXALL.md) and its own TS-VAD and LID heads (``tsvad_0p6b.pt``, ``lid_0p6b.pt``). The 115M stays the
+-> ``served_0p6b_v0.3.afm``; v0.2 + the speech detector head, research/FIXALL.md) and its own TS-VAD and LID heads (``tsvad_0p6b.pt``, ``lid_0p6b_v2.pt``). The 115M stays the
 default. ``audioforge-download --core 0.6b`` fetches that set (2.5 GB download, ~2.3 GB on disk).
 
 Output directory: ``--dir``, else ``$AUDIOFORGE_HOME``, else ``<repo>/models`` in a source checkout, else
@@ -160,21 +160,23 @@ COMPONENTS: dict[str, Component] = {c.key: c for c in [
               "dbc6230d8d722bad65aaf598dce69569995bd96bc002da40a2069d664c427683", "Apache-2.0 (audioforge heads)",
               "https://www.apache.org/licenses/LICENSE-2.0", "single-model mode: the user's track (serve --tsvad)",
               "tsvad_spk.pt", 1, "keep", url=f"{RELEASE_URL}/tsvad_spk.pt"),
-    Component("lid", "audioforge LID head (distilled from AmberNet, 0.92 M)", "lid_distill.pt", 3704886,
-              "07de4e4da5444ecae250b4c5ef0172372451ba2da9ea7ae492e42b1759f1d487",
+    # v2 (research/FIXALL.md step 3): hidden 1024 (2.37 M), same AmberNet distillation; FLEURS-17 test 2 s 91.0 -> 92.4 %,
+    # full 97.8 -> 98.2 %; lid_distill.pt (v1) stays in assets/ for reproduction
+    Component("lid", "audioforge LID head v2 (distilled from AmberNet, 2.37 M)", "lid_115m_v2.pt", 9478879,
+              "6e9586354538d298f90cffb3dd0c2439a97107f3ab969d7286132fbcd6570e27",
               "Apache-2.0 (audioforge heads; trained on AmberNet outputs, NGC Terms of Use)",
               "https://ngc.nvidia.com/legal/terms", "single-model mode: language ID (serve --lid head)",
-              "lid_distill.pt", 4, "keep", url=f"{RELEASE_URL}/lid_distill.pt"),
+              "lid_115m_v2.pt", 10, "keep", url=f"{RELEASE_URL}/lid_115m_v2.pt"),
     # the 0.6B core's own TS-VAD and LID heads (research/CORE_0P6B.md; a 115M head does not fit the 1024-d encoder)
     Component("tsvad_0p6b", "audioforge TS-VAD head for the 0.6B core", "tsvad_0p6b.pt", 1441712,
               "06fc6e3a421ac344216a593bcae0922099435aef8b8834e62fa401eaafa8a9d8",
               "Apache-2.0 (audioforge heads)", "https://www.apache.org/licenses/LICENSE-2.0",
               "--core 0.6b: the user's track", "tsvad_0p6b.pt", 2, "keep", url=f"{RELEASE_URL}/tsvad_0p6b.pt"),
-    Component("lid_0p6b", "audioforge LID head for the 0.6B core (distilled from AmberNet)", "lid_0p6b.pt", 4757196,
-              "22c8667afbb5be64cbd3fe41b7b941f9a0b07b3453139da062524af7d0307fed",
+    Component("lid_0p6b", "audioforge LID head v2 for the 0.6B core (distilled from AmberNet, 2.89 M; FIXALL step 3)",
+              "lid_0p6b_v2.pt", 11580148, "63acfa9d5b83986c11221a234a5ffb6e24e19b7761c19490cc8e60bcc06d8d01",
               "Apache-2.0 (audioforge heads; trained on AmberNet outputs, NGC Terms of Use)",
-              "https://ngc.nvidia.com/legal/terms", "--core 0.6b: language ID", "lid_0p6b.pt", 5, "keep",
-              url=f"{RELEASE_URL}/lid_0p6b.pt"),
+              "https://ngc.nvidia.com/legal/terms", "--core 0.6b: language ID", "lid_0p6b_v2.pt", 12, "keep",
+              url=f"{RELEASE_URL}/lid_0p6b_v2.pt"),
     Component("silero", "Silero VAD v5 (v5.1.2 ONNX)", "silero_vad.onnx", 2327524,
               "2623a2953f6ff3d2c1e61740c6cdb7168133479b267dfef114a4a3cc5bdd788f", "MIT",
               "https://github.com/snakers4/silero-vad/blob/master/LICENSE",

@@ -109,6 +109,41 @@ def asr_set(name: str):
             assert sr == SR
             xs.append(x if x.ndim == 1 else x.mean(1))
         return xs, [s["ref"] for s in S], [s["clip"] for s in S]
+    if name in ("ls_clean", "ls_other"):  # LibriSpeech test-clean / test-other: 300 utterances, seeded random over the
+        import random                        # whole split (every speaker can be drawn; FIXALL test audit)
+        import soundfile as sf
+        split = {"ls_clean": "test-clean", "ls_other": "test-other"}[name]
+        root = ROOT / "data/librispeech/LibriSpeech" / split
+        items = []
+        for tr in sorted(root.glob("*/*/*.trans.txt")):
+            for ln in tr.read_text().splitlines():
+                uid, txt = ln.split(" ", 1)
+                items.append((uid, tr.parent / f"{uid}.flac", txt.lower()))
+        pick = sorted(random.Random(0).sample(range(len(items)), 300))
+        xs = []
+        for i in pick:
+            x, sr = sf.read(str(items[i][1]), dtype="float32")
+            assert sr == SR
+            xs.append(x)
+        return xs, [items[i][2] for i in pick], list(range(len(pick)))
+    if name.endswith("_eval"):  # the corpora's eval meetings, the final_asr protocol (FIXALL test audit)
+        f = WORK / "asr_sets" / f"{name}.npz"
+        if not f.exists():
+            import random
+            if name == "ami_eval":
+                from audioforge.datasets.ami import AMI, subset
+                ds = AMI(subset({"eval": 4})["eval"], verbose=False)
+            else:
+                from audioforge.datasets.icsi import ICSI, subset
+                ds = ICSI(subset()["eval"], verbose=False)
+            segs = ds.asr(1.0, 15.0)
+            idx = sorted(random.Random(0).sample(range(len(segs)), min(200, len(segs))))
+            f.parent.mkdir(parents=True, exist_ok=True)
+            np.savez(f, **{f"a{i}": np.asarray(segs[j]["audio"], np.float32) for i, j in enumerate(idx)})
+            (WORK / "asr_sets" / f"{name}_refs.json").write_text(json.dumps([segs[j]["text"] for j in idx]))
+        z = np.load(f)
+        refs = json.loads((WORK / "asr_sets" / f"{name}_refs.json").read_text())
+        return [z[f"a{i}"] for i in range(len(refs))], refs, list(range(len(refs)))
     import hybrid_asr as H
     xs, refs = H.load_fa_set(name)
     return xs, refs, list(range(len(refs)))
@@ -126,6 +161,8 @@ ASR_SYSTEMS = {
               "offline full context, greedy TDT, batch 1, CPU 2 threads (hybrid_asr.py load_tdt / tdt_transcribe)",
     "core_115m": "audioforge 115M core (runs/stage1_served_v3.afm), streaming RNNT at att [70,1] = 160 ms chunks "
                  "(masked offline forward == cache-aware streaming, tests/test_streaming.py), greedy, CPU 2 threads",
+    "core_115m_beam8": "audioforge 115M core as core_115m, RNNT beam search width 8 (<= 3 tokens per frame; serve "
+                       "--beam 8, research/FIXALL.md step 5), CPU 2 threads",
     "core_0p6b": "audioforge 0.6B core (nemotron-speech-streaming-en-0.6b inside served_0p6b afm, base tensors "
                  "unchanged by the heads), streaming RNNT at [70,1], greedy, CPU 2 threads",
 }
@@ -171,9 +208,17 @@ def make_asr(system: str, device: str):
         m = H.load_tdt("cpu")
         return lambda x: H.tdt_transcribe(m, np.asarray(x, np.float32))
     from audioforge.train import load_model
-    path = AFM_115M if system == "core_115m" else afm_0p6b()
+    path = AFM_115M if system.startswith("core_115m") else afm_0p6b()
     m = load_model(str(path), "cpu").eval()
     assert list(m.encoder.att_context_size) == [70, 1], m.encoder.att_context_size
+    if system.endswith("_beam8"):
+        def fnb(x):
+            with torch.inference_mode():
+                xx, ll = m._pad([np.asarray(x, np.float32)])
+                enc, elen, hid = m.encode(xx, ll, [70, 1], return_hidden=True)
+                e = m.head_input("rnnt", enc, hid)[0, : int(elen[0])]
+                return m.tokenizer.decode(m.heads["rnnt"].beam_search(e, beam=8, max_sym=3))
+        return fnb
 
     def fn(x):
         with torch.inference_mode():
@@ -228,7 +273,11 @@ def score_asr() -> dict:
     import hybrid_asr as H
     norms, _ = H._normalizers()
     res = {}
-    for set_name in ("libri", "ami", "icsi", "live"):
+    for set_name in ("libri", "ami", "icsi", "live", "ami_eval", "icsi_eval", "ls_clean", "ls_other"):
+        if set_name.endswith("_eval") and not (WORK / "asr_sets" / f"{set_name}_refs.json").exists():
+            continue
+        if set_name.startswith("ls_") and not any((WORK / "asr").glob(f"*_{set_name}.jsonl")):
+            continue
         hyp = {s: jl_rows(WORK / "asr" / f"{s}_{set_name}.jsonl") for s in ASR_SYSTEMS}
         _, refs, groups = asr_set(set_name)
         n = len(refs)
@@ -329,7 +378,7 @@ def score_sttlat() -> dict:
 
 
 # =========================================================================== speech detection (VAD)
-VAD_SETS = ("ami_dev", "icsi_dev")
+VAD_SETS = ("ami_dev", "icsi_dev", "ami_eval", "icsi_eval")  # eval: the corpora's eval meetings (FIXALL test audit)
 VAD_SYSTEMS = {
     "silero_v5": "Silero VAD v5.1.2 (TorchScript, the model Pipecat and LiveKit ship), 32 ms chunks with its "
                  "recurrent state from the window start; max-pooled onto the 80 ms label grid. Causal",
@@ -360,7 +409,8 @@ def stage_vad(a):
     if all((d / f"{a.system}_{sn}.npz").exists() for sn in VAD_SETS):
         log(f"vad {a.system}: done STAGE_COMPLETE")
         return
-    sets = vad_sets()
+    import vad_layers as V
+    sets = {sn: V.load_set(sn) for sn in VAD_SETS if not (d / f"{a.system}_{sn}.npz").exists()}
     if a.system == "silero_v5":
         m = torch.jit.load(str(SSD / "scratch/metrics/vad/silero_vad_v5.1.2.jit")).eval()
 
@@ -534,11 +584,15 @@ def stage_lid(a):
                 pr = lg[:, ids].float().softmax(-1).cpu().numpy()
             return [restrict(dict(zip(codes, row.tolist())), L.CODES) for row in pr]
         bs = 16
-    else:  # the 0.6B core's shipped LID head through the real clip path (lid.py eval_head, VAD-gated as served)
+    else:  # a core's LID head through the real clip path (lid.py eval_head, VAD-gated as served)
         from audioforge.lid import attach_head
         from audioforge.train import load_model
-        model = load_model(str(afm_0p6b()), dev).eval()
-        name = attach_head(model, ROOT / "assets" / "lid_0p6b.pt")
+        if a.system == "core_115m":  # FIXALL: the 115M through this path too (FINAL_LID_HEAD: a candidate head file)
+            model = load_model(str(AFM_115M), dev).eval()
+            name = attach_head(model, Path(os.environ.get("FINAL_LID_HEAD", ROOT / "assets" / "lid_distill.pt")))
+        else:
+            model = load_model(str(afm_0p6b()), dev).eval()
+            name = attach_head(model, Path(os.environ.get("FINAL_LID_HEAD", ROOT / "assets" / "lid_0p6b.pt")))
         head = model.heads[name]
 
         def probs(clips):
@@ -590,7 +644,7 @@ def score_lid() -> dict:
     y = np.array([L.CODES.index(r["lang"]) for r in rows])
     ids = [r["id"] for r in rows]
     src = {}
-    for s in list(LID_SYSTEMS) + ["core_0p6b"]:
+    for s in list(LID_SYSTEMS) + ["core_0p6b", "core_115m"]:
         f = WORK / "lid" / f"{s}.npz"
         if f.exists():
             z = np.load(f)
@@ -598,6 +652,8 @@ def score_lid() -> dict:
             src[s] = (z["P"][:, 0], z["P"][:, 1], f"{f}")
     # reused, identical clips and clip path (lid.py: same rows, onsets, PRE_ROLL, peak normalisation)
     for s, tag in (("core_115m", "lid_distill_vadgated"), ("ambernet", "ambernet")):
+        if s in src:  # measured in this pass (FIXALL: the 115M through stage_lid)
+            continue
         r = L._load_preds(tag)
         if r is not None:
             P, yy, _ = r
@@ -828,7 +884,9 @@ def score_turn(boot=1000) -> dict:
     # ---- Parakeet-Realtime-EOU
     ec = {p.stem: json.loads(p.read_text()) for p in (WORK / "eou" / "calls").glob("*.json")}
     ea = {p.stem: json.loads(p.read_text()) for p in (WORK / "eou" / "asst").glob("*.json")}
-    if len(ec) == len(sess_c) and len(ea) == len(clips):
+    if all(s["key"] in ec for s in sess_c) and all(c["key"] in ea for c in clips):
+        ec = {s["key"]: ec[s["key"]] for s in sess_c}
+        ea = {c["key"]: ea[c["key"]] for c in clips}
         f = lambda D: ({k: [e["t_dec"] + e["compute_s"] for e in d["ends"]] for k, d in D.items()},  # noqa: E731
                        {k: [e["compute_s"] for e in d["ends"]] for k, d in D.items()})
         t1, c1 = f(ec)
@@ -856,9 +914,10 @@ def score_turn(boot=1000) -> dict:
         dc, da = WORK / "eot" / f"{sysn}_calls", WORK / "eot" / f"{sysn}_asst"
         D = {x["key"]: x for x in (json.loads(p_.read_text()) for p_ in sorted(dc.glob("*.json")))}
         A = {x["key"]: x for x in (json.loads(p_.read_text()) for p_ in sorted(da.glob("*.json")))}
-        if len(D) < len(sess_c) or len(A) < len(clips):
+        if not all(s["key"] in D for s in sess_c) or not all(c["key"] in A for c in clips):
             out[f"ours_{sysn}"] = {"complete": False, "calls": len(D), "asst": len(A)}
             continue
+        D = {s["key"]: D[s["key"]] for s in sess_c}
         for kk, d in A.items():
             d["conf"] = sd[kk]["conf"]
         rules = CT.served_rules(afm)
@@ -872,6 +931,20 @@ def score_turn(boot=1000) -> dict:
 
 
 # =========================================================================== speaker: EER
+def spk_segments(c, n=200):
+    """spk_head.dev_segments (AMI / ICSI dev, n = 200), or with c = ami_eval / icsi_eval the same recipe path on the
+    corpora's eval meetings (FIXALL test audit)."""
+    import spk_head as SH
+    if not c.endswith("_eval"):
+        return SH.dev_segments(c, n)
+    corpus = c.split("_")[0]
+    if corpus == "ami":
+        from audioforge.datasets.ami import recipe_data
+    else:
+        from audioforge.datasets.icsi import recipe_data
+    return recipe_data({"data": {corpus: {"mode": "asr", "val_split": "eval", "n_val": n, "seed": 0}}}, "val")
+
+
 def stage_spkeer(a):
     """Within-meeting EER on spk_head.dev_segments(corpus, 200) (AMI dev / ICSI dev) for one system -> WORK/spk/."""
     import torch
@@ -879,7 +952,7 @@ def stage_spkeer(a):
     torch.set_num_threads(2)
     d = WORK / "spk"
     d.mkdir(parents=True, exist_ok=True)
-    if all((d / f"{a.system}_{c}.npy").exists() for c in ("ami", "icsi")):
+    if all((d / f"{a.system}_{c}.npy").exists() for c in ("ami", "icsi", "ami_eval", "icsi_eval")):
         log("spkeer: done STAGE_COMPLETE")
         return
     if a.system == "titanet_l":
@@ -904,11 +977,11 @@ def stage_spkeer(a):
 
         def emb(val):
             return SH.head_embeddings(m, val).float().numpy()
-    for c in ("ami", "icsi"):
+    for c in ("ami", "icsi", "ami_eval", "icsi_eval"):
         f = d / f"{a.system}_{c}.npy"
         if f.exists():
             continue
-        val = SH.dev_segments(c, 200)
+        val = spk_segments(c)
         np.save(f, emb(val))
         log(f"spkeer {a.system} {c}: {len(val)} segments")
 
@@ -918,8 +991,10 @@ def score_spkeer() -> dict:
     import spk_head as SH
     from audioforge.metrics import eer
     out = {}
-    for c in ("ami", "icsi"):
-        val = SH.dev_segments(c, 200)
+    for c in ("ami", "icsi", "ami_eval", "icsi_eval"):
+        if c.endswith("_eval") and not any((WORK / "spk").glob(f"*_{c}.npy")):
+            continue
+        val = spk_segments(c)
         spk = np.array([v["speaker"] for v in val])
         meet = np.array([v["meeting"] for v in val])
         n = len(val)
@@ -1154,12 +1229,13 @@ def stage_cost(a):
     import core_0p6b_heads as C
     import mps_115m as M
     M.SCRATCH = WORK / "cost" / a.sys
+    lidkw = {"lid": os.environ["FINAL_LID_HEAD"]} if os.environ.get("FINAL_LID_HEAD") else {}  # a candidate LID head
     if a.sys == "0p6b":
         M.PRINT = C.W / "two_party_call_16s.voiceprint_0p6b.json"
         assert M.PRINT.exists()
-        audioforge.load = functools.partial(audioforge.load, core="0.6b", asr=str(afm_0p6b()))
+        audioforge.load = functools.partial(audioforge.load, core="0.6b", asr=str(afm_0p6b()), **lidkw)
     else:
-        audioforge.load = functools.partial(audioforge.load, asr=str(AFM_115M))
+        audioforge.load = functools.partial(audioforge.load, asr=str(AFM_115M), **lidkw)
     if a.sub == "engine":
         M.stage_engine(a)
     else:
@@ -1345,6 +1421,27 @@ def stage_report(a):
             res.get("errors", {}).pop("speaker", None)
         except Exception as ex:  # noqa: BLE001
             res.setdefault("errors", {})["speaker"] = f"{type(ex).__name__}: {ex}"
+    fx = load_json("runs/fixall.json") if (ROOT / "runs/fixall.json").exists() else {}
+
+    def frame_best(fr):
+        if not fr:
+            return {}
+        return {"ours_115m": fr["pyannote31"]["tsvad_spk_vp5p0"], "ours_0p6b": fr["ours_0p6b"],
+                "nemotron3": max((fr["nemotron3"]["nemotron3_vp_spk_vp5p0"], fr["nemotron3"]["nemotron3_vp_titanet_vp5p0"]),
+                                 key=lambda r: r["f1"]),
+                "pyannote31": max((fr["pyannote31"]["pyannote31_vp_spk_vp5p0"], fr["pyannote31"]["pyannote31_vp_titanet_vp5p0"]),
+                                  key=lambda r: r["f1"])}
+    if fx.get("twsub"):  # target-speaker rows on the ICSI / AMI TEST meetings (research/FIXALL.md test audit)
+        fr = fx.get("frsub") or {}
+        res["speaker_test"] = {"icsi": {"twer": fx["twsub"], "frame": fr, "frame_best": frame_best(fr)},
+                               "source": "runs/fixall.json twsub / frsub: the stored per-unit / per-window counts of the "
+                                         "eot-bench v2 ICSI windows re-pooled over the test meetings Bmr013, Bmr018, "
+                                         "Bro021 (the 0.6B TS-VAD frame metrics re-run on those windows); ami_eval: the "
+                                         "same pipeline run on the AMI test meetings' windows"}
+        if fx.get("twsub_ami_eval"):
+            fa = fx.get("frsub_ami_eval") or {}
+            res["speaker_test"]["ami_eval"] = {"twer": fx["twsub_ami_eval"], "frame": fa, "frame_best": frame_best(fa)}
+    res["ami_turn_split"] = os.environ.get("EOT_AMI_SPLIT", "dev")
     res["systems"] = {"asr": ASR_SYSTEMS, "vad": VAD_SYSTEMS}
     OUT.write_text(json.dumps(res, indent=1, default=float))
     log(f"-> {OUT}")
