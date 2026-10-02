@@ -77,7 +77,7 @@ includes the buffering, which is now (8R+1-1)·10 + 16 ms past the chunk start, 
 ## Fix 2 (option, not the default): `--asr-chunk-ms 80` = att_context [70,0]
 
 `audioforge-serve --asr-chunk-ms 80` (Engine `asr_chunk_ms`) runs the one ASR pass at [70,0]: 80 ms chunks, no
-lookahead. The NVIDIA model was trained for {[70,0], [70,1], [70,16], [70,33]}. The pass covers the transcript and
+lookahead. The NVIDIA model was trained for {[70,0], [70,1], [70,6], [70,13]} (80 / 160 / 560 / 1120 ms chunks; research/DUAL_RATE.md). The pass covers the transcript and
 the VAD, turn and TS-VAD heads. The TS-VAD column grid follows it.
 
 | setting | chunk / lookahead | frame ready after its label end (even / odd frame) | LibriSpeech-200 WER, streaming (this run) | AMI-200 / ICSI-200 WER (HYBRID_ASR.md §3, masked offline) | ASR-only compute (enc + RNNT) | full single-mode session, 2 threads | clip `turn_end` (ws / in process) |

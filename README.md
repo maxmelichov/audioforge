@@ -156,6 +156,13 @@ which tracks the user worse ([`research/SINGLE_MODEL.md`](research/SINGLE_MODEL.
 **Room mode** (`audioforge-download --diarizer nemotron3`, then `audioforge-serve --mode room`) is opt-in: NVIDIA
 Nemotron-3-Diarization labels everyone in the room, and `--final-asr tdt_v3` rewrites each turn with Parakeet-TDT v3.
 
+**Dual rate** (`audioforge-serve --final-chunk-ms 1120`, opt-in): the heads and turn decisions stay on the 160 ms
+pass, unchanged byte for byte, and a second pass of the same encoder at NVIDIA's largest trained chunk (1.12 s) writes
+the final transcript. The 160 ms text still arrives at the turn end as `final_fast` (what the Pipecat / LiveKit
+adapters forward by default); the slow `final` follows 9-48 ms later (~110 ms for the 0.6B on CPU, where it is not recommended). Test sets: ICSI test −3.5 (115M) / −1.9 (0.6B)
+WER points, live calls −1.7 / −0.8, AMI test −0.6 / −0.1 (not significant). Cost: +20-27 ms at p95 on turn-end delivery
+from the slow chunk's burst ([`research/DUAL_RATE.md`](research/DUAL_RATE.md)).
+
 ## A bigger core: `--core 0.6b`
 
 ```bash

@@ -292,7 +292,7 @@ class Engine:
                  final_asr_threads: int | None = 2, final_asr_device: str = "cpu", asr_lookahead: int | None = None,
                  asr_chunk_ms: int | None = None, asr_vad_gate: float | None = None, asr_vad_hangover_ms: float = 1200.0,
                  asr_beam: int = 0, final_chunk_ms: int | None = None, final_flush: bool = True,
-                 final_cut: str = "turn",
+                 final_cut: str = "speech",
                  max_session_s: float = DEFAULT_MAX_SESSION_S, idle_timeout_s: float = DEFAULT_IDLE_TIMEOUT_S,
                  log_json: bool = False, perf: str | None = "default", tsvad: str | None = None,
                  tsvad_print_s: float = 5.0, tsvad_refresh_s: float = 0.0, diar_off: bool = False,
@@ -466,7 +466,7 @@ class Engine:
             "both models must run on the 80 ms frame clock"
         att = list(asr_model.encoder.att_context_size)
         # --asr-chunk-ms: the streaming chunk of the ASR pass, 160 = [L, 1] or 80 = [L, 0] (a context the model was
-        # trained with; the NVIDIA hybrid was trained for [70, 0/1/16/33]); None = the model's own
+        # trained with; the NVIDIA hybrid was trained for [70, 0/1/6/13]); None = the model's own
         if asr_chunk_ms:
             if int(asr_chunk_ms) % FRAME_MS or int(asr_chunk_ms) < FRAME_MS:
                 raise ValueError(f"--asr-chunk-ms {asr_chunk_ms}: a multiple of {FRAME_MS}")
@@ -478,8 +478,9 @@ class Engine:
         # 1120 ms = [70,13], both trained by NVIDIA) writes the `final` text. The fast pass's final is sent at once as
         # `final_fast`. Equal to the fast chunk (or None) = single rate, protocol unchanged.
         self.dual, self.final_chunk_ms, self.final_flush = False, None, bool(final_flush)
-        # where a slow final ends: "turn" = the fast final's cut (the frames available at the decision), "speech" =
-        # 3 frames past the last VAD speech frame (the --asr-lookahead rule); chosen on held-out train meetings
+        # where a slow final ends: "speech" (default) = 3 frames past the last VAD speech frame (the --asr-lookahead
+        # rule), "turn" = the fast final's cut (the frames available at the decision). Chosen on held-out AMI / ICSI
+        # train meetings (research/DUAL_RATE.md): the same WER, and "speech" often needs no flush (lower delay)
         if final_cut not in ("turn", "speech"):
             raise ValueError(f"final_cut {final_cut!r}: turn | speech")
         self.final_cut = final_cut

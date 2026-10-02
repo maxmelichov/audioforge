@@ -156,7 +156,8 @@ os.environ.setdefault("FINAL_0P6B_AFM", str(SSD / "scratch" / "core_0p6b" / "ser
 
 
 def live_tag(a) -> str:
-    return f"{a.core}_{a.device}_F{a.chunk_ms}" + ("" if a.flush == "on" else "_noflush")
+    return (f"{a.core}_{a.device}_F{a.chunk_ms}" + ("" if a.flush == "on" else "_noflush")
+            + ("" if a.cut == "speech" else "_turncut"))
 
 
 def mem(device) -> dict:
@@ -193,50 +194,17 @@ def stage_live(a):
     fc = None if a.chunk_ms == 160 else a.chunk_ms
     t0 = time.perf_counter()
     fe = audioforge.load(core=core, asr=str(core_path(a.core)), device=a.device, threads=2, final_chunk_ms=fc,
-                         final_flush=a.flush == "on", debug=True)
+                         final_flush=a.flush == "on", final_cut=a.cut, debug=True)
     load_s = time.perf_counter() - t0
     dev = a.device
-    sync = (lambda: torch.mps.synchronize()) if dev == "mps" else (lambda: None)
     n = 0
     for s in todo:
         if over(a):
             break
         x, sr = sf.read(s["wav"], dtype="float32")
         x = x if x.ndim == 1 else x.mean(1)
-        ss = fe.session()._s
-        ss.defer_slow = True
-        rec = {"key": s["key"], "audio_s": round(len(x) / SR, 3), "turn_ends": [], "finals": [], "slow": [],
-               "batch_ms": [], "flush_wall_ms": [], "block_ms": []}
-        with torch.inference_mode():
-            for i in range(0, len(x), 320):
-                tb = time.perf_counter()
-                b = ss.process(x[i:i + 320])
-                sync()
-                bm = (time.perf_counter() - tb) * 1000
-                rec["block_ms"].append(round(bm, 2))
-                for m in b:
-                    if m["type"] == "turn_end":
-                        rec["turn_ends"].append(json.dumps(m, sort_keys=True))
-                        rec["batch_ms"].append(round(bm, 2))
-                    elif m["type"] in ("final", "final_fast"):
-                        rec["finals"].append(json.dumps(dict(m, type="final"), sort_keys=True))
-                if ss.la_pending and ss.e.dual:
-                    tf = time.perf_counter()
-                    sl = ss.flush_slow()
-                    sync()
-                    rec["flush_wall_ms"].append(round((time.perf_counter() - tf) * 1000, 2))
-                    rec["slow"] += [dict(m, at_end=False) for m in sl]
-            out = ss.finish()
-        for m in out:
-            if m["type"] == "turn_end":
-                rec["turn_ends"].append(json.dumps(m, sort_keys=True))
-            elif m["type"] == "final_fast" or (m["type"] == "final" and not ss.e.dual):
-                rec["finals"].append(json.dumps(dict(m, type="final"), sort_keys=True))
-            elif m["type"] == "final":
-                rec["slow"].append(dict(m, at_end=True))
-            elif m["type"] == "stats":
-                rec["stats"] = m
-        rec["chunk_ms"] = [round(c, 2) for c in ss.chunk_ms]
+        rec = run_session(fe, x, dev)
+        rec["key"] = s["key"]
         rec["mem"] = mem(dev)
         rec["load_s"] = round(load_s, 1)
         with p.open("a") as f:
@@ -249,6 +217,168 @@ def stage_live(a):
         log("STAGE_COMPLETE")
 
 
+# =========================================================================== rule selection on held-out TRAIN meetings
+HOLD = {"ami": ("TS3011b", "ES2015c"), "icsi": ("Bro026", "Bmr022")}  # held out of every head (research/FIXALL.md)
+GAP_S = 2.0  # silence between the segments of a selection stream (room-tone level noise), so turn ends fire
+
+
+def select_streams():
+    """Held-out selection audio: single-speaker segments (1-15 s) of the AMI train meetings TS3011b / ES2015c and the
+    ICSI train meetings Bro026 / Bmr022 (held out of every head's training and used for selection before:
+    research/FIXALL.md), 48 per meeting (seed 0, time order), joined 6 at a time with 2 s of -80 dBFS noise
+    between them -> 32 streams of ~45 s. No test audio."""
+    f = WORK / "select" / "streams.npz"
+    if not f.exists():
+        import random
+        from audioforge.datasets.ami import AMI
+        from audioforge.datasets.icsi import ICSI
+        xs, refs, names = [], [], []
+        rng = np.random.default_rng(0)
+        for corpus, mtgs in HOLD.items():
+            ds = (AMI if corpus == "ami" else ICSI)(list(mtgs), verbose=False)
+            for m in mtgs:
+                segs = ds.asr(1.0, 15.0, meetings=[m])
+                idx = sorted(random.Random(0).sample(range(len(segs)), min(48, len(segs))))
+                for g in range(0, len(idx), 6):
+                    parts, txt = [], []
+                    for j in idx[g:g + 6]:
+                        parts += [np.asarray(segs[j]["audio"], np.float32),
+                                  (rng.standard_normal(int(GAP_S * SR)) * 1e-4).astype(np.float32)]
+                        txt.append(segs[j]["text"])
+                    xs.append(np.concatenate(parts))
+                    refs.append(" ".join(txt))
+                    names.append(f"{m}_{g // 6}")
+        f.parent.mkdir(parents=True, exist_ok=True)
+        np.savez(f, **{f"a{i}": x for i, x in enumerate(xs)})
+        (f.parent / "streams.json").write_text(json.dumps({"refs": refs, "names": names}))
+    z = np.load(f)
+    meta = json.loads((f.parent / "streams.json").read_text())
+    return [z[f"a{i}"] for i in range(len(meta["refs"]))], meta["refs"], meta["names"]
+
+
+def run_session(fe, x, dev):
+    """One served single-mode session over x in 20 ms blocks with the WebSocket handler's deferred flush."""
+    import torch
+    sync = (lambda: torch.mps.synchronize()) if dev == "mps" else (lambda: None)
+    ss = fe.session()._s
+    ss.defer_slow = True
+    rec = {"audio_s": round(len(x) / SR, 3), "turn_ends": [], "finals": [], "slow": [], "batch_ms": [],
+           "flush_wall_ms": [], "block_ms": []}
+    with torch.inference_mode():
+        for i in range(0, len(x), 320):
+            tb = time.perf_counter()
+            b = ss.process(x[i:i + 320])
+            sync()
+            bm = (time.perf_counter() - tb) * 1000
+            rec["block_ms"].append(round(bm, 2))
+            for m in b:
+                if m["type"] == "turn_end":
+                    rec["turn_ends"].append(json.dumps(m, sort_keys=True))
+                    rec["batch_ms"].append(round(bm, 2))
+                elif m["type"] == "final" and m.get("source") == "slow":  # --final-flush off: due later
+                    rec["slow"].append(dict(m, at_end=False))
+                elif m["type"] in ("final", "final_fast"):
+                    rec["finals"].append(json.dumps(dict(m, type="final"), sort_keys=True))
+            if ss.la_pending and ss.e.dual:
+                tf = time.perf_counter()
+                sl = ss.flush_slow()
+                sync()
+                rec["flush_wall_ms"].append(round((time.perf_counter() - tf) * 1000, 2))
+                rec["slow"] += [dict(m, at_end=False) for m in sl]
+        out = ss.finish()
+    for m in out:
+        if m["type"] == "turn_end":
+            rec["turn_ends"].append(json.dumps(m, sort_keys=True))
+        elif m["type"] == "final_fast" or (m["type"] == "final" and not ss.e.dual):
+            rec["finals"].append(json.dumps(dict(m, type="final"), sort_keys=True))
+        elif m["type"] == "final":
+            rec["slow"].append(dict(m, at_end=True))
+        elif m["type"] == "stats":
+            rec["stats"] = m
+    rec["chunk_ms"] = [round(c, 2) for c in ss.chunk_ms]
+    return rec
+
+
+def stage_select(a):
+    """The served engine on the held-out selection streams with one candidate rule: --cut turn|speech, --flush."""
+    import torch
+    import audioforge
+    torch.set_num_threads(2)
+    xs, refs, names = select_streams()
+    tag = f"{a.core}_{a.device}_F{a.chunk_ms}_{a.cut}_{a.flush}"
+    p = WORK / "select" / f"{tag}.jsonl"
+    done = {r["name"] for r in map(json.loads, p.read_text().splitlines()) if r} if p.exists() else set()
+    todo = [i for i in range(len(xs)) if names[i] not in done]
+    log(f"select {tag}: {len(todo)} of {len(xs)} to do")
+    if not todo:
+        log("STAGE_COMPLETE")
+        return
+    fc = None if a.chunk_ms == 160 else a.chunk_ms
+    fe = audioforge.load(core="0.6b" if a.core == "0p6b" else "115m", asr=str(core_path(a.core)), device=a.device,
+                         threads=2, final_chunk_ms=fc, final_flush=a.flush == "on", final_cut=a.cut, debug=True)
+    n = 0
+    for i in todo:
+        if over(a):
+            break
+        rec = run_session(fe, xs[i], a.device)
+        rec["name"] = names[i]
+        with p.open("a") as f:
+            f.write(json.dumps(rec) + "\n")
+        n += 1
+    log(f"select {tag}: {n} this call, {len(todo) - n} left")
+    if n == len(todo):
+        log("STAGE_COMPLETE")
+
+
+def score_select() -> dict:
+    """WER (Whisper normaliser) of the concatenated slow finals per candidate rule on the held-out streams, the
+    fast finals as the reference row, slow-final delay, paired CIs vs the chosen rule (speech cut, flush on)."""
+    import final_compare as FC
+    import hybrid_asr as H
+    norms, _ = H._normalizers()
+    fn = norms["whisper_norm"]
+    _, refs, names = select_streams()
+    rr = {n: fn(r) for n, r in zip(names, refs)}
+    groups = list(range(len(names)))
+    res, draws = {}, {}
+    for f in sorted((WORK / "select").glob("*.jsonl")):
+        rows = {r["name"]: r for r in map(json.loads, f.read_text().splitlines()) if r}
+        if len(rows) < len(names):
+            continue
+        for kind in ("fast", "slow"):
+            E = []
+            for nme in names:
+                r = rows[nme]
+                fa, sl = fast_slow(r)
+                hyp = (" ".join(json.loads(m)["text"] for m in fa) if kind == "fast"
+                       else " ".join(m["text"] for m in sorted(sl, key=lambda m: m["t"])))
+                E.append(H.edits_words(rr[nme], fn(hyp)))
+            E = np.array(E, np.float64)
+            if kind == "slow" and not any(fast_slow(r)[1] for r in rows.values()):
+                continue
+            _, dr = FC._boot_rate(E, groups)
+            key = f"{f.stem}|{kind}"
+            draws[key] = dr
+            sl = [m for r in rows.values() for m in fast_slow(r)[1] if not m["at_end"]]
+            res[key] = {"wer_pct": round(100 * E[:, 0].sum() / E[:, 1].sum(), 2),
+                        "ci95": [round(100 * float(np.percentile(dr, q)), 2) for q in (2.5, 97.5)],
+                        "n_turn_ends": sum(len(r["turn_ends"]) for r in rows.values()),
+                        "slow_finals_at_turn_ends": len(sl)}
+            if kind == "slow" and sl:
+                fl = [x for r in rows.values() for x in r["flush_wall_ms"]]
+                res[key]["latency_ms_field_p50_p95"] = [_pct([m["latency_ms"] for m in sl], 50),
+                                                        _pct([m["latency_ms"] for m in sl], 95)]
+                res[key]["flush_wall_ms_p50_p95"] = [_pct(fl, 50), _pct(fl, 95)] if fl else None
+    for key in list(res):
+        core_dev_f = "_".join(key.split("|")[0].split("_")[:3])
+        base = f"{core_dev_f}_speech_on|slow"  # the chosen rule (speech cut, flush on)
+        if key != base and base in draws and key.endswith("|slow"):
+            res[key]["delta_vs_chosen_pp"] = round(res[key]["wer_pct"] - res[base]["wer_pct"], 2)
+            res[key]["delta_ci95"] = [round(100 * float(np.percentile(draws[key] - draws[base], q)), 2)
+                                      for q in (2.5, 97.5)]
+    return res
+
+
 def stage_cost(a):
     """final_compare.stage_cost (mps_115m.py protocols) with --final-chunk-ms: ms per 160 ms chunk of the full
     single-mode engine on the bundled clip (best of 3) or K interleaved real-time streams on AMI test windows."""
@@ -259,7 +389,22 @@ def stage_cost(a):
     fc = None if a.chunk_ms == 160 else a.chunk_ms
     audioforge.load = functools.partial(audioforge.load, final_chunk_ms=fc)
     a.sys = a.core
+    (FC.WORK / "cost" / a.core).mkdir(parents=True, exist_ok=True)  # (mps_115m's streams stage does not create it)
+    sys.argv = sys.argv[:1]  # core_0p6b_heads (imported by stage_cost) parses --core itself, as 0.6b | 115m | 3.5
     FC.stage_cost(a)
+
+
+def fast_slow(r):
+    """(fast finals as JSON strings, slow finals as dicts) of a recorded session (older records kept the delayed
+    --final-flush off slow finals among the finals)."""
+    fast, slow = [], list(r["slow"])
+    for m in r["finals"]:
+        d = json.loads(m)
+        if d.get("source") == "slow":
+            slow.append(dict(d, at_end=False))
+        else:
+            fast.append(m)
+    return fast, slow
 
 
 def _pct(v, q):
@@ -296,17 +441,41 @@ def score_live() -> dict:
         o["n_turn_ends"] = sum(len(r["turn_ends"]) for r in rows.values())
         o["turn_end_batch_ms"] = {"p50": _pct([b for r in rows.values() for b in r["batch_ms"]], 50),
                                   "p95": _pct([b for r in rows.values() for b in r["batch_ms"]], 95)}
+        # real-time delivery: each 20 ms block arrives at its audio time and waits for the previous one (one compute
+        # thread, as the server's executor); delivery delay = finish - arrival, over every block and over the blocks
+        # that held a turn_end (the slow chunk's burst delays the blocks behind it)
+        dl, dte = [], []
+        for r in rows.values():
+            fin, d = 0.0, []
+            for i, c in enumerate(r["block_ms"]):
+                arr = (i + 1) * 20.0
+                fin = max(arr, fin) + c
+                d.append(fin - arr)
+            dl += d
+            for x in r["turn_ends"]:
+                i = int(np.ceil(json.loads(x)["t"] * SR / 320)) - 1
+                if 0 <= i < len(d):
+                    dte.append(d[i])
+        o["delivery_ms"] = {"p50": _pct(dl, 50), "p95": _pct(dl, 95), "p99": _pct(dl, 99),
+                            "max": round(float(max(dl)), 1)}
+        o["turn_end_delivery_ms"] = {"p50": _pct(dte, 50), "p95": _pct(dte, 95), "max": round(float(max(dte)), 1)}
         if F != "F160" and base.exists():
             b = {r["key"]: r for r in map(json.loads, base.read_text().splitlines()) if r}
-            o["gate"] = {"sessions_turn_ends_identical": sum(rows[k]["turn_ends"] == b[k]["turn_ends"] for k in rows),
-                         "sessions_fast_finals_identical": sum(rows[k]["finals"] == b[k]["finals"] for k in rows),
+            def te(r, timing=False):  # turn_end messages; model_ms (the v5 classifier's measured compute) aside
+                return [x if timing else json.dumps({kk: v for kk, v in json.loads(x).items() if kk != "model_ms"},
+                                                    sort_keys=True) for x in r["turn_ends"]]
+            o["gate"] = {"sessions_turn_ends_identical": sum(te(rows[k]) == te(b[k]) for k in rows),
+                         "sessions_turn_ends_identical_incl_model_ms": sum(te(rows[k], True) == te(b[k], True)
+                                                                           for k in rows),
+                         "sessions_fast_finals_identical": sum(fast_slow(rows[k])[0] == fast_slow(b[k])[0]
+                                                               for k in rows),
                          "n": len(rows)}
             o["gate"]["pass"] = (o["gate"]["sessions_turn_ends_identical"] == len(rows)
                                  and o["gate"]["sessions_fast_finals_identical"] == len(rows))
             # the extra compute on the turn_end batch itself (paired: same turn, single vs dual rate)
             dd = [x - y for k in rows for x, y in zip(rows[k]["batch_ms"], b[k]["batch_ms"])]
             o["turn_end_batch_extra_ms"] = {"p50": _pct(dd, 50), "p95": _pct(dd, 95)}
-        slow = [m for r in rows.values() for m in r["slow"] if not m["at_end"]]
+        slow = [m for r in rows.values() for m in fast_slow(r)[1] if not m["at_end"]]
         if slow:
             fl = [x for r in rows.values() for x in r["flush_wall_ms"]]
             lat = [m["latency_ms"] for m in slow]
@@ -322,13 +491,14 @@ def score_live() -> dict:
             E = []
             for s in S:
                 r = rows[s["key"]]
+                fa, sl = fast_slow(r)
                 if kind == "fast":
-                    hyp = " ".join(json.loads(m)["text"] for m in r["finals"])
+                    hyp = " ".join(json.loads(m)["text"] for m in fa)
                 else:
-                    if not r["slow"]:
+                    if not sl:
                         E = None
                         break
-                    hyp = " ".join(m["text"] for m in r["slow"])
+                    hyp = " ".join(m["text"] for m in sorted(sl, key=lambda m: m["t"]))
                 E.append(H.edits_words(refs[s["key"]], fn(hyp)))
             if E is None:
                 continue
@@ -353,19 +523,86 @@ def score_cost() -> dict:
                     o[fn] = v
                     if fn.startswith("streams_"):  # the most interleaved sessions with block p95 < 160 ms
                         o[f"realtime_{fn}"] = max([int(k) for k, x in v.items() if x["real_time"]], default=0)
+    for d in sorted(WORK.glob("staggered_F*")):
+        F = d.name.split("_F")[1]
+        for f in d.glob("*.json"):
+            core, dev = f.stem.split("_")
+            v = json.loads(f.read_text())
+            o = out.setdefault(f"{core}|F{F}", {})
+            o[f"staggered_{dev}"] = v
+            o[f"realtime_staggered_{dev}"] = max([int(k) for k, x in v.items() if x["real_time"]], default=0)
     return out
 
 
 def stage_report(a):
     wer = json.loads((WORK / "wer_scores.json").read_text()) if (WORK / "wer_scores.json").exists() else score_wer()
     r = {"what": "research/DUAL_RATE.md: dual-rate engine (fast 160 ms pass for every head, slow 560 / 1120 ms pass "
-                 "for the final text)", "wer": wer, "live": score_live(), "cost": score_cost()}
+                 "for the final text)", "wer": wer, "live": score_live(), "cost": score_cost(),
+         "select": score_select()}
     OUT.write_text(json.dumps(r, indent=1))
     log(f"wrote {OUT}")
     print(json.dumps({"live": r["live"], "cost": r["cost"]}, indent=1)[:6000])
 
 
-STAGES = {"wer": stage_wer, "score": stage_score, "live": stage_live, "cost": stage_cost, "report": stage_report}
+def stage_staggered(a):
+    """mps_115m.py's streams protocol (K single-mode sessions on the AMI test windows, fed interleaved 160 ms block by
+    block on one thread; real time while the p95 of the summed block compute < 160 ms), except that session k first
+    takes k * 7 // K blocks untimed, so the sessions' slow chunks (one per 7 blocks at 1120 ms) do not all fall in
+    the same block, as with sessions that start at different times. Same protocol at --chunk-ms 160 for the pair."""
+    import functools
+    import torch
+    import audioforge
+    import final_compare as FC
+    from audioforge.data import load_wav
+    sys.argv = sys.argv[:1]
+    import mps_115m as M
+    torch.set_num_threads(2)
+    dev = a.device
+    fc = None if a.chunk_ms == 160 else a.chunk_ms
+    kw = dict(core="0.6b", asr=str(core_path("0p6b"))) if a.core == "0p6b" else dict(asr=str(core_path("115m")))
+    fe = audioforge.load(threads=2, device=dev, final_chunk_ms=fc, **kw)
+    ks = [int(k) for k in a.ks.split(",")]
+    clips = []
+    for mtg, st in M.AMI_WINDOWS[: max(ks)]:
+        x = load_wav(str(ROOT / "data" / "ami" / "audio" / f"{mtg}.Mix-Headset.wav"), SR).astype(np.float32)
+        clips.append(x[st * SR:(st + int(a.seconds) + 2) * SR])
+    p = WORK / f"staggered_F{a.chunk_ms}" / f"{a.core}_{dev}.json"
+    p.parent.mkdir(parents=True, exist_ok=True)
+    out = json.loads(p.read_text()) if p.exists() else {}
+    C = M.CHUNK
+    for K in ks:
+        if str(K) in out:
+            continue
+        ss = [fe.session() for _ in range(K)]
+        off = [k * 7 // K for k in range(K)]
+        for s_, c, o in zip(ss, clips, off):
+            for i in range(o):
+                s_.feed(c[i * C:(i + 1) * C])
+        agg = []
+        n = int(a.seconds * SR) // C
+        for i in range(n):
+            t0 = time.perf_counter()
+            for s_, c, o in zip(ss, clips, off):
+                s_.feed(c[(i + o) * C:(i + o + 1) * C])
+            if dev == "mps":
+                torch.mps.synchronize()
+            agg.append((time.perf_counter() - t0) * 1000)
+        for s_ in ss:
+            s_.end()
+        x = np.array(agg[5:])
+        out[str(K)] = {"agg_block_ms_p50": round(float(np.median(x)), 1),
+                       "agg_block_ms_p95": round(float(np.percentile(x, 95)), 1),
+                       "agg_block_ms_max": round(float(x.max()), 1),
+                       "real_time": bool(np.percentile(x, 95) < 160), **mem(dev)}
+        log(K, out[str(K)])
+        p.write_text(json.dumps(out, indent=1))
+        if not out[str(K)]["real_time"]:
+            break
+    log("STAGE_COMPLETE")
+
+
+STAGES = {"staggered": stage_staggered, "wer": stage_wer, "score": stage_score, "live": stage_live, "cost": stage_cost, "report": stage_report,
+          "select": stage_select}
 
 
 def main():
@@ -378,6 +615,7 @@ def main():
     p.add_argument("--chunk-ms", type=int, default=160)
     p.add_argument("--budget", type=float, default=540.0)
     p.add_argument("--flush", default="on", choices=["on", "off"])
+    p.add_argument("--cut", default="speech", choices=["turn", "speech"])
     p.add_argument("--sub", default="engine", choices=["engine", "streams"])
     p.add_argument("--ks", default="1,2,3,4,5,6,7,8")
     p.add_argument("--seconds", type=float, default=60)

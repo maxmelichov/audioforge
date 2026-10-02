@@ -6,6 +6,13 @@ versions follow [Semantic Versioning](https://semver.org/). Every measured numbe
 
 ## [Unreleased]
 
+### Added (2026-10-02): dual rate, `serve --final-chunk-ms {160,560,1120}` (research/DUAL_RATE.md)
+- Heads, partials and turn decisions keep the 160 ms pass (turn ends and fast finals byte-identical, 32 / 32 live
+  sessions, both cores); a text-only pass of the same encoder at [70,6] / [70,13] writes the `final` (`source: slow`),
+  the 160 ms text is sent at the turn end as `final_fast`; adapters `final_text="fast"` (default) | `"slow"`. 1120 ms vs
+  160 ms on the test sets: ICSI −3.5 / −1.9, AMI −0.6 / −0.1 (n.s.), live −1.7 / −0.8 WER points (115M / 0.6B);
+  slow final 9-48 ms after the turn end; +20-27 ms p95 turn-end delivery (0.6B on CPU: ~110 ms / +93 ms, not recommended). Off by default.
+
 ### Changed (2026-10-02): 0.6B heads v0.4, real two-party channels for the turn heads (research/TURN_DATA.md)
 - New data, all licensed for commercial training, split once by recording into train / held-out / never touched
   (disjointness checked by id, `turn_data.py splits`): AMI individual headsets (CC BY 4.0; 45 / 18 / 16 meetings),

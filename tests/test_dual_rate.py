@@ -218,3 +218,17 @@ def test_socket_dual_rate_messages():
     assert len(fast) == len(slow) >= 2 and [m["t"] for m in fast] == [m["t"] for m in slow]
     for m in out:
         validate(m, debug=True)
+
+
+def test_final_cut_speech_partitions_tokens_too():
+    """final_cut="speech" (the --asr-lookahead rule: 3 frames past the last VAD speech frame) also partitions the
+    long-context tokens exactly (flush off) and sends one slow final per final_fast."""
+    x = _speech_silence()
+    eng = EnergyEngine(_ENG.setdefault(("model", "nemo"), _nemo_asr_model()), _diar_model(), name="tiny", threads=1,
+                       debug=True, final_chunk_ms=FC, final_flush=False, final_cut="speech")
+    s, msgs, _ = _run(eng, x)
+    slow = [m for m in msgs if m["type"] == "final"]
+    assert len(slow) == len([m for m in msgs if m["type"] == "final_fast"])
+    assert "".join(m["text"] for m in slow) == _offline_tokens(eng.asr, x, SLOW_R).text
+    with pytest.raises(ValueError):
+        EnergyEngine(eng.asr, _diar_model(), name="tiny", threads=1, final_chunk_ms=FC, final_cut="bogus")

@@ -318,11 +318,12 @@ Details of the extra finals:
   decisions keep the 160 ms pass. At a cutting `turn_end` the server sends that pass's final at once as a
   **`final_fast`** message (exactly the fields the plain `final` has without the flag, so a client can hand it to
   the LLM with no added delay), then a `final` with `source: "slow"` and `pass` holding the text of a second,
-  text-only pass of the same frozen encoder at 560 ms (`[70,6]`) or 1120 ms (`[70,13]`) chunks over the same
-  frames (`start` / `end` = the span, the same cut as `final_fast`). The slow pass's chunk holding the turn's last
-  frames is normally not complete at the decision; the server encodes the audio up to the decision time as a partial
-  chunk (a throw-away copy of the pass; the pass itself is unchanged) and sends the slow final right after the
-  `turn_end` batch, without waiting for the rest of the chunk. A client that wants the better text replaces the
+  text-only pass of the same frozen encoder at 560 ms (`[70,6]`) or 1120 ms (`[70,13]`) chunks (`start` / `end` =
+  its span: from the previous slow cut to 3 frames past the turn's last VAD speech frame, as `--asr-lookahead`;
+  words the slow pass places in the silence after that go to the next turn). When the slow chunk holding those
+  frames is not complete at the decision, the server encodes the audio up to the decision time as a partial chunk
+  (a throw-away copy of the pass; the pass itself is unchanged) and sends the slow final right after the
+  `turn_end` batch, without waiting for the rest of the chunk (`--final-flush off`: it waits). A client that wants the better text replaces the
   `final_fast` text with the `final` of the same `t`.
 - **`lookahead` (`--asr-lookahead R`).** A second, text-only pass of the same ASR model with R frames of right
   context. Its final for a segment is sent once that pass has decoded 3 frames past the segment's last VAD speech
