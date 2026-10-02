@@ -47,7 +47,7 @@ OUT = ROOT / "runs" / "final_compare.json"
 SR = 16000
 CHUNK = 2560  # 160 ms
 HUB = Path.home() / ".cache/huggingface/hub"
-AFM_115M = ROOT / "runs" / "stage1_served_v3.afm"  # served heads v0.3 (hub.SERVED)
+AFM_115M = Path(os.environ.get("FINAL_115M_AFM", ROOT / "runs" / "stage1_served_v3.afm"))  # served heads (hub.SERVED)
 # the 0.6B served model: the turn fix's v0.2 build when it exists (research/CORE_0P6B_TURN.md), else v0.1
 AFM_0P6B_V02 = SSD / "scratch" / "core_0p6b" / "served_0p6b_v0.2.afm"
 AFM_0P6B_V01 = SSD / "scratch" / "core_0p6b" / "served_0p6b_v0.1.afm"
@@ -399,7 +399,8 @@ def stage_vad(a):
             with torch.inference_mode():
                 xx = torch.from_numpy(np.asarray(x, np.float32))[None].to(a.device)
                 enc, elen, hid = m.encode(xx, torch.tensor([xx.shape[1]], device=a.device), [70, 1], return_hidden=True)
-                p = m.heads["vad"](m.head_input("vad", enc, hid)).sigmoid()[0, : int(elen[0])].float().cpu().numpy()
+                vh = "speech" if "speech" in m.heads else "vad"  # the client's speech probability (FIXALL.md step 1)
+                p = m.heads[vh](m.head_input(vh, enc, hid)).sigmoid()[0, : int(elen[0])].float().cpu().numpy()
             p = p.reshape(-1)
             return np.concatenate([p, np.zeros(max(0, T - len(p)))])[:T]
     for sn, val in sets.items():
@@ -1306,7 +1307,7 @@ def stage_report(a):
     res["generated"] = time.strftime("%Y-%m-%d %H:%M")
     res["machine"] = "Apple M5 laptop (macOS), MPS for the served cores' served metrics and the large Whisper models, CPU 2 threads elsewhere"
     res["afm"] = {"115m": str(AFM_115M), "0p6b": str(afm_0p6b()),
-                  "0p6b_heads": "v0.2 (turn fix)" if afm_0p6b() == AFM_0P6B_V02 else "v0.1 (pre-fix)"}
+                  "0p6b_heads": Path(afm_0p6b()).stem}
     for k, fn in (("words", score_asr), ("stt_latency", score_sttlat), ("vad", score_vad), ("lid", score_lid),
                   ("turn", score_turn), ("speaker_eer", score_spkeer), ("pyannote_frame", score_pyaframe),
                   ("pyannote_twer", score_pyatwer)):

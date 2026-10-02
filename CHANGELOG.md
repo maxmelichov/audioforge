@@ -6,6 +6,21 @@ versions follow [Semantic Versioning](https://semver.org/). Every measured numbe
 
 ## [Unreleased]
 
+### Added (2026-10-01): speech-detector head on both cores (research/FIXALL.md step 1)
+- `heads.speech`: a stateless speech detector (served FrameHead shape on a learned block mix: 115M blocks 2-6, 0.6B
+  blocks 8-16), trained on AMI + ICSI train meetings + oto user channels (clean and quiet-channel variants) with
+  SpecAugment views and a held-out-calibrated threshold. It is the client's per-frame speech probability (the frame
+  message's `vad` field). Turn rules, TS-VAD, LID gating and the v5 classifier keep reading `heads.vad`, so turn taking
+  is unchanged (served check: identical turn ends on the bundled call, every preset, both cores).
+- ICSI dev F1 0.898 → 0.947 (115M) and 0.906 → 0.951 (0.6B), above TEN VAD's 0.935. AMI dev F1 0.951 → 0.951 / 0.950
+  (paired difference within its CI; AUC −0.002 / −0.003). Teacher soft targets (TEN VAD, pyannote segmentation-3.0)
+  were tried and did not help on held-out data.
+- `assets/served_heads_v0.4.pt` (hub `HEADS` 0.4, the default; `stage1_served_v4.afm`) and
+  `assets/served_heads_0p6b_v0.3.pt` (hub `HEADS_0P6B` 0.3, the default; `served_0p6b_v0.3.afm`).
+- `RNNTHead.beam_search` / `BeamTransducerStream` (research use, step 5).
+- `scripts/research/fixall.py` (stages vman / vteach / vfeat / vtrain / vserved / vbuild / servedeq / wprep / wdec /
+  wscore / lteach); `tests/test_fixall.py`.
+
 ### Changed (2026-10-01): 0.6B core heads v0.2, end of turn diagnosed (research/CORE_0P6B_TURN.md)
 - Why the 0.6B was worse at end of turn: two heads, shown by swapping the 115M's per-frame signals into the 0.6B
   session.

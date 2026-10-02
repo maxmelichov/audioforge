@@ -2,14 +2,18 @@
 
 Everything `audioforge-download` (`audioforge/hub.py`) can fetch, with the pinned source, size, what it becomes on
 disk, and its licence. audioforge's only model weights of its own are in `assets/`:
-- `served_heads_v0.3.pt`: the heads merged into the served model (190 tensors, 29.4 MB): v0.2's heads (the VAD head
-  reads block 4) + `turn_seg`, the turn head v5 segment classifier of `--turn-preset fast` / `assistant`
-  (research/TURN_V5.md). `served_heads_v0.2.pt` (104 tensors, 19.6 MB) is kept: `--heads-version 0.2`.
+- `served_heads_v0.4.pt`: the heads merged into the served model (195 tensors, 29.5 MB): v0.3's heads + `speech`, a
+  stateless speech detector on a learned mix of blocks 2-6 trained on AMI + ICSI train + oto user channels. It gives
+  the client's per-frame speech probability (ICSI dev F1 0.898 → 0.947, AMI 0.951 → 0.951; research/FIXALL.md); the
+  turn rules, TS-VAD, LID gating and the v5 classifier keep reading the block-4 `vad` head, so turn taking is
+  unchanged. `served_heads_v0.3.pt` (v0.2 + `turn_seg`, the turn head v5 segment classifier, research/TURN_V5.md) and
+  `served_heads_v0.2.pt` (104 tensors, 19.6 MB) are kept: `--heads-version 0.3` / `0.2`.
 - `tsvad_spk.pt`: the target-speaker head (1.0 MB).
 - `lid_distill.pt`: the language-ID head (3.7 MB).
-- `served_heads_0p6b_v0.2.pt` (`--core 0.6b`): the heads merged into nemotron-speech-streaming-en-0.6b (118 tensors,
-  16.0 MB). Same tensors as `served_heads_0p6b_v0.1.pt`, with the turn presets' constants re-picked on held-out data
-  (research/CORE_0P6B_TURN.md). `tsvad_0p6b.pt` and `lid_0p6b.pt` are that core's TS-VAD and LID heads.
+- `served_heads_0p6b_v0.3.pt` (`--core 0.6b`): the heads merged into nemotron-speech-streaming-en-0.6b (123 tensors,
+  16.3 MB): v0.2 + the same kind of `speech` head (blocks 8-16; ICSI dev F1 0.906 → 0.951, AMI 0.951 → 0.950,
+  research/FIXALL.md). v0.2 (`served_heads_0p6b_v0.2.pt`, v0.1's tensors with the turn presets' constants re-picked
+  on held-out data, research/CORE_0P6B_TURN.md) is kept. `tsvad_0p6b.pt` and `lid_0p6b.pt` are that core's TS-VAD and LID heads.
 - `served_heads_v0.1.pt`: the 2026-09-27 measured heads, kept for reproducibility. The download command shows the licences of the components it is
 about to fetch and asks you to accept them (`--yes` / `AUDIOFORGE_ACCEPT_LICENSES=1` non-interactively).
 
@@ -26,7 +30,7 @@ audioforge-download --list
 
 | key | model | source (pinned) | download | on disk (`$AUDIOFORGE_HOME`) | licence | used for |
 |---|---|---|---|---|---|---|
-| `asr` | NVIDIA FastConformer hybrid streaming (114M) + audioforge heads | [nvidia/stt_en_fastconformer_hybrid_large_streaming_multi](https://huggingface.co/nvidia/stt_en_fastconformer_hybrid_large_streaming_multi) @ `ae9814333369` | `stt_en_fastconformer_hybrid_large_streaming_multi.nemo`, 460 MB | `stage1_served_v3.afm` (453 MB; `--heads-version 0.2`: `stage1_served_v2.afm`, `0.1`: `stage1_served.afm`) | [CC-BY-4.0](https://creativecommons.org/licenses/by/4.0/) | streaming ASR, VAD, turn and speaker heads (required) |
+| `asr` | NVIDIA FastConformer hybrid streaming (114M) + audioforge heads | [nvidia/stt_en_fastconformer_hybrid_large_streaming_multi](https://huggingface.co/nvidia/stt_en_fastconformer_hybrid_large_streaming_multi) @ `ae9814333369` | `stt_en_fastconformer_hybrid_large_streaming_multi.nemo`, 460 MB | `stage1_served_v4.afm` (453 MB; `--heads-version 0.3`: `stage1_served_v3.afm`, `0.2`: `stage1_served_v2.afm`, `0.1`: `stage1_served.afm`) | [CC-BY-4.0](https://creativecommons.org/licenses/by/4.0/) | streaming ASR, VAD, turn and speaker heads (required) |
 | `sortformer` | NVIDIA Streaming Sortformer 4spk v2 (117M) | [nvidia/diar_streaming_sortformer_4spk-v2](https://huggingface.co/nvidia/diar_streaming_sortformer_4spk-v2) @ `84edd514b8ef` | `diar_streaming_sortformer_4spk-v2.nemo`, 471 MB | `nemo_sortformer_v2.afm` (436 MB) | [CC-BY-4.0](https://creativecommons.org/licenses/by/4.0/) | speaker activity / diarizer (default --diar) |
 | `nemotron3` | NVIDIA Nemotron-3-Diarization | [nvidia/Nemotron-3-Diarization](https://huggingface.co/nvidia/Nemotron-3-Diarization) @ `f667ed73aee5` | `Nemotron-3-Diarization.nemo`, 199 MB | `nemo_nemotron3_diar.afm` (177 MB) | [OpenMDW-1.1](https://huggingface.co/nvidia/Nemotron-3-Diarization) | alternative diarizer (--diarizer nemotron3) |
 | `tdt_v3` | NVIDIA Parakeet-TDT 0.6B v3 | [nvidia/parakeet-tdt-0.6b-v3](https://huggingface.co/nvidia/parakeet-tdt-0.6b-v3) @ `541d1f99c6b0` | `parakeet-tdt-0.6b-v3.nemo`, 2509 MB | `nemo/parakeet-tdt-0.6b-v3.nemo` (2393 MB) | [CC-BY-4.0](https://creativecommons.org/licenses/by/4.0/) | offline per-turn final ASR (serve --final-asr tdt_v3) |
@@ -52,7 +56,8 @@ after conversion unless `--keep-nemo`). `--from-local DIR` and `--data-root DIR`
 Every download is checked against the size and sha256 below; a mismatch deletes the file and fails the command. The
 served model is not downloaded as such: `build_served` merges NVIDIA's `stt_en_fastconformer_hybrid_large_streaming_multi`
 (all 654 tensors unchanged) with the heads file and asserts the merged model's tensor hash against the hash recorded
-when the heads were exported from `runs/stage1_served_v2.afm` (v0.2) or `runs/stage1_served.afm` (v0.1). The model
+when the heads were exported from `runs/stage1_served_v4.afm` (v0.4), `runs/stage1_served_v3.afm` (v0.3),
+`runs/stage1_served_v2.afm` (v0.2) or `runs/stage1_served.afm` (v0.1). The model
 you run is therefore bit-identical to the checkpoint the heads came from.
 
 | key | file | bytes | sha256 |
@@ -66,13 +71,15 @@ you run is therefore bit-identical to the checkpoint the heads came from.
 | `silero` | `silero_vad.onnx` | 2327524 | `2623a2953f6ff3d2c1e61740c6cdb7168133479b267dfef114a4a3cc5bdd788f` |
 | `tsvad` | `tsvad_spk.pt` | 1048542 | `dbc6230d8d722bad65aaf598dce69569995bd96bc002da40a2069d664c427683` |
 | `lid` | `lid_distill.pt` | 3704886 | `07de4e4da5444ecae250b4c5ef0172372451ba2da9ea7ae492e42b1759f1d487` |
-| heads v0.3 (ships) | `served_heads_v0.3.pt` | 29481643 | `ea1e8331fa9b9efdee76f1b44d4352f9e1660f34e3da6491b5655ce56ab18848` |
+| heads v0.4 (ships) | `served_heads_v0.4.pt` | 29614995 | `c3301b453f7f3e0b7e85da2c34471ce3c8f604e8c2d201c405cb235c64cd6d99` |
+| heads v0.3 | `served_heads_v0.3.pt` | 29481643 | `ea1e8331fa9b9efdee76f1b44d4352f9e1660f34e3da6491b5655ce56ab18848` |
 | heads v0.2 | `served_heads_v0.2.pt` | 19629563 | `cb5aa06974f27576c0f66b9453868701106969dea5d5ad100b06b2b779f121d2` |
 | heads v0.1 (measured) | `served_heads_v0.1.pt` | 19629955 | `834f3e94467bc4110555d8d4cbdbe0ce75254a80d8ca203ecd975d4f007286f5` |
-| 0.6B heads v0.2 (ships) | `served_heads_0p6b_v0.2.pt` | 16045591 | `ceff8c8912640e67500ca796d7c983d220ddf581845134e3e7ca68d7c32db3ff` |
+| 0.6B heads v0.3 (ships) | `served_heads_0p6b_v0.3.pt` | 16309976 | `3245e5ee5bc05beb5f2bc9f412c89b455c0b2faa6ab592ddd7c6bab3aa4568f1` |
+| 0.6B heads v0.2 | `served_heads_0p6b_v0.2.pt` | 16045591 | `ceff8c8912640e67500ca796d7c983d220ddf581845134e3e7ca68d7c32db3ff` |
 | 0.6B heads v0.1 | `served_heads_0p6b_v0.1.pt` | 16045143 | `664be5a0e498b9268d088ccf2fa079d909cd70311c4096f8d28f94258adc4e6e` |
 
-The heads file (`--heads-version`, default 0.3) is looked up in the checkout's `assets/` first, then in the models
+The heads file (`--heads-version`, default 0.4) is looked up in the checkout's `assets/` first, then in the models
 directory, then fetched from `https://github.com/maxmelichov/audioforge/releases/download/v0.1.0/<file>`.
 Its size and sha256 are checked.
 

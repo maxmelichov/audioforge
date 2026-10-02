@@ -152,6 +152,10 @@ class ASRStream(StreamingSession):
             else:
                 vad = (self.m.heads[self.vad_name](self.m.head_input(self.vad_name, enc, hid)).sigmoid()[0].tolist()
                        if self.vad_name else [0.0] * n)
+            # an optional stateless speech-detector head (research/FIXALL.md): what the client sees as the frame's
+            # speech probability; the turn rules, TS-VAD, LID gating and the v5 classifier keep reading heads.vad
+            sp = (self.m.heads["speech"](self.m.head_input("speech", enc, hid)).sigmoid()[0].tolist()
+                  if "speech" in self.m.heads else None)
             e_turn = self.m.head_input(self.turn_name, enc, hid) if self.turn is not None else None
             if self.keep_spk:  # the speaker head's tap of this chunk (no extra encoder pass): per-turn voice ids
                 for fr in self.m.head_input("spk", enc, hid)[0].float().cpu().numpy():
@@ -193,6 +197,8 @@ class ASRStream(StreamingSession):
                         pr = self.pros_frames[v] if v < len(self.pros_frames) else np.zeros(12, np.float32)
                     self.seg.push(seg_x[j], float(vad[j]), pu, po, len(self.tokens), pr)
                 out.append({"v": self.n_frames, "vad": float(vad[j]), "eot": eot})
+                if sp is not None:
+                    out[-1]["speech"] = float(sp[j])
                 self.n_frames += 1
             if self.turn is not None and self.turn_input in ("diar", "tsvad"):
                 self.pending.append({"mel": chunk, "last": last, "v0": self.n_frames - n, "n": n, "snaps": snaps,

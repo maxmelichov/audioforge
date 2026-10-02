@@ -1,10 +1,10 @@
 {
- "generated": "2026-10-01 20:32",
+ "generated": "2026-10-01 23:20",
  "machine": "Apple M5 laptop (macOS), MPS for the served cores' served metrics and the large Whisper models, CPU 2 threads elsewhere",
  "afm": {
-  "115m": "/Users/maxm/nvidia-audio-models/runs/stage1_served_v3.afm",
-  "0p6b": "/Volumes/ExternalSSD/nvidia-audio-models/scratch/core_0p6b/served_0p6b_v0.2.afm",
-  "0p6b_heads": "v0.2 (turn fix)"
+  "115m": "/Users/maxm/nvidia-audio-models/runs/stage1_served_v4.afm",
+  "0p6b": "/Volumes/ExternalSSD/nvidia-audio-models/scratch/core_0p6b/served_0p6b_v0.3.afm",
+  "0p6b_heads": "served_0p6b_v0.3"
  },
  "words": {
   "libri": {
@@ -1828,147 +1828,147 @@
     "compute_s": 7.6
    },
    "core_115m": {
-    "f1_at_0.5": 0.9511,
-    "f1_ci95": [
-     0.9401,
-     0.9603
-    ],
-    "auc": 0.9719,
-    "auc_ci95": [
-     0.9624,
-     0.9796
-    ],
-    "miss_at_fpr_7.5_pct": 10.58,
-    "miss_ci95_pct": [
-     8.07,
-     13.33
-    ],
-    "onset_lag_ms_p50": 80,
-    "onset_lag_ms_p90": 160,
-    "onsets": 115,
-    "onsets_detected_within_1s_pct": 98.3,
-    "compute_s": 11.2
-   },
-   "core_0p6b": {
-    "f1_at_0.5": 0.9507,
+    "f1_at_0.5": 0.9505,
     "f1_ci95": [
      0.9388,
-     0.9596
+     0.9604
     ],
-    "auc": 0.9715,
+    "auc": 0.9697,
     "auc_ci95": [
-     0.9624,
-     0.9795
+     0.9604,
+     0.9776
     ],
-    "miss_at_fpr_7.5_pct": 10.65,
+    "miss_at_fpr_7.5_pct": 12.13,
     "miss_ci95_pct": [
-     8.05,
-     13.64
+     8.42,
+     14.8
+    ],
+    "onset_lag_ms_p50": 0,
+    "onset_lag_ms_p90": 160,
+    "onsets": 115,
+    "onsets_detected_within_1s_pct": 99.1,
+    "compute_s": 2.6
+   },
+   "core_0p6b": {
+    "f1_at_0.5": 0.95,
+    "f1_ci95": [
+     0.938,
+     0.959
+    ],
+    "auc": 0.9689,
+    "auc_ci95": [
+     0.958,
+     0.9789
+    ],
+    "miss_at_fpr_7.5_pct": 12.53,
+    "miss_ci95_pct": [
+     8.03,
+     16.89
     ],
     "onset_lag_ms_p50": 80,
     "onset_lag_ms_p90": 160,
     "onsets": 115,
-    "onsets_detected_within_1s_pct": 98.3,
-    "compute_s": 33.7
+    "onsets_detected_within_1s_pct": 100.0,
+    "compute_s": 9.0
    },
    "silero_v5 - core_0p6b": {
     "f1_delta_ci95": [
-     -0.0474,
-     -0.0267
+     -0.0463,
+     -0.0262
     ],
     "auc_delta_ci95": [
-     -0.027,
-     -0.0067
+     -0.0197,
+     -0.0065
     ]
    },
    "marblenet_v2 - core_0p6b": {
     "f1_delta_ci95": [
-     -0.0261,
-     -0.0043
+     -0.0253,
+     -0.0041
     ],
     "auc_delta_ci95": [
-     -0.0221,
-     -0.0023
+     -0.0202,
+     -0.0005
     ]
    },
    "pyannote_seg3 - core_0p6b": {
     "f1_delta_ci95": [
-     0.0042,
-     0.0198
+     0.0052,
+     0.0204
     ],
     "auc_delta_ci95": [
-     0.0048,
-     0.0199
+     0.0055,
+     0.0253
     ]
    },
    "ten_vad - core_0p6b": {
     "f1_delta_ci95": [
-     -0.0329,
-     -0.0184
+     -0.0316,
+     -0.0182
     ],
     "auc_delta_ci95": [
-     -0.034,
-     -0.0137
+     -0.0275,
+     -0.0131
     ]
    },
    "core_115m - core_0p6b": {
     "f1_delta_ci95": [
-     -0.0037,
-     0.0049
+     -0.0038,
+     0.0045
     ],
     "auc_delta_ci95": [
-     -0.0021,
-     0.003
+     -0.0036,
+     0.006
     ]
    },
    "silero_v5 - core_115m": {
     "f1_delta_ci95": [
-     -0.0471,
-     -0.0271
+     -0.0467,
+     -0.0266
     ],
     "auc_delta_ci95": [
-     -0.0264,
-     -0.0077
+     -0.0235,
+     -0.006
     ]
    },
    "marblenet_v2 - core_115m": {
     "f1_delta_ci95": [
-     -0.0262,
-     -0.0049
+     -0.0254,
+     -0.004
     ],
     "auc_delta_ci95": [
-     -0.0226,
-     -0.0029
+     -0.0204,
+     -0.0003
     ]
    },
    "pyannote_seg3 - core_115m": {
     "f1_delta_ci95": [
-     0.0053,
-     0.0183
+     0.0062,
+     0.0187
     ],
     "auc_delta_ci95": [
-     0.005,
-     0.019
+     0.0067,
+     0.0217
     ]
    },
    "ten_vad - core_115m": {
     "f1_delta_ci95": [
-     -0.0332,
-     -0.019
+     -0.0325,
+     -0.018
     ],
     "auc_delta_ci95": [
-     -0.0341,
-     -0.0142
+     -0.0312,
+     -0.0124
     ]
    },
    "core_0p6b - core_115m": {
     "f1_delta_ci95": [
-     -0.0049,
-     0.0037
+     -0.0045,
+     0.0038
     ],
     "auc_delta_ci95": [
-     -0.003,
-     0.0021
+     -0.006,
+     0.0036
     ]
    }
   },
@@ -2065,147 +2065,147 @@
     "compute_s": 7.6
    },
    "core_115m": {
-    "f1_at_0.5": 0.8977,
+    "f1_at_0.5": 0.9474,
     "f1_ci95": [
-     0.8901,
-     0.9049
+     0.9424,
+     0.952
     ],
-    "auc": 0.9313,
+    "auc": 0.9639,
     "auc_ci95": [
-     0.9233,
-     0.9388
+     0.9585,
+     0.9686
     ],
-    "miss_at_fpr_7.5_pct": 19.82,
+    "miss_at_fpr_7.5_pct": 10.73,
     "miss_ci95_pct": [
-     17.06,
-     22.32
-    ],
-    "onset_lag_ms_p50": 0,
-    "onset_lag_ms_p90": 80,
-    "onsets": 276,
-    "onsets_detected_within_1s_pct": 99.6,
-    "compute_s": 11.1
-   },
-   "core_0p6b": {
-    "f1_at_0.5": 0.9055,
-    "f1_ci95": [
-     0.8979,
-     0.9126
-    ],
-    "auc": 0.9245,
-    "auc_ci95": [
-     0.9158,
-     0.9332
-    ],
-    "miss_at_fpr_7.5_pct": 22.35,
-    "miss_ci95_pct": [
-     19.03,
-     25.09
+     9.22,
+     12.19
     ],
     "onset_lag_ms_p50": 0,
     "onset_lag_ms_p90": 80,
     "onsets": 276,
     "onsets_detected_within_1s_pct": 100.0,
-    "compute_s": 33.1
+    "compute_s": 2.4
+   },
+   "core_0p6b": {
+    "f1_at_0.5": 0.9505,
+    "f1_ci95": [
+     0.9455,
+     0.955
+    ],
+    "auc": 0.9659,
+    "auc_ci95": [
+     0.9615,
+     0.9699
+    ],
+    "miss_at_fpr_7.5_pct": 10.16,
+    "miss_ci95_pct": [
+     9.04,
+     11.61
+    ],
+    "onset_lag_ms_p50": 0,
+    "onset_lag_ms_p90": 80,
+    "onsets": 276,
+    "onsets_detected_within_1s_pct": 100.0,
+    "compute_s": 9.1
    },
    "silero_v5 - core_0p6b": {
     "f1_delta_ci95": [
-     0.0168,
-     0.0298
+     -0.0266,
+     -0.0172
     ],
     "auc_delta_ci95": [
-     0.0019,
-     0.0162
+     -0.0394,
+     -0.0253
     ]
    },
    "marblenet_v2 - core_0p6b": {
     "f1_delta_ci95": [
-     0.0183,
-     0.0296
+     -0.0267,
+     -0.0172
     ],
     "auc_delta_ci95": [
-     0.0087,
-     0.0229
+     -0.0328,
+     -0.0193
     ]
    },
    "pyannote_seg3 - core_0p6b": {
     "f1_delta_ci95": [
-     -0.0105,
-     -0.0027
+     -0.0576,
+     -0.0453
     ],
     "auc_delta_ci95": [
-     -0.0454,
-     -0.0014
+     -0.0886,
+     -0.0406
     ]
    },
    "ten_vad - core_0p6b": {
     "f1_delta_ci95": [
-     0.0244,
-     0.0353
+     -0.0188,
+     -0.0111
     ],
     "auc_delta_ci95": [
-     0.019,
-     0.0344
+     -0.0194,
+     -0.0097
     ]
    },
    "core_115m - core_0p6b": {
     "f1_delta_ci95": [
-     -0.0101,
-     -0.0057
+     -0.0058,
+     0.0001
     ],
     "auc_delta_ci95": [
-     0.0026,
-     0.0109
+     -0.0042,
+     0.0002
     ]
    },
    "silero_v5 - core_115m": {
     "f1_delta_ci95": [
-     0.0252,
-     0.037
+     -0.0236,
+     -0.0139
     ],
     "auc_delta_ci95": [
-     -0.0035,
-     0.0081
+     -0.0371,
+     -0.0234
     ]
    },
    "marblenet_v2 - core_115m": {
     "f1_delta_ci95": [
-     0.0257,
-     0.0372
+     -0.0233,
+     -0.0139
     ],
     "auc_delta_ci95": [
-     0.002,
-     0.0156
+     -0.031,
+     -0.0169
     ]
    },
    "pyannote_seg3 - core_115m": {
     "f1_delta_ci95": [
-     -0.002,
-     0.0043
+     -0.0542,
+     -0.0431
     ],
     "auc_delta_ci95": [
-     -0.0508,
-     -0.0084
+     -0.0857,
+     -0.0385
     ]
    },
    "ten_vad - core_115m": {
     "f1_delta_ci95": [
-     0.0324,
-     0.0426
+     -0.0154,
+     -0.0088
     ],
     "auc_delta_ci95": [
-     0.0142,
-     0.0265
+     -0.0177,
+     -0.0073
     ]
    },
    "core_0p6b - core_115m": {
     "f1_delta_ci95": [
-     0.0057,
-     0.0101
+     -0.0001,
+     0.0058
     ],
     "auc_delta_ci95": [
-     -0.0109,
-     -0.0026
+     -0.0002,
+     0.0042
     ]
    }
   }

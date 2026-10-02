@@ -13,17 +13,18 @@ asks you to accept it before downloading (``--yes`` or ``AUDIOFORGE_ACCEPT_LICEN
 
 The served ASR model is NVIDIA's ``stt_en_fastconformer_hybrid_large_streaming_multi`` (every one of its 654 tensors
 unchanged) plus this project's trained heads (VAD, EOU, turn, speaker, diar, and the turn head v5 segment classifier
-``turn_seg``; 190 tensors, 29.4 MB), shipped as ``assets/served_heads_v0.3.pt``. ``build_served`` merges the two and
+``turn_seg``, and the speech detector ``speech``; 195 tensors, 29.5 MB), shipped as ``assets/served_heads_v0.4.pt``. ``build_served`` merges the two and
 checks the result's tensor hash against the hash recorded when the heads were exported from
-``runs/stage1_served_v3.afm`` (= ``stage1_served_v2.afm`` + heads.turn_seg, research/TURN_V5.md; the VAD head reads
-block 4 only, research/VAD_SINGLE.md), so the rebuilt model is bit-identical to the shipped one.
+``runs/stage1_served_v4.afm`` (= ``stage1_served_v3.afm`` + heads.speech, research/FIXALL.md; v3 = v2 + heads.turn_seg,
+research/TURN_V5.md; the turn VAD head reads block 4 only, research/VAD_SINGLE.md), so the rebuilt model is
+bit-identical to the shipped one. ``--heads-version 0.3`` rebuilds ``stage1_served_v3.afm`` (no speech head).
 ``--heads-version 0.2`` rebuilds ``stage1_served_v2.afm`` (no v5 classifier: ``--turn-preset fast`` / ``assistant``
 need v0.3) and ``--heads-version 0.1`` ``stage1_served.afm``, the 2026-09-27 checkpoint most numbers in research/ were
 measured with.
 
 Second core (``--core 0.6b``, research/CORE_0P6B.md): NVIDIA's ``nemotron-speech-streaming-en-0.6b`` (NVIDIA Open
-Model License; 618 M parameters, every tensor unchanged) plus heads retrained on it (``assets/served_heads_0p6b_v0.2.pt``
--> ``served_0p6b_v0.2.afm``; v0.1's tensors with re-picked turn-preset constants) and its own TS-VAD and LID heads (``tsvad_0p6b.pt``, ``lid_0p6b.pt``). The 115M stays the
+Model License; 618 M parameters, every tensor unchanged) plus heads retrained on it (``assets/served_heads_0p6b_v0.3.pt``
+-> ``served_0p6b_v0.3.afm``; v0.2 + the speech detector head, research/FIXALL.md) and its own TS-VAD and LID heads (``tsvad_0p6b.pt``, ``lid_0p6b.pt``). The 115M stays the
 default. ``audioforge-download --core 0.6b`` fetches that set (2.5 GB download, ~2.3 GB on disk).
 
 Output directory: ``--dir``, else ``$AUDIOFORGE_HOME``, else ``<repo>/models`` in a source checkout, else
@@ -53,26 +54,33 @@ __all__ = [
 # the heads asset: v0.3 ships (v0.2 + heads.turn_seg, the turn head v5 segment classifier of --turn-preset fast /
 # assistant, research/TURN_V5.md; every v0.2 tensor unchanged); v0.2 (block-4 VAD head) and v0.1 stay for reproducing
 # the research measurements
-HEADS = {"0.3": ("served_heads_v0.3.pt", 29481643, "ea1e8331fa9b9efdee76f1b44d4352f9e1660f34e3da6491b5655ce56ab18848",
+HEADS = {"0.4": ("served_heads_v0.4.pt", 29614995, "c3301b453f7f3e0b7e85da2c34471ce3c8f604e8c2d201c405cb235c64cd6d99",
+                 "stage1_served_v4.afm"),
+         # v0.4 = v0.3 + heads.speech (the client's speech probability, a stateless block 2-6 mix head trained on AMI +
+         # ICSI train + oto; research/FIXALL.md step 1); every v0.3 tensor unchanged, the turn rules still read heads.vad
+         "0.3": ("served_heads_v0.3.pt", 29481643, "ea1e8331fa9b9efdee76f1b44d4352f9e1660f34e3da6491b5655ce56ab18848",
                  "stage1_served_v3.afm"),
          "0.2": ("served_heads_v0.2.pt", 19629563, "cb5aa06974f27576c0f66b9453868701106969dea5d5ad100b06b2b779f121d2",
                  "stage1_served_v2.afm"),
          "0.1": ("served_heads_v0.1.pt", 19629955, "834f3e94467bc4110555d8d4cbdbe0ce75254a80d8ca203ecd975d4f007286f5",
                  "stage1_served.afm")}
-HEADS_VERSION = "0.3"
+HEADS_VERSION = "0.4"
 HEADS_FILE = HEADS[HEADS_VERSION][0]
 RELEASE_URL = "https://github.com/maxmelichov/audioforge/releases/download/v0.1.0"
 HEADS_URL = f"{RELEASE_URL}/{HEADS_FILE}"
-SERVED = HEADS[HEADS_VERSION][3]  # what ships: stage1_served_v3.afm (= v2 + heads.turn_seg; runs/stage1_served.afm = v1)
+SERVED = HEADS[HEADS_VERSION][3]  # what ships: stage1_served_v4.afm (= v3 + heads.speech; runs/stage1_served.afm = v1)
 
 # the second core (--core 0.6b): nemotron-speech-streaming-en-0.6b + heads retrained on it (research/CORE_0P6B.md)
-HEADS_0P6B = {"0.2": ("served_heads_0p6b_v0.2.pt", 16045591,
+HEADS_0P6B = {"0.3": ("served_heads_0p6b_v0.3.pt", 16309976,
+                       "3245e5ee5bc05beb5f2bc9f412c89b455c0b2faa6ab592ddd7c6bab3aa4568f1", "served_0p6b_v0.3.afm"),
+              # v0.3 = v0.2 + heads.speech (stateless block 8-16 mix speech detector, research/FIXALL.md step 1)
+              "0.2": ("served_heads_0p6b_v0.2.pt", 16045591,
                        "ceff8c8912640e67500ca796d7c983d220ddf581845134e3e7ca68d7c32db3ff", "served_0p6b_v0.2.afm"),
               # v0.2 = v0.1's tensors (same state hash) with the turn presets' constants re-picked on held-out data
               # (research/CORE_0P6B_TURN.md)
               "0.1": ("served_heads_0p6b_v0.1.pt", 16045143,
                       "664be5a0e498b9268d088ccf2fa079d909cd70311c4096f8d28f94258adc4e6e", "served_0p6b_v0.1.afm")}
-HEADS_0P6B_VERSION = "0.2"
+HEADS_0P6B_VERSION = "0.3"
 SERVED_0P6B = HEADS_0P6B[HEADS_0P6B_VERSION][3]
 # what each core needs: (served ASR + heads, TS-VAD head, LID head) component keys
 CORES = {"115m": ("asr", "tsvad", "lid"), "0.6b": ("asr_0p6b", "tsvad_0p6b", "lid_0p6b")}

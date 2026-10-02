@@ -909,8 +909,9 @@ class Session:
             else:  # asked at SMARTTURN_QUIET_MS of VAD silence, the preset's smart-turn fallback (3 s)
                 k = max(1, int(round(SMARTTURN_QUIET_MS / FRAME_MS)))
                 fb = int(round(e.presets[pr or e.turn_preset]["smartturn_fallback_ms"] / FRAME_MS))
+        rt = e.presets[pr or e.turn_preset].get("reset_thr") if e.smartturn is None else None
         return VadHeadPolicy(self._vad_head_theta(), k, fb, thr, others=others, others_p=VAD_HEAD_OTHERS_P,
-                             user_p=VAD_HEAD_USER_P, gate=gate, turn_model=tm, **st)
+                             user_p=VAD_HEAD_USER_P, gate=gate, turn_model=tm, reset_thr=rt, **st)
 
     def _vad_head_theta(self) -> float:
         """vad_head's turn-head threshold: the client's eot_threshold when set, else the session preset's own
@@ -1392,10 +1393,13 @@ class Session:
             drop = max(0, len(self._abuf) - 40 * FRAME_SAMPLES)
             self._abuf, self._abuf0 = self._abuf[drop:], self._abuf0 + drop
         frames = self.asr.feed_frames(x, final)
-        bad = [f for f in frames if not math.isfinite(f["vad"]) or (f["eot"] is not None and not math.isfinite(f["eot"]))]
+        bad = [f for f in frames if not math.isfinite(f["vad"]) or (f["eot"] is not None and not math.isfinite(f["eot"]))
+               or not math.isfinite(f.get("speech", 0.0))]
         if bad:  # a non-finite head output: report, zero it, and restart the recurrent state
             for f in bad:
                 f["vad"] = f["vad"] if math.isfinite(f["vad"]) else 0.0
+                if "speech" in f and not math.isfinite(f["speech"]):
+                    f["speech"] = 0.0
                 f["eot"] = None if f["eot"] is None else (f["eot"] if math.isfinite(f["eot"]) else 0.0)
             self.asr.reset_state()
             self._notice("nan_state_reset", f"{len(bad)} ASR frames with non-finite head outputs at t={self.t}; "
@@ -1523,7 +1527,7 @@ class Session:
                         events.append((self._asr_ready_t(f["v"]), "vad_head", ev, f["v"]))
                 if self.hint_tr is not None:
                     hints += [(self._asr_ready_t(f["v"]), c) for c in self._hint_update(f["eot"], f["vad"], f["v"])]
-            m = {"type": "frame", "t": round((f["v"] + 1) * FRAME_MS / 1000, 3), "vad": round(f["vad"], 4),
+            m = {"type": "frame", "t": round((f["v"] + 1) * FRAME_MS / 1000, 3), "vad": round(f.get("speech", f["vad"]), 4),
                  "eot": None if self.last_eot is None else round(self.last_eot, 5),
                  "speakers": [round(min(max(float(p), 0.0), 1.0), 4) for p in row], "primary": self.timeout.primary}
             if self.e.debug:

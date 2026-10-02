@@ -1364,7 +1364,7 @@ def run_policy(d, db, rule, gcache):
     pol = VadHeadPolicy(rule.get("th", 0.99), rule["k"], rule["fb"], rule["vad_thr"], others=rule.get("others", (12, 8)),
                         gate=_ReplayGate(qo, wf) if rule["gate"] else None, turn_model=tm,
                         model_vad_thr=rule.get("mvt"), model_p=rule.get("mp", 0.5),
-                        model_quiet_only=rule.get("mqo", False))
+                        model_quiet_only=rule.get("mqo", False), reset_thr=rule.get("rt"))
     out = []
     pu, po, vad, t = h["pu"], h["po"], h["vad"], h["t"]
     reask = rule.get("reask", False)

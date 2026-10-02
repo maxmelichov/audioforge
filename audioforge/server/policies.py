@@ -230,7 +230,7 @@ class VadHeadPolicy:
                  vad_thr: float = 0.4, frame_ms: int = FRAME_MS, others: tuple[int, int] | None = (12, 8),
                  others_p: float = 0.9, user_p: float = 0.5, gate: EnergyGate | None = None, turn_model=None,
                  model_quiet_only: bool = False, model_vad_thr: float | None = None, model_p: float = 0.5,
-                 model_reask: bool = False):
+                 model_reask: bool = False, reset_thr: float | None = None):
         self.thr, self.k, self.fb, self.vad_thr, self.frame_ms = threshold, int(k_frames), fallback_frames, vad_thr, frame_ms
         self.others = None if not others else (int(others[0]), max(1, int(others[1])))
         self.others_p, self.user_p = float(others_p), float(user_p)
@@ -245,6 +245,10 @@ class VadHeadPolicy:
         # model_reask (turn head v5, research/TURN_V5.md): after an "incomplete" answer the classifier is asked again
         # at every further quiet frame of the same silence run (default: once per run, then the fallback)
         self.model_reask = bool(model_reask)
+        # reset_thr (two thresholds, research/FIXALL.md step 2): a frame with VAD >= reset_thr (below the speech
+        # threshold) does not arm a turn but restarts both silence clocks, so a pause the VAD is unsure about (a noisy
+        # channel) is not counted as silence; None = one threshold (the default)
+        self.reset_thr = None if reset_thr is None else float(reset_thr)
         self.v = 0  # next frame index
         self.last = -1  # last VAD speech frame
         self.armed = False  # a speech frame (gated: an onset) since the last firing
@@ -272,6 +276,10 @@ class VadHeadPolicy:
             self.last = v
         if vad >= self.model_vad_thr and not quiet:
             self.last_m = v
+        if self.reset_thr is not None and vad >= self.reset_thr and not (quiet and not self.model_quiet_only):
+            self.last = v
+            if not quiet:
+                self.last_m = v
         if arm:
             if not self.armed:
                 self.onset_v = v

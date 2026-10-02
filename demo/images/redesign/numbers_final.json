@@ -280,7 +280,7 @@
   "path": "stt_latency > 0p6b > p50_ms"
  },
  "final/vad/ami/f1/ours_115m": {
-  "value": 0.9511,
+  "value": 0.9505,
   "shown": "0.951",
   "dec": 3,
   "scope": "VAD F1 at 0.5, ami_dev",
@@ -288,40 +288,40 @@
   "path": "vad > ami_dev > core_115m > f1_at_0.5"
  },
  "final/vad/ami/auc/ours_115m": {
-  "value": 0.9719,
-  "shown": "0.972",
+  "value": 0.9697,
+  "shown": "0.970",
   "dec": 3,
   "scope": "VAD ROC-AUC, ami_dev",
   "source": "runs/final_compare.json",
   "path": "vad > ami_dev > core_115m > auc"
  },
  "final/vad/ami/miss/ours_115m": {
-  "value": 10.58,
-  "shown": "10.6",
+  "value": 12.13,
+  "shown": "12.1",
   "dec": 1,
   "scope": "speech missed at 7.5 % false alarms, ami_dev",
   "source": "runs/final_compare.json",
   "path": "vad > ami_dev > core_115m > miss_at_fpr_7.5_pct"
  },
  "final/vad/ami/f1/ours_0p6b": {
-  "value": 0.9507,
-  "shown": "0.951",
+  "value": 0.95,
+  "shown": "0.950",
   "dec": 3,
   "scope": "VAD F1 at 0.5, ami_dev",
   "source": "runs/final_compare.json",
   "path": "vad > ami_dev > core_0p6b > f1_at_0.5"
  },
  "final/vad/ami/auc/ours_0p6b": {
-  "value": 0.9715,
-  "shown": "0.972",
+  "value": 0.9689,
+  "shown": "0.969",
   "dec": 3,
   "scope": "VAD ROC-AUC, ami_dev",
   "source": "runs/final_compare.json",
   "path": "vad > ami_dev > core_0p6b > auc"
  },
  "final/vad/ami/miss/ours_0p6b": {
-  "value": 10.65,
-  "shown": "10.7",
+  "value": 12.53,
+  "shown": "12.5",
   "dec": 1,
   "scope": "speech missed at 7.5 % false alarms, ami_dev",
   "source": "runs/final_compare.json",
@@ -424,48 +424,48 @@
   "path": "vad > ami_dev > ten_vad > miss_at_fpr_7.5_pct"
  },
  "final/vad/icsi/f1/ours_115m": {
-  "value": 0.8977,
-  "shown": "0.898",
+  "value": 0.9474,
+  "shown": "0.947",
   "dec": 3,
   "scope": "VAD F1 at 0.5, icsi_dev",
   "source": "runs/final_compare.json",
   "path": "vad > icsi_dev > core_115m > f1_at_0.5"
  },
  "final/vad/icsi/auc/ours_115m": {
-  "value": 0.9313,
-  "shown": "0.931",
+  "value": 0.9639,
+  "shown": "0.964",
   "dec": 3,
   "scope": "VAD ROC-AUC, icsi_dev",
   "source": "runs/final_compare.json",
   "path": "vad > icsi_dev > core_115m > auc"
  },
  "final/vad/icsi/miss/ours_115m": {
-  "value": 19.82,
-  "shown": "19.8",
+  "value": 10.73,
+  "shown": "10.7",
   "dec": 1,
   "scope": "speech missed at 7.5 % false alarms, icsi_dev",
   "source": "runs/final_compare.json",
   "path": "vad > icsi_dev > core_115m > miss_at_fpr_7.5_pct"
  },
  "final/vad/icsi/f1/ours_0p6b": {
-  "value": 0.9055,
-  "shown": "0.906",
+  "value": 0.9505,
+  "shown": "0.951",
   "dec": 3,
   "scope": "VAD F1 at 0.5, icsi_dev",
   "source": "runs/final_compare.json",
   "path": "vad > icsi_dev > core_0p6b > f1_at_0.5"
  },
  "final/vad/icsi/auc/ours_0p6b": {
-  "value": 0.9245,
-  "shown": "0.925",
+  "value": 0.9659,
+  "shown": "0.966",
   "dec": 3,
   "scope": "VAD ROC-AUC, icsi_dev",
   "source": "runs/final_compare.json",
   "path": "vad > icsi_dev > core_0p6b > auc"
  },
  "final/vad/icsi/miss/ours_0p6b": {
-  "value": 22.35,
-  "shown": "22.4",
+  "value": 10.16,
+  "shown": "10.2",
   "dec": 1,
   "scope": "speech missed at 7.5 % false alarms, icsi_dev",
   "source": "runs/final_compare.json",
@@ -1535,6 +1535,14 @@
   "source": "runs/final_compare.json",
   "path": "speaker > twer > ami > nemotron3_best > twer"
  },
+ "final/twer/ami/nemotron3_0p6bwords": {
+  "value": 71.64,
+  "shown": "71.6",
+  "dec": 1,
+  "scope": "target-speaker WER %, ami eot-bench windows, primary, 5 s print",
+  "source": "runs/final_compare.json",
+  "path": "speaker > twer > ami > 0p6b_nemotron3_best > twer"
+ },
  "final/twer/ami/pyannote31": {
   "value": 85.32,
   "shown": "85.3",
@@ -1678,6 +1686,14 @@
   "scope": "target-speaker WER %, icsi eot-bench windows, primary, 5 s print",
   "source": "runs/final_compare.json",
   "path": "speaker > twer > icsi > nemotron3_best > twer"
+ },
+ "final/twer/icsi/nemotron3_0p6bwords": {
+  "value": 59.99,
+  "shown": "60.0",
+  "dec": 1,
+  "scope": "target-speaker WER %, icsi eot-bench windows, primary, 5 s print",
+  "source": "runs/final_compare.json",
+  "path": "speaker > twer > icsi > 0p6b_nemotron3_best > twer"
  },
  "final/twer/icsi/pyannote31": {
   "value": 74.83,
@@ -1990,15 +2006,5 @@
   "scope": "peak RSS MB, cpu",
   "source": "runs/final_compare.json",
   "path": "cost > 0p6b > engine > cpu > peak_rss_mb"
- },
- "final/twer/ami/nemotron3_0p6bwords": {
-  "value": 71.64,
-  "shown": "71.6",
-  "source": "runs/final_compare.json speaker/twer/ami/0p6b_nemotron3_best"
- },
- "final/twer/icsi/nemotron3_0p6bwords": {
-  "value": 59.99,
-  "shown": "60.0",
-  "source": "runs/final_compare.json speaker/twer/icsi/0p6b_nemotron3_best"
  }
 }

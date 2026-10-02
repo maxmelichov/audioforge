@@ -96,6 +96,7 @@ def main():
         for k, path in (("ours_115m", f"speaker > twer > {corpus} > core115_tsvad_d2 > twer"),
                         ("ours_0p6b", f"speaker > twer > {corpus} > core0p6b_tsvad_d2 > twer"),
                         ("nemotron3", f"speaker > twer > {corpus} > nemotron3_best > twer"),
+                        ("nemotron3_0p6bwords", f"speaker > twer > {corpus} > 0p6b_nemotron3_best > twer"),
                         ("pyannote31", f"speaker > twer > {corpus} > pyannote31_best > twer"),
                         ("nofilter", f"speaker > twer > {corpus} > none > twer"),
                         ("oracle", f"speaker > twer > {corpus} > oracle_d2 > twer")):

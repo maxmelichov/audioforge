@@ -1764,7 +1764,8 @@ def served_rules(afm):
     out = {}
     for name in ("balanced", "fast", "assistant"):
         k, fb, thr, others = vad_head_params(name, presets=pr)
-        r = {"gate": True, "k": k, "fb": fb, "vad_thr": thr, "others": others if others else None}
+        r = {"gate": True, "k": k, "fb": fb, "vad_thr": thr, "others": others if others else None,
+             "rt": pr[name].get("reset_thr")}
         tm = pr[name].get("turn_model")
         if tm is None:
             r.update({"mode": "head", "quiet_db": None, "th": float(pr[name].get("theta", POLICY_THETA["vad_head"]))})

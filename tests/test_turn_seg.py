@@ -169,7 +169,7 @@ def test_v5_session_runs_the_classifier():
 
 def test_heads_v03_and_v02_still_selectable(tmp_path, monkeypatch):
     from audioforge import hub
-    assert hub.HEADS_VERSION == "0.3" and hub.SERVED == "stage1_served_v3.afm"
+    assert hub.HEADS_VERSION == "0.4" and hub.SERVED == "stage1_served_v4.afm"
     assert hub.HEADS["0.2"][3] == "stage1_served_v2.afm" and hub.HEADS["0.1"][3] == "stage1_served.afm"
     seen = {}
 
@@ -180,4 +180,4 @@ def test_heads_v03_and_v02_still_selectable(tmp_path, monkeypatch):
     hub.main(["--dir", str(tmp_path), "--yes", "--heads-version", "0.2"])
     assert seen["heads_version"] == "0.2"
     hub.main(["--dir", str(tmp_path), "--yes"])
-    assert seen["heads_version"] == "0.3"
+    assert seen["heads_version"] == "0.4"

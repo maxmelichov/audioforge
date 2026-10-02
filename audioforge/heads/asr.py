@@ -7,6 +7,8 @@ so any combination can hang off one encoder (hybrid TDT+CTC, AED+CTC, ...).
 """
 from __future__ import annotations
 
+import math
+
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -189,6 +191,17 @@ class RNNTHead(Head):
         """Incremental greedy decoder over encoder frames fed in pieces (same rule as ``_greedy``)."""
         return GreedyTransducerStream(self)
 
+    def beam_stream(self, beam: int = 4, max_sym: int = 3) -> BeamTransducerStream:
+        """Incremental RNNT beam search over encoder frames fed in pieces (``BeamTransducerStream``)."""
+        return BeamTransducerStream(self, beam, max_sym)
+
+    @torch.no_grad()
+    def beam_search(self, f, beam: int = 4, max_sym: int = 3) -> list[int]:
+        """Beam search over one utterance's encoder frames f (T, D): ``BeamTransducerStream`` fed all frames."""
+        st = BeamTransducerStream(self, beam, max_sym)
+        st.feed(f)
+        return st.tokens
+
 
 class GreedyTransducerStream:
     """Greedy RNNT / TDT decoding over encoder frames that arrive in pieces. ``feed(f)`` (f: (T, D) encoder frames)
@@ -228,6 +241,83 @@ class GreedyTransducerStream:
         self.skip, self.emitted, self.pred = t - f.shape[0], emitted, (g, st)
         self.tokens += new
         return new
+
+
+class BeamTransducerStream:
+    """RNNT beam search over encoder frames that arrive in pieces (plain RNNT only; research/FIXALL.md step 5).
+
+    Per frame: up to ``max_sym`` non-blank expansions (batched over the live hypotheses, joint + prediction net),
+    every hypothesis that emits blank moves to the next frame with its log-probability added; identical token
+    sequences are merged (log-sum-exp); the ``beam`` best survive. Expansions that cannot beat the beam-th
+    hypothesis already finished on this frame are pruned (adaptive-expansion pruning). ``tokens`` is the current best
+    hypothesis (it may revise its last tokens as frames arrive); ``stable`` is the prefix shared by every hypothesis.
+    Unlike greedy decoding, a hypothesis that emitted a token competes with its own blank-ending parent, so even
+    beam 1 is not greedy."""
+
+    def __init__(self, head: RNNTHead, beam: int = 4, max_sym: int = 3):
+        assert not head.is_tdt, "beam search: plain RNNT heads only"
+        self.h, self.beam, self.max_sym = head, int(beam), int(max_sym)
+        self.hyps = None  # list of (tokens tuple, logp, joint-pred projection (Dj,), lstm state (h, c))
+
+    def _pred(self, toks, states):
+        h = self.h
+        dev = h.joint.out[-1].weight.device
+        if states[0] is None:
+            st = None
+        else:
+            st = (torch.cat([s[0] for s in states], 1), torch.cat([s[1] for s in states], 1))
+        g, (hh, cc) = h.pred(torch.tensor(toks, device=dev)[:, None], st)
+        gp = h.joint.pred(g[:, 0])
+        return gp, [(hh[:, i:i + 1], cc[:, i:i + 1]) for i in range(len(toks))]
+
+    @torch.no_grad()
+    def feed(self, f: torch.Tensor) -> list[int]:
+        h, V = self.h, self.h.vocab_size
+        if self.hyps is None:
+            gp, st = self._pred([h.blank], [None])
+            self.hyps = [((), 0.0, gp[0], st[0])]
+        fe = h.joint.enc(f)
+        for t in range(fe.shape[0]):
+            A, B = self.hyps, {}
+            for s in range(self.max_sym + 1):
+                if not A:
+                    break
+                lp = h.joint.out(fe[t][None] + torch.stack([a[2] for a in A])).float().log_softmax(-1)
+                lpb = (torch.tensor([a[1] for a in A], device=lp.device) + lp[:, V]).tolist()
+                for a, sc in zip(A, lpb):
+                    if a[0] in B:
+                        o = B[a[0]]
+                        B[a[0]] = (a[0], max(o[1], sc) + math.log1p(math.exp(-abs(o[1] - sc))), o[2], o[3])
+                    else:
+                        B[a[0]] = (a[0], sc, a[2], a[3])
+                if s == self.max_sym:
+                    break
+                fin = sorted((b[1] for b in B.values()), reverse=True)
+                thr = fin[self.beam - 1] if len(fin) >= self.beam else -float("inf")
+                cand = torch.tensor([a[1] for a in A], device=lp.device)[:, None] + lp[:, :V]
+                k = min(self.beam, cand.numel())
+                vals, idx = cand.reshape(-1).topk(k)
+                sel = [(int(i) // V, int(i) % V, float(v)) for v, i in zip(vals, idx) if float(v) > thr]
+                if not sel:
+                    break
+                gp, st = self._pred([kk for _, kk, _ in sel], [A[i][3] for i, _, _ in sel])
+                A = [(A[i][0] + (kk,), sc, gp[j], st[j]) for j, (i, kk, sc) in enumerate(sel)]
+            self.hyps = sorted(B.values(), key=lambda b: -b[1])[: self.beam]
+        return self.tokens
+
+    @property
+    def tokens(self) -> list[int]:
+        return list(self.hyps[0][0]) if self.hyps else []
+
+    @property
+    def stable(self) -> list[int]:
+        if not self.hyps:
+            return []
+        seqs = [hh[0] for hh in self.hyps]
+        n = 0
+        while all(len(q) > n for q in seqs) and len({q[n] for q in seqs}) == 1:
+            n += 1
+        return list(seqs[0][:n])
 
 
 # --------------------------------------------------------------------------- AED (Canary)

@@ -14,8 +14,8 @@ plus waiting for other jobs. Every number is in `runs/final_compare.json`. The s
   shows up about 0.3 s after it is said. The Whisper models and Parakeet-TDT only transcribe after the speaker stops.
   The small 115M core makes about twice as many mistakes on meetings as all of them.
 - **Speech detection.** Both cores beat the VADs that ship in voice agents today (Silero, TEN VAD, NVIDIA MarbleNet) on
-  AMI meetings. On ICSI meetings TEN VAD is best, and ours is level with Silero. pyannote's segmentation model is
-  best on AMI. It reads 10 s of audio ahead, so it cannot run live.
+  AMI meetings and, since the 2026-10-01 speech head (research/FIXALL.md), on ICSI meetings too (0.947 / 0.951 vs TEN
+  VAD 0.935). pyannote's segmentation model is best on AMI. It reads 10 s of audio ahead, so it cannot run live.
 - **Turn taking.** On speech aimed at an assistant, our `assistant` preset is right on 93 % of clips with either core.
   It answers in 0.30 s (115M) or 0.38 s (0.6B). Pipecat's smart-turn stack is right on 70 % and LiveKit's on 73 %. NVIDIA's
   Parakeet-EOU is right on 48 %. On human two-party calls, our default preset interrupts on 20 % of turns and misses
@@ -83,15 +83,22 @@ the frame grid. It does not include each model's own look-ahead.
 
 | system | AMI F1 @0.5 | AMI ROC-AUC | AMI miss @7.5 % FA | ICSI F1 | ICSI AUC | ICSI miss | onset lag p50 / p90 (AMI) | live-capable |
 |---|---|---|---|---|---|---|---|---|
-| audioforge 115M head | 0.951 [0.940, 0.960] | 0.972 [0.962, 0.980] | 10.6 % [8.1, 13.3] | 0.898 [0.890, 0.905] | 0.931 [0.923, 0.939] | 19.8 % | 80 / 160 ms | yes (80 ms right context) |
-| audioforge 0.6B head | 0.951 [0.939, 0.960] | 0.972 [0.962, 0.980] | 10.7 % [8.1, 13.6] | 0.906 [0.898, 0.913] | 0.925 [0.916, 0.933] | 22.4 % | 80 / 160 ms | yes (80 ms right context) |
+| audioforge 115M speech head (v0.4) | 0.951 [0.939, 0.960] | 0.970 [0.960, 0.978] | 12.1 % [8.4, 14.8] | **0.947** [0.942, 0.952] | 0.964 [0.959, 0.969] | 10.7 % | 0 / 160 ms | yes (80 ms right context) |
+| audioforge 0.6B speech head (v0.3) | 0.950 [0.938, 0.959] | 0.969 [0.958, 0.979] | 12.5 % [8.0, 16.9] | **0.951** [0.946, 0.955] | **0.966** [0.962, 0.970] | **10.2 %** | 80 / 160 ms | yes (80 ms right context) |
+| *before (FINAL_COMPARE pass): 115M heads v0.3* | *0.951* | *0.972* | *10.6 %* | *0.898* | *0.931* | *19.8 %* | *80 / 160 ms* | |
+| *before: 0.6B heads v0.2* | *0.951* | *0.972* | *10.7 %* | *0.906* | *0.925* | *22.4 %* | *80 / 160 ms* | |
 | Silero VAD v5 (Pipecat / LiveKit) | 0.915 [0.900, 0.926] | 0.956 [0.941, 0.969] | 13.8 % [8.9, 21.8] | 0.929 [0.922, 0.935] | 0.934 [0.925, 0.942] | 19.9 % | 80 / 160 ms | yes |
-| TEN VAD | 0.925 [0.912, 0.935] | 0.948 [0.934, 0.960] | 13.6 % [11.1, 19.2] | **0.935** [0.929, 0.942] | **0.952** [0.945, 0.957] | **14.0 %** | 0 / 80 ms | yes |
+| TEN VAD | 0.925 [0.912, 0.935] | 0.948 [0.934, 0.960] | 13.6 % [11.1, 19.2] | 0.935 [0.929, 0.942] | 0.952 [0.945, 0.957] | 14.0 % | 0 / 80 ms | yes |
 | NVIDIA MarbleNet v2 frame VAD | 0.937 [0.919, 0.951] | 0.959 [0.946, 0.971] | 12.4 % [8.5, 16.2] | 0.929 [0.923, 0.935] | 0.940 [0.932, 0.948] | 19.8 % | 0 / 0 ms | offline here (whole-window conv) |
 | pyannote segmentation-3.0 | **0.963** [0.952, 0.972] | **0.984** [0.978, 0.988] | **4.6 %** [3.2, 7.3] | 0.899 [0.891, 0.907] | 0.904 [0.876, 0.926] | 28.6 % | 0 / 0 ms | no (10 s windows, sees the future) |
 
-Paired, ours vs Silero on AMI: F1 +0.027 to +0.047, AUC +0.008 to +0.026 (95 % CI, both cores). Our heads were trained
-on AMI labels, so AMI is in-domain for us and not for the others. ICSI is held out for every system.
+Updated 2026-10-01 (research/FIXALL.md step 1): the rows are the new `speech` head of each core (served heads 115M
+v0.4 / 0.6B v0.3), a stateless head trained on AMI + 10 h of ICSI train meetings + oto user channels. ICSI dev
+meetings (Bmr021, Bns001) were never in training or selection, but ICSI is no longer an unseen corpus for us. Paired
+against TEN VAD on ICSI: F1 +0.009 to +0.015 (115M), +0.011 to +0.019 (0.6B). Against the old heads on AMI: F1 −0.0006
+[−0.0033, +0.0019] (115M) and −0.0007 [−0.0048, +0.0035] (0.6B), AUC −0.002 / −0.003, miss +1.5 / +1.8 points: within
+the CIs, but a small step back. Paired, ours vs Silero on AMI: F1 +0.027 to +0.047, AUC +0.006 to +0.024 (95 % CI,
+both cores). The turn rules keep reading the old `vad` head, so the turn rows below are unchanged.
 
 ## Turn taking
 

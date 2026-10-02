@@ -105,9 +105,9 @@ On human two-party calls (109 turn ends, default `balanced` preset): ours 115M 9
 
 ![turn taking](demo/images/compare_turn.png)
 
-**Speech detection** (F1 at threshold 0.5): AMI ours 0.951 (both cores), MarbleNet v2 0.937, TEN VAD 0.925, Silero v5
-0.915. Our heads were trained on AMI. On held-out ICSI: TEN VAD 0.935, Silero and MarbleNet 0.929, ours 0.906 (0.6B) /
-0.898 (115M).
+**Speech detection** (F1 at threshold 0.5): AMI ours 0.951 (115M) / 0.950 (0.6B), MarbleNet v2 0.937, TEN VAD 0.925,
+Silero v5 0.915. On unseen ICSI meetings: ours 0.951 (0.6B) / 0.947 (115M), TEN VAD 0.935, Silero and MarbleNet 0.929.
+Our speech heads were trained on AMI, other ICSI meetings and phone-call channels (research/FIXALL.md).
 
 ![speech detection](demo/images/compare_vad.png)
 
@@ -131,7 +131,6 @@ threads, 4 real-time streams, 1.2 GB; 0.6B 43.7 ms GPU / 99.4 ms CPU, 3 streams 
   use `balanced`; no single preset wins every column.
 - **Words of the 115M core** are behind every offline baseline on meetings and calls. Use the 0.6B core
   (`--core 0.6b`) for transcript quality. Parakeet-TDT v3 still beats the 0.6B on ICSI meetings (10.4 vs 13.6 %).
-- **Speech detection on unseen meetings (ICSI):** TEN VAD, Silero and MarbleNet beat our heads.
 - **Language ID:** Whisper and AmberNet beat our heads, most at 2 s.
 - **Speaker embeddings alone:** TitaNet-L and WeSpeaker match voices better than our speaker heads (EER AMI 12 % vs
   14-20 %); our tracker still gives the best target-speaker WER.
