@@ -1,4 +1,4 @@
-"""The second core (--core 0.6b, research/CORE_0P6B.md): registry, download set, launcher wiring and clear errors run
+"""The second core (--core 0.6b): registry, download set, launcher wiring and clear errors run
 everywhere (fast, in CI); the served-model checks stream the shipped 0.6B v0.4 on the bundled clip. They skip only when
 the NVIDIA base .nemo is absent; a missing served model is built once from it and assets/served_heads_0p6b_v0.4.pt
 (tests/conftest.served_0p6b, cached in runs/)."""
@@ -35,7 +35,7 @@ def test_shipped_0p6b_heads_match_their_pins():
         c = hub.COMPONENTS[key]
         f = ROOT / "assets" / c.filename
         if key == "lid_0p6b" and not f.exists():
-            continue  # the LID head is optional and not in every checkout (licence, see docs/MODELS.md)
+            continue  # the LID head is optional and not in every checkout (licence, see docs/ARCHITECTURE.md)
         assert f.stat().st_size == c.size and hub.sha256_file(f) == c.sha256
 
 
@@ -158,7 +158,7 @@ def test_single_mode_engine_on_the_0p6b_emits_events():
     assert any(len(e_["text"].split()) >= 3 for e_ in ev if e_["type"] == "final")
     v = [e_["vad"] for e_ in ev if e_["type"] == "frame"]
     assert len(v) >= 190 and all(0.0 <= x <= 1.0 for x in v) and max(v) > 0.9 and min(v) < 0.5
-    if e.lid_name is None:  # the LID head is optional (licence, docs/MODELS.md)
+    if e.lid_name is None:  # the LID head is optional (licence, docs/ARCHITECTURE.md)
         assert launch.find_head("lid_0p6b_v2.pt") is None
         return
     from audioforge.lid import load_head

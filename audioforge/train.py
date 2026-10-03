@@ -76,7 +76,7 @@ def load_data(cfg: dict, split: str) -> list[dict]:
     if "mix" in d:  # several sources (e.g. synthetic conversations + AMI turn + AMI diar): see load_mix
         return load_mix(cfg, split)
     data = _load_source(cfg, split)
-    if d.get("spk_teacher"):  # cached teacher embeddings per example (speaker distillation, research/archive/SPK_HEAD.md)
+    if d.get("spk_teacher"):  # cached teacher embeddings per example (speaker distillation)
         data = attach_teacher(data, d["spk_teacher"], split)
     return data
 
@@ -341,7 +341,7 @@ class Trainer:
         else:
             params = [p for p in model.parameters() if p.requires_grad]
         rows = t.get("row_lr")  # {params: [names], rows: [ids], lr: x}: only these rows of these tensors train, at lr x
-        if rows:  # (new vocabulary rows, research/archive/YIELD_TOKENS.md: Adam moves every element by ~lr per step, so new
+        if rows:  # (new vocabulary rows: Adam moves every element by ~lr per step, so new
             named = dict(model.named_parameters())  # output rows starting near zero cannot grow at a gate-safe lr)
             idx = torch.as_tensor(sorted(int(i) for i in rows["rows"]))
             fast = []
@@ -957,7 +957,7 @@ def run_recipe(path: str, overrides: list[str] | None = None, out: str | None = 
     signal returns ``{"stopped": ...}`` without the final save / eval (its ``last`` checkpoint is the result)."""
     cfg = load_recipe(path, overrides)
     # NOTE: Python's global random (att-context / sortformer prefix / turn decoded_prob draws) is left unseeded as
-    # before; seeding it makes tests/test_diag_turn.py's 3-step diagnostics test fail every time (plans/trainer/parity.md)
+    # before; seeding it makes tests/test_diag_turn.py's 3-step diagnostics test fail every time
     torch.manual_seed(cfg.get("seed", 0))
     np.random.seed(cfg.get("seed", 0))
     train, val = load_data(cfg, "train"), load_data(cfg, "val")
@@ -1043,7 +1043,7 @@ def main(argv: list[str] | None = None) -> int:
     for flag, (key, typ, hlp) in TRAINER_FLAGS.items():
         ap.add_argument(f"--{flag}", type=typ, help=f"trainer.{key}: {hlp} (recipe: {_cfg_get(cfg, 'trainer.' + key)})")
     sizes = size_flags(cfg)
-    for k in sizes:  # value parsed as YAML; recipes record whether a size was swept (plans/) or is a placeholder
+    for k in sizes:  # value parsed as YAML; recipes record whether a size was swept or is a placeholder
         ap.add_argument(f"--{k}", dest=k, type=yaml.safe_load, metavar="N",
                         help=f"size (recipe: {_cfg_get(cfg, k) if _cfg_get(cfg, k) is not None else 'model default'})")
     a = ap.parse_args(argv)

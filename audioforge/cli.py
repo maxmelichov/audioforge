@@ -3,7 +3,7 @@
   python -m audioforge.cli catalog fetch               # refresh from Hugging Face
   python -m audioforge.cli catalog summary
   python -m audioforge.cli catalog search "streaming" --decoder rnnt
-  python -m audioforge.cli train research/recipes/parakeet_tdt_ctc.yaml -o out.afm [key=value ...]
+  python -m audioforge.cli train recipes/parakeet_tdt_ctc.yaml -o out.afm [key=value ...]
   python -m audioforge.cli transcribe out.afm audio.wav [--head ctc] [--prompt "<|en|>..."]
   python -m audioforge.cli stream out.afm audio.wav    # cache-aware streaming, prints partials
   python -m audioforge.cli export out.afm encoder.onnx

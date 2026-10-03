@@ -3,8 +3,7 @@
 ## Single-model mode (the default): `two_party_call_16s.wav`
 
 `two_party_call_16s.wav` (16 kHz mono, 16.0 s) is a real two-party call: a 16 s excerpt of one conversation of
-otoSpeech-full-duplex-processed-141h, with the user's channel and the other party's channel averaged to mono. This
-is how research/E2E_FINAL.md built its clips; this conversation is one of its 16 otoSpeech clips. The user asks a
+otoSpeech-full-duplex-processed-141h, with the user's channel and the other party's channel averaged to mono. The user asks a
 question (speech 3.9-10.8 s) and the other party starts to answer (12.9-15.0 s). `two_party_call_16s.json` holds the
 source, the labelled speech intervals of both parties and the user's turn end. otoSpeech has no transcripts.
 

@@ -4,14 +4,11 @@ How audioforge compares with the open models voice agents use today, in plain wo
 (2026-10-03): both of our model sizes and the best open baselines, every baseline re-run on the same audio and labels.
 "Ours 115M" is audioforge on the default 115M core, "ours 0.6B" on the English 0.6B core (heads v0.4 on both).
 
-The full tables, with 95 % confidence intervals, which audio each head was trained and selected on, how each
-baseline was run, and the rows left out because they were tuned on their own test audio, are in
-[`research/FINAL_COMPARE.md`](../research/FINAL_COMPARE.md). Metric definitions: [`research/METRICS.md`](../research/METRICS.md).
-How the charts are made: [`demo/images/EXPLAINER.md`](../demo/images/EXPLAINER.md).
+Rows where a baseline was tuned on its own test audio are left out.
 
 ## Words
 
-![words](../demo/images/compare_asr.png)
+![words](images/compare_asr.png)
 
 **How to read it.** Five charts of word error rate (lower is better), one per test set, and the time until the final
 text of a turn is ready (top right). The 0.6B core is the best on meetings (AMI) and on the user's side of live calls
@@ -50,7 +47,7 @@ overlap). The 115M is fastest but its flushed turn texts have twice the errors.
 
 ## Turn taking
 
-![turn taking](../demo/images/compare_turn.png)
+![turn taking](images/compare_turn.png)
 
 **How to read it.** On 399 short clips of people talking to an assistant, how often each system is right about
 whether the person is done, how long it waits before answering, and how often it cuts off someone who has not
@@ -85,7 +82,7 @@ labelled public test split exists for them.
 
 ## Speech detection
 
-![speech detection](../demo/images/compare_vad.png)
+![speech detection](images/compare_vad.png)
 
 **How to read it.** Four charts for AMI and ICSI test meetings, every 80 ms: F1 at the usual 0.5 threshold, and
 ROC-AUC, which does not depend on any threshold. On AMI our lead holds only at the 0.5 threshold; on ICSI it holds on
@@ -102,7 +99,7 @@ at least 20.5 %).
 
 ## Speaker tracking ("your words only")
 
-![speaker tracking](../demo/images/compare_spk.png)
+![speaker tracking](images/compare_spk.png)
 
 **How to read it.** How many of the user's own words come out wrong when a meeting is filtered down to the user,
 given the same 5 s voice print for every system; how well each system tracks when the user speaks; and how well the
@@ -117,7 +114,7 @@ reported: every ICSI test speaker is in our training meetings.
 
 ## Language ID
 
-![language](../demo/images/compare_lid.png)
+![language](images/compare_lid.png)
 
 **How to read it.** Accuracy over 17 languages after 2 s of speech and on the whole clip. The big offline models
 (Whisper large-v3, AmberNet) are better; ours are close behind and cost almost nothing, because they read the same
@@ -132,8 +129,8 @@ FLEURS test, probably worth well under a point.)
 Optional head, off by default: balanced accuracy 96.3 % on FLEURS-17 test and 97.1 % on
 LibriSpeech test-clean after 1 s of speech (115M). It gives female / male voice probabilities, a perceived vocal
 characteristic and not anyone's gender identity; it can be wrong for any one voice (one LibriSpeech test reader is
-called the other class on every utterance), must not be used to make decisions about people, and has no baseline here
-([`research/VOICE_GENDER.md`](../research/VOICE_GENDER.md)).
+called the other class on every utterance), must not be used to make decisions about people, and has no baseline
+here.
 
 ## Cost
 

@@ -1,4 +1,4 @@
-"""train.py fixes (research/archive/VERIFICATION.md §6 items 1-4), mixed data sources (data.mix) and the
+"""train.py fixes (verification items 1-4), mixed data sources (data.mix) and the
 stage-1/stage-2 pretrained recipes' config plumbing (tiny stand-in .afm, never the real one)."""
 import json
 from pathlib import Path
@@ -163,7 +163,7 @@ SHRINK = ["trainer.device=cpu", "trainer.batch_size=4", "trainer.max_steps=2", "
 
 @pytest.mark.parametrize("stage", [1, 2])
 def test_pretrained_stage_recipes_plumbing(stage, tmp_path):
-    recipe = ROOT / "research" / "recipes" / ("stage1_heads_pretrained.yaml" if stage == 1 else "stage2_unfreeze_pretrained.yaml")
+    recipe = ROOT / "recipes" / ("stage1_heads_pretrained.yaml" if stage == 1 else "stage2_unfreeze_pretrained.yaml")
     cfg = yaml.safe_load(recipe.read_text())
     real = cfg["init"]["from"]
     assert real == ("runs/nemo_hybrid_streaming_multi.afm" if stage == 1 else "runs/stage1_heads_pretrained.afm")

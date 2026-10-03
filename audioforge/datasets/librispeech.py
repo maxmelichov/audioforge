@@ -18,7 +18,7 @@ second run starts in seconds.
 Energy VAD: frame energy (dB) > utterance max frame energy - ``rel_db`` (30 dB), then 1-frame
 (80 ms) gaps between speech frames are bridged and isolated 1-frame blips dropped. On LibriSpeech
 the noise floor sits 38-55 dB under the loudest frame and voiced speech within 0-25 dB of it, so
-30 dB leaves a margin on both sides (print masks with ``scripts/research/prepare_librispeech.py --show-vad``).
+30 dB leaves a margin on both sides (the prepare script's ``--show-vad`` prints the masks).
 
 MPS note: every new batch shape costs MPS graph-cache and buffer memory that is never freed, so
 train with ``audioforge.datasets.train_librispeech`` (``QuantizedCollate``: <= 4 batch shapes).
@@ -166,7 +166,7 @@ def scan(split: str, root=None) -> list[dict]:
         return json.loads(cache.read_text())
     base = root / "LibriSpeech" / split
     if not base.exists():
-        raise FileNotFoundError(f"{base} missing: run scripts/research/prepare_librispeech.py --splits {split}")
+        raise FileNotFoundError(f"{base} missing: prepare LibriSpeech {split} under $AUDIOFORGE_DATA first")
     utts = []
     for trans in sorted(base.glob("*/*/*.trans.txt")):
         for line in trans.read_text().splitlines():

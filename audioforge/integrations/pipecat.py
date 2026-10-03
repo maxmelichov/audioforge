@@ -33,10 +33,9 @@ One WebSocket session per pipeline, shared by three adapters through an ``Audiof
 Default turn policy: **timeout** - the server's plain silence timeout (1000 ms) on the diarizer's label-free primary
 track; other speakers do not delay it. The server's older rule that also waits for "nobody else active" is its
 ``timeout_quiet`` policy (direct protocol only, not offered here): at n=200 AMI dev turns that rule misses 66-68 %
-at <= 5 % false cutoffs vs 38.4 % for the plain timeout (research/archive/STAGE1.md, oracle-enrolled column;
-research/archive/INTEGRATION_VERIFY.md D1), and the served head misses 69 %. With label-free enrollment every streaming
-system misses more (research/archive/EOT_BENCH_V2.md). The head's probability is exposed as an optional signal (``hub.eot``
-on every frame event, ``policy="head"`` / ``"both"``) and is not the default.
+at <= 5 % false cutoffs vs 38.4 % for the plain timeout (oracle-enrolled column), and the served head misses 69 %.
+With label-free enrollment every streaming system misses more. The head's probability is exposed as an optional
+signal (``hub.eot`` on every frame event, ``policy="head"`` / ``"both"``) and is not the default.
 
 Pipecat-side semantics to know (not changed here): ``UserTurnController`` never ends a turn while its VAD says the
 user is speaking, and "the user" is whoever is audible on the input stream. On multi-party audio (a meeting replay)
@@ -44,8 +43,8 @@ someone else talking right after the server's turn_end therefore either holds th
 ``resume_ms`` of speech after the decision) or makes the decision stale (more), and the turn then waits for the
 server's next turn_end. Measured on AMI with examples/pipecat_local_demo.py.
 
-Primary-speaker enrollment (server ``--enroll after_agent | after_agent_arm | explicit``, research/archive/EOT_BENCH_V2.md
-section 9; ``after_agent_arm`` = the same agent_end message, the server then follows the chosen column with its
+Primary-speaker enrollment (server ``--enroll after_agent | after_agent_arm | explicit``;
+``after_agent_arm`` = the same agent_end message, the server then follows the chosen column with its
 causal_dominant rule instead of TitaNet):
 ``AudioforgeSTTService(enroll="after_agent")`` sends {"type": "agent_end"} to the server whenever Pipecat's output
 transport reports ``BotStoppedSpeakingFrame`` (it pushes that frame upstream through the pipeline, so the STT
@@ -120,7 +119,7 @@ except ImportError:  # pragma: no cover - older Pipecat: hints are recorded, nev
     EagerMatchPolicy = NormalizedMatch = None
     HAS_EAGER = False
 
-# hybrid* = the server's one-event-per-turn rules (research/archive/INTEGRATION.md section 8): hybrid_dyn / hybrid_silero =
+# hybrid* = the server's one-event-per-turn rules: hybrid_dyn / hybrid_silero =
 # head OR any-speaker Silero silence (dynamic / 2.64 s wait); their turn_end carries the policy name
 POLICIES = ("timeout", "head", "both", "hybrid", "hybrid_silero", "hybrid_dyn", "vad_head")
 ENROLL_MODES = ("after_agent", "after_agent_arm", "explicit")  # the server's --enroll modes (None = its default)
@@ -281,12 +280,12 @@ class AudioforgeSTTService(WebsocketSTTService):
             timeout_ms / eot_threshold: the server's timeout-policy silence and head threshold (None = the server's
                 default for the policy: 0.98, hybrid_silero 0.99828, hybrid_dyn 0.998283).
             end_timeout: seconds to wait for the flush final + stats after sending {"type": "end"} on EndFrame.
-            final_source: with a server running --final-asr (research/archive/HYBRID_ASR.md): "stream" (default) pushes
+            final_source: with a server running --final-asr: "stream" (default) pushes
                 the streaming finals as TranscriptionFrames and ignores the offline ones; "offline" pushes the offline
                 model's finals instead, and the turn analyzer reports COMPLETE only once the turn's offline final
                 (same t) has arrived, so the LLM sees the offline transcript. Finals without "source" (server without
                 the flag) are always pushed.
-            final_text: with a server running --final-chunk-ms (dual rate, research/DUAL_RATE.md): "fast" (default)
+            final_text: with a server running --final-chunk-ms (dual rate): "fast" (default)
                 pushes the 160 ms pass's ``final_fast`` (sent at the turn end: no added reply latency) and ignores the
                 slow finals; "slow" pushes the slow pass's finals (source "slow") instead and holds COMPLETE until the
                 turn's slow final has arrived (normally in the same message batch as the turn end).

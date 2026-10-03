@@ -1,4 +1,4 @@
-"""audioforge-serve --mode single (research/SINGLE_MODEL.md, docs/CONFIGURATION.md section 13): the preset resolves to
+"""audioforge-serve --mode single (docs/CONFIGURATION.md section 13): the preset resolves to
 the single-model flags, refuses a second model, loads no diarizer / TitaNet / Silero / final-ASR worker, and streams
 the bundled clip end to end over the WebSocket on tiny models."""
 import asyncio
@@ -75,7 +75,7 @@ def test_preset_resolves_to_the_single_model_flags(tmp_path, monkeypatch):
     assert _value(argv, "--turn-input") == "tsvad" and "--diar-off" in argv
     assert _value(argv, "--lid") == "head" and _value(argv, "--enroll") == "after_agent_arm"
     assert _value(argv, "--dyn-wait-ms") == "2000,960" and _value(argv, "--turn-policy") == "vad_head"
-    assert "--silero" not in argv  # the default turn rule reads the model's own heads (research/EOT_LATENCY.md)
+    assert "--silero" not in argv  # the default turn rule reads the model's own heads
     assert _value(argv, "--asr") == str(d / hub_served()) and _value(argv, "--tsvad") == str(d / launch.TSVAD_FILE)
     for flag in ("--diar", "--final-asr", "--titanet", "--shed-diar", "--diar-pool"):
         assert flag not in argv, flag
@@ -134,8 +134,10 @@ def test_download_default_set_is_single_model(tmp_path, monkeypatch):
     assert seen["keys"] == ["asr", "tsvad"]  # the LID head is optional (--with lid); Silero only --with silero
     hub.main(["--dir", str(tmp_path), "--yes", "--diarizer", "nemotron3"])
     assert seen["keys"] == ["asr", "tsvad", "nemotron3"]
-    for ver, (name, size, sha, _out) in hub.HEADS.items():  # heads assets: v0.4 ships, v0.3 / v0.2 / v0.1 kept
+    for ver, (name, size, sha, _out) in hub.HEADS.items():  # heads assets: v0.4 ships; older versions are in the release
         p = ROOT / "assets" / name
+        if ver != hub.HEADS_VERSION and not p.exists():
+            continue
         assert p.stat().st_size == size and hub.sha256_file(p) == sha and hub.heads_path(None, tmp_path, ver) == p
     assert hub.SERVED == hub.HEADS[hub.HEADS_VERSION][3] == "stage1_served_v4.afm"
     for key in ("tsvad", "lid"):  # the shipped head files match their pinned sha256 (the LID head may be absent)
@@ -193,8 +195,8 @@ def test_single_engine_loads_no_second_model(tmp_path, monkeypatch):
     eng = _single_engine(tmp_path, monkeypatch)
     assert eng.diar is None and eng.diar_mode == "off" and eng.num_spks == 4
     assert eng.embedder is None and eng.final_asr is None and eng.lid_model is None
-    assert eng.dyn_t0 == 25.0 and eng.dyn_a == 13.0  # --dyn-wait-ms 2000,960 (research/SINGLE_MODEL.md A1)
-    # the default turn rule: vad_head with the others path (research/EOT_LATENCY.md), no Silero at start or per session
+    assert eng.dyn_t0 == 25.0 and eng.dyn_a == 13.0  # --dyn-wait-ms 2000,960 (measured)
+    # the default turn rule: vad_head with the others path, no Silero at start or per session
     assert eng.turn_policy == "vad_head" and (eng.vad_head_k, eng.vad_head_fb, eng.vad_head_others) == (2, 8, (12, 8))
     from audioforge.serve import Session, SessionConfig
     assert Session(eng, SessionConfig(turn_policy=eng.turn_policy)).sil is None and eng.silero_model is None
@@ -255,7 +257,7 @@ def test_single_streams_the_bundled_clip_end_to_end(tmp_path, monkeypatch, how):
 
 # --------------------------------------------------------------------------- the public snapshot (no assets/lid_*.pt)
 def _hide_lid(monkeypatch):
-    """The public snapshot ships no assets/lid_*.pt (licence, docs/MODELS.md): hide every LID head file from the
+    """The public snapshot ships no assets/lid_*.pt (licence, docs/ARCHITECTURE.md): hide every LID head file from the
     launcher (models dir, assets/, runs/)."""
     real = launch.find_head
     monkeypatch.setattr(launch, "find_head", lambda name, d=None: None if name.startswith("lid_") else real(name, d))

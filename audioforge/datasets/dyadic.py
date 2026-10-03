@@ -2,7 +2,7 @@
 ``ami.py`` (turn windows, floor definition, backchannels, hesitations; ``Dyadic`` subclasses ``ami.AMI``) plus the
 agent-side streams a voice agent really has: the other party's activity and the moments it stops speaking.
 
-Corpora (two channels, one party per channel; ``scripts/research/prepare_dyadic.py`` downloads the slices; research/archive/DYADIC.md):
+Corpora (two channels, one party per channel; a prepare script downloads the slices):
   behavior_sd  Behavior-SD (Lee, Kim & Kim, NAACL 2025), CC BY 4.0 (code MIT), ungated. 108 K SYNTHETIC full-duplex
                dialogues (CosyVoice TTS, 52 voices, 2,164 h) as HF tar shards of <id>.flac (stereo 22.05 kHz, channel
                k = speaker k: ``channel_check``) + <id>.json. Labels: per-UTTERANCE start / end (exact: the TTS
@@ -29,8 +29,8 @@ Corpora (two channels, one party per channel; ``scripts/research/prepare_dyadic.
                spans of the vendored MIT scorer's turn view (integrations/turnbench_scorer, gold.TURN_CANONICAL) plus
                its consensus Backchannel events, one token per span with its transcript (``word_timing =
                annotated``); the turn view's excluded intervals are zones. Speaker ids: 5000 + hash of the actor id.
-               scripts/research/bench_turnbench.py scores our systems with THEIR scorer; this corpus gives the same audio the
-               eot-bench v2 treatment (scripts/research/bench_turn_dyadic.py --corpus turnbench --roles both).
+               A TurnBench benchmark scores our systems with THEIR scorer; this corpus gives the same audio the
+               eot-bench v2 treatment (--corpus turnbench --roles both).
 
 Roles. In each conversation one party is the HUMAN (the user whose turn ends an agent must detect) and the other the
 AGENT. ``agent_rule``: ``second`` (default) = the party whose first voice comes later; ``alternate`` = channel 1 in
@@ -741,7 +741,7 @@ def build_labels(corpus: str, root: Path, cid: str, activity_source: str = "sile
 
 def attach_asr_text(data: list[dict], root: Path) -> list[dict]:
     """``asr_text: true`` (oto has no transcripts): each turn window's ``text`` = the words of its PRIMARY party's
-    own-channel ASR decode (scripts/research/prepare_dyadic_asr.py, <root>/cache/asr/<id>.json) emitted inside the window,
+    own-channel ASR decode (<root>/cache/asr/<id>.json) emitted inside the window,
     i.e. the AMI convention (the primary's words) with the frozen ASR's hypothesis as the transcript. A missing
     cache raises (run the script first)."""
     cache: dict[str, dict] = {}
@@ -750,7 +750,7 @@ def attach_asr_text(data: list[dict], root: Path) -> list[dict]:
         if m not in cache:
             p = Path(root) / "cache" / "asr" / f"{m}.json"
             if not p.exists():
-                raise FileNotFoundError(f"asr_text: no transcript cache {p} (scripts/research/prepare_dyadic_asr.py)")
+                raise FileNotFoundError(f"asr_text: no transcript cache {p} (transcribe the corpus first)")
             cache[m] = json.loads(p.read_text())
         a = float(ex["start"])
         b = a + len(ex["audio"]) / SR

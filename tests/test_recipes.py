@@ -12,7 +12,7 @@ def _synthetic(p: Path) -> bool:  # real-data recipes (LibriSpeech etc.) need do
     return "synthetic" in (yaml.safe_load(p.read_text()).get("data") or {})
 
 
-RECIPES = sorted(p for p in Path(__file__).parent.parent.joinpath("research", "recipes").glob("*.yaml") if _synthetic(p))
+RECIPES = sorted(p for p in Path(__file__).parent.parent.joinpath("recipes").glob("*.yaml") if _synthetic(p))
 SMALL = ["trainer.max_steps=3", "trainer.batch_size=4", "trainer.device=cpu",
          "data.synthetic.n_train=16", "data.synthetic.n_val=4",
          "encoder.n_layers=2", "encoder.d_model=64", "encoder.subsampling_channels=16"]

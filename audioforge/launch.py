@@ -8,16 +8,16 @@
     audioforge-serve --help-advanced                  # every flag
 
 On top of ``python -m audioforge.serve`` it adds ``--models-dir`` and ``--diarizer``: ``--asr`` / ``--diar`` are filled
-in from the models directory when absent (``--shed-diar hold`` is added unless given, research/archive/DIARIZATION_FIX.md), as
+in from the models directory when absent (``--shed-diar hold`` is added unless given), as
 are the optional model paths a flag needs (TitaNet for ``--enroll after_agent|explicit``, AmberNet for
 ``--lid ambernet``, Silero for ``hybrid_silero``/``hybrid_dyn`` in room mode, Parakeet-TDT v3 for ``--final-asr tdt_v3``). Every
 other flag goes to ``audioforge.serve`` unchanged (docs/CONFIGURATION.md explains them).
 
 Without ``--mode``, ``--diarizer`` / ``--diar`` / ``--final-asr`` select room mode (the paragraph above); otherwise the
-default ``--mode single`` (docs/CONFIGURATION.md section 13, research/SINGLE_MODEL.md) adds ``cli.MODES["single"]``
+default ``--mode single`` (docs/CONFIGURATION.md section 13) adds ``cli.MODES["single"]``
 (``--turn-input tsvad --diar-off --lid head --enroll after_agent_arm --turn-policy vad_head --dyn-wait-ms 2000,960``)
 and the TS-VAD head file, loads no diarizer and no Silero (the default turn rule ``vad_head`` reads the model's own VAD,
-turn and TS-VAD heads, research/EOT_LATENCY.md), and refuses the options that would load a second model
+turn and TS-VAD heads), and refuses the options that would load a second model
 (``cli.SINGLE_CONFLICTS``, ``--diarizer``, ``--lid ambernet``).
 """
 from __future__ import annotations
@@ -30,9 +30,9 @@ from .server import cli
 
 __all__ = ["CORE_FILES", "TSVAD_FILE", "core_files", "find_head", "pick_mode", "resolve_models", "serve_main"]
 
-TSVAD_FILE = "tsvad_spk.pt"  # the TS-VAD head of research/IMPROVE_115M.md part A (serve --turn-input tsvad)
-LID_FILE = "lid_115m_v2.pt"  # the distilled language-ID head (serve --lid head); optional, see docs/MODELS.md
-# --core 0.6b (research/CORE_0P6B.md): the same roles on nemotron-speech-streaming-en-0.6b (heads retrained on it)
+TSVAD_FILE = "tsvad_spk.pt"  # the TS-VAD head (serve --turn-input tsvad)
+LID_FILE = "lid_115m_v2.pt"  # the distilled language-ID head (serve --lid head); optional, see docs/ARCHITECTURE.md
+# --core 0.6b: the same roles on nemotron-speech-streaming-en-0.6b (heads retrained on it)
 CORE_FILES = {"115m": (TSVAD_FILE, LID_FILE), "0.6b": ("tsvad_0p6b.pt", "lid_0p6b_v2.pt")}
 
 
@@ -119,7 +119,7 @@ def _single(argv: list[str], models_dir: str | None, config: dict, diarizer_give
         if p is None:
             sys.exit(f"audioforge-serve: single-model mode needs the TS-VAD head {tsvad_file}, not found in "
                      f"{hub.models_dir(models_dir)}.\n  run: "
-                     + (f"audioforge-download --only tsvad lid" + (f" --dir {models_dir}" if models_dir else "")
+                     + ("audioforge-download --only tsvad lid" + (f" --dir {models_dir}" if models_dir else "")
                         if core == "115m" else _dl_hint(core, models_dir))
                      + "   (or pass --tsvad PATH, or --mode room)")
         argv += ["--tsvad", str(p)]
@@ -150,7 +150,7 @@ def resolve_models(argv: list[str], models_dir: str | None = None, diarizer: str
     asr_key = hub.core_keys(core)[0]
     if core != "115m" and not (_in_argv(argv, "--device") or "device" in config):
         print(f"[serve] --core {core} on CPU: ~96 ms of compute per 160 ms chunk on 2 threads, one real-time stream "
-              "per process (the 115M holds 4; research/CORE_0P6B.md); --device mps / cuda for more", file=sys.stderr,
+              "per process (the 115M holds 4); --device mps / cuda for more", file=sys.stderr,
               flush=True)
     if mode == "single":
         argv = _single(argv, models_dir, config, diarizer_given, core)
@@ -191,7 +191,7 @@ def resolve_models(argv: list[str], models_dir: str | None = None, diarizer: str
         argv += ["--diar", need(diarizer, "the server")]
         product = hub.diarizer_defaults(diarizer)  # Nemotron-3: max pooling, frame-local encoder, all 8 columns
     else:
-        product = {"shed_diar": "hold"}  # research/archive/DIARIZATION_FIX.md section 4: no speaker-0 collapse under load
+        product = {"shed_diar": "hold"}  # no speaker-0 collapse under load
     for key, val in product.items():
         flag = "--" + key.replace("_", "-")
         if not _has(argv, flag):

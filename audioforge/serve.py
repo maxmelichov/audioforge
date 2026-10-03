@@ -6,8 +6,7 @@
 Two models run side by side on one 80 ms frame clock: the frozen NVIDIA cache-aware FastConformer with our heads
 (ASR, VAD, turn, speaker; 160 ms chunks) and NVIDIA's streaming diarizer (Sortformer v2 or Nemotron-3). Each
 connection gets a ``Session``; the client sends PCM and receives ``ready`` / ``frame`` / ``partial`` / ``turn_end`` /
-``final`` / ``stats`` JSON (docs/PROTOCOL.md). Flags: docs/CONFIGURATION.md. Design notes (frame clock, policies,
-enrollment, final ASR): docs/SERVER_INTERNALS.md.
+``final`` / ``stats`` JSON (docs/PROTOCOL.md). Flags: docs/CONFIGURATION.md.
 
 In-process use without a socket (what ``audioforge-bench`` and ``audioforge.load`` do)::
 
@@ -93,7 +92,6 @@ from .server.constants import (
     SILERO_POLICIES,
     SILERO_TIMEOUT_MS,
     SMARTTURN_ENERGY,
-    V5_HINT_P,
     SMARTTURN_QUIET_MS,
     SMARTTURN_TRIGGERS,
     SR,
@@ -102,6 +100,7 @@ from .server.constants import (
     TURN_MODELS,
     TURN_PRESET_DEFAULT,
     TURN_PRESETS,
+    V5_HINT_P,
     V5_TURN_MODEL,
     VAD_HEAD_OTHERS_P,
     VAD_HEAD_SIL_THR,
@@ -242,9 +241,9 @@ def gpu_available(device) -> bool:
 
 def model_presets(asr_model) -> dict:
     """TURN_PRESETS with the served model's own constants merged in: a model may carry ``cfg["turn_presets"]`` (e.g.
-    the 0.6B core's assistant preset, tuned for its heads, research/CORE_0P6B.md); a nested ``turn_model`` merges key
+    the 0.6B core's assistant preset, tuned for its heads); a nested ``turn_model`` merges key
     by key; a preset that has no ``turn_model`` of its own (balanced) gets one from the model on top of V5_TURN_MODEL
-    (the 0.6B core's balanced, research/CORE_0P6B_TURN.md). Models without it get TURN_PRESETS unchanged."""
+    (the 0.6B core's balanced). Models without it get TURN_PRESETS unchanged."""
     over = (getattr(asr_model, "cfg", None) or {}).get("turn_presets") or {}
     out = {}
     for name, pr in TURN_PRESETS.items():
@@ -330,7 +329,7 @@ class Engine:
         self.asr_vad_hangover = max(1, int(round(float(asr_vad_hangover_ms) / FRAME_MS)))
         self.max_session_s, self.idle_timeout_s = float(max_session_s), float(idle_timeout_s)
         self.log_json = bool(log_json)
-        # robustness bookkeeping (research/archive/BULLETPROOF.md): every degradation and refused message is counted here
+        # robustness bookkeeping: every degradation and refused message is counted here
         # (Engine.health()), and every live connection is registered so the watchdog can see the global backlog
         self.counters: dict[str, int] = {}
         self.counter_lock = threading.Lock()
@@ -357,11 +356,11 @@ class Engine:
         self.lid_name, self.lid_threshold, self.lid_min_ms = None, float(lid_threshold), float(lid_min_ms)
         self.lid_model, self.lid_langs = None, list(lid_langs) if lid_langs else None
         self.lid_max_ms = float(lid_max_ms) if lid_max_ms else None  # 0 / None: no timeout
-        if lid in ("ambernet",) or (lid and str(lid).endswith(".nemo")):  # the dedicated backend (research/archive/LID.md)
+        if lid in ("ambernet",) or (lid and str(lid).endswith(".nemo")):  # the dedicated backend
             from .nemo_import import import_ambernet
             self.lid_model = import_ambernet(None if lid == "ambernet" else lid)
             self.lid_name = "ambernet"
-        elif lid:  # spoken language ID head (research/archive/LID.md), attached to the ASR model's encoder
+        elif lid:  # spoken language ID head, attached to the ASR model's encoder
             from .lid import HEAD_MAX_MS, attach_head, resolve_head
             if lid == "head" and lid_max_ms is None:  # the shipped head and its pre-registered rule (fix pass)
                 self.lid_max_ms = HEAD_MAX_MS
@@ -376,7 +375,7 @@ class Engine:
             fast_conv(self.asr)
             if self.diar is not None:
                 fast_conv(self.diar)
-        # --perf: the CPU inference fast paths of audioforge.perf (research/archive/PERFORMANCE.md section 3); the default
+        # --perf: the CPU inference fast paths of audioforge.perf; the default
         # set is exact (same outputs as without it), "none" turns them off
         from . import perf as _perf
         self.perf_opts = _perf.parse(perf)
@@ -399,7 +398,7 @@ class Engine:
         # activity (audioforge.tsvad_stream); the diarizer still runs for frame.speakers / primary / timeout
         self.tsvad, self.dyn_offset = None, DYN_OFFSET
         # --dyn-wait-ms CAP,FLOOR: hybrid_dyn's Silero-silence wait at head p = 0 / p = 1 (default: the served rule,
-        # DYN_T0 / DYN_T0 - DYN_A frames); research/SINGLE_MODEL.md A1 picked 2000,960 for --mode single
+        # DYN_T0 / DYN_T0 - DYN_A frames); measured: 2000,960 for --mode single
         self.dyn_t0 = self.dyn_a = None
         if dyn_wait_ms:
             cap, floor = (float(x) for x in (dyn_wait_ms.split(",") if isinstance(dyn_wait_ms, str) else dyn_wait_ms))
@@ -411,7 +410,7 @@ class Engine:
         if turn_preset not in TURN_PRESETS:
             raise ValueError(f"--turn-preset {turn_preset!r}: one of {tuple(TURN_PRESETS)}")
         self.turn_preset = turn_preset
-        # turn head v5 (research/TURN_V5.md; heads.turn_seg, served heads v0.3): the presets whose turn_model is "v5"
+        # turn head v5 (heads.turn_seg, served heads v0.3): the presets whose turn_model is "v5"
         # (fast, assistant) need it in the ASR model
         self.seg_name = next((k for k, v in asr_model.head_cfg.items() if v["type"] == "turn_seg"), None)
         self.presets = model_presets(asr_model)
@@ -436,7 +435,7 @@ class Engine:
                                                                                          asr_model.encoder.d_model)
             self.tsvad = self.tsvad.to(next(asr_model.parameters()).device)
             self.dyn_offset = TSVAD_DYN[1]
-        # --diar-labels / --shed-diar (research/archive/DIARIZATION_FIX.md): stable voice-keyed ids on the finals and the
+        # --diar-labels / --shed-diar: stable voice-keyed ids on the finals and the
         # last-stable-column rule under load shedding; defaults keep the legacy behaviour
         if diar_labels not in DIAR_LABEL_MODES or shed_diar not in SHED_DIAR_MODES or diar_embed not in ("spk", "titanet"):
             raise ValueError(f"--diar-labels {diar_labels!r} / --shed-diar {shed_diar!r} / --diar-embed {diar_embed!r}")
@@ -478,14 +477,14 @@ class Engine:
             att = [att[0], int(asr_chunk_ms) // FRAME_MS - 1]
         self.asr_att = att
         self.chunk_ms = (att[1] + 1) * FRAME_MS
-        # --final-chunk-ms (dual rate, research/DUAL_RATE.md): the heads, partials and turn decisions keep this fast
+        # --final-chunk-ms (dual rate): the heads, partials and turn decisions keep this fast
         # pass; a second, text-only pass of the same frozen encoder at a longer chunk ([L, F/80 - 1]: 560 ms = [70,6],
         # 1120 ms = [70,13], both trained by NVIDIA) writes the `final` text. The fast pass's final is sent at once as
         # `final_fast`. Equal to the fast chunk (or None) = single rate, protocol unchanged.
         self.dual, self.final_chunk_ms, self.final_flush = False, None, bool(final_flush)
         # where a slow final ends: "speech" (default) = 3 frames past the last VAD speech frame (the --asr-lookahead
         # rule), "turn" = the fast final's cut (the frames available at the decision). Chosen on held-out AMI / ICSI
-        # train meetings (research/DUAL_RATE.md): the same WER, and "speech" often needs no flush (lower delay)
+        # train meetings: the same WER, and "speech" often needs no flush (lower delay)
         if final_cut not in ("turn", "speech"):
             raise ValueError(f"final_cut {final_cut!r}: turn | speech")
         self.final_cut = final_cut
@@ -669,7 +668,7 @@ class Engine:
         device = str(device)
         if device != "cpu" and gpu_available(device):
             # cpu is the measured default. cuda[:N] / mps (opt-in, --device) run the same streaming code with the models
-            # on the GPU: same events as cpu on the bundled clip (PR #1 on an RTX 5090; research/MPS_115M.md)
+            # on the GPU: same events as cpu on the bundled clip (PR #1 on an RTX 5090)
             kw["fast"] = False  # fast-conv is the CPU path for the conformer convolutions
             if device.startswith("cuda"):
                 # full fp32: cuDNN's TF32 convolutions (PyTorch's default) moved the encoder output 1.5 % (relative)
@@ -688,7 +687,7 @@ class Engine:
         diar = load_any(diar_path, device) if diar_path is not None else None
         if diar is None and not kw.get("diar_off"):
             raise ValueError("no --diar given: a diarizer is required unless --turn-input tsvad --diar-off")
-        if diar is not None and diar_pool is not None:  # Nemotron-3: 10 ms -> 80 ms pooling (research/archive/SORTFORMER_IMPORT.md: max for streaming)
+        if diar is not None and diar_pool is not None:  # Nemotron-3: 10 ms -> 80 ms pooling (max for streaming)
             for h in diar.heads.values():
                 if hasattr(h, "pool"):
                     h.pool = diar_pool
@@ -933,7 +932,7 @@ class Session:
                 head = e.asr.heads[e.seg_name]
                 self.asr.attach_seg(head, next(head.parameters()).device)  # the model's device (cpu / mps / cuda)
             tm = self._seg_model
-            h2 = v5.get("head")  # research/TURN_DATA.md: a preset's own classifier (e.g. the 0.6B assistant's)
+            h2 = v5.get("head")  # a preset's own classifier (e.g. the 0.6B assistant's)
             if h2 and h2 != e.seg_name and h2 in e.asr.heads:
                 if self.asr.seg2_name != h2:
                     self.asr.attach_seg2(h2, next(e.asr.heads[h2].parameters()).device)
@@ -955,7 +954,7 @@ class Session:
                 k = max(1, int(round(SMARTTURN_QUIET_MS / FRAME_MS)))
                 fb = int(round(e.presets[pr or e.turn_preset]["smartturn_fallback_ms"] / FRAME_MS))
         rt = e.presets[pr or e.turn_preset].get("reset_thr") if e.smartturn is None else None
-        # model_clock (research/TURN_DATA.md): the v5 classifier's clock on the model's stateless turn VAD
+        # model_clock: the v5 classifier's clock on the model's stateless turn VAD
         mc = e.presets[pr or e.turn_preset].get("model_clock") if (tm is not None and e.smartturn is None) else None
         self._mclock = mc == "turn_vad" and getattr(self.asr, "turn_vad_name", None) is not None
         return VadHeadPolicy(self._vad_head_theta(), k, fb, thr, others=others, others_p=VAD_HEAD_OTHERS_P,
@@ -1039,7 +1038,7 @@ class Session:
 
     def _act_tsvad(self, v: int):
         """turn_input tsvad: (P(target), columns [P(target), P(other), 0, 0], primary 0) of ASR frame v, as the
-        benchmark fed the turn head (scripts/research/tsvad.py binding_inputs)."""
+        benchmark fed the turn head."""
         tp = self.asr.tsvad_p
         p = tp[v] if v < len(tp) else (tp[-1] if tp else np.zeros(2, np.float32))
         return float(p[0]), np.array([p[0], p[1], 0.0, 0.0], np.float32), 0
@@ -1198,8 +1197,8 @@ class Session:
             self._emit_final(t_dec, self._asr_frames_at(t_dec), ev.get("primary", self.timeout.primary), out)
 
     def _attribute(self, f0: int, f: int, col_speaker):
-        """``final.speaker`` (+ the optional ``speaker_conf`` / ``diar_shed`` keys) for the segment of frames [f0, f)
-        (research/archive/DIARIZATION_FIX.md). Legacy (``--diar-labels column --shed-diar vad``): the caller's primary column,
+        """``final.speaker`` (+ the optional ``speaker_conf`` / ``diar_shed`` keys) for the segment of frames [f0, f).
+        Legacy (``--diar-labels column --shed-diar vad``): the caller's primary column,
         no extra keys. ``hold``: the same column plus ``diar_shed``. ``registry``: the turn's dominant column picks
         the speaker's own frames, their voice embedding is matched against the session's SpeakerRegistry (stable id
         across column permutations and re-entries); with too few frames the column's last id, else ``null``."""
@@ -1257,7 +1256,7 @@ class Session:
 
     def _emit_final(self, t_dec: float, f: int, speaker, out: list):
         """Cut the current segment at ASR frame ``f`` (decision time ``t_dec``): the streaming final, then the
-        lookahead / offline finals it is due (research/archive/HYBRID_ASR.md)."""
+        lookahead / offline finals it is due."""
         cut = max(self.seg_tok, self.asr.tok_at[f - 1] if f > 0 else 0)
         tok = self.e.asr.tokenizer
         text = tok.decode(self.asr.tokens[self.seg_tok:cut]) if tok is not None else ""
@@ -1475,7 +1474,7 @@ class Session:
         """Run a block of 16 kHz float samples (any length) through both models -> messages, in order:
         error*, frame* | frames, (turn_end, final?)*, partial?. ``arrived``: perf_counter time the block's last
         sample arrived. ``backlog_ms`` / ``shed``: the connection's unprocessed audio and the watchdog's shedding
-        level (research/archive/BULLETPROOF.md section 4): level >= 1 skips the diarizer for this block (its columns are
+        level: level >= 1 skips the diarizer for this block (its columns are
         replaced by the served VAD in column 0), level >= 2 also drops the partial, batches the frames into one
         ``frames`` message and drops the lookahead pass for good."""
         t0 = time.perf_counter()
@@ -1850,7 +1849,7 @@ def _log(*a):
 async def handle(ws, engine: Engine, log=_log):
     """One connection = one session (protocol: docs/PROTOCOL.md). Every client mistake answers with a
     structured ``error`` message (fatal ones close the connection with code 1008 / 1011); nothing a client sends
-    can raise out of this coroutine (research/archive/BULLETPROOF.md section 2)."""
+    can raise out of this coroutine."""
     from websockets.exceptions import ConnectionClosed
     loop = asyncio.get_running_loop()
     peer = getattr(ws, "remote_address", None)

@@ -1,0 +1,48 @@
+# REAL SPEECH: recipes/voice_agent_frontend.yaml trained on LibriSpeech train-clean-100 (first
+# real-data run of the framework). Same heads, weights, grad_scale and from_layers as the synthetic
+# recipe (speaker emb widened to 128) and num_speakers = the 251
+# train-clean-100 speakers. VAD/EOU targets come from an energy VAD (audioforge/datasets/librispeech.py).
+# Prepare: dev-clean + train-clean-100 (research driver, not published)
+# Train:   PYTORCH_MPS_HIGH_WATERMARK_RATIO=0.5 PYTORCH_MPS_LOW_WATERMARK_RATIO=0.4 \
+#          .venv/bin/python -m audioforge.datasets.train_librispeech recipes/voice_agent_frontend_librispeech.yaml \
+#            -o runs/voice_agent_frontend_librispeech.afm
+#   (watermarks cap the MPS pool at ~9 GB: uncapped it grew to 16 GB and swapped a shared 24 GB Mac;
+#    train_librispeech pads batches to <= 4 shapes: MPS keeps graphs + buffers per shape, so with
+#    free-form shapes host memory grew ~15 MB/step and with a 1 s x 16-token grid (~60 shapes)
+#    the GPU pool still grew until OOM at step ~1750)
+# Sizing (Apple M5, MPS, bucketed, free-form shapes, batch 16): d256/L8 = 14.0M params, 0.60 s/step with
+# <=12 s utterances (7,727 utts / 16.5 h of train-clean-100) vs 0.94 s/step with <=16 s (26,752 utts /
+# 92.5 h): same audio throughput, so <=12 s gives 1.6x more optimizer steps. Final: batch 12 on the
+# 4-shape grid (6/12 s x 56/112 tokens).
+name: voice_agent_frontend_librispeech
+# fixed global stats (streaming-safe), measured on 200 dev-clean utterances: mean -10.92, std 3.65
+preprocessor: {n_mels: 80, normalize: fixed, norm_mean: -10.92, norm_std: 3.65}
+spec_augment: {freq_masks: 2, freq_width: 15, time_masks: 2, time_width: 0.05}
+encoder:
+  d_model: 256
+  n_layers: 8
+  n_heads: 4
+  subsampling_channels: 128
+  causal: true
+  # 64 frames (5.1 s) of left context like NeMo's cache-aware models; 0/80/240 ms lookahead
+  att_context_size: [64, 1]
+  att_context_sizes: [[64, 1], [64, 0], [64, 3]]
+tokenizer: {kind: spm, vocab_size: 256}
+heads:
+  # pred/joint 160 as in the synthetic recipe: the B x T x U x 262 joint is the MPS memory peak
+  tdt: {type: tdt, pred_hidden: 160, joint_hidden: 160, weight: 0.6}
+  ctc: {type: ctc, weight: 0.2}
+  vad: {type: frame, key: vad, hidden: 64, weight: 0.2, grad_scale: 0.3}
+  eou: {type: frame, key: eou, hidden: 64, pos_weight: 5.0, weight: 0.2, grad_scale: 0.3}
+  spk: {type: speaker, num_speakers: 251, emb_dim: 128, margin: 0.1, scale: 15.0, weight: 0.3, grad_scale: 0.3,
+        from_layers: all}
+decoding: {primary: tdt}
+# val = 200 seeded held-out train-clean-100 utterances (train speakers -> closed-set speaker acc);
+# the honest test set (dev-clean, unseen speakers) is scored separately by
+# audioforge/datasets/eval_librispeech.py.
+data:
+  # sortagrad: epoch 1 shortest-first. Added after the first full attempt sat in the CTC blank plateau
+  # (loss_ctc ~5.15 = unigram level, TDT at text-LM level) for all 2000 steps it ran
+  librispeech: {train_split: train-clean-100, n_val: 200, max_sec: 12.0, min_sec: 1.0, bucket: true,
+                sortagrad: true, pad_to: {audio_sec: 6.0, tokens: 56}}  # QuantizedCollate: <= 4 MPS shapes
+trainer: {max_steps: 3600, batch_size: 12, lr: 1.5e-3, warmup_steps: 400, log_every: 100}

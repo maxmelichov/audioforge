@@ -1,4 +1,4 @@
-"""Segment end-of-turn classifier (turn head v5, research/TURN_V5.md), smart-turn style on our frozen encoder.
+"""Segment end-of-turn classifier (turn head v5), smart-turn style on our frozen encoder.
 
 When the served VAD goes quiet, the classifier reads the last ``win`` encoder frames (<= 8 s at 80 ms) of one block
 of the streaming encoder (already computed by the ASR pass: no extra encoder work), the served VAD / TS-VAD tracks of
@@ -15,7 +15,6 @@ those frames, optional prosody, and the RNNT tokens decoded so far, and returns 
 from __future__ import annotations
 
 import math
-from collections import deque
 
 import numpy as np
 import torch
@@ -40,7 +39,7 @@ def _enc(d, heads, layers, ff, dropout):
 class SegTurn(nn.Module):
     key = "turn_seg"  # a batch field no training set carries: the Trainer skips this head (it is trained offline)
 
-    # n_layers 2: measured on the 115M (0 / 2 / 4, plans/sweeps/turn_seg_115m_2026-09-30.md); the 0.6B's turn_seg and
+    # n_layers 2: measured on the 115M (0 / 2 / 4, scripts/sweep_capacity.py, 2026-09-30); the 0.6B's turn_seg and
     # turn_seg_a copy it: placeholder: never swept there. d 256, heads 4, ff 1024, d_text 128, text_layers 2 and
     # the classifier MLP widths (256, 64): placeholder: never swept. d_in, vocab, win, max_tok are fixed by the
     # encoder, the tokenizer and the window, not sizes to sweep
@@ -115,7 +114,7 @@ class SegTurnStream:
     """Served path. ``push`` one frame at a time in frame order (the block features of the streaming encoder, the
     served VAD, P(user) / P(other) (0 / 0 without an enrolled print), the tokens decoded at frames <= v, and the
     frame's prosody when the model reads it); ``prob(v, tokens)`` classifies the window ending at any recent frame v.
-    The window, the tokens and the text features equal the offline ones (``scripts/research/turn_v5.py seg_probs``)."""
+    The window, the tokens and the text features equal the offline ones."""
 
     KEEP = 256  # frames kept (>= win + the policy's lag behind the newest frame)
 

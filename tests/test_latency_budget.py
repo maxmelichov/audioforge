@@ -1,4 +1,4 @@
-"""research/LATENCY_BUDGET.md: the live path's buffering fixes.
+"""The live path's buffering fixes.
 
 * A NeMo-aligned causal encoder (the served model) runs an attention chunk as soon as its frames' mel input is
   complete (encoder frame v ends at mel frame 8v): chunk j after 8R + 1 + j (R + 1) 8 mel frames instead of after a

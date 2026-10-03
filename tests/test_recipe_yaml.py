@@ -21,7 +21,7 @@ def _no_dupes(loader, node, deep=False):
 
 
 _Strict.add_constructor(yaml.resolver.BaseResolver.DEFAULT_MAPPING_TAG, _no_dupes)
-RECIPES = sorted(Path(__file__).parent.parent.joinpath("research", "recipes").glob("*.yaml"))
+RECIPES = sorted(Path(__file__).parent.parent.joinpath("recipes").glob("*.yaml"))
 
 
 @pytest.mark.parametrize("recipe", RECIPES, ids=[r.stem for r in RECIPES])
@@ -30,5 +30,5 @@ def test_recipe_has_no_duplicate_keys(recipe):
 
 
 def test_stage1_runs_heads_at_160ms():
-    cfg = yaml.safe_load((Path(__file__).parent.parent / "research" / "recipes" / "stage1_heads_pretrained.yaml").read_text())
+    cfg = yaml.safe_load((Path(__file__).parent.parent / "recipes" / "stage1_heads_pretrained.yaml").read_text())
     assert cfg["encoder"]["att_context_size"] == [70, 1]

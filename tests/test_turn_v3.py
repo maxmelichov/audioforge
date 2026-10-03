@@ -1,4 +1,4 @@
-"""TurnHead v3 (research/archive/STAGE1.md, n = 200: with a real streaming diarizer the head misses 69 % of turn ends at <= 5 %
+"""TurnHead v3 (n = 200: with a real streaming diarizer the head misses 69 % of turn ends at <= 5 %
 false cutoffs vs 38 % for a silence timeout on the same track).
 
 Diagnosis -> change under test:
@@ -43,7 +43,10 @@ V3 = dict(act_columns=4, duration_feats=True, future_act_aux={"horizons": [2, 5]
 
 
 def _script(name):
-    spec = importlib.util.spec_from_file_location(name, ROOT / "scripts" / "research" / f"{name}.py")
+    path = ROOT / "scripts" / "research" / f"{name}.py"
+    if not path.exists():
+        pytest.skip(f"{path.name} is a research driver, not part of this checkout")
+    spec = importlib.util.spec_from_file_location(name, path)
     mod = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(mod)
     return mod
@@ -493,8 +496,8 @@ def test_duration_rule_baseline(ev):
 
 # --------------------------------------------------------------------------- recipe
 def test_recipe_v3_yaml():
-    cfg = yaml.safe_load((ROOT / "research" / "recipes" / "stage1_turn_v3.yaml").read_text())
-    old = yaml.safe_load((ROOT / "research" / "recipes" / "stage1_turn_on_sortformer.yaml").read_text())
+    cfg = yaml.safe_load((ROOT / "recipes" / "stage1_turn_v3.yaml").read_text())
+    old = yaml.safe_load((ROOT / "recipes" / "stage1_turn_on_sortformer.yaml").read_text())
     assert cfg["init"] == old["init"] and cfg["init"]["from"] == "runs/stage1_heads_pretrained.afm"
     assert not any("heads.turn".startswith(p) for p in cfg["init"]["pretrained_scope"])
     assert cfg["encoder"] == old["encoder"]
@@ -507,7 +510,7 @@ def test_recipe_v3_yaml():
     assert tr["max_steps"] == 2000 and tr["batch_size"] == 6 and tr["checkpoint_every"] == 500
     assert tr["conditioning"]["p_ext"] == 0.9 and tr["conditioning"]["flip"] == 0.01
     assert tr["wer_gate"] == old["trainer"]["wer_gate"]
-    ab = (ROOT / "research" / "recipes" / "stage1_turn_v3_ablation.md").read_text()
+    ab = (ROOT / "recipes" / "stage1_turn_v3_ablation.md").read_text()
     for arm in ("heads.turn.act_columns=1 heads.turn.duration_feats=true heads.turn.future_act_aux=null",
                 "heads.turn.act_columns=4 heads.turn.duration_feats=false heads.turn.future_act_aux=null",
                 "heads.turn.act_columns=4 heads.turn.duration_feats=true heads.turn.future_act_aux=null"):
@@ -541,12 +544,12 @@ def _tiny_stage1_afm(path):
 
 @pytest.mark.skipif(not xt.has_tracks(split="train", source="stream"), reason="AMI train streaming tracks not cached")
 def test_recipe_v3_smoke_on_ami(tmp_path):
-    """3 steps of research/recipes/stage1_turn_v3.yaml on CPU: tiny stand-in init model, 8 AMI turn items with their cached
+    """3 steps of recipes/stage1_turn_v3.yaml on CPU: tiny stand-in init model, 8 AMI turn items with their cached
     streaming Sortformer tracks, everything but heads.turn frozen."""
     from audioforge.datasets.ami import recipe_data
     from audioforge.train import load_model, run_recipe
     torch.set_num_threads(2)
-    cfg = yaml.safe_load((ROOT / "research" / "recipes" / "stage1_turn_v3.yaml").read_text())
+    cfg = yaml.safe_load((ROOT / "recipes" / "stage1_turn_v3.yaml").read_text())
     cfg["data"]["mix"][0]["ami"].update(n_train=8, seed=0)
     cfg["data"]["mix"][0]["ami"]["ext_tracks"]["require"] = True  # tracks present (stream, else offline)
     cfg["data"]["mix"][1]["synthetic"]["n_train"] = 8

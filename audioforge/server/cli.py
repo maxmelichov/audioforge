@@ -81,7 +81,7 @@ S8, S9, S10, SCFG = "#8-final-asr-and-dual-lookahead", "#9-spoken-language-id---
 SSINGLE = "#13-single-model-mode---mode-single"
 
 # --mode presets of audioforge-serve (and audioforge.load / audioforge-bench): the options each one sets unless given.
-# single (the default since 2026-09-29) = everything from the one 115M checkpoint (research/SINGLE_MODEL.md): the TS-VAD track of the user's voice
+# single (the default since 2026-09-29) = everything from the one 115M checkpoint: the TS-VAD track of the user's voice
 # print feeds the turn head and stands in for the diarizer's columns (no diarizer is loaded), the distilled LID head
 # on the shared encoder, no final-ASR worker. The print comes from an `enroll` message carrying an embedding, else
 # live from the first --tsvad-print-s seconds of speech after `agent_end`.
@@ -121,7 +121,7 @@ FLAGS: tuple[Flag, ...] = (
          "meeting WER, but ~96 ms of CPU per 160 ms chunk on 2 threads: one real-time stream per process against the 115M's 4, "
          "3 on an Apple GPU with `--device mps`, 5 GB RSS). Voice prints "
          "belong to one core: re-enroll after switching. Install with `audioforge-download --core 0.6b`; "
-         "research/CORE_0P6B.md has every number side by side", section="#1-launching"),
+         "docs/RESULTS.md has the numbers side by side", section="#1-launching"),
     Flag(("--diarizer",), "models", "room mode: which downloaded diarizer to run (implies --mode room)",
          {"choices": ["nemotron3", "sortformer"], "default": None}, launcher=True,
          doc_default="room mode: `nemotron3` if downloaded, else `sortformer`",
@@ -178,17 +178,16 @@ FLAGS: tuple[Flag, ...] = (
     Flag(("--dyn-wait-ms",), "turns", "hybrid_dyn: Silero-silence wait at head p = 0 and p = 1, e.g. 2000,960",
          {"metavar": "CAP,FLOOR"}, advanced=True,
          doc="`hybrid_dyn`: the Silero-silence wait at head posterior 0 (CAP) and 1 (FLOOR), linear in between (plus "
-         "the rule's offset); `--mode single` sets `2000,960` (research/SINGLE_MODEL.md A1)",
+         "the rule's offset); `--mode single` sets `2000,960`",
          doc_default="the served rule: 6000,1600", section=S4),
     Flag(("--turn-policy",), "turns", "turn_policy of a session whose config names none (--mode single: vad_head)",
          {"choices": list(POLICIES), "default": "timeout", "metavar": "POLICY"}, advanced=True,
          doc="the `turn_policy` of a session whose `config` does not name one (a client's `config` still wins); "
-         "`--mode single` sets `vad_head` (research/EOT_LATENCY.md)", section=S4),
+         "`--mode single` sets `vad_head`", section=S4),
     Flag(("--vad-wait-ms",), "turns", "vad_head: VAD-head silence for the head path and the fallback, e.g. 160,640",
          {"metavar": "K,FALLBACK"}, advanced=True,
          doc="`vad_head` (no Silero): the served VAD head's silence (VAD < 0.4) that the head path needs (K, with the turn "
-         "head p >= theta, default 0.99) and the silence that ends the turn on its own (FALLBACK, 0 = none) "
-         "(research/EOT_LATENCY.md)", doc_default="`160,640`", section=S4),
+         "head p >= theta, default 0.99) and the silence that ends the turn on its own (FALLBACK, 0 = none)", doc_default="`160,640`", section=S4),
     Flag(("--turn-preset",), "turns", "vad_head's trade-off: balanced (default), fast, steady or assistant (see docs)",
          {"choices": list(TURN_PRESETS), "default": TURN_PRESET_DEFAULT, "metavar": "PRESET"},
          doc="`vad_head`'s constants as one named trade-off (a client's `config.turn_preset` wins for its session). "
@@ -196,18 +195,17 @@ FLAGS: tuple[Flag, ...] = (
          "served heads v0.3 and v0.4) = the v5 segment classifier asked after 80 ms of VAD < 0.6 and at every further "
          "quiet frame ends the turn at P(complete) > 0.7, OR 640 ms of VAD < 0.4, others path 960,640: on two-party "
          "calls (not a test split) 547 vs 955 ms p50 at 24.8 vs 20.2 % false interruptions and 5.5 vs 7.3 % missed "
-         "(AMI test 1246 vs 1527 ms, 20.5 vs 15.5 % false interruptions, 37.5 vs 36.0 % missed; "
-         "research/FINAL_COMPARE.md). `steady` = the fast rule before v5 (VAD < 0.6 for >= 480 ms AND "
+         "(AMI test 1246 vs 1527 ms, 20.5 vs 15.5 % false interruptions, 37.5 vs 36.0 % missed). "
+         "`steady` = the fast rule before v5 (VAD < 0.6 for >= 480 ms AND "
          "p >= 0.99, OR 720 ms, others path 640,640): 886 ms p50 but the best p95 (1434 ms) and misses (3.7 %). "
          "`assistant` = v5 asked after 240 ms of energy-or-VAD quiet, P(complete) > 0.9, OR 2960 ms of VAD silence: "
-         "for speech directed at the agent, not for human conversation (test rows: research/FINAL_COMPARE.md "
-         "\"Turn taking\"). `--vad-wait-ms` / `--others-wait-ms` override the preset's values (research/TURN_V5.md, "
-         "research/EOT_LATENCY.md \"Turn presets\")", doc_default="`balanced`", section=S4),
+         "for speech directed at the agent, not for human conversation. `--vad-wait-ms` / `--others-wait-ms` "
+         "override the preset's values", doc_default="`balanced`", section=S4),
     Flag(("--others-wait-ms",), "turns", "vad_head: user's TS-VAD silence + P(other) hold of the others path, e.g. 960,640",
          {"metavar": "USER_SIL,HOLD"}, advanced=True,
          doc="`vad_head` with an enrolled TS-VAD track (`--turn-input tsvad`): the turn also ends when the user's own "
          "silence (P(user) < 0.5) reaches USER_SIL while P(other) >= 0.9 has held for HOLD, i.e. another speaker has the "
-         "floor, without waiting for the room to go quiet (0 = off; research/EOT_LATENCY.md)", doc_default="`960,640`",
+         "floor, without waiting for the room to go quiet (0 = off)", doc_default="`960,640`",
          section=S4),
     Flag(("--turn-hint-p",), "turns", "turn_end_hint: turn-head posterior (with 80 ms of VAD silence) for the early hint",
          {"type": float, "default": 0.8, "metavar": "P"}, advanced=True,
@@ -220,7 +218,7 @@ FLAGS: tuple[Flag, ...] = (
          {"action": "store_true"}, advanced=True, section=S4),
     Flag(("--energy-gate",), "turns", "vad_head: energy-aware onset arming + warm-up guard (on | off)",
          {"choices": ["on", "off"], "default": "on"}, advanced=True,
-         doc="`vad_head`'s energy gate (research/EOT_ASSISTANT.md \"Energy gate\"): a per-session noise floor (10th "
+         doc="`vad_head`'s energy gate: a per-session noise floor (10th "
          "percentile of the 80 ms frame log energies of the last 3 s); a user turn is armed only by an onset frame "
          "(VAD > 0.5 AND energy > floor + 6 dB), and no `turn_end` / `turn_end_hint` is sent before 160 ms of onset "
          "frames in the session. It removes the turn_ends the served VAD head (~0.55 on a fresh session's first "
@@ -232,7 +230,7 @@ FLAGS: tuple[Flag, ...] = (
          "VAD says, so the silence starts at the audible end instead of at the end of the VAD head's tail. Off by "
          "default: on the assistant set it answers 400-600 ms sooner (X 6: 611 vs 1218 ms p50), but on two-party "
          "calls and AMI mid-turn pauses are room tone too, and false interruptions rise at every X in 3..12 dB (calls "
-         "20.2 -> 25-60 %, AMI 10.5 -> 11-40 %) even with the fallback re-tuned (research/EOT_ASSISTANT.md)",
+         "20.2 -> 25-60 %, AMI 10.5 -> 11-40 %) even with the fallback re-tuned",
          doc_default="off", section=S4),
     Flag(("--turn-model",), "turns", "vad_head's end-of-turn classifier: head (default) | smartturn (opt-in bridge)",
          {"choices": ["head", "smartturn"], "default": "head"}, advanced=True,
@@ -241,8 +239,8 @@ FLAGS: tuple[Flag, ...] = (
          "per silence run after 160 ms of VAD silence, on the turn's last <= 8 s with 0.5 s of pre-speech audio, "
          "prepared exactly as Pipecat's LocalSmartTurnAnalyzerV3; complete -> `turn_end` (`path: model`), "
          "incomplete -> wait for the next silence run or the preset's 3 s fallback. A bridge on assistant-directed "
-         "speech while the native classifier (turn head v5) is trained; see research/EOT_ASSISTANT.md for its "
-         "numbers on all three benchmarks (on human-to-human calls it misses more turn ends than the default)",
+         "speech while the native classifier (turn head v5) is trained (on human-to-human calls "
+         "it misses more turn ends than the default)",
          doc_default="`head`", section=S4),
     Flag(("--smartturn-trigger",), "turns", "--turn-model smartturn: when it is asked: vad (default) | energy",
          {"choices": ["vad", "energy"], "default": "vad"}, advanced=True,
@@ -250,7 +248,7 @@ FLAGS: tuple[Flag, ...] = (
          "setting). `energy`: two clocks, the classifier after 240 ms of energy-or-VAD quiet (energy < noise floor + 6 "
          "dB) ending the turn at P(complete) > 0.97, the fallback timer on the VAD's own silence at the preset's "
          "640 / 720 ms (the fast setting; every mid-utterance stop longer than the timer still ends the turn). "
-         "Numbers: research/EOT_ASSISTANT.md", doc_default="`vad`", section=S4),
+         "Numbers: docs/RESULTS.md", doc_default="`vad`", section=S4),
     Flag(("--smartturn-onnx",), "turns", "--turn-model smartturn: the smart-turn v3.x ONNX file",
          {"metavar": "PATH"}, advanced=True,
          doc="the smart-turn ONNX for `--turn-model smartturn`", doc_default="the smart-turn-v3.2-cpu.onnx bundled "
@@ -269,7 +267,7 @@ FLAGS: tuple[Flag, ...] = (
          {"type": int, "metavar": "R"}, advanced=True, doc_default="off", section=S8),
     Flag(("--final-chunk-ms",), "transcripts", "dual rate: the final transcript from a second pass at this chunk",
          {"type": int, "choices": [160, 560, 1120], "metavar": "MS"},
-         doc="dual rate (research/DUAL_RATE.md): the heads, partials and turn decisions keep the 160 ms pass; a "
+         doc="dual rate: the heads, partials and turn decisions keep the 160 ms pass; a "
          "second, text-only pass of the same frozen encoder at 560 ms ([70,6]) or 1120 ms ([70,13]) chunks writes "
          "the `final` text (`source: slow`). The 160 ms text is sent at once at the turn end as `final_fast`, so a "
          "client can answer from it and replace it. 160 = single rate", doc_default="160 (single rate)",
@@ -283,12 +281,12 @@ FLAGS: tuple[Flag, ...] = (
          {"type": int, "choices": [80, 160], "metavar": "MS"}, advanced=True,
          doc="streaming chunk of the one ASR pass (transcript, VAD, turn and TS-VAD heads): 160 = attention context "
          "[70,1] (the model's default) or 80 = [70,0], no lookahead (up to 80 ms earlier frames; +0.19 WER on "
-         "LibriSpeech, +1.3 on AMI; the heads were trained at [70,1]; research/LATENCY_BUDGET.md)",
+         "LibriSpeech, +1.3 on AMI; the heads were trained at [70,1])",
          doc_default="the model's (160)"),
     Flag(("--asr-vad-gate",), "transcripts", "stop decoding tokens on long non-speech (served VAD <= this)",
          {"type": float, "metavar": "P"}, advanced=True,
          doc="do not decode transducer tokens on frames whose served VAD <= P once `--asr-vad-hangover-ms` of such "
-         "frames have passed (bounds hallucinated text on long non-speech; research/archive/BULLETPROOF.md)",
+         "frames have passed (bounds hallucinated text on long non-speech)",
          doc_default="off"),
     Flag(("--asr-vad-hangover-ms",), "transcripts", "--asr-vad-gate: decoding continues this long after speech",
          {"type": float, "default": 1200.0, "metavar": "MS"}, advanced=True),
@@ -296,7 +294,7 @@ FLAGS: tuple[Flag, ...] = (
          {"type": int, "default": 0, "metavar": "K"}, advanced=True,
          doc="finals take the best hypothesis of an RNNT beam search of width K (up to 3 tokens per frame) run next "
          "to the greedy decoder; partials and the turn heads keep the greedy tokens. 115M: -1.3 / -2.3 WER points on "
-         "held-out ICSI / AMI at K = 8, about 1 ms per 80 ms frame on CPU; the 0.6B does not gain (research/FIXALL.md)",
+         "held-out ICSI / AMI at K = 8, about 1 ms per 80 ms frame on CPU; the 0.6B does not gain",
          doc_default="0 (greedy)"),
     # --- language ID
     Flag(("--lid",), "lid", "spoken language ID: head, a head file or ambernet", {"metavar": "head|PATH|ambernet"},
@@ -311,7 +309,7 @@ FLAGS: tuple[Flag, ...] = (
          {"type": float, "default": None, "metavar": "MS"}, advanced=True,
          doc_default="3000 with `--lid head`, else off (0 = off)", section=S9),
     Flag(("--lid-langs",), "lid", "--lid ambernet: comma-separated language codes to choose from",
-         {"metavar": "CODES"}, advanced=True, doc_default="the 17 languages of research/archive/LID.md", section=S9),
+         {"metavar": "CODES"}, advanced=True, doc_default="17 FLEURS languages", section=S9),
     Flag(("--voice-gender",), "lid", "optional perceived voice-gender head: head or a head file",
          {"metavar": "head|PATH"}, advanced=True,
          doc="optional perceived voice-gender probabilities (female / male voice) from a small head on the speaker "
@@ -347,7 +345,7 @@ FLAGS: tuple[Flag, ...] = (
     Flag(("--perf",), "speed", "CPU fast paths: default (exact) | none | all | list, e.g. default,-linear_t",
          {"default": "default", "metavar": "SPEC"}, advanced=True,
          doc="CPU inference fast paths of `audioforge.perf`: `default` = the exact set (same outputs), `none`, `all` "
-         "(adds float-rounding ones), or a list such as `default,-linear_t` (research/archive/PERFORMANCE.md)", section=S3),
+         "(adds float-rounding ones), or a list such as `default,-linear_t`", section=S3),
     Flag(("--device",), "speed", "cpu, or mps / cuda / cuda:N (opt-in GPU; others fall back to cpu)", {"default": "cpu", "metavar": "DEV"},
          advanced=True, section=S3),
     Flag(("--no-fast-conv",), "speed", "keep PyTorch's Conv1d path in the conformer convolutions (slower)",

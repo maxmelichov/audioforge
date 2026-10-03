@@ -1,4 +1,4 @@
-"""research/TURN_DATA.md: the classifier's clock on a second (stateless) VAD (VadHeadPolicy ``vad_m``, served as a
+"""The classifier's clock on a second (stateless) VAD (VadHeadPolicy ``vad_m``, served as a
 preset's ``model_clock`` with the model's ``turn_vad`` head). Tiny random models, CPU, no checkpoints."""
 import numpy as np
 import torch

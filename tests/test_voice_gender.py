@@ -1,4 +1,4 @@
-"""Optional perceived voice-gender head (research/VOICE_GENDER.md): running posterior == streaming steps == the
+"""Optional perceived voice-gender head: running posterior == streaming steps == the
 served stream's readings, VAD gating, the head file round trip and attach, the protocol fields, off by default, and
 the shipped files pinned in the hub as OPTIONAL."""
 import sys

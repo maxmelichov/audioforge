@@ -1,0 +1,56 @@
+# NEW SOLUTION: speaker-aware end-of-turn in the shared streaming encoder.
+# Nobody ships end-of-turn that knows WHO is speaking: Flux has no
+# diarization, Speechmatics' end-of-utterance carries no speaker, AssemblyAI slows turns to 640+ ms
+# once diarization is on. Here one causal FastConformer carries streaming ASR of the primary speaker,
+# Sortformer diarization and a turn head that is steered to the primary speaker (speaker kernels,
+# the same mechanism as speaker_attributed_asr), so a bystander finishing a sentence, a backchannel
+# or a mid-turn hesitation does not end the user's turn. v2: the turn head also reads the TDT head's
+# PredictionNet state + last 4 token embeddings (use_text). Data:
+# audioforge/conversation.py (FastMSS four-move turn-taking + FDB-v3 disfluencies, preset default).
+# 4-way ablation (heads.turn overrides):
+#   acoustic       heads.turn.mode=none   heads.turn.condition_on_speaker=false heads.turn.use_text=false
+#   +speaker       heads.turn.mode=kernel heads.turn.condition_on_speaker=true  heads.turn.use_text=false
+#   +text          heads.turn.mode=none   heads.turn.condition_on_speaker=false heads.turn.use_text=true
+#   +speaker+text  (this file as is)
+# v3 (from the turn ablation): diar weight 0.5 + from_layers all + prefix-trained (the eval re-runs it on
+# growing prefixes); turn text trained on late / noisy / self-decoded tokens; conditioning trained on imperfect
+# activity (SpeechModel.forward, conditioning: below). All of these are inert at eval / inference.
+name: speaker_aware_turn_tiny
+preprocessor: {n_mels: 80, normalize: fixed}  # global stats: streaming-safe
+spec_augment: {freq_masks: 2, freq_width: 15, time_masks: 2, time_width: 0.05}
+encoder:
+  d_model: 144
+  n_layers: 4
+  n_heads: 4
+  subsampling_channels: 64
+  causal: true
+  att_context_size: [16, 1]
+  att_context_sizes: [[16, 1], [16, 0], [16, 3]]
+  speaker_kernel_layers: [0, 2]
+tokenizer: {kind: char}
+heads:
+  # text heads first: Trainer.evaluate reports wer_<first conditioned text head>_oracle_act
+  tdt: {type: tdt, pred_hidden: 160, joint_hidden: 160, condition_on_speaker: true, weight: 0.5}
+  ctc: {type: ctc, condition_on_speaker: true, weight: 0.15}
+  diar: {type: sortformer, num_spks: 4, d_hidden: 96, n_layers: 2, weight: 0.5, from_layers: all,
+         prefix_prob: 0.5, prefix_min: 8}
+  # mode: kernel (speaker kernels steer the encoder) | concat (primary activity + 8-frame history
+  # concatenated to the features) | kernel+concat | none (ablation). kernel needs condition_on_speaker.
+  # use_text: PredictionNet state of text_head (default: first rnnt/tdt head) + last k_tokens embeddings;
+  # training alignment: align greedy (through the ASR joint, uniform fallback per item) | uniform.
+  # text_delay / text_noise / decoded_prob: train the text state on tokens as inference sees them (late, wrong,
+  # self-decoded).
+  turn: {type: turn, mode: kernel, condition_on_speaker: true, use_text: true, k_tokens: 4, text_dim: 64,
+         align: greedy, text_delay: 2, text_noise: 0.1, decoded_prob: 0.3,
+         hidden: 96, history: 8, pos_weight: 2.0, weight: 0.3}
+decoding: {primary: tdt}
+# Train-time conditioning track for the speaker-conditioned pass (TDT, CTC, kernel turn head), per item: the diar
+# head's detached primary column with probability p_diar (arrival-rank column; diar_causal: true = the prefix re-run
+# the eval uses, slower), else the oracle with frame flips (flip), boundary jitter (+-jitter frames) and dropped short
+# segments (drop, <= drop_max frames). Labels always come from the clean oracle (spk_act_oracle).
+conditioning: {p_diar: 0.5, flip: 0.05, jitter: 2, drop: 0.1, drop_max: 5}
+# preset: default | asr (more overlap) | diar (less overlap) | flat - read by train.py's conversation loader
+data: {synthetic: {kind: conversation, preset: default, n_train: 2500, n_val: 64}}
+# max_steps 1000 is the machine budget. v2's joint diar head plateaued at loss 0.16-0.20 (standalone: 0.03 at 1000);
+# with the heavier diar weight + noisy conditioning, 2000 steps is the recommended run when the budget allows.
+trainer: {max_steps: 1000, batch_size: 16, lr: 2.0e-3, warmup_steps: 150, log_every: 50}

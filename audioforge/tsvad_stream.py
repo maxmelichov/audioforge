@@ -1,11 +1,11 @@
-"""Live target-speaker activity for the turn head: ``serve --turn-input tsvad`` (research/archive/IMPROVEMENTS.md section 1).
+"""Live target-speaker activity for the turn head: ``serve --turn-input tsvad``.
 
-The TS-VAD head (``heads.tsvad.TSVADHead``, research/IMPROVE_115M.md Part A) reads block 4 of the ASR pass that the
+The TS-VAD head (``heads.tsvad.TSVADHead``) reads block 4 of the ASR pass that the
 server already runs (no extra encoder pass, no diarizer on the turn path) and, given the user's voice print, gives
 per 80 ms frame [P(target), P(other)]. ``TSVADTrack`` keeps one session's head state and voice print:
 
 * ``feed(block4 (1, n, D), vad (n,))`` -> (n, 2) probabilities, one per ASR frame, in order. The turn head is then fed
-  exactly what the offline benchmark fed it (scripts/research/tsvad.py ``binding_inputs``): primary activity
+  exactly what the offline benchmark fed it: primary activity
   P(target), columns [P(target), P(other), 0, 0], primary column 0.
 * the voice print (a unit-norm 192-d block-4 speaker-head embedding, ``heads.audio.SpeakerHead`` via
   ``enrollment.ColumnEmbedder``) comes from one of
@@ -18,7 +18,7 @@ per 80 ms frame [P(target), P(other)]. ``TSVADTrack`` keeps one session's head s
   collecting after the first print and re-embeds over the most recent ``print_s`` seconds of speech the head assigns
   to the target (P(target) > 0.5 and P(other) < 0.5) every ``refresh_s`` seconds of such speech (research
   experiment 4).
-* **anchored adaptation** (``adapt_s`` > 0, on by default, only when ``refresh_s`` is 0; research/TSWER.md "Fix"):
+* **anchored adaptation** (``adapt_s`` > 0, on by default, only when ``refresh_s`` is 0):
   every ``adapt_s`` seconds of speech the head accepts as the target alone (P(target) > 0.5, P(other) < 0.5), the
   working print becomes ``adapt_blend`` x the enrolled print + (1 - ``adapt_blend``) x the embedding of the most
   recent ``print_s`` seconds of such speech (renormalised). A print that only half-matches the user's voice on this
@@ -37,12 +37,12 @@ import torch
 TAP = 3  # 0-based encoder block read by the TS-VAD head and the speaker head (block 4)
 FRAME_S = 0.08
 ADAPT_S = 1.0  # anchored adaptation every S s of accepted target speech (0 = off; a refresh_s > 0 replaces it)
-ADAPT_BLEND = 0.8  # weight of the enrolled print in the adapted print (research/TSWER.md: 0.6-0.8 plateau)
+ADAPT_BLEND = 0.8  # weight of the enrolled print in the adapted print (0.6-0.8 plateau)
 ADAPT_MIN_S = 1.0  # at least this much accepted speech in an adaptation
 
 
 def load_tsvad(path, d_model: int = 512):
-    """runs/tsvad_*.pt (scripts/research/tsvad.py train) -> TSVADHead (eval, cpu)."""
+    """runs/tsvad_*.pt -> TSVADHead (eval, cpu)."""
     from .heads.tsvad import TSVADHead
     ck = torch.load(path, map_location="cpu", weights_only=False)
     c = {k: v for k, v in ck["cfg"].items() if k not in ("type", "from_layers", "weight", "enroll_embedder")}
@@ -79,7 +79,7 @@ def voiceprint(model, audio: np.ndarray, att=(70, 1)) -> np.ndarray:
 
 def track_probs(head, spk_head, feats: np.ndarray, e, **kw) -> np.ndarray:
     """(T, 2) served track of block-4 frames ``feats`` (T, D) with the print ``e`` known from frame 0 (the stored-print
-    protocol of scripts/research/tswer.py): ``TSVADTrack`` with ``set_print(e)`` before the first frame (``adapt_s=0``
+    protocol): ``TSVADTrack`` with ``set_print(e)`` before the first frame (``adapt_s=0``
     gives exactly ``TSVADHead.decode``)."""
     tr = TSVADTrack(head, spk_head, **kw)
     if e is not None:

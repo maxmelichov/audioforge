@@ -3,7 +3,7 @@
     import audioforge
 
     fe = audioforge.load()                       # single-model mode, the models audioforge-download installed
-    s = fe.session()                             # single mode: turn_policy vad_head (research/EOT_LATENCY.md)
+    s = fe.session()                             # single mode: turn_policy vad_head
     s.enroll(fe.voiceprint(user_clean_speech))   # the user's stored print: >= 5 s of clean speech (10 s for meetings)
     for block in blocks_of_pcm:                  # any length; int16 or float32, 16 kHz unless sample_rate= says so
         for ev in s.feed(block):
@@ -95,7 +95,7 @@ class Frontend:
     def voiceprint(self, audio, sample_rate: int = 16000) -> list[float]:
         """The user's voice print (192 floats) from their clean speech (float or int16 array, any rate): what
         ``Session.enroll(embedding)`` and the protocol's ``{"type": "enroll", "embedding": [...]}`` take. Use at least
-        5 s of the user alone (10 s for meetings); research/SINGLE_MODEL.md A2 measured shorter and live prints."""
+        5 s of the user alone (10 s for meetings); that floor comes from measuring shorter and live prints."""
         return _voiceprint(self.engine.asr, audio, sample_rate)
 
     def session(self, turn_policy: str | None = None, *, frames: bool = False, **config: Any) -> Session:
@@ -134,7 +134,7 @@ def load(diarizer: str | None = None, models_dir: str | Path | None = None, *, a
     for a known user (TS-VAD turn input, no diarizer loaded, the distilled LID head, no final ASR); pass the user's
     voice print with ``Session.enroll(embedding)`` or let it be taken after ``Session.agent_end()``. ``core``:
     ``115m`` (default) or ``0.6b`` (``audioforge-serve --core 0.6b``: nemotron-speech-streaming-en-0.6b with its own
-    heads, research/CORE_0P6B.md; use a GPU / ``device="mps"``).
+    heads; use a GPU / ``device="mps"``).
     """
     import torch
 

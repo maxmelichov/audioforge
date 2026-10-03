@@ -1,4 +1,4 @@
-"""Dedicated spoken-language-ID baselines (research/archive/LID.md), CPU, each exposing
+"""Dedicated spoken-language-ID baselines, CPU, each exposing
 ``probs(audio) -> {language code: probability}`` over its own label set (the caller restricts to the evaluated set):
 
 * ``AmberNet``       NVIDIA langid_ambernet (NeMo EncDecSpeakerLabelModel, VoxLingua107, 107 languages; NGC

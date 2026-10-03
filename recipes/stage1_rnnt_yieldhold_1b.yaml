@@ -1,0 +1,46 @@
+# Conversational action tokens, run 1b: run 1a's single-speaker data with the NEW ROWS
+# trained fast. Diagnosis of runs 2 / 1a: neither ever emitted a token (max log P(<YIELD>) about -7 to -9 even on
+# training data) although the ASR was intact. With Adam every element moves by about lr per step, so at the gate-safe
+# lr (5e-5 / 1e-4) the two new output rows, which start at the mean token row with the lowest token bias (log P about
+# -9), can move by at most 0.1-0.2 in 1000-2000 steps: they cannot grow into a token that ever wins the argmax, while
+# the existing rows only need small corrections. trainer.row_lr gives rows 1024-1025 of the joint output, the CTC
+# projection and the PredictionNet embedding their own lr (3e-3, weight decay 0) and freezes the other rows of those
+# tensors exactly (gradient mask); the LSTM and the joint's input projections train at the base lr as before.
+#   PYTORCH_MPS_HIGH_WATERMARK_RATIO=0.6 PYTORCH_MPS_LOW_WATERMARK_RATIO=0.5 .venv/bin/python -m audioforge.cli train \
+#       recipes/stage1_rnnt_yieldhold_1b.yaml -o runs/stage1_rnnt_yieldhold_1b.afm 2>&1 | tee runs/stage1_rnnt_yieldhold_1b.log
+name: stage1_rnnt_yieldhold_1b
+init:
+  from: runs/stage1_rnnt_yieldhold_init.afm
+  pretrained_lr_mult: 0
+  pretrained_scope: [preprocessor., encoder., layer_mix., heads.vad., heads.eou., heads.spk., heads.diar., heads.turn.]
+encoder: {att_context_size: [70, 1], att_context_sizes: [[70, 1]], speaker_kernel_layers: [0, 2]}
+heads:
+  rnnt: {fused_batch_size: 2, weight: 1.0}
+  ctc: {weight: 0.1}
+  vad: {weight: 0}
+  eou: {weight: 0}
+  spk: {weight: 0}
+  diar: {weight: 0}
+  turn: {weight: 0}
+data:
+  mix:
+    - {name: ami_asr_actions, ami: {mode: asr, asr_max_sec: 15.0, action_tokens: {hes_gap: 0.3}}, weight: 3.0,
+       drop_keys: [speaker, vad, eou]}
+    - {name: librispeech_anchor, librispeech: {train_split: train-clean-100, n_train: 2800, n_val: 200, max_sec: 16.0,
+                                               bucket: false},
+       weight: 1.0, drop_keys: [speaker, vad, eou]}
+  val: {ami: {mode: asr, val_split: dev, asr_max_sec: 15.0, action_tokens: {hes_gap: 0.3}, n_val: 64}, drop_keys: [speaker, vad, eou]}
+  batching: source
+trainer:
+  device: mps
+  batch_size: 6
+  lr: 1.0e-4
+  warmup_steps: 100
+  max_steps: 800
+  log_every: 50
+  checkpoint_every: 100
+  checkpoint_keep: 2
+  row_lr: {params: [heads.rnnt.joint.out.2.weight, heads.rnnt.joint.out.2.bias, heads.rnnt.pred.embed.weight,
+                    heads.ctc.proj.weight, heads.ctc.proj.bias],
+           rows: [1024, 1025], lr: 3.0e-3}
+  wer_gate: {manifest: data/librispeech/test-clean-first200.jsonl, n: 100, every: 100, max_delta: 0.005, head: rnnt}

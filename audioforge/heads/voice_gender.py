@@ -1,4 +1,4 @@
-"""Perceived voice gender (optional head, research/VOICE_GENDER.md): a running two-class posterior, female voice /
+"""Perceived voice gender (optional head): a running two-class posterior, female voice /
 male voice, read from the speaker head's encoder tap (115M block 4, 0.6B block 5).
 
 What it measures: a perceived vocal characteristic of the audio (the label the FLEURS and LibriSpeech annotators gave
@@ -43,7 +43,7 @@ class VoiceGenderHead(Head):
     def __init__(self, d_model: int, hidden: int = 64, att_hidden: int = 64, num_classes: int = 2,
                  labels: list | None = None, min_frames: int = 6, dropout: float = 0.1):
         super().__init__()
-        # hidden: measured, plans/sweeps/voice_gender_2026-10-03.md (shipped: 32 on the 115M, 16 on the 0.6B, carried
+        # hidden: measured by scripts/sweep_capacity.py on 2026-10-03 (shipped: 32 on the 115M, 16 on the 0.6B, carried
         # in the head files' cfg; this default is not a measured size). att_hidden 64: placeholder: never swept
         self.labels = list(labels) if labels else list(LABELS)
         assert len(self.labels) == num_classes

@@ -4,7 +4,7 @@
                         trained with the arrival-order *sort loss* (+ optional PIL,
                         exhaustive over permutations, so skipped with a warning above 8 speakers).
 * SpeakerHead         - TitaNet-style attentive-statistics pooling + AAM-softmax.
-* LanguageHead        - causal spoken-language ID: running attentive-stats posterior (research/archive/LID.md).
+* LanguageHead        - causal spoken-language ID: running attentive-stats posterior.
 * FrameHead           - per-frame classifier (VAD, end-of-utterance, ...).
 * CodecTokenHead      - NEW: predicts FSQ codec tokens per encoder frame. The
                         FastConformer frame rate (80 ms = 12.5 Hz) equals NVIDIA's
@@ -66,7 +66,7 @@ class SortformerHead(Head):
                  out_pre_relu: bool = False, distill: dict | None = None):
         super().__init__()
         self.num_spks, self.pil_weight = num_spks, pil_weight
-        # distill: {key: diar_teacher, weight: w} (research/archive/DIARIZATION_FIX.md section 5): the same PIL + sorted-BCE
+        # distill: {key: diar_teacher, weight: w}: the same PIL + sorted-BCE
         # loss against a cached teacher diarizer's per-frame posteriors under batch[key] (T, S_t), mixed with the
         # ground-truth loss as (1 - w) * gt + w * teacher; None (default) leaves the head and its loss unchanged
         self.distill = dict(distill) if distill else None
@@ -74,7 +74,7 @@ class SortformerHead(Head):
         # enc[:, :L] (L ~ U[prefix_min, T]); arrival order is causal, so the cropped targets re-sorted are
         # the prefix's correct labels. Needed when the offline head is re-run on growing prefixes
         # (heads/turn.py streaming_diar_act): trained on whole episodes only, it outputs ~0 activity on
-        # short prefixes (research/archive/TURN_ABLATION.md, A).
+        # short prefixes.
         self.prefix_prob, self.prefix_min = prefix_prob, prefix_min
         # pos_emb: sinusoidal positions over the transformer input sequence. Streaming Sortformer
         # (audioforge/streaming_diar.py) relies on it: the arrival-order speaker cache is laid out
@@ -199,7 +199,7 @@ class AttentiveStatsPool(nn.Module):
 
 class SpeakerHead(Head):
     """Attentive-stats pooling -> ``emb_dim`` unit vector; trained with AAM-softmax over ``num_speakers`` ids
-    (``batch["speaker"]``) and / or distilled onto a teacher embedding (research/archive/SPK_HEAD.md):
+    (``batch["speaker"]``) and / or distilled onto a teacher embedding:
     ``distill: {target: spk_teacher, weight: 1.0}`` adds ``weight * mean(1 - cos(student, teacher))`` against
     ``batch[target]`` (any dimension: an ``emb_dim``-d unit vector is expected, e.g. TitaNet-L's 192-d) and
     makes ``target`` the head's label key; ``distill.relational_weight`` adds the MSE between the student's and
@@ -213,8 +213,8 @@ class SpeakerHead(Head):
         super().__init__()
         self.pool = AttentiveStatsPool(d_model)
         # emb_dim 192 = TitaNet-L's print size (the distillation target and the voice-print format), not a free size.
-        # hidden > 0: a two-layer projection (research/FIXALL.md step 4); 0 = the shipped single linear layer.
-        # hidden 0 vs 512 measured on the 0.6B only (plans/sweeps/speaker_0p6b_2026-10-02.md); on the 115M only 512
+        # hidden > 0: a two-layer projection; 0 = the shipped single linear layer.
+        # hidden 0 vs 512 measured on the 0.6B only (scripts/sweep_capacity.py, 2026-10-02); on the 115M only 512
         # was trained: placeholder: never swept on the 115M
         self.emb = (nn.Sequential(nn.Linear(2 * d_model, hidden), nn.SiLU(), nn.Linear(hidden, emb_dim),
                                   nn.BatchNorm1d(emb_dim)) if hidden else
@@ -272,7 +272,7 @@ class SpeakerHead(Head):
 
 # --------------------------------------------------------------------------- spoken language identification
 class LanguageHead(Head):
-    """Causal spoken-language ID (research/archive/LID.md): per-frame MLP -> attentive-statistics pooling over *all frames so
+    """Causal spoken-language ID: per-frame MLP -> attentive-statistics pooling over *all frames so
     far* -> classifier, i.e. a running posterior that can be read after any encoder frame.
 
     The pooling weights are per frame and per channel, ``w_t = exp(5 tanh(a(h_t) / 5))`` (bounded, so the running sums
@@ -291,7 +291,7 @@ class LanguageHead(Head):
                  context: int = 0, rnn: int = 0):
         super().__init__()
         self.num_languages, self.min_frames = num_languages, int(min_frames)
-        # ``context`` > 0 (research/archive/LID.md fix pass): a causal depthwise-separable conv over the last ``context`` + 1
+        # ``context`` > 0 (LID fix pass): a causal depthwise-separable conv over the last ``context`` + 1
         # per-frame features (residual), so each pooled frame sees a short left context; streaming carries the last
         # ``context`` frames. 0 = the original head (no extra tensors).
         self.context = int(context)
@@ -300,8 +300,9 @@ class LanguageHead(Head):
         self.rnn = int(rnn)
         self.labels = list(labels) if labels else [str(i) for i in range(num_languages)]
         assert len(self.labels) == num_languages, "labels must have num_languages entries"
-        # hidden: measured, plans/sweeps/lid_2026-10-02.md (115M 256 / 512 / 1024, 0.6B 512 / 1024; both shipped heads
-        # use 1024 from assets/lid_*_v2.pt cfg; the default 256 is the pre-sweep value, kept so old configs load).
+        # hidden: measured by scripts/sweep_capacity.py on 2026-10-02 (115M 256 / 512 / 1024, 0.6B 512 / 1024; both
+        # shipped heads use 1024 from assets/lid_*_v2.pt cfg; the default 256 is the pre-sweep value, kept so old
+        # configs load).
         # att_hidden 128, cls_hidden 256: placeholder: never swept
         self.frame = nn.Sequential(nn.LayerNorm(d_model), nn.Linear(d_model, hidden), nn.ReLU(), nn.Dropout(dropout),
                                    nn.Linear(hidden, hidden), nn.ReLU())
@@ -429,7 +430,7 @@ class FrameHead(Head):
     """Per-encoder-frame classifier. num_classes=1 -> sigmoid/BCE (VAD, EOU)."""
 
     # hidden (shipped 64: vad / eou / speech on the 115M, speech / turn_vad on the 0.6B): measured only for the 115M
-    # speech head (plans/sweeps/speech_115m_2026-10-01.md, speech_115m_2026-10-03.md); every other use is a
+    # speech head (scripts/sweep_capacity.py, 2026-10-01 and 2026-10-03); every other use is a
     # placeholder: never swept
     def __init__(self, d_model: int, key: str = "vad", num_classes: int = 1, hidden: int = 0,
                  pos_weight: float = 1.0):
@@ -459,8 +460,8 @@ class FrameHead(Head):
 
 
 class FrameGRUHead(Head):
-    """Causal per-frame classifier with a small recurrent state (``type: frame_gru``; the 0.6B core's VAD head,
-    research/CORE_0P6B.md): Linear(d_model, hidden)-SiLU-GRU(hidden)-Linear(hidden, 1). ``forward`` runs a whole
+    """Causal per-frame classifier with a small recurrent state (``type: frame_gru``; the 0.6B core's VAD head):
+    Linear(d_model, hidden)-SiLU-GRU(hidden)-Linear(hidden, 1). ``forward`` runs a whole
     sequence from a zero state; ``init_stream`` / ``step`` run the same GRU chunk by chunk (equal to ``forward`` on
     the concatenation), so a streaming session keeps one hidden vector per head."""
 

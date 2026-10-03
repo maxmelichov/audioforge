@@ -25,7 +25,7 @@ from audioforge.heads.asr import RNNTHead
 from audioforge.heads.turn import TurnHead, eot_targets, greedy_align, primary_column, token_counts, uniform_align
 from audioforge.train import load_model, run_recipe
 
-RECIPE = Path(__file__).parent.parent / "research" / "recipes" / "speaker_aware_turn.yaml"
+RECIPE = Path(__file__).parent.parent / "recipes" / "speaker_aware_turn.yaml"
 
 
 def test_conversation_labels():

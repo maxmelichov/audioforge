@@ -1,4 +1,4 @@
-"""Deferred fixes (research/archive/VERIFICATION.md §6, items 5-8): explicit att_context_size, per-layer
+"""Deferred fixes (verification items 5-8): explicit att_context_size, per-layer
 streaming outputs, and from_layers: all heads in transcribe / StreamingSession."""
 from pathlib import Path
 
@@ -46,7 +46,7 @@ def test_only_att_context_sizes_keeps_first():  # nemo_import passes only att_co
 
 
 def test_voice_agent_frontend_att_override():
-    cfg = yaml.safe_load((ROOT / "research/recipes/voice_agent_frontend.yaml").read_text())
+    cfg = yaml.safe_load((ROOT / "recipes/voice_agent_frontend.yaml").read_text())
     cfg["encoder"]["att_context_size"] = [16, 3]
     m = SpeechModel(cfg, CharTokenizer(list("abcd "))).eval()
     assert m.encoder.att_context_size == [16, 3]

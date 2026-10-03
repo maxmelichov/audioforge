@@ -1,4 +1,4 @@
-"""User-perceived turn-taking metrics for end-to-end voice-agent runs (research/E2E_FINAL.md).
+"""User-perceived turn-taking metrics for end-to-end voice-agent runs.
 
 Every system is reduced to one list of *response moments*: the audio times (s, clip clock) at which the agent would
 start answering (Pipecat: the ``LLMContextFrame`` reaching the LLM; LiveKit: the committed user turn). The labels
@@ -12,7 +12,7 @@ Definitions (one per clip; ``turns`` = the user's floor turns as sorted, non-ove
   within-turn pause).
 * **other**: response moments that are neither a first response nor a cut-in (repeat answers, answers to the other
   party only, answers before the user's first turn).
-* ``interruptions_1s`` (AMI comparability with research/archive/INTEGRATION.md section 4): moments followed by user speech
+* ``interruptions_1s`` (AMI comparability): moments followed by user speech
   (``user_intervals``) within 1 s.
 
 Aggregation pools the scored ends of all clips; paired comparisons resample clips (bootstrap) and recompute the pooled

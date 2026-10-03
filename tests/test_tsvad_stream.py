@@ -1,4 +1,4 @@
-"""serve --turn-input tsvad (audioforge/tsvad_stream.py; research/archive/IMPROVEMENTS.md section 1): the live TS-VAD track,
+"""serve --turn-input tsvad (audioforge/tsvad_stream.py): the live TS-VAD track,
 its voice-print arming, and the server path that feeds it to the speaker-conditioned turn head."""
 import importlib.util
 from pathlib import Path

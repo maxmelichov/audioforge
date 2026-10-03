@@ -1,7 +1,7 @@
-"""External diarizer activity tracks for AMI / ICSI turn examples (research/archive/STAGE1.md, "Turn head with an external
-diarizer" -> fix (1): train the turn head's ``spk_act`` conditioning on real diarizer tracks).
+"""External diarizer activity tracks for AMI / ICSI turn examples (fix for the turn head with an
+external diarizer: train the turn head's ``spk_act`` conditioning on real diarizer tracks).
 
-Cache layout (written by scripts/research/make_sortformer_tracks.py --dataset ami|icsi; <root> = data/ami or data/icsi,
+Cache layout (written by the Sortformer track script, --dataset ami|icsi; <root> = data/ami or data/icsi,
 the dataset's own root, so ``cache_dir(split=..., dataset="icsi")`` = data/icsi/cache/sortformer/<split>):
 
     <root>/cache/sortformer/<split>/<key>.npy          offline track: one Sortformer head pass over the window
@@ -13,7 +13,7 @@ Each track is the diarizer's full (T_d, S) sigmoid output (S = 4), on the same 8
 window built with other settings (e.g. another window_sec) simply has no track.
 
 Window sets with a non-default trail (``turn_examples(trail_sec=...)`` != 2 s, e.g. the 6 s post-end trail of
-research/recipes/stage1_turn_v3_trail6.yaml) live in their own directory ``<split>_trail<trail:g>`` (``split_dirname``; e.g.
+recipes/stage1_turn_v3_trail6.yaml) live in their own directory ``<split>_trail<trail:g>`` (``split_dirname``; e.g.
 data/ami/cache/sortformer/train_trail6/), so they never mix with (or overwrite) the default 2 s-trail caches:
 ``cache_dir(split="train", trail_sec=6.0)``; ``attach(..., trail_sec=6.0)``; ami.recipe_data passes the recipe's
 ``trail_sec``. An explicit ``directory`` / recipe ``ext_tracks.dir`` always wins.
@@ -21,7 +21,7 @@ data/ami/cache/sortformer/train_trail6/), so they never mix with (or overwrite) 
 ``attach(examples, ...)`` adds to each turn example
     spk_act_ext      (T,) float32 = the track's column chosen by "enrollment by who is talking" (enroll_column:
                      largest overlap with the oracle primary on frames [onset, turn_end) - never after turn_end;
-                     the rule of scripts/research/eval_stage1.py), cropped / edge-padded to the example's T;
+                     the evaluation's rule), cropped / edge-padded to the example's T;
     spk_targets_ext  (T, S) float32 = the whole track, cropped / edge-padded to T;
     spk_prim_ext     (S,) float32 = one-hot of the chosen column (TurnHead act_columns > 1 reads all S columns
                      plus which one is the primary).
@@ -82,7 +82,7 @@ def onset_end(spk_act) -> tuple[int, int]:
 
 
 def enroll_column(p: np.ndarray, ref: np.ndarray, onset: int, end: int) -> int:
-    """'Enrollment by who is talking' (identical to scripts/research/eval_stage1.py enroll_column): the diarizer
+    """'Enrollment by who is talking' (identical to the evaluation's enroll_column): the diarizer
     column that best overlaps the oracle primary activity on frames [onset, end) only - never after the turn
     end. Hard overlap (p > 0.5 on primary frames), ties broken by the soft overlap."""
     T = min(len(p), len(ref), end)
@@ -93,7 +93,7 @@ def enroll_column(p: np.ndarray, ref: np.ndarray, onset: int, end: int) -> int:
 
 
 def fit(a: np.ndarray, T: int) -> np.ndarray:
-    """Crop / edge-pad a (T_d,) or (T_d, S) track to T frames (as scripts/research/eval_stage1.py _fit)."""
+    """Crop / edge-pad a (T_d,) or (T_d, S) track to T frames."""
     a = np.asarray(a, np.float32)
     if len(a) >= T:
         return a[:T]
@@ -133,7 +133,7 @@ def attach(examples: list[dict], root=None, split: str = "train", source: str = 
             found += 1
         else:
             if require:
-                raise FileNotFoundError(f"no {source} track for {key} in {d} (scripts/research/make_sortformer_tracks.py)")
+                raise FileNotFoundError(f"no {source} track for {key} in {d} (build the diarizer tracks first)")
             ex["spk_act_ext"] = np.full(T, MISSING, np.float32)
             ex["spk_targets_ext"] = np.full((T, num_spks), MISSING, np.float32)
             ex["spk_prim_ext"] = np.full(num_spks, MISSING, np.float32)
@@ -151,7 +151,7 @@ def has_tracks(root=None, split: str = "train", source: str = "offline", directo
 
 
 def act_stats(examples: list[dict], key: str = "spk_act_ext") -> dict:
-    """Primary-activity frame errors of the attached track vs the oracle spk_act (scripts/research/eval_stage1.py
+    """Primary-activity frame errors of the attached track vs the oracle spk_act (as the evaluation's
     act_stats): miss / FA per primary speech frame, FA per non-primary frame, post-turn-end frames active."""
     miss = fa = sp = nonsp = post_on = post = n = 0
     for ex in examples:

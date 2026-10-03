@@ -205,7 +205,7 @@ def test_real_checkpoint_streams_like_offline():
 
 
 # --------------------------------------------------------------------------- nemotron-speech-streaming-en-0.6b style
-# (research/archive/ENC_0P6B.md): use_bias false, 2-layer LSTM prediction net, 128 mels, xscaling off, aux_ctc stub without
+# use_bias false, 2-layer LSTM prediction net, 128 mels, xscaling off, aux_ctc stub without
 # CTC weights, plain EncDecRNNTBPEModel target.
 REAL_0P6B = ROOT / "data" / "nemo" / "nemotron-speech-streaming-en-0.6b.nemo"
 _NO_BIAS = re.compile(r"encoder\.layers\.\d+\.(ff[12]\.[14]|att\.linear_(q|k|v|out)|conv\.(pw1|dw|pw2))\.bias")
@@ -332,6 +332,7 @@ def test_prompted_joint_matches_nemo_concat():
     """Nemotron 3.5's language prompt (NeMo EncDecRNNTBPEModelWithPrompt): cat(frame, one-hot) -> prompt_kernel ->
     joint.enc; set_prompt picks the one-hot."""
     import torch
+
     from audioforge.heads.asr import RNNTHead
     torch.manual_seed(0)
     h = RNNTHead(16, 10, pred_hidden=8, joint_hidden=8,

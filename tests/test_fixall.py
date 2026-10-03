@@ -1,4 +1,4 @@
-"""research/FIXALL.md: the optional speech-detector head (heads.speech) in the streaming session, and the RNNT beam
+"""The optional speech-detector head (heads.speech) in the streaming session, and the RNNT beam
 search (split invariance of the streaming decoder). Tiny random models, CPU, no checkpoints."""
 import numpy as np
 import torch
@@ -50,7 +50,7 @@ def test_speech_head_streams_and_vad_unchanged():
 def test_beam_stream_split_invariance():
     torch.manual_seed(0)
     h = RNNTHead(16, 12, pred_hidden=8, joint_hidden=8).eval()
-    for s in range(5):
+    for _s in range(5):
         f = torch.randn(30, 16) * 2
         whole = h.beam_search(f, beam=4, max_sym=3)
         st = h.beam_stream(4, 3)

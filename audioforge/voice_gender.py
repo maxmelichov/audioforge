@@ -1,4 +1,4 @@
-"""Optional perceived voice-gender head (``audioforge.serve --voice-gender``; research/VOICE_GENDER.md): head files,
+"""Optional perceived voice-gender head (``audioforge.serve --voice-gender``): head files,
 attaching a head to a served model, and the per-session stream.
 
 What it reports: probabilities for "female voice" / "male voice", the two classes the training data (FLEURS,

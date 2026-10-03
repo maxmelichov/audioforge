@@ -13,7 +13,7 @@ __all__ = ["ArmBinder", "CausalDominant", "VoiceBinder"]
 
 
 class VoiceBinder:
-    """--enroll after_agent | explicit: the primary column by voice (docs/SERVER_INTERNALS.md; research/archive/EOT_BENCH_V2.md §9).
+    """--enroll after_agent | explicit: the primary column by voice.
 
     ``arm(frame)``: look for the user from diarizer frame ``frame`` on (the audio position of the client's agent_end /
     enroll message). ``update(v, row, frame_audio)`` once per finalized diarizer frame v (its S probabilities and its
@@ -156,7 +156,7 @@ class CausalDominant:
 
 
 class ArmBinder:
-    """--enroll after_agent_arm (research/archive/EOT_BENCH_V2.md section 9 "after_prev_end_causal": the agent-end choice, then
+    """--enroll after_agent_arm ("after_prev_end_causal": the agent-end choice, then
     the causal_dominant rule; no TitaNet, no embedding cost). ``arm(frame)`` on the client's agent_end; from that
     diarizer frame on, the first column active (p > thr) for ``min_run`` consecutive frames is bound
     (``enrollment.after_prev_end_choice``, decided on the run's last frame); from then on the bound column follows

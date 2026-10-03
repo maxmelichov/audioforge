@@ -1,4 +1,4 @@
-"""Regression tests from the turn-ablation diagnosis (research/archive/TURN_ABLATION.md).
+"""Regression tests from the turn-ablation diagnosis.
 
 A2  the primary column chosen at inference (``primary_column``) is the column the Sortformer sort loss trains
     the primary into (``sort_by_arrival``), for ties, silent columns, batch padding and label cropping.
@@ -27,7 +27,7 @@ from audioforge.model import SpeechModel
 from audioforge.tokenizer import train_tokenizer
 from audioforge.train import run_recipe
 
-RECIPE = Path(__file__).parent.parent / "research" / "recipes" / "speaker_aware_turn.yaml"
+RECIPE = Path(__file__).parent.parent / "recipes" / "speaker_aware_turn.yaml"
 
 
 # --------------------------------------------------------------------------- A2: primary column consistency

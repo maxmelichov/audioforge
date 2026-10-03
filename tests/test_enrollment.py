@@ -1,4 +1,4 @@
-"""Voice enrollment (audioforge/enrollment.py; research/archive/EOT_BENCH_V2.md §8).
+"""Voice enrollment (audioforge/enrollment.py).
 
 Under test:
   - ColumnEmbedder == SpeakerHead.embed on unmasked frames; recent_embeddings == a brute-force look-back;
@@ -33,7 +33,10 @@ ROOT = Path(__file__).parent.parent
 
 
 def _script(name):
-    spec = importlib.util.spec_from_file_location(name, ROOT / "scripts" / "research" / f"{name}.py")
+    path = ROOT / "scripts" / "research" / f"{name}.py"
+    if not path.exists():
+        pytest.skip(f"{path.name} is a research driver, not part of this checkout")
+    spec = importlib.util.spec_from_file_location(name, path)
     mod = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(mod)
     return mod

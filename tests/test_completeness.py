@@ -1,4 +1,4 @@
-"""Completeness head + smart-turn dataset loader (research/archive/COMPLETENESS.md)."""
+"""Completeness head + smart-turn dataset loader."""
 import io
 import json
 from pathlib import Path
@@ -180,7 +180,7 @@ def test_parquet_round_trip_16k_mono(tmp_path):
 
 # --------------------------------------------------------------------------- model + recipe
 def _tiny_cfg():
-    cfg = yaml.safe_load((ROOT / "research" / "recipes" / "stage1_completeness.yaml").read_text())
+    cfg = yaml.safe_load((ROOT / "recipes" / "stage1_completeness.yaml").read_text())
     cfg.pop("init")
     cfg["encoder"] = dict(n_layers=2, d_model=32, n_heads=2, subsampling_channels=8, att_context_size=[70, 1],
                           att_context_sizes=[[70, 1]])
@@ -189,7 +189,7 @@ def _tiny_cfg():
 
 
 def test_recipe_and_model_train_on_synthetic_clips():
-    cfg = yaml.safe_load((ROOT / "research" / "recipes" / "stage1_completeness.yaml").read_text())
+    cfg = yaml.safe_load((ROOT / "recipes" / "stage1_completeness.yaml").read_text())
     assert cfg["init"]["pretrained_lr_mult"] == 0 and "smartturn" in cfg["data"]
     assert all(v.get("weight", 1) == 0 for k, v in cfg["heads"].items() if k != "completeness")
     assert cfg["heads"]["completeness"]["type"] == "completeness" and cfg["trainer"]["checkpoint_every"] == 250

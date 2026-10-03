@@ -1,61 +1,24 @@
 # environment
-.venv/
+.venv*/
+venv*/
 __pycache__/
 *.pyc
-.pytest_cache/
 .DS_Store
 
-# datasets (LibriSpeech etc.) and HF caches — reproducible via scripts/
+# datasets, models written by audioforge-download, training runs
 data/
-
-# trained artifacts (reproducible via scripts/research/run_all.sh); samples are kept, new training logs are not
-# (the logs committed before 2026-09-28 stay tracked)
-runs/*.afm
-runs/*.pt
-runs/*.onnx
-runs/*.log
+models/
+runs/
+*.afm
 *.onnx
 *.log
-*.afm
-!assets/*.pt
 
-# demo renders and intermediate clips / event logs (renders belong in $DEMO_OUT, outside the repo)
-*.mp4
-*.mov
-*.gif
-demo_out/
-demo/**/frames/
-demo/clips/
-demo/events/
-demo/audio/
-renders/
-
-# large raw dump of all 943 NVIDIA repos (the audio subset is kept in research/archive/raw/audio_models.json)
-research/archive/raw/all_full.json
-
-# models written by audioforge-download (default <repo>/models; see audioforge/hub.py)
-models/
-
-# packaging / tooling caches
+# packaging and tooling caches
 build/
 dist/
 *.egg-info/
+.pytest_cache/
 .ruff_cache/
 .mypy_cache/
 .coverage
 htmlcov/
-.ipynb_checkpoints/
-
-# scratch
-*.part
-*.tmp
-scratch/
-scratchpad/
-logs/
-tmp/
-.venv*/
-venv*/
-demo/images/redesign/*.png
-
-# chore state (the `changed` builtin)
-.chore/

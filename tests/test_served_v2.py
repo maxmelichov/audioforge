@@ -1,4 +1,4 @@
-"""runs/stage1_served_v2.afm (research/VAD_SINGLE.md): the served checkpoint with the VAD head on block 4 only.
+"""runs/stage1_served_v2.afm: the served checkpoint with the VAD head on block 4 only.
 Runs when both real checkpoints exist: config / tensors differ in heads.vad only, the VAD reads exactly block 4, and
 the server's ASR pass (ASRStream) emits the same tokens as runs/stage1_served.afm with --asr-vad-gate off."""
 from pathlib import Path

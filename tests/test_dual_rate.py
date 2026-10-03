@@ -1,4 +1,4 @@
-"""Dual-rate engine (research/DUAL_RATE.md, ``audioforge-serve --final-chunk-ms``): the fast pass keeps every head,
+"""Dual-rate engine (``audioforge-serve --final-chunk-ms``): the fast pass keeps every head,
 partial, turn decision and fast final byte-identical to single rate; the slow pass's finals partition the tokens of the
 same encoder at the long chunk (== the offline masked forward); the turn_end flush never changes the slow stream and
 does not depend on how the client cut its audio. Tiny random models only."""
@@ -109,7 +109,7 @@ def test_slow_text_equals_offline_long_context(kind):
     ref = _offline_tokens(eng.asr, x, SLOW_R)
     assert s.la.tokens == ref.tokens
     assert "".join(m["text"] for m in slow) == ref.text
-    if kind == "nemo":  # the masked offline forward (what research/DUAL_RATE.md's WER table measures)
+    if kind == "nemo":  # the masked offline forward (what the dual-rate WER table measures)
         off = eng.asr.transcribe([x], head="rnnt", att_context_size=[8, SLOW_R])[0]
         assert off == ref.text
     _, msgs2, _ = _run(_engine(kind, FC, flush=True), x)

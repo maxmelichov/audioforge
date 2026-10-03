@@ -31,7 +31,7 @@ class ASRStream(StreamingSession):
                  lid=None, gender=None, vad_gate: float | None = None, vad_hangover_frames: int = 15, att_context_size=None,
                  beam: int = 0):
         super().__init__(model, att_context_size=att_context_size)
-        # --beam K (research/FIXALL.md step 5): an RNNT beam search runs next to the greedy decoder over the same
+        # --beam K: an RNNT beam search runs next to the greedy decoder over the same
         # encoder frames; finals take its best hypothesis for the segment (beam_cut), while partials, the turn heads'
         # token inputs and everything else keep the greedy tokens, so turn taking does not change
         self.beam_k = int(beam or 0)
@@ -42,7 +42,7 @@ class ASRStream(StreamingSession):
         self.gender = gender  # audioforge.voice_gender.VoiceGenderStream (--voice-gender) or None
         # --asr-vad-gate: the transducer is not decoded on a frame whose VAD <= vad_gate once vad_hangover_frames
         # such frames have passed since the last speech frame (the encoder and the heads still run every frame);
-        # bounds the text emitted on long non-speech (research/archive/BULLETPROOF.md section 1)
+        # bounds the text emitted on long non-speech
         self.vad_gate = None if vad_gate is None else float(vad_gate)
         self.hangover = int(vad_hangover_frames)
         self.since_speech = 10 ** 9  # non-speech frames since the last speech frame (starts gated)
@@ -60,7 +60,7 @@ class ASRStream(StreamingSession):
         self.kernel = bool(self.turn_name and model.head_cfg[self.turn_name].get("condition_on_speaker"))
         if self.kernel and (self.turn_name in model.layer_tap or self.turn_name in model.layer_mix):
             # the kernel path streams the conditioned encoder's TOP layer (run_turn_on_diar); a from_layers tap on a
-            # speaker-conditioned turn head (research/archive/LAYER_ROUTING.md) is not wired here and would be read wrongly
+            # speaker-conditioned turn head is not wired here and would be read wrongly
             raise NotImplementedError(f"serve: turn head {self.turn_name!r} is speaker-conditioned with from_layers "
                                       f"{model.head_cfg[self.turn_name].get('from_layers')!r}; not supported")
         self.k = getattr(self.turn, "k_tokens", 4)
@@ -78,7 +78,7 @@ class ASRStream(StreamingSession):
         self.seg_block = None
         self.pros = None  # heads.prosody.Prosody when the v5 model reads prosody
         self.pros_frames = _Ring(512)
-        # an optional stateless turn VAD (research/TURN_DATA.md, 0.6B heads v0.4): the v5 classifier's clock (a preset's
+        # an optional stateless turn VAD (0.6B heads v0.4): the v5 classifier's clock (a preset's
         # ``model_clock``) and, when the model says so (cfg heads.turn_seg.vad_input), the classifier's VAD channel;
         # arming, the fallback and everything else keep reading heads.vad
         self.turn_vad_name = "turn_vad" if "turn_vad" in model.heads else None
@@ -93,7 +93,7 @@ class ASRStream(StreamingSession):
         self.beam_b0, self.beam_frames, self.beam_best = b0, [], []
         if self.beam_k and getattr(self, "_beam_head", None) is None:
             # the beam's many small joint / prediction-net calls run on a CPU copy of the head (on an Apple GPU they
-            # cost ~15 ms per chunk in launch overhead, on CPU ~1.5 ms; research/FIXALL.md step 5)
+            # cost ~15 ms per chunk in launch overhead, on CPU ~1.5 ms)
             import copy
             self._beam_head = copy.deepcopy(self.head).cpu().eval() if self.dev.type != "cpu" else self.head
         self.beam_stream = self._beam_head.beam_stream(self.beam_k, 3) if self.beam_k else None
@@ -127,7 +127,7 @@ class ASRStream(StreamingSession):
         return toks
 
     def attach_seg(self, model, device="cpu"):
-        """Turn head v5 (research/TURN_V5.md): keep the segment classifier's per-frame inputs (its encoder block of
+        """Turn head v5: keep the segment classifier's per-frame inputs (its encoder block of
         this pass, VAD, P(user) / P(other) when a print is enrolled, the decoded token count, prosody) so
         ``seg_prob(v)`` can classify the window ending at frame v. No extra encoder work."""
         from ..heads.turn_seg import SegTurnStream
@@ -142,7 +142,7 @@ class ASRStream(StreamingSession):
         return self.seg.prob(v, self.tokens)
 
     def attach_seg2(self, name: str, device="cpu"):
-        """A second v5 classifier (heads.<name>, research/TURN_DATA.md: the 0.6B assistant preset's own), kept like
+        """A second v5 classifier (heads.<name>: the 0.6B assistant preset's own), kept like
         ``attach_seg``'s from the next frame on; its VAD channel is heads.vad or, with cfg vad_input "turn_vad", the
         stateless turn VAD."""
         from ..heads.turn_seg import SegTurnStream
@@ -222,7 +222,7 @@ class ASRStream(StreamingSession):
             else:
                 vad = (self.m.heads[self.vad_name](self.m.head_input(self.vad_name, enc, hid)).sigmoid()[0].tolist()
                        if self.vad_name else [0.0] * n)
-            # an optional stateless speech-detector head (research/FIXALL.md): what the client sees as the frame's
+            # an optional stateless speech-detector head: what the client sees as the frame's
             # speech probability; the turn rules, TS-VAD, LID gating and the v5 classifier keep reading heads.vad
             sp = (self.m.heads["speech"](self.m.head_input("speech", enc, hid)).sigmoid()[0].tolist()
                   if "speech" in self.m.heads else None)

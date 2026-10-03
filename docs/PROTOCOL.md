@@ -110,9 +110,7 @@ All times are **audio time in seconds**, counted from the first sample the clien
 - **`speakers` and `primary` in a `frame` are older than its `t`.** A `frame` carries the newest diarizer column
   available when its ASR frame is ready, so `speakers` / `primary` describe audio about `column_lag_ms` plus compute
   before `t`. Measured column age on arrival, CPU, 2 threads, 1x, 2 AMI dev windows: p50 210-227 ms (p95 291 ms)
-  with `low_latency_032` and 857 ms (p95 1035 ms) with `low_latency`
-  ([EARLY_RESULTS](../research/EARLY_RESULTS.md#live-streaming-server-2026-09-26),
-  [INTEGRATION.md §1](../research/archive/INTEGRATION.md#1-executive-summary)). The column's own frame end is sent only as
+  with `low_latency_032` and 857 ms (p95 1035 ms) with `low_latency`. The column's own frame end is sent only as
   the debug field `spk_t`. Until the first column exists (about 0.3 s with the default preset, about 1 s with
   `low_latency`), `speakers` is `[0, 0, 0, 0]`, the same as "nobody talking".
 - **Decision time.** `turn_end.t` and the `t` of the `final` that follows it are the **decision time**: the audio
@@ -213,7 +211,7 @@ config.**
 
 The print is 192 finite numbers from the served speaker head: `audioforge.voiceprint(audio)` over at least 5 s of the
 user's clean speech, 10 s for meetings, or the `embedding` of an earlier `voiceprint` message. Live grabs are not
-enough: research/SINGLE_MODEL.md A2 measured 16-55 more points of missed turn ends. The print is taken at once, under **every** `--enroll` mode, and announced with
+enough: they gave 16-55 more points of missed turn ends. The print is taken at once, under **every** `--enroll` mode, and announced with
 a `voiceprint` message (`source: "explicit"`). Without `--turn-input tsvad` the embedding is refused with a
 `bad_message` error. Without an embedding, the TS-VAD path takes the print live: the first `--tsvad-print-s` seconds
 of speech after the mode's trigger (`agent_end` for `after_agent_arm`).
@@ -298,7 +296,7 @@ Sent right after every cutting `turn_end` (same `t`), and once at end of stream.
 | `speaker` | int or null | default (`--diar-labels column`): the primary column at the decision (the timeout's firing column, else the current primary), 0-3 (0-7 with 8 columns). With `--diar-labels registry`: a stable per-session speaker id (0, 1, 2, ... in order of first appearance, keyed by voice, so the same person keeps the id across column permutations and re-entries; may exceed the column count); `null` when the turn had too little speech to identify ([CONFIGURATION.md §7.4](CONFIGURATION.md#74-multi-speaker-rooms---diar-labels---shed-diar-timeout_any)) | always |
 | `speaker_conf` | number in [0, 1] or null | `registry`: cosine of the turn's voice to the assigned speaker (a new speaker: how far the closest known one was below the join threshold, 1 for the first); `null` when `speaker` fell back to the column's last id or is `null` | only with `--diar-labels registry` or `--shed-diar hold`; then on every `stream` final together with `diar_shed` |
 | `diar_shed` | bool | true when the diarizer did not run on part of this turn (load shedding): the speaker came from held columns / the voice registry, not from a live diarizer frame | with `speaker_conf` |
-| `voice_gender` | object or null | `{"female": p, "male": p, "speech_ms": n}`: perceived voice-gender probabilities pooled over this segment's speech (VAD-gated frames) and how much speech that was; `null` if the segment had no speech. A perceived vocal characteristic estimated from audio, not the speaker's gender identity, and it can be wrong for any individual ([MODELS.md](MODELS.md), research/VOICE_GENDER.md) | only with `--voice-gender` (off by default); on the `stream` final (or `final_fast`) |
+| `voice_gender` | object or null | `{"female": p, "male": p, "speech_ms": n}`: perceived voice-gender probabilities pooled over this segment's speech (VAD-gated frames) and how much speech that was; `null` if the segment had no speech. A perceived vocal characteristic estimated from audio, not the speaker's gender identity, and it can be wrong for any individual ([ARCHITECTURE.md](ARCHITECTURE.md#the-shipped-heads-assets)) | only with `--voice-gender` (off by default); on the `stream` final (or `final_fast`) |
 | `source` | string | `stream` for the streaming model's final; `lookahead` for the `--asr-lookahead` pass; `slow` for the `--final-chunk-ms` pass; `tdt_v3` (or the `.nemo` file's stem when `--final-asr` is a path) for the offline pass | only when `--final-asr`, `--asr-lookahead` or `--final-chunk-ms` is on; then on every final |
 | `pass` | string | `slow`: the text is the slow pass's; `fast`: the slow pass was dropped (load shedding level 2 or an error) and the text is the fast pass's | `--final-chunk-ms` finals only |
 | `start` | number or null | start of the transcribed span, s. tdt_v3: turn onset (first frame with VAD > 0.5 after the previous cut) minus 0.3 s, never before the previous span's end. lookahead: the lookahead segment's first frame | finals whose `source` is not `stream` |
@@ -315,7 +313,7 @@ Details of the extra finals:
   `final_asr_failed` `error` (once per session) and completes the turn with a final under the offline `source` that
   carries the **streaming** text, so a client waiting for that source still gets the turn. A dead worker is restarted
   in the background, at most once per 60 s. The `stats` message is sent only after every pending offline final.
-- **`slow` (`--final-chunk-ms 560|1120`, dual rate, research/DUAL_RATE.md).** The heads, partials and turn
+- **`slow` (`--final-chunk-ms 560|1120`, dual rate).** The heads, partials and turn
   decisions keep the 160 ms pass. At a cutting `turn_end` the server sends that pass's final at once as a
   **`final_fast`** message (exactly the fields the plain `final` has without the flag, so a client can hand it to
   the LLM with no added delay), then a `final` with `source: "slow"` and `pass` holding the text of a second,
@@ -444,10 +442,9 @@ interruptions are then exactly those of `turn_end`; a cancelled hint costs one d
 adapter (`AudioforgeSTTService(turn_hints=True)` + `AudioforgeEagerTurnStopStrategy`) and the LiveKit adapter
 (`AudioforgeFrontend(turn_hints=True)`, hint -> `PREFLIGHT_TRANSCRIPT`) do this; both are opt-in.
 
-Measured (scripts/research/turn_hint.py -> runs/turn_hint.json: the server's hint tracker and `vad_head` replayed on
-the stored per-frame dumps of research/EOT_LATENCY.md, decision clock, compute excluded; calls = 109 TurnBench +
-one-to-one user turns, AMI = 200 dev turns: a dev-split selection experiment for the default H, not a test result
-(test rows: research/FINAL_COMPARE.md "Turn taking"); `turn_end` unchanged: 20.2 % / 10.5 % false interruptions, 7.3 % /
+Measured (the server's hint tracker and `vad_head` replayed on stored per-frame dumps, decision clock, compute
+excluded; calls = 109 TurnBench + one-to-one user turns, AMI = 200 dev turns: a dev-split selection experiment for the
+default H, not a test result (test rows: [RESULTS.md](RESULTS.md#turn-taking)); `turn_end` unchanged: 20.2 % / 10.5 % false interruptions, 7.3 % /
 33.5 % missed). Hint latency = the confirmed hint of each hinted end minus the reference end; precision = hints
 inside a reference turn window that came at or after its end (the user did not resume in that turn); recall = ends
 whose answering `turn_end` carried such a hint; response = when the reply could start if the LLM + TTS need `prep`
@@ -468,7 +465,7 @@ Mean saving at H 0.8: 178 / 284 ms (calls, prep 300 / 600), 120 / 181 ms (AMI). 
 (examples/audio/two_party_call_16s.wav, user turn ends 10.8 s, single mode, real time): hints at 7.78 and 8.74 s
 (pauses inside the turn) were cancelled at 8.10 / 9.22 s; the hint at 11.616 s (p 0.878, text equal to the final)
 arrived 34 ms after its `t` and was confirmed by the `turn_end` at 11.776 s (`hinted_at` 11.616), a 160 ms lead.
-Through examples/pipecat_local_demo.py with a mock LLM (`--llm-ms`), the reply started 1342 -> 1173 ms (300 ms prep)
+Through a local Pipecat pipeline with a mock LLM (`--llm-ms`), the reply started 1342 -> 1173 ms (300 ms prep)
 and 1642 -> 1477 ms (600 ms prep) after the true end with `--turn-hints`, no reply before the `turn_end`, two
 speculative inferences discarded.
 
@@ -491,7 +488,7 @@ message. They are not part of the stable protocol.
 | `stats` | `turn_ms_p50` | mean turn-head time per ASR frame, ms |
 | `stats` | `backlog_ms_max`, `backlog_ms_end` | queued unprocessed audio when a block was taken, max and last, ms |
 | `stats` | `send_lag_ms_p50`, `send_lag_ms_p95`, `send_lag_ms_max` | wall ms from a block's last sample arriving to its messages being ready |
-| `stats` | `diar_lag_ms_mean_measured` | mean audio-time lag of diarizer columns. Computed from sample counts, so at 1x it always reads the structural mean; it is not a wall-clock measurement ([INTEGRATION.md §5 D8](../research/archive/INTEGRATION.md#5-defects-found-by-the-verifier-and-their-status)) |
+| `stats` | `diar_lag_ms_mean_measured` | mean audio-time lag of diarizer columns. Computed from sample counts, so at 1x it always reads the structural mean; it is not a wall-clock measurement (defect D8) |
 | `stats` | `turn_input` | as in `ready` |
 | `stats` | `enroll_ms_p50`, `enroll_ms_max`, `enroll_ms_mean`, `enroll_n_embed` | binder time per diarizer frame and number of TitaNet embeddings (with `--enroll` other than `dominant`) |
 | `stats` | `silero_ms_p50`, `silero_ms_p95`, `silero_ms_mean`, `silero_chunks` | Silero VAD time per 32 ms chunk and chunk count (`hybrid_silero` / `hybrid_dyn` sessions) |
@@ -686,8 +683,7 @@ of the session: level 2. Turn events and streaming finals continue at every leve
 
 ## 12. Known protocol limitations
 
-From the verifier's defect list ([INTEGRATION.md §5](../research/archive/INTEGRATION.md#5-defects-found-by-the-verifier-and-their-status)),
-with their state in the current code:
+From the verifier's defect list, with their state in the current code:
 
 - **D2** Finals are cut at a token index, not a word start, so a word can be split between two finals.
 - **D4** `speakers` is `[0, 0, 0, 0]` before the first diarizer column, indistinguishable from "nobody talking".

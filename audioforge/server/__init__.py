@@ -10,5 +10,4 @@
 * ``util``: percentiles, memory, a bounded per-frame ring
 
 The engine, the sessions and the connection loop are in ``audioforge/serve.py``, which re-exports all of these.
-docs/SERVER_INTERNALS.md has the design notes.
 """

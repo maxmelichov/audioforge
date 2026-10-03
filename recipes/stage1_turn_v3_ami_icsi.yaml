@@ -1,0 +1,59 @@
+# Stage 1c+: turn head v3 (recipes/stage1_turn_v3.yaml, unchanged model / conditioning) trained on AMI + ICSI turns,
+# both on cached REAL STREAMING Sortformer tracks. ICSI (audioforge/datasets/icsi.py, CC-BY-4.0: 12 default train
+# meetings, 10.3 h, 35 speakers, 3093 turn windows at 16 s) roughly doubles the turn data with different rooms,
+# group sizes (3-10 speakers) and a far looser turn style (42 % of switches overlap).
+#
+# Sources (data.batching: source -> every batch is single-source):
+#   ami_turn   AMI train turns, ext_tracks stream (3274/3274 cached; offline fallback)        weight 1.0
+#   icsi_turn  ICSI train turns, ext_tracks stream from data/icsi/cache/sortformer/train       weight 1.0
+#              (icsi.recipe_data -> icsi.attach_ext_tracks: ICSI's own cache dir by default; offline fallback).
+#              drop_keys [speaker]: ICSI speaker ids are 1000+ (never collide with AMI's 0..189) and exceed the
+#              frozen 190-class speaker head.
+#   conv       synthetic conversations (no ext track: always the oracle branch)                weight 0.3
+# Val = AMI dev turns (4 meetings, speaker-disjoint from AMI train) exactly as stage1_turn_v3, so the two runs'
+# validation numbers compare directly. ICSI dev is NOT speaker-disjoint from ICSI train (Kaldi split; the same
+# research groups meet repeatedly), so it is only a secondary eval.
+# 3000 steps (vs 2000): ~1.9x the real turn items per epoch.
+#
+# Prerequisites (resumable; repeat each until "N/N tracks cached"): cache the ICSI train tracks, offline (CPU)
+# and streaming (MPS), with a research driver (not published).
+# Run (GPU):
+#   PYTORCH_MPS_HIGH_WATERMARK_RATIO=0.5 PYTORCH_MPS_LOW_WATERMARK_RATIO=0.4 .venv/bin/python -m audioforge.cli train \
+#       recipes/stage1_turn_v3_ami_icsi.yaml -o runs/stage1_turn_v3_ami_icsi.afm 2>&1 | tee runs/stage1_turn_v3_ami_icsi.log
+name: stage1_turn_v3_ami_icsi
+init:
+  from: runs/stage1_heads_pretrained.afm  # the 160 ms model (saved config: att_context_size [70, 1])
+  pretrained_lr_mult: 0
+  pretrained_scope: [preprocessor., encoder., layer_mix., heads.rnnt., heads.ctc., heads.vad., heads.eou.,
+                     heads.spk., heads.diar.]
+encoder: {att_context_size: [70, 1], att_context_sizes: [[70, 1]], speaker_kernel_layers: [0, 2]}
+heads:
+  diar: {weight: 0}
+  turn: {type: turn, mode: kernel, use_text: true, condition_on_speaker: true, k_tokens: 4, text_dim: 64,
+         align: greedy, hidden: 96, history: 8, pos_weight: 2.0, weight: 1.0,
+         act_columns: 4, duration_feats: true, dur_max: 64,
+         future_act_aux: {horizons: [6, 12, 25], weight: 0.3}}
+data:
+  mix:
+    - {name: ami_turn, ami: {mode: turn, window_sec: 16, ext_tracks: {source: stream, fallback: offline}},
+       weight: 1.0}
+    - {name: icsi_turn, icsi: {mode: turn, window_sec: 16, ext_tracks: {source: stream, fallback: offline}},
+       weight: 1.0, drop_keys: [speaker]}
+    - {name: conv, synthetic: {kind: conversation, preset: default, n_train: 2500}, weight: 0.3,
+       drop_keys: [speaker]}
+  val: {ami: {mode: turn, val_split: dev, n_val: 64}}
+  derive: [vad, eou]
+  batching: source
+trainer:
+  device: auto
+  batch_size: 6
+  lr: 1.0e-3
+  warmup_steps: 100
+  max_steps: 3000
+  log_every: 50
+  checkpoint_every: 500
+  # model conditioning (trainer.conditioning: the location that survives init.from; see audioforge/model.py)
+  conditioning: {p_ext: 0.9, p_diar: 0, flip: 0.01,
+                 ext_noise: {p: 0.3, swap_max: 12, drop: 0.2, drop_max: 4, at_turn_end: 0.5}}
+  wer_gate: {manifest: data/librispeech/test-clean-first200.jsonl, n: 50, every: 500, max_delta: 0.002,
+             head: rnnt}

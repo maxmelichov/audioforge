@@ -18,7 +18,7 @@ jobs:
         with:
           python-version: "3.12"
       - run: pip install "ruff==0.16.9"   # same version as .pre-commit-config.yaml
-      - run: ruff check audioforge tests integrations examples scripts   # F, E9, I, B (pyproject.toml)
+      - run: ruff check audioforge tests examples scripts   # F, E9, I, B (pyproject.toml)
       - run: ruff check packages/audioforge-client
       - run: pip install "mypy>=1.10" && mypy audioforge/__init__.py audioforge/api.py audioforge/launch.py audioforge/server/cli.py
 

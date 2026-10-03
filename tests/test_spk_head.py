@@ -1,5 +1,5 @@
 """Speaker head: single-layer taps (from_layers: [k]), TitaNet distillation loss, teacher attach, head-only
-training from a stage-1 checkpoint (research/archive/SPK_HEAD.md)."""
+training from a stage-1 checkpoint."""
 from pathlib import Path
 
 import numpy as np
@@ -179,7 +179,7 @@ def test_init_from_changes_from_layers_and_train_only(tmp_path):
 
 
 def test_spk_recipes_parse():
-    root = Path(__file__).resolve().parents[1] / "research" / "recipes"
+    root = Path(__file__).resolve().parents[1] / "recipes"
     for n in (2, 4, 8, 12, 17):
         c = yaml.safe_load((root / f"spk_layer_sweep_L{n}.yaml").read_text())
         assert c["heads"]["spk"]["from_layers"] == [n - 1] and c["init"]["train_only"] == ["heads.spk", "layer_mix.spk"]
@@ -230,7 +230,7 @@ def test_init_from_reinitialises_resized_head_tensor(tmp_path):
 
 
 def test_librispeech_speaker_offset_recipe_parses():
-    root = Path(__file__).resolve().parents[1] / "research" / "recipes"
+    root = Path(__file__).resolve().parents[1] / "recipes"
     c = yaml.safe_load((root / "spk_layer_sweep_L4_libri.yaml").read_text())
     ls = next(e for e in c["data"]["mix"] if e["name"] == "librispeech")["librispeech"]
     assert ls["speaker_offset"] == 1000 and c["heads"]["spk"]["num_speakers"] == 1251

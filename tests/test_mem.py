@@ -194,8 +194,8 @@ def test_peak_estimate_info(capsys):
 
 # --------------------------------------------------------------------------- 4. recipes
 def test_stage_recipes_memory_keys():
-    s1 = yaml.safe_load((ROOT / "research/recipes/stage1_heads_pretrained.yaml").read_text())
-    s2 = yaml.safe_load((ROOT / "research/recipes/stage2_unfreeze_pretrained.yaml").read_text())
+    s1 = yaml.safe_load((ROOT / "recipes/stage1_heads_pretrained.yaml").read_text())
+    s2 = yaml.safe_load((ROOT / "recipes/stage2_unfreeze_pretrained.yaml").read_text())
     assert s1["heads"]["rnnt"]["weight"] == 0 and s1["heads"]["ctc"]["weight"] == 0
     assert s1["heads"]["rnnt"]["fused_batch_size"] == 2
     # stage 2 inherits stage 1's head cfg via init.from, so the weights must be explicit

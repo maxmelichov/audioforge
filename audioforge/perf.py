@@ -1,6 +1,6 @@
-"""CPU inference fast paths for the served system (research/archive/PERFORMANCE.md). Every option keeps the model's math; the
+"""CPU inference fast paths for the served system. Every option keeps the model's math; the
 ones marked *exact* give bit-identical outputs on this machine's BLAS (checked by tests/test_perf.py and by
-``scripts/research/bench_serve.py compare`` on the fixed clip set), the others agree to float rounding.
+a serve benchmark comparison on the fixed clip set), the others agree to float rounding.
 
 ``apply(engine, opts)`` installs a set of options on an ``audioforge.serve.Engine`` (``--perf`` in serve.py);
 ``DEFAULT`` is the set that is on by default because it is exact.

@@ -1,7 +1,7 @@
 """Train a ``data: {librispeech: ...}`` recipe on MPS without the per-shape graph-cache leak.
 
     PYTORCH_MPS_HIGH_WATERMARK_RATIO=0.45 PYTORCH_MPS_LOW_WATERMARK_RATIO=0.35 \\
-    .venv/bin/python -m audioforge.datasets.train_librispeech research/recipes/voice_agent_frontend_librispeech.yaml \\
+    .venv/bin/python -m audioforge.datasets.train_librispeech recipes/voice_agent_frontend_librispeech.yaml \\
         -o runs/voice_agent_frontend_librispeech.afm [key=value ...]
 
 Same steps as ``audioforge.train.run_recipe`` (and the same unmodified ``Trainer``), but batches go

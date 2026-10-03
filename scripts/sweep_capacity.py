@@ -29,7 +29,7 @@ best of the periodic evaluations (the same rule as a run's `best` checkpoint: it
 Heads (the registry below; add one by writing a Spec):
   speech   the client's speech detector: the served FrameHead (Linear(D, hidden)-SiLU-Linear(hidden, 1)) on a learned
            softmax mix of encoder blocks (115M blocks 2-6, 0.6B blocks 8-16, 1-based), trained on the cached features
-           of research/FIXALL.md step 1 (SSD scratch/fixall/feats/<core>/) with that step's sources, shares and
+           of the speech-detector feature step (SSD scratch/fixall/feats/<core>/) with that step's sources, shares and
            augmentation. Eval = held-out AMI meetings TS3011b / ES2015c, ICSI Bro026 / Bmr022, oto / quiet-oto
            held-out conversations and held-out room tone (never the evaluation sets). Size keys: hidden (the served
            FrameHead), depth (> 1 stacks extra Linear-SiLU layers: research only, the served FrameHead has one).

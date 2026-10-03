@@ -1,0 +1,69 @@
+# Stage 1c: turn head v3 on REAL STREAMING diarizer tracks (stage-1 n = 200 table: with oracle
+# activity the head misses 29.5 % at <= 5 % false cutoffs vs 6.3 % for a silence timeout; with NVIDIA's streaming
+# Sortformer 69 % vs 38 % for a timeout on the same track). Diagnosis acted on:
+#   (1) the head has no explicit notion of "how long has the primary been silent" -> duration_feats (causal
+#       counters from the INPUT track: frames since the primary / any other column was last active, run lengths);
+#   (2) it saw only the chosen primary column, blind to a next speaker landing in that slot -> act_columns: 4
+#       (all four diarizer columns + one-hot of the enrollment column) and conditioning.ext_noise (train-time
+#       column swaps around speaker changes / short dropouts of the external track);
+#   (3) it was trained on OFFLINE tracks but evaluated on STREAMING ones -> ext_tracks: stream (the cached
+#       StreamingDiarizer low-latency tracks of all 3274 train turns; offline track only where none is cached).
+# Plus future_act_aux: VAP-style auxiliary targets (primary / other speaker active within 6 / 12 / 25 frames).
+#
+# Conditioning per AMI turn item (SpeechModel.conditioning_act, trainer.conditioning): with p_ext = 0.9 the cached
+# streaming track (columns = spk_targets_ext, primary = enrollment column spk_prim_ext: largest overlap with the
+# oracle primary on [onset, turn_end) only, as the stage-1 eval), corrupted for 30 % of those items by
+# ext_noise; else the oracle columns with 1 % frame flips on the primary track and the columns randomly permuted.
+# Labels always come from the clean oracle (eot / spk_act_oracle). Synthetic conversations (weight 0.3) have no ext
+# track and always take the oracle branch.
+#
+# Only the turn head trains (pretrained_lr_mult 0 over pretrained_scope, as recipes/stage1_turn_on_sortformer.yaml).
+# Its v3 input projection (heads.turn.v3_in) starts at zero, so step 0 is exactly the stage-1 turn head; the future
+# head (heads.turn.fut) is new. The encoder is frozen, so the WER gate is a plumbing tripwire only.
+# Ablations: recipes/stage1_turn_v3_ablation.md.
+#
+# Prerequisite (MPS, ~25 min, resumable; done 2026-09-26): cache the streaming train tracks (3274/3274)
+# with a research driver (not published).
+# Run (GPU):
+#   PYTORCH_MPS_HIGH_WATERMARK_RATIO=0.5 PYTORCH_MPS_LOW_WATERMARK_RATIO=0.4 .venv/bin/python -m audioforge.cli train recipes/stage1_turn_v3.yaml \
+#       -o runs/stage1_turn_v3.afm 2>&1 | tee runs/stage1_turn_v3.log
+name: v4_stage1_turn_v3
+init:
+  from: runs/stage1_turn_v3.afm  # continue from v3 (head already trained on streaming tracks)
+  pretrained_lr_mult: 0
+  # v4: the SPEAKER KERNELS (encoder.speaker_kernels.*, 2.1M params) train too. Turn-error analysis:
+  # they were frozen after stage 1, where they only ever saw clean oracle activity; feeding them a clean track
+  # while the head sees the noisy Sortformer track gives 9.5% misses instead of 63%.
+  pretrained_scope: [preprocessor., encoder.pre_encode., encoder.layers., layer_mix., heads.rnnt., heads.ctc.,
+                     heads.vad., heads.eou., heads.spk., heads.diar.]
+encoder: {att_context_size: [70, 1], att_context_sizes: [[70, 1]], speaker_kernel_layers: [0, 2]}
+heads:
+  diar: {weight: 0}
+  turn: {type: turn, mode: kernel, use_text: true, condition_on_speaker: true, k_tokens: 4, text_dim: 64,
+         align: greedy, hidden: 96, history: 8, pos_weight: 2.0, weight: 1.0,
+         act_columns: 4, duration_feats: true, dur_max: 64,
+         future_act_aux: {horizons: [6, 12, 25], weight: 0.3}}
+data:
+  mix:
+    - {name: v4_ami_turn, ami: {mode: turn, window_sec: 16, ext_tracks: {source: stream, fallback: offline}},
+       weight: 1.0}
+    - {name: v4_conv, synthetic: {kind: conversation, preset: default, n_train: 2500}, weight: 0.3,
+       drop_keys: [speaker]}
+  val: {ami: {mode: turn, val_split: dev, n_val: 64}}
+  derive: [vad, eou]
+  batching: source
+trainer:
+  device: auto
+  batch_size: 6
+  lr: 5.0e-4  # kernels sit inside the frozen encoder; gentler than the head-only run
+  warmup_steps: 100
+  max_steps: 2000
+  log_every: 50
+  checkpoint_every: 500
+  # model conditioning (trainer.conditioning: the location that survives init.from; see audioforge/model.py)
+  # noise matched to the measured Sortformer errors: in-turn dropouts up to 15 frames (P90), post-end false
+  # alarms copying the next speaker (turn-error analysis)
+  conditioning: {p_ext: 0.9, p_diar: 0, flip: 0.01,
+                 ext_noise: {p: 0.6, swap_max: 25, drop: 0.5, drop_max: 15, at_turn_end: 0.7}}
+  wer_gate: {manifest: data/librispeech/test-clean-first200.jsonl, n: 50, every: 500, max_delta: 0.002,
+             head: rnnt}

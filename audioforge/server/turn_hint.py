@@ -15,7 +15,7 @@ LiveKit Agents calls preemptive generation and Pipecat an eager end of turn. The
   (``turn_end_hint_cancel``). Every outcome is counted (``stats.turn_hints``) and logged, so the hint's precision can
   be read off a live session.
 
-Both are plain Python on the frame clock (no model), so scripts/research/turn_hint.py replays them on the stored
+Both are plain Python on the frame clock (no model), so a replay script runs them on the stored
 per-frame dumps exactly as the server runs them.
 """
 from __future__ import annotations

@@ -1,5 +1,5 @@
-"""Turn head v3 trained on 6 s post-end trails (research/recipes/stage1_turn_v3_trail6.yaml; research/archive/STAGE1.md "Turn head v3
-trained on 6 s trails"; motivation research/archive/EOT_BENCH_V2.md: v3 saw only 2 s after a turn end).
+"""Turn head v3 trained on 6 s post-end trails (recipes/stage1_turn_v3_trail6.yaml;
+motivation: v3 saw only 2 s after a turn end).
 
 Under test:
   - AMI turn windows with trail_sec 6 / window_sec 20: >= 75 post-end frames unless the trail stops at the primary's
@@ -29,7 +29,10 @@ SR = 16000
 
 
 def _script(name):
-    spec = importlib.util.spec_from_file_location(name, ROOT / "scripts" / "research" / f"{name}.py")
+    path = ROOT / "scripts" / "research" / f"{name}.py"
+    if not path.exists():
+        pytest.skip(f"{path.name} is a research driver, not part of this checkout")
+    spec = importlib.util.spec_from_file_location(name, path)
     mod = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(mod)
     return mod
@@ -155,7 +158,7 @@ def test_recipe_data_passes_the_recipes_trail_to_the_turn_windows_and_the_cache(
         seen.update(split=split, trail_sec=trail_sec, directory=directory)
         return {"found": len(data), "missing": 0}
     monkeypatch.setattr(xt, "attach", fake_attach)
-    cfg = yaml.safe_load((ROOT / "research" / "recipes" / "stage1_turn_v3_trail6.yaml").read_text())
+    cfg = yaml.safe_load((ROOT / "recipes" / "stage1_turn_v3_trail6.yaml").read_text())
     src = dict(cfg["data"]["mix"][0]["ami"], n_train=6, seed=0)
     data = ami.recipe_data({"data": {"ami": src}}, "train")
     assert len(data) == 6 and seen == {"split": "train", "trail_sec": 6.0, "directory": None}
@@ -218,8 +221,8 @@ def test_real_trail6_cache_matches_the_windows(ami_train):
 
 # --------------------------------------------------------------------------- recipe
 def test_recipe_trail6_yaml_is_v3_with_the_trail6_source():
-    cfg = yaml.safe_load((ROOT / "research" / "recipes" / "stage1_turn_v3_trail6.yaml").read_text())
-    v3 = yaml.safe_load((ROOT / "research" / "recipes" / "stage1_turn_v3.yaml").read_text())
+    cfg = yaml.safe_load((ROOT / "recipes" / "stage1_turn_v3_trail6.yaml").read_text())
+    v3 = yaml.safe_load((ROOT / "recipes" / "stage1_turn_v3.yaml").read_text())
     assert cfg["name"] == "stage1_turn_v3_trail6"
     for k in ("init", "encoder", "heads", "trainer"):
         assert cfg[k] == v3[k], k
@@ -240,7 +243,7 @@ def test_recipe_trail6_smoke(tmp_path):
 
     from audioforge.train import run_recipe
     torch.set_num_threads(2)
-    cfg = yaml.safe_load((ROOT / "research" / "recipes" / "stage1_turn_v3_trail6.yaml").read_text())
+    cfg = yaml.safe_load((ROOT / "recipes" / "stage1_turn_v3_trail6.yaml").read_text())
     have = {p.name[: -len(".stream.npy")] for p in D6.glob("*.stream.npy")}
     probe = ami.recipe_data({"data": {"ami": dict(cfg["data"]["mix"][0]["ami"], ext_tracks=None)}}, "train")
     idx = [i for i, e in enumerate(probe) if xt.example_key(e) in have]

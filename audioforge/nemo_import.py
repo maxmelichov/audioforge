@@ -12,10 +12,10 @@ A .nemo file is a tar of model_config.yaml + model_weights.ckpt (a torch state_d
 SentencePiece tokenizer. Supported: ``ConformerEncoder`` with rel_pos attention and dw_striding 8x
 subsampling (causal or not, chunked_limited or full context, layer/batch-norm conv), plus an RNNT
 decoder+joint, a CTC ``ConvASRDecoder``, or both (hybrid RNNT-CTC), and TDT joints with duration outputs
-(parakeet-tdt-*, ``tdt_durations``; e.g. nvidia/parakeet-tdt-0.6b-v3, research/archive/HYBRID_ASR.md). Every checkpoint
-tensor is mapped; unmapped or missing weights raise. See research/archive/NEMO_IMPORT.md.
+(parakeet-tdt-*, ``tdt_durations``; e.g. nvidia/parakeet-tdt-0.6b-v3). Every checkpoint
+tensor is mapped; unmapped or missing weights raise.
 
-nvidia/nemotron-speech-streaming-en-0.6b (research/archive/ENC_0P6B.md) goes through the same path: 24 x d1024 / 8 heads,
+nvidia/nemotron-speech-streaming-en-0.6b goes through the same path: 24 x d1024 / 8 heads,
 128 mels, ``use_bias: false`` (the 264 missing encoder biases are filled with zeros, which is exact), a 2-layer
 LSTM prediction net, ``xscaling: false``, and an ``aux_ctc`` config stub without CTC weights (no CTC head is built).
 Checkpoints above 1 GB are extracted once to data/nemo/.extracted/ and memory-mapped, so the import peaks at one
@@ -23,7 +23,6 @@ copy of the weights.
 
 Also Sortformer diarizers (``SortformerEncLabelModel``, e.g. nvidia/diar_streaming_sortformer_4spk-v2):
 the NEST encoder + a single ``diar`` SortformerHead (post-LN, no positions, ReLU-first output MLP).
-See research/archive/SORTFORMER_IMPORT.md.
 """
 from __future__ import annotations
 
@@ -413,7 +412,7 @@ def check_frontend(model: SpeechModel, nemo_sd: dict) -> dict:
 # only the frame stacking and the whole transformer lives in the diar head: audioforge/streaming_diar.py's
 # StreamingDiarizer then re-runs the full network over [cache | fifo | chunk | rc] exactly like NeMo.
 # SpeechModel (model.py) always builds a FastConformer, so this is a separate duck-typed model class exposing
-# the SpeechModel surface that scripts/research/eval_stage1.py and StreamingDiarizer use.
+# the SpeechModel surface that the evaluation code and StreamingDiarizer use.
 
 def is_nemotron_diar(nc: dict) -> bool:
     e = nc.get("encoder") or {}
@@ -563,7 +562,7 @@ def top_k_columns(p: torch.Tensor, k: int | None, threshold: float = 0.5, length
 
 class Nemotron3Diarizer(torch.nn.Module):
     """LogMel + FeatureStackingEncoder + one ``diar`` Nemotron3DiarHead, with the SpeechModel surface used by
-    scripts/research/eval_stage1.py (encode/heads/head_cfg/head_input/tokenizer) and StreamingDiarizer."""
+    the evaluation code (encode/heads/head_cfg/head_input/tokenizer) and StreamingDiarizer."""
 
     def __init__(self, cfg: dict, tokenizer=None):
         super().__init__()
@@ -623,7 +622,7 @@ def translate_nemotron_diar_config(nc: dict) -> dict:
     if int(sm["fc_d_model"]) != d:
         raise NotImplementedError(f"sortformer_modules dims {sm}")
     f = int(e["subsampling_factor"])
-    # type "sortformer": scripts/research/eval_stage1.py / heads.turn._diar_name find the diar head by it; the class is
+    # type "sortformer": the evaluation code / heads.turn._diar_name find the diar head by it; the class is
     # chosen by cfg arch (Nemotron3Diarizer builds Nemotron3DiarHead, never SortformerHead)
     head = dict(type="sortformer", d_model=d, num_spks=int(sm["num_spks"]), d_hidden=int(sm["tf_d_model"]),
                 n_layers=int(e["n_layers"]), n_heads=int(e["n_heads"]), d_ff=int(float(e.get("ff_expansion", 4)) * d),
@@ -713,7 +712,7 @@ def load_any(path: str | Path, device="cpu"):
 def import_titanet(path_or_hf_id: str | Path = "nvidia/speakerverification_en_titanet_large", verbose: bool = False):
     """NVIDIA TitaNet-Large (EncDecSpeakerLabelModel, CC-BY-4.0) -> ``baselines.sd.TitaNet``, strict load.
     Not a SpeechModel: a ConvASREncoder (SE separable conv blocks) + attentive-stats pooling, 192-d embeddings
-    via ``model.embed([audio, ...])``. See research/archive/BASELINES.md, "Speaker verification"."""
+    via ``model.embed([audio, ...])``."""
     from .baselines.sd import TitaNet, load_nemo_conv
     model = load_nemo_conv(path_or_hf_id, verbose=verbose)
     if not isinstance(model, TitaNet):
@@ -728,8 +727,8 @@ AMBERNET_NEMO = NEMO_DIR / "langid_ambernet.nemo"
 
 def import_ambernet(path: str | Path | None = None, verbose: bool = False):
     """NVIDIA langid_ambernet (EncDecSpeakerLabelModel, 107 VoxLingua107 languages) -> ``baselines.lid.AmberNet``,
-    strict load. Not on Hugging Face: fetched from NGC (public, guest download; "NGC Terms of Use", see
-    research/archive/LID.md) into data/nemo/langid_ambernet.nemo when ``path`` is None and the file is missing."""
+    strict load. Not on Hugging Face: fetched from NGC (public, guest download; "NGC Terms of Use")
+    into data/nemo/langid_ambernet.nemo when ``path`` is None and the file is missing."""
     from .baselines.lid import load_ambernet
     p = Path(path) if path else AMBERNET_NEMO
     if not p.exists():
@@ -745,7 +744,7 @@ def import_ambernet(path: str | Path | None = None, verbose: bool = False):
 
 
 # --------------------------------------------------------------------------- entry point
-# licenses from the model cards (research/archive/raw/cards/); anything else is assumed CC-BY-4.0 like the ASR cards
+# licenses from the model cards; anything else is assumed CC-BY-4.0 like the ASR cards
 LICENSES = {"Nemotron-3-Diarization": "OpenMDW-1.1",
             "langid_ambernet": "NGC Terms of Use",  # NGC card; not on Hugging Face
             "nemotron-speech-streaming-en-0.6b": "NVIDIA Open Model License",  # the card; not CC-BY-4.0

@@ -5,7 +5,7 @@
 
 Needs a running ``python -m audioforge.serve`` (see docs/CONFIGURATION.md). Each WAV may have a sibling
 ``.json`` reference (onset_s / turn_end_s / first_word_end_s of the primary's turn, all_text = every speaker's words
-in the window; ``scripts``-style prep in research/archive/INTEGRATION.md).
+in the window).
 
 Stream mode (always): 20 ms ``rtc.AudioFrame``s (16 kHz mono int16, built from PCM, no room) are pushed at ``--speed``
 x real time into ``AudioforgeSTT.stream()`` and ``AudioforgeVAD.stream()`` of one ``AudioforgeFrontend`` (one server

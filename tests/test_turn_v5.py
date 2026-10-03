@@ -1,5 +1,5 @@
 """TurnHead v5: the diarizer track reaches ONLY the head; the encoder is never speaker-conditioned
-(research/archive/TURN_ERRORS.md: kernel input clean + head inputs from the Sortformer track -> 9.5 % misses vs 62 % with the
+(kernel input clean + head inputs from the Sortformer track -> 9.5 % misses vs 62 % with the
 track in the kernels; v4 retraining the kernels on noisy tracks did not help).
 
 Under test: SpeechModel.forward runs the train-time conditioning (p_ext / ext_noise / flip) also when no head is
@@ -28,7 +28,7 @@ from test_turn_v3 import V3, _perturbed, _script, _tiny_stage1_afm, _with_ext  #
 from test_turn_v3 import _model as _v3_model
 
 ROOT = Path(__file__).parent.parent
-RECIPE = ROOT / "research" / "recipes" / "stage1_turn_v5_headonly.yaml"
+RECIPE = ROOT / "recipes" / "stage1_turn_v5_headonly.yaml"
 NOISE = {"p": 1.0, "swap_max": 12, "drop": 1.0, "drop_max": 8, "at_turn_end": 0.6}
 
 
@@ -172,7 +172,7 @@ def test_existing_configs_bit_identical(arm, monkeypatch):
 def test_every_existing_recipe_already_conditions_through_a_kernel_head():
     """Recipes with a conditioning block all have a condition_on_speaker head (so the head-only branch cannot change
     them); only v5 relies on it."""
-    for p in sorted((ROOT / "research" / "recipes").glob("*.yaml")):
+    for p in sorted((ROOT / "recipes").glob("*.yaml")):
         cfg = yaml.safe_load(p.read_text())
         cond = cfg.get("conditioning") or (cfg.get("trainer") or {}).get("conditioning")
         if not cond or p == RECIPE:
@@ -183,7 +183,7 @@ def test_every_existing_recipe_already_conditions_through_a_kernel_head():
 # --------------------------------------------------------------------------- recipe + warm start
 def test_recipe_v5_yaml():
     cfg = yaml.safe_load(RECIPE.read_text())
-    v3 = yaml.safe_load((ROOT / "research" / "recipes" / "stage1_turn_v3.yaml").read_text())
+    v3 = yaml.safe_load((ROOT / "recipes" / "stage1_turn_v3.yaml").read_text())
     assert cfg["init"] == v3["init"] and cfg["encoder"] == v3["encoder"] and cfg["data"] == v3["data"]
     t = cfg["heads"]["turn"]
     assert t["mode"] == "concat" and t["condition_on_speaker"] is False and t["act_columns"] == 4
@@ -222,7 +222,7 @@ def test_init_from_accepts_v5_without_kernels(tmp_path):
 
 @pytest.mark.skipif(not xt.has_tracks(split="train", source="stream"), reason="AMI train streaming tracks not cached")
 def test_recipe_v5_smoke_on_ami(tmp_path, monkeypatch):
-    """3 steps of research/recipes/stage1_turn_v5_headonly.yaml on CPU: tiny stand-in init model, 8 AMI turn items with their
+    """3 steps of recipes/stage1_turn_v5_headonly.yaml on CPU: tiny stand-in init model, 8 AMI turn items with their
     cached streaming Sortformer tracks; only heads.turn trains; the encoder is never speaker-conditioned."""
     from audioforge.modules.fastconformer import FastConformerEncoder
     from audioforge.train import load_model, run_recipe

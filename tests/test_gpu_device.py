@@ -1,4 +1,4 @@
-"""serve --device mps / cuda (research/MPS_115M.md; CUDA: PR #1): the streaming engine with the
+"""serve --device mps / cuda (CUDA: PR #1): the streaming engine with the
 models on a GPU emits the same turn_ends and finals as the CPU engine on the bundled two-party clip, in single-model
 mode with the stored voice print and with the print taken live after agent_end. Needs that GPU and the downloaded
 models (audioforge-download); skipped otherwise. A GPU the process cannot see falls back to cpu

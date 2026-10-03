@@ -474,7 +474,7 @@ def segment_id(ex: dict) -> str:
 
 
 def load_teacher_cache(path) -> dict[str, np.ndarray]:
-    """``scripts/research/cache_titanet.py`` archive (ids: str array, emb: (N, D) float32) -> {id: embedding}."""
+    """Teacher-embedding cache archive (ids: str array, emb: (N, D) float32) -> {id: embedding}."""
     z = np.load(path, allow_pickle=False)
     ids, emb = z["ids"], z["emb"]
     if emb.ndim == 3 and "lens" in z:  # per-frame teacher posteriors (N, T_max, S) + lens (diarization distillation)
@@ -490,7 +490,7 @@ def attach_teacher(data: list[dict], spec, split: str = "train") -> list[dict]:
     key, missing = spec.get("key", "spk_teacher"), spec.get("missing", "drop")
     path = Path(str(spec["file"]).format(split=split))
     if not path.exists():
-        raise FileNotFoundError(f"spk_teacher: {path} missing (run scripts/research/cache_titanet.py)")
+        raise FileNotFoundError(f"spk_teacher: {path} missing (cache the teacher embeddings first)")
     cache = load_teacher_cache(path)
     out, lost = [], 0
     for ex in data:

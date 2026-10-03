@@ -1,4 +1,4 @@
-"""Train-time activity conditioning (research/archive/TURN_ABLATION.md, "What you need to change elsewhere" 1-2).
+"""Train-time activity conditioning .
 
 The speaker-conditioned encoder pass (TDT / CTC / kernel turn head) was trained only on the clean oracle primary
 activity, then evaluated on diarization output (P50 240 ms -> 2240 ms, miss 7 % -> 48 %). ``conditioning:`` feeds it,
@@ -20,7 +20,7 @@ from audioforge.model import GradScale, SpeechModel, augment_activity
 from audioforge.tokenizer import train_tokenizer
 from audioforge.train import run_recipe
 
-RECIPE = Path(__file__).parent.parent / "research" / "recipes" / "speaker_aware_turn.yaml"
+RECIPE = Path(__file__).parent.parent / "recipes" / "speaker_aware_turn.yaml"
 
 
 def _cfg(conditioning=None, turn_mode="kernel", use_text=True):

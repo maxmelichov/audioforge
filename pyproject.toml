@@ -49,7 +49,7 @@ nemo-import = ["requests>=2.31"]
 # and is only on GitHub (the PyPI "pyinject" is an unrelated package), so it is a direct git reference
 train = ["accelerate>=1.0", "tensorboard>=2.14", "tqdm>=4.66", "pyinject @ git+https://github.com/thewh1teagle/pyinject"]
 dev = ["audioforge[serve,nemo-import]", "accelerate>=1.0", "tensorboard>=2.14", "tqdm>=4.66", "pytest>=8", "ruff>=0.6", "pre-commit>=3", "build>=1", "onnx>=1.15"]
-# everything the research drivers in scripts/research/ and the baseline benchmarks import
+# the baseline benchmarks (audioforge.baselines) and evaluation extras
 research = [
     "audioforge[serve]",
     "transformers>=4.40",

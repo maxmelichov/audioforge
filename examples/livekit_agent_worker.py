@@ -3,8 +3,7 @@
     # 1. a LiveKit server (dev keys devkey / secret):   livekit-server --dev     (brew install livekit)
     #    or: docker run --rm -p 7880:7880 -p 7881:7881 -p 7882:7882/udp livekit/livekit-server --dev
     # 2. the audioforge server:
-    PYTHONPATH=. .venv/bin/python -m audioforge.serve --asr runs/stage1_heads_pretrained.afm \
-        --diar runs/nemo_sortformer_v2.afm --port 8791 --threads 2
+    audioforge-download --diarizer nemotron3 && audioforge-serve --mode room --port 8791
     # 3. this worker (registers with the LiveKit server, joins rooms on dispatch):
     LIVEKIT_URL=ws://127.0.0.1:7880 LIVEKIT_API_KEY=devkey LIVEKIT_API_SECRET=secret \
     AUDIOFORGE_URL=ws://127.0.0.1:8791 PYTHONPATH=. .venv/bin/python examples/livekit_agent_worker.py dev

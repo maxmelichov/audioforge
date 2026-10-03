@@ -1,0 +1,41 @@
+# Meeting-ASR decoder adaptation of the served model, HEAD ONLY. The frozen NVIDIA
+# encoder stays bit-identical (init.train_only: only the RNNT PredictionNet + joint train; VAD / speaker / turn / CTC
+# heads untouched), so every live decision of the served front end is unchanged; only the transcript can move.
+# Data: AMI + ICSI train single-speaker segments (1-15 s, the library's asr mode) and a LibriSpeech anchor at 1:1
+# (meeting : read speech) so the clean-speech WER is held; wer_gate every 50 steps on LibriSpeech test-clean-first200
+# (n 50), max +0.3 WER points absolute over the step-0 baseline -> the run stops and reloads the last good checkpoint.
+# Chunked to stay under 10 min per process: run with max_steps 500, then (if it helps) a second chunk with
+# init.from the first output. Evaluate with the final_asr protocol.
+#   PYTORCH_MPS_HIGH_WATERMARK_RATIO=0.6 PYTORCH_MPS_LOW_WATERMARK_RATIO=0.5 PYTHONPATH=. .venv/bin/python -m audioforge.cli train \
+#       recipes/asr_meeting_decoder_adapt.yaml -o runs/asr_meeting_decoder_adapt.afm 2>&1 | tee runs/asr_meeting_decoder_adapt.log
+name: asr_meeting_decoder_adapt
+init:
+  from: runs/stage1_served.afm
+  train_only: [heads.rnnt.pred, heads.rnnt.joint]
+encoder: {att_context_size: [70, 1], att_context_sizes: [[70, 1]], speaker_kernel_layers: [0, 2]}
+heads:
+  rnnt: {fused_batch_size: 2, weight: 1.0}
+  ctc: {weight: 0}
+  vad: {weight: 0}
+  eou: {weight: 0}
+  spk: {weight: 0}
+  diar: {weight: 0}
+  turn: {weight: 0}
+data:
+  mix:
+    - {name: ami_asr, ami: {mode: asr, asr_min_sec: 1.0, asr_max_sec: 15.0}, weight: 1.0, drop_keys: [speaker, vad, eou]}
+    - {name: icsi_asr, icsi: {mode: asr, asr_min_sec: 1.0, asr_max_sec: 15.0}, weight: 1.0, drop_keys: [speaker, vad, eou]}
+    - {name: librispeech_anchor, librispeech: {train_split: train-clean-100, n_train: 2800, n_val: 200, max_sec: 12.0,
+                                               bucket: false}, weight: 2.0, drop_keys: [speaker, vad, eou]}
+  val: {ami: {mode: asr, val_split: dev, asr_max_sec: 15.0, n_val: 64}, drop_keys: [speaker, vad, eou]}
+  batching: source
+trainer:
+  device: mps
+  batch_size: 6
+  lr: 1.0e-4
+  warmup_steps: 50
+  max_steps: 500
+  log_every: 50
+  checkpoint_every: 50
+  checkpoint_keep: 2
+  wer_gate: {manifest: data/librispeech/test-clean-first200.jsonl, n: 50, every: 50, max_delta: 0.003, head: rnnt}

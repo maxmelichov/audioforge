@@ -601,7 +601,7 @@ def test_agent_end_before_connect_is_queued_for_the_config():
 
 @pytest.mark.parametrize("final_source", ["stream", "offline"])
 def test_stt_final_source_with_final_asr_server(final_source):
-    """Server --final-asr (research/archive/HYBRID_ASR.md): each turn has a streaming and an offline final. final_source picks
+    """Server --final-asr: each turn has a streaming and an offline final. final_source picks
     which one becomes the TranscriptionFrame; with "offline" the turn analyzer completes only once the turn's offline
     final has arrived. A server without the flag (no "source") is unaffected."""
     hub = AudioforgeHub()
@@ -762,7 +762,7 @@ def test_local_pipeline_hint_text_mismatch_answers_the_final():
 
 @pytest.mark.parametrize("final_text", ["fast", "slow"])
 def test_stt_final_text_with_dual_rate_server(final_text):
-    """Server --final-chunk-ms (research/DUAL_RATE.md): each turn has a final_fast (160 ms pass, at the turn end) and
+    """Server --final-chunk-ms: each turn has a final_fast (160 ms pass, at the turn end) and
     a final with source "slow". final_text="fast" (default) pushes final_fast and completes at once; "slow" pushes
     the slow text and completes only once the turn's slow final has arrived."""
     hub = AudioforgeHub()

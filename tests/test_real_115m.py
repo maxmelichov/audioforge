@@ -105,7 +105,7 @@ def test_v04_rerecords_the_fixture_frames(real_115m):
 
 
 def test_dual_rate_1120_fast_finals_equal_single_rate(real_115m):
-    """--final-chunk-ms 1120 ([70, 13], research/DUAL_RATE.md) on the real 115M: the fast pass is unchanged (every
+    """--final-chunk-ms 1120 ([70, 13]) on the real 115M: the fast pass is unchanged (every
     final_fast == the single-rate final, identical turn_ends and partials), and one slow final per fast final."""
     import audioforge
     from audioforge.serve import validate

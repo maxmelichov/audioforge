@@ -20,8 +20,8 @@ symlinks to external storage.
 python -m audioforge.train RECIPE.yaml [key=value ...] [--name NAME] [--resume]
 ```
 
-- **Recipe.** A YAML file: encoder, heads, data and trainer settings. The recipes behind the research are in
-  [`research/recipes/`](../research/recipes) (for a laptop-sized smoke run, `parakeet_tdt_ctc.yaml` trains a tiny
+- **Recipe.** A YAML file: encoder, heads, data and trainer settings. The training recipes are in
+  [`recipes/`](../recipes) (for a laptop-sized smoke run, `parakeet_tdt_ctc.yaml` trains a tiny
   model on synthetic data). Any recipe key can be overridden on the command line as `dotted.key=value`, for example
   `trainer.lr=5e-4`.
 - **Run directory.** Everything goes to `runs/<name>/` (default name: the recipe's `name`, else its file name):
@@ -31,8 +31,7 @@ python -m audioforge.train RECIPE.yaml [key=value ...] [--name NAME] [--resume]
 - **Evaluation by the clock.** Every `--eval-minutes` (default 10) the trainer evaluates on the validation rows,
   writes `last/`, and updates `best/` only when the eval loss improves.
 - **Stop and resume.** Ctrl-C or SIGTERM writes a checkpoint and stops. `--resume` continues `runs/<name>/last` at the
-  same step, batch and random state, so no steps are lost and the data order is the same as an uninterrupted run
-  (`plans/trainer/resume_001.py` checks this bit for bit).
+  same step, batch and random state, so no steps are lost and the data order is the same as an uninterrupted run.
 - **Progress.** A tqdm bar per epoch with the live loss, and one per evaluation; `--no-progress` turns them off.
 - **Watching a live run.** `tensorboard --logdir runs/<name>/tb`. With pyinject installed, `pyinject <pid> 'step,
   float(loss)'` from another shell reads values from the running job.
@@ -68,8 +67,7 @@ python -m audioforge.datasets.to_manifest RECIPE.yaml -o data/manifests/NAME [ke
 
 It prints the `data:` line to put in the recipe; the rows are identical to what the source produced
 (`tests/test_train_loop.py`). A `mix` of sources loses its per-source batching when flattened: convert each source on
-its own. The download and preparation scripts for each corpus are in
-[`scripts/research/README.md`](../scripts/research/README.md) ("Data preparation").
+its own. Put the corpora under `$AUDIOFORGE_DATA` before converting them.
 
 ## Sizes
 
@@ -85,42 +83,37 @@ uv run scripts/sweep_capacity.py speech --core 115m --sizes 16,32,64,128,256 --b
 uv run scripts/sweep_capacity.py speech --core 0p6b --grid hidden=32,64,128 depth=1,2 --budget 60
 ```
 
-Each sweep writes its table to `plans/sweeps/<head>_<date>.md` and its raw numbers to `runs/sweeps/`. The past
-sweeps, and which sizes are still unmeasured placeholders, are listed in
-[`plans/sweeps/INVENTORY.md`](../plans/sweeps/INVENTORY.md). Sweep again when the data, the objective or a
-neighbouring head changes. The sweep currently knows the `speech` head; another head is added by writing a `Spec` in
-the script.
+Each sweep prints its table and writes it, with the raw numbers, under `runs/sweeps/`. Sweep again when the data,
+the objective or a neighbouring head changes. The sweep currently knows the `speech` head; another head is added by
+writing a `Spec` in the script.
 
 ## How the shipped heads were made
 
-The shipped heads were trained by the research drivers in [`scripts/research/`](../scripts/research) (for example
-`fixall.py` for the speech detector and LID v2, `tsvad.py` for the target-speaker head), each described in its note
-in [`research/`](../research/README.md). A served model is the NVIDIA encoder plus a heads file; maintainers write the
-heads file from a trained served checkpoint with
-`audioforge-download --export-heads SERVED.afm OUT.pt`, and [`MODELS.md`](MODELS.md) lists the shipped files.
+The recipes for the served turn and speaker heads, and for the experiments around them, are grouped in
+[`recipes/README.md`](../recipes/README.md). A served model is the NVIDIA encoder plus a heads file. To write the heads file from a trained served
+checkpoint:
+
+```bash
+audioforge-download --export-heads SERVED.afm OUT.pt
+```
+
+[ARCHITECTURE.md "Models and files"](ARCHITECTURE.md#models-and-files) lists the shipped files.
 
 ## Data licences
 
 - Train only on data whose licence allows training a commercial model (for example CC BY 4.0: AMI, LibriSpeech,
   FLEURS, otoSpeech-280h). Non-commercial or research-only data (CC BY-NC, research-only licences, paid LDC corpora
-  without a licence) is never used, not even for augmentation noise. The licence survey for the turn data is in
-  [`research/TURN_DATA.md`](../research/TURN_DATA.md) §1.1.
+  without a licence) is never used, not even for augmentation noise. The datasets behind the shipped heads and
+  their licences are listed in [ARCHITECTURE.md](ARCHITECTURE.md#training-data-not-shipped).
 - Never train or select on a test split. Validation rows come from the training corpora's own dev data or held-out
   speakers; the trainer warns when validation rows are also training rows.
 - Respect each dataset's terms beyond the licence (otoSpeech: do not try to identify the speakers).
 - A head distilled from another model inherits that model's terms (the LID head is trained on AmberNet outputs, NGC
-  Terms of Use; see [`MODELS.md`](MODELS.md)).
+  Terms of Use; see [ARCHITECTURE.md](ARCHITECTURE.md#licences-of-the-weights)).
 
 ## Machine safety
 
-Training is a heavy job. On a shared machine (the project's laptop rules, [`CONTRIBUTING.md`](../CONTRIBUTING.md)
-"Heavy jobs"):
-
-- one training at a time;
-- anything over about 20 s runs in the background with its output in a log under `runs/`, never through `| tail`:
-  `scripts/dev/logged.sh -b NAME scripts/dev/gate.sh python -m audioforge.train RECIPE.yaml`, then `chore log NAME`;
-- the gate (`scripts/dev/gate.sh`) waits for a free machine (load, swap, at least 10 GB of free disk) and runs the
-  job at `nice 5` on 2 threads;
-- large datasets and checkpoints go to external storage through `$AUDIOFORGE_DATA` and `runs/` symlinks, never more
-  than 1 GB on the internal disk;
-- stop a run only after a checkpoint (Ctrl-C does that) and bring it back with `--resume`.
+Training is a heavy job. Run one training job per machine at a time. Run long jobs in the background with their
+output in a log under `runs/`, so progress can be read from the log tail. Keep large datasets and checkpoints on
+external storage through `$AUDIOFORGE_DATA` and a `runs/` symlink. Stop a run only after a checkpoint (Ctrl-C writes
+one) and bring it back with `--resume`.

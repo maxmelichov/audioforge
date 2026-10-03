@@ -1,4 +1,4 @@
-"""Hybrid (head OR timeout) under eot-bench v2 and the 0.32 s streaming Sortformer preset (research/archive/EOT_BENCH_V2.md §7).
+"""Hybrid (head OR timeout) under eot-bench v2 and the 0.32 s streaming Sortformer preset.
 
 Under test:
   - conversation.or_outcomes / eot_outcomes_or: the OR of two detectors' per-conversation outcomes (hand-made and
@@ -32,7 +32,10 @@ ROOT = Path(__file__).parent.parent
 
 
 def _script(name):
-    spec = importlib.util.spec_from_file_location(name, ROOT / "scripts" / "research" / f"{name}.py")
+    path = ROOT / "scripts" / "research" / f"{name}.py"
+    if not path.exists():
+        pytest.skip(f"{path.name} is a research driver, not part of this checkout")
+    spec = importlib.util.spec_from_file_location(name, path)
     mod = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(mod)
     return mod

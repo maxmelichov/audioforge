@@ -37,11 +37,7 @@ The user's question is one turn despite a half-second pause after "life"; the ot
 `speaker=1`.
 
 `audioforge-download --list` shows every component; `--yes` (or `AUDIOFORGE_ACCEPT_LICENSES=1`) accepts the licences
-non-interactively. What each download is, its pinned source and licence: [`MODELS.md`](MODELS.md).
-
-With [`chore`](https://github.com/getchore/chore) the same steps are `chore download-models` (or
-`chore download-models 0.6b`), `chore serve` and `chore serve-0.6b`; the server tasks run in the background with a
-log under `runs/logs/` (`chore log serve`).
+non-interactively. What each download is, its pinned source and licence: [ARCHITECTURE.md "Models and files"](ARCHITECTURE.md#models-and-files).
 
 ## The flags that matter
 
@@ -81,7 +77,7 @@ meetings)**. Store it per user and send it right after the session config:
 
 Make one with `audioforge.voiceprint(audio)`, or start the server with `--enroll explicit` and send `{"type":
 "enroll"}` to take the next 5 s of speech. Without a stored print the server grabs one live after `agent_end`,
-which tracks the user worse ([`research/SINGLE_MODEL.md`](../research/SINGLE_MODEL.md)).
+which tracks the user worse.
 
 From the command line: `python examples/quickstart_client.py me_5s.wav --save-voiceprint me.json --enroll-live`
 records a print from a clip, and `--voiceprint me.json` uses it. A voice print belongs to one core: re-enroll after
@@ -128,7 +124,7 @@ adapters forward by default); the slow `final` follows 9-48 ms later on the GPU 
 is not recommended). Test sets: ICSI test −3.5 (115M) / −1.9 (0.6B) WER points, live calls −1.7 / −0.8, AMI test
 −0.6 / −0.1 (not significant). Cost: +9-27 ms at p95 on turn-end delivery from the slow chunk's burst (+93 ms for the
 0.6B on CPU), and fewer real-time streams when sessions start together (same-run comparison): 115M on the GPU 4 → 3,
-0.6B on the GPU 3 → 1 ([`research/DUAL_RATE.md`](../research/DUAL_RATE.md)).
+0.6B on the GPU 3 → 1.
 
 To have the adapters forward the slow text instead, pass `final_text="slow"` to `AudioforgeSTTService` (Pipecat) or
 `AudioforgeFrontend` (LiveKit).
@@ -141,8 +137,7 @@ To have the adapters forward the slow text instead, pass `final_text="slow"` to 
 - **Perceived voice gender** (`--voice-gender head`, off by default; `audioforge-download --with voice_gender`, or
   `voice_gender_0p6b` for the 0.6B): adds `final.voice_gender` and `stats.voice_gender`, female / male voice
   probabilities. It is a perceived vocal characteristic estimated from audio, not anyone's gender identity, it can be
-  wrong for any individual, and it must not be used to make decisions about people
-  ([`research/VOICE_GENDER.md`](../research/VOICE_GENDER.md)).
+  wrong for any individual, and it must not be used to make decisions about people.
 
 ## Pipecat
 
@@ -164,7 +159,6 @@ Pipeline([transport.input(), stt, user, llm, tts, transport.output()])
 
 Early end-of-turn hints (`turn_hints=True` with `AudioforgeEagerTurnStopStrategy`), enrolment after the bot speaks
 (`enroll="after_agent"`) and the other options are in the module docstring of `audioforge/integrations/pipecat.py`.
-A runnable local pipeline: [`examples/pipecat_local_demo.py`](../examples/pipecat_local_demo.py).
 
 ## LiveKit Agents
 
@@ -181,8 +175,7 @@ session = AgentSession(stt=fe.stt(), vad=fe.vad(), llm=..., tts=...,
 ```
 
 `fe.agent_end()` (or `fe.attach(session)`) sends `agent_end` when the agent stops speaking; `fe.enroll()` for
-`--enroll explicit`. A worker: [`examples/livekit_agent_worker.py`](../examples/livekit_agent_worker.py); without a
-LiveKit room: [`examples/livekit_offline_demo.py`](../examples/livekit_offline_demo.py).
+`--enroll explicit`. A runnable worker: [`examples/livekit_agent_worker.py`](../examples/livekit_agent_worker.py).
 
 ## Python API
 
@@ -212,4 +205,4 @@ pip install "audioforge-client @ git+https://github.com/maxmelichov/audioforge#s
 # or from a clone: pip install ./packages/audioforge-client
 ```
 
-The reference client is `scripts/stream_client.py`.
+The reference client is [`scripts/stream_client.py`](../scripts/stream_client.py).

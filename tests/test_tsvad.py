@@ -1,4 +1,4 @@
-"""TS-VAD head (audioforge/heads/tsvad.py; research/IMPROVE_115M.md Part A)."""
+"""TS-VAD head (audioforge/heads/tsvad.py)."""
 import numpy as np
 import torch
 

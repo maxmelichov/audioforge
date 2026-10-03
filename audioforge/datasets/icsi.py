@@ -30,7 +30,7 @@ Speaker ids: ``SPEAKER_OFFSET`` (1000) + index into the sorted ICSI speaker tags
 
 Splits: ICSI has no official partition. We use the Kaldi / lhotse ICSI recipe split (Renals & Swietojanski,
 HSCMA 2014): dev = {Bmr021, Bns001}, eval = {Bmr013, Bmr018, Bro021}, train = the other 70 meetings. It is
-NOT speaker-disjoint (the same research groups meet repeatedly). See research/archive/ICSI.md.
+NOT speaker-disjoint (the same research groups meet repeatedly).
 """
 from __future__ import annotations
 
@@ -353,7 +353,7 @@ class ICSI(ami.AMI):
             if (root / "raw" / "ICSI" / "Words").exists():
                 convert_annotations(root / "raw", root / "annotations")
             else:
-                raise FileNotFoundError(f"{root}/annotations missing: run scripts/research/prepare_icsi.py")
+                raise FileNotFoundError(f"{root}/annotations missing: prepare the ICSI corpus under $AUDIOFORGE_DATA first")
         zones = json.loads((root / "annotations" / "untimed.json").read_text())
         self.zones = {m: [(a, b if b >= 0 else float("inf")) for a, b in zones.get(m, [])] for m in meetings}
         self.exclude_untimed, self.drop_overfull = exclude_untimed, drop_overfull
@@ -365,7 +365,7 @@ class ICSI(ami.AMI):
         try:
             return super()._load_audio(m)
         except FileNotFoundError as e:
-            raise FileNotFoundError(f"{e} (ICSI: run scripts/research/prepare_icsi.py)") from None
+            raise FileNotFoundError(f"{e} (ICSI: prepare the corpus under $AUDIOFORGE_DATA first)") from None
 
     def gid(self, name: str) -> int:
         i = super().gid(name)
@@ -453,7 +453,7 @@ def recipe_data(cfg: dict, split: str) -> list[dict]:
 
 def attach_ext_tracks(data: list[dict], spec, split: str, root=None) -> dict:
     """ami.attach_ext_tracks (same spec: offline | stream | {source, dir, require, fallback}) with the cache dir
-    defaulting to ICSI's own (<root or data/icsi>/cache/sortformer/<split>, scripts/research/make_sortformer_tracks.py
+    defaulting to ICSI's own (<root or data/icsi>/cache/sortformer/<split>, written with
     --dataset icsi) instead of AMI's."""
     from . import ext_tracks as xt
     spec = {"source": spec} if isinstance(spec, str) else dict(spec)

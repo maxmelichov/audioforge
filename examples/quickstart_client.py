@@ -42,7 +42,7 @@ async def main(a) -> None:
     async with connect(a.url, max_size=2 ** 22) as ws:
         print(json.loads(await ws.recv()))  # ready
         cfg = {"type": "config", "sample_rate": SR}
-        if a.policy:  # else the server's default: vad_head in single mode (research/EOT_LATENCY.md)
+        if a.policy:  # else the server's default: vad_head in single mode
             cfg["turn_policy"] = a.policy
         await ws.send(json.dumps(cfg))
         if a.voiceprint and not a.enroll_live:  # the user's stored print: the server follows this voice

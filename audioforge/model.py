@@ -4,7 +4,7 @@
 
 Parakeet-TDT-CTC, Canary, Sortformer, Nemotron-ASR-Streaming, EOU and NEST are
 all points in this space: same front end, same encoder, different heads.
-The multi-head form also enables the *new* recipes in ``research/recipes/``.
+The multi-head form also enables the *new* recipes in ``recipes/``.
 """
 from __future__ import annotations
 
@@ -26,7 +26,7 @@ log = logging.getLogger(__name__)
 TEXT_HEADS = {"ctc", "rnnt", "tdt", "aed"}
 
 
-# Train-time activity conditioning (research/archive/TURN_ABLATION.md, A): the speaker-conditioned pass is trained on the
+# Train-time activity conditioning: the speaker-conditioned pass is trained on the
 # clean oracle primary activity but runs on diarization output at inference. ``conditioning:`` (top level, or
 # ``training.activity_conditioning``) replaces the conditioning track per item: with probability p_diar by the diar
 # head's own detached sigmoid primary column (arrival-rank rule, heads/turn.py primary_column; offline pass, or the
@@ -38,7 +38,7 @@ TEXT_HEADS = {"ctc", "rnnt", "tdt", "aed"}
 # oracle / noisy oracle / own-diar track. ``spk_act_oracle`` always keeps the clean labels.
 # Location: top-level ``conditioning:``, ``training.activity_conditioning``, or ``trainer.conditioning`` (the only one
 # that survives train.init_from_afm, which copies ``trainer`` but not the top-level key from the recipe).
-# ext_noise (TurnHead v3, research/archive/STAGE1.md n=200): corrupt the external track of the items that use it, aimed at the
+# ext_noise (TurnHead v3, n=200): corrupt the external track of the items that use it, aimed at the
 # failure "the next speaker lands in my slot" - with probability p per item, the primary's column is swapped with the
 # most active other column for <= swap_max frames around a speaker change (the oracle turn end with probability
 # at_turn_end, else a frame where the track's active set changes), plus, with probability drop, one short dropout
@@ -48,12 +48,12 @@ TEXT_HEADS = {"ctc", "rnnt", "tdt", "aed"}
 # enrollment column (spk_prim_ext) for ext items, the own diar head's columns for p_diar items, else the oracle
 # spk_targets with the (noisy) primary track in its column and the columns randomly permuted (the column index
 # carries no information, as with a real diarizer).
-# Head-only conditioning (TurnHead v5, research/archive/TURN_ERRORS.md: "drop kernel conditioning so the track reaches only
+# Head-only conditioning (TurnHead v5: "drop kernel conditioning so the track reaches only
 # the head"): the conditioning above also runs when no head is speaker-conditioned but a head READS the activity
 # itself (TurnHead mode concat, duration_feats or act_columns > 1: head.needs_act / needs_cols). Then the noisy /
 # external track reaches that head only (batch spk_act / spk_cols / spk_prim), spk_act_oracle keeps the clean labels,
 # and the encoder runs once, unconditioned. Recipes with a condition_on_speaker head behave exactly as before.
-# rebind (research/archive/CONTAMINATION.md section 9, research/archive/DYADIC.md section 8): corrupted-then-CORRECTED windows. With
+# rebind: corrupted-then-CORRECTED windows. With
 # probability p per item the final conditioning track (whatever its source) binds the WRONG party for W ~ U{w_min ..
 # w_max} frames ending at a uniform frame between the primary's onset and its turn end, then is correct again: the
 # primary column is swapped with the most active other column over the window (the real failure, a follower rebind,
@@ -202,7 +202,7 @@ def build_head(cfg: dict, d_model: int, tokenizer=None) -> nn.Module:
     cfg = dict(cfg)
     t = cfg.pop("type")
     for k in ("weight", "condition_on_speaker", "grad_scale", "from_layers",
-              "vad_input"):  # vad_input: a serve-time option of turn_seg heads (research/TURN_DATA.md)
+              "vad_input"):  # vad_input: a serve-time option of turn_seg heads
         cfg.pop(k, None)
     V = tokenizer.vocab_size if tokenizer is not None else None
     if t == "ctc":
@@ -218,7 +218,7 @@ def build_head(cfg: dict, d_model: int, tokenizer=None) -> nn.Module:
         return SortformerHead(d_model, **cfg)
     if t == "speaker":
         return SpeakerHead(d_model, **cfg)
-    if t == "language":  # spoken language ID, running posterior (research/archive/LID.md)
+    if t == "language":  # spoken language ID, running posterior
         return LanguageHead(d_model, **cfg)
     if t == "frame":
         return FrameHead(d_model, **cfg)
@@ -236,7 +236,7 @@ def build_head(cfg: dict, d_model: int, tokenizer=None) -> nn.Module:
     if t == "turn_seg":  # turn head v5: segment end-of-turn classifier on the session's window (heads/turn_seg.py)
         from .heads.turn_seg import SegTurn
         return SegTurn(**cfg)
-    if t == "voice_gender":  # optional perceived voice gender (heads/voice_gender.py, research/VOICE_GENDER.md)
+    if t == "voice_gender":  # optional perceived voice gender (heads/voice_gender.py)
         from .heads.voice_gender import VoiceGenderHead
         return VoiceGenderHead(d_model, **cfg)
     if t == "completeness":  # utterance completeness, smart-turn's task (heads/completeness.py)
@@ -270,7 +270,7 @@ class SpeechModel(nn.Module):
             k: nn.Parameter(torch.zeros(len(self.encoder.layers)))
             for k, v in self.head_cfg.items() if v.get("from_layers") == "all"})
         # from_layers: k | [k, ...] -> the head reads exactly encoder layer k (0-based block index, as
-        # speaker_kernel_layers), or a learned softmax mix restricted to the listed layers (research/archive/SPK_HEAD.md)
+        # speaker_kernel_layers), or a learned softmax mix restricted to the listed layers
         self.layer_tap: dict[str, list[int]] = {}
         for k, v in self.head_cfg.items():
             fl = v.get("from_layers")
@@ -588,7 +588,7 @@ class StreamingSession:
         # mel frames the FIRST chunk needs. A NeMo-aligned causal encoder (pre_encode.nemo_causal) ends encoder frame v
         # at mel frame 8v, so the chunk of frames [v0, v0 + R] is complete once mel frame 8 (v0 + R) exists: chunk j
         # runs after chunk_lead + j * chunk_mel mel frames (8R + 1, then every (R + 1) * 8), not after a whole
-        # (R + 1) * 8 window, which held every frame back by 7 mel frames = 70 ms (research/LATENCY_BUDGET.md). The
+        # (R + 1) * 8 window, which held every frame back by 7 mel frames = 70 ms. The
         # encoder's outputs are the same (``_stream_step_aligned`` carries the 7 frames over). Other encoders need the
         # full window.
         f = model.encoder.subsampling_factor

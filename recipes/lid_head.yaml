@@ -1,0 +1,17 @@
+# Spoken language ID head on the frozen served encoder (runs/stage1_served.afm, [70, 1]).
+# heads.audio.LanguageHead (causal attentive-stats pooling, running posterior every frame) on a learned mix of encoder
+# blocks 8-12 (1-based; the per-block probe peaks at block 9 for 2 s and block 11 for 5 s), 17 FLEURS languages.
+# Head only: every other tensor of the served model is asserted bit-identical after training. Data
+# (250 train utterances per language, random 1-8 s crops, a quarter from the speech onset; dev = 60 per language,
+# best step by dev accuracy at 2 s + full utterance). Not a train.run_recipe recipe: a research driver
+# (not published) reads it.
+#   trained in resumable 8-min segments until "[train] finished"
+name: lid_head
+init: runs/stage1_served.afm
+layers: [8, 9, 10, 11, 12]
+steps: 3500
+batch_size: 32
+lr: 2.0e-3
+dropout: 0.1
+aug: false
+out: runs/lid_head.pt

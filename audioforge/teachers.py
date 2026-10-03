@@ -4,7 +4,7 @@ Two jobs, both from NVIDIA's own playbook:
 
 * **pseudo-labeling** (the Granary pattern): label a large pile of audio with a strong model, then
   distill that into a small student;
-* **a real baseline** next to our students (``scripts/research/benchmark_teachers.py``).
+* **a real baseline** next to our students.
 
 ::
 

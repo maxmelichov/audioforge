@@ -1,4 +1,4 @@
-"""Target-speaker VAD (TS-VAD / personal VAD) head on the shared encoder (research/IMPROVE_115M.md, Part A).
+"""Target-speaker VAD (TS-VAD / personal VAD) head on the shared encoder.
 
 Per frame it outputs two independent probabilities: P(target speaking) and P(someone else speaking), so overlap
 (both) is represented. The target is given by an enrollment embedding e (a unit-norm voice print, e.g. the block-4
@@ -6,7 +6,7 @@ relational speaker head's 192-d embedding of a few seconds of the user's speech,
 (``e = None``) the head falls back to a learned "no enrollment" vector and was trained to behave as a plain VAD
 there (target = any speech, other = 0: PVAD 2.0's enrollment-less training).
 
-Architecture (research/archive/OUTSIDE.md §4: FiLM on hidden features beats input concatenation; PVAD 2.0 / Bovbjerg 2025):
+Architecture (FiLM on hidden features beats input concatenation; PVAD 2.0 / Bovbjerg 2025):
 
     x (B,T,D) encoder frames (one block, e.g. block 4 = the speaker head's tap)
     h = SiLU(LN(W x))                                    per-frame projection to ``hidden``
@@ -32,7 +32,7 @@ class TSVADHead(Head):
     key = "tsvad_targets"  # (B,T,2) float labels [target, other]; batch["tsvad_enroll"] (B,E), batch["tsvad_has"] (B,)
 
     # emb_dim 192 = the speaker head's print size. hidden 128: measured on the 115M against 192
-    # (plans/sweeps/tsvad_115m_2026-09-28.md); on the 0.6B (assets/tsvad_0p6b.pt) placeholder: never swept.
+    # (scripts/sweep_capacity.py, 2026-09-28); on the 0.6B (assets/tsvad_0p6b.pt) placeholder: never swept.
     # prenet_dim 64: placeholder: never swept
     def __init__(self, d_model: int, emb_dim: int = 192, hidden: int = 128, prenet: bool = True, prenet_dim: int = 64,
                  dropout: float = 0.1, pos_weight: float = 1.0):

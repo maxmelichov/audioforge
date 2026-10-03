@@ -1,0 +1,57 @@
+# Stage 1c v5: the diarizer track reaches ONLY the turn head; the encoder is never speaker-conditioned.
+# Turn-error analysis: with the streaming Sortformer track in the speaker kernels the v3 head misses 62-63 % of
+# turn ends at <= 5 % false cutoffs whatever the head sees; with a clean kernel input and ALL head inputs from the
+# Sortformer track it misses 9.5 % (O/S/S). v4 retrained the kernels on noisy tracks and did not help
+# (runs/stage1_turn_v4_kernels_eval_n200.json: 62 % vs v3 63 %). Recommendation acted on: drop kernel conditioning.
+#
+# Model: heads.turn mode concat (the primary track + its 8-frame history concatenated to the features) with
+# condition_on_speaker: false, act_columns 4 (all diarizer columns + one-hot of the enrollment column), duration_feats,
+# future_act_aux and the ASR text state. The encoder runs once per step, unconditioned (the O/S/S upper bound had the
+# encoder on the ORACLE track; here it sees no track at all, the deployable variant). speaker_kernel_layers stays in
+# the config only so init.from keeps the checkpoint's (unused) kernel tensors.
+# Conditioning (SpeechModel.forward head-only path, audioforge/model.py): runs because heads.turn reads the track
+# (needs_act / needs_cols) even though no head is speaker-conditioned: with p_ext = 0.9 the cached streaming track
+# (spk_targets_ext columns, enrollment column spk_prim_ext) goes into batch spk_act / spk_cols / spk_prim, corrupted
+# for 40 % of those items by ext_noise (milder than v4's p 0.6 / swap 25 / drop_max 15); else the oracle columns
+# (permuted) with 1 % flips on the primary. Labels always from the clean oracle (spk_act_oracle / eot).
+# Warm start: the checkpoint's turn head is a v2 kernel head (hidden 96, no concat inputs); init_partial lets every
+# tensor with a new shape (inp, rnn, out) start fresh while text_proj loads. Only heads.turn trains.
+#
+# Run (GPU):
+#   PYTORCH_MPS_HIGH_WATERMARK_RATIO=0.5 PYTORCH_MPS_LOW_WATERMARK_RATIO=0.4 .venv/bin/python -m audioforge.cli train \
+#       recipes/stage1_turn_v5_headonly.yaml -o runs/stage1_turn_v5_headonly.afm 2>&1 | tee runs/stage1_turn_v5_headonly.log
+name: stage1_turn_v5_headonly
+init:
+  from: runs/stage1_heads_pretrained.afm  # the 160 ms model (saved config: att_context_size [70, 1])
+  pretrained_lr_mult: 0
+  pretrained_scope: [preprocessor., encoder., layer_mix., heads.rnnt., heads.ctc., heads.vad., heads.eou.,
+                     heads.spk., heads.diar.]
+encoder: {att_context_size: [70, 1], att_context_sizes: [[70, 1]], speaker_kernel_layers: [0, 2]}
+heads:
+  diar: {weight: 0}
+  turn: {type: turn, mode: concat, use_text: true, condition_on_speaker: false, k_tokens: 4, text_dim: 64,
+         align: greedy, hidden: 128, history: 8, pos_weight: 2.0, weight: 1.0,
+         act_columns: 4, duration_feats: true, dur_max: 64,
+         future_act_aux: {horizons: [6, 12, 25], weight: 0.3}, init_partial: true}
+data:
+  mix:
+    - {name: ami_turn, ami: {mode: turn, window_sec: 16, ext_tracks: {source: stream, fallback: offline}},
+       weight: 1.0}
+    - {name: conv, synthetic: {kind: conversation, preset: default, n_train: 2500}, weight: 0.3,
+       drop_keys: [speaker]}
+  val: {ami: {mode: turn, val_split: dev, n_val: 64}}
+  derive: [vad, eou]
+  batching: source
+trainer:
+  device: auto
+  batch_size: 6
+  lr: 1.0e-3
+  warmup_steps: 100
+  max_steps: 2000
+  log_every: 50
+  checkpoint_every: 500
+  # model conditioning (trainer.conditioning: the location that survives init.from; see audioforge/model.py)
+  conditioning: {p_ext: 0.9, p_diar: 0, flip: 0.01,
+                 ext_noise: {p: 0.4, swap_max: 12, drop: 0.3, drop_max: 8, at_turn_end: 0.6}}
+  wer_gate: {manifest: data/librispeech/test-clean-first200.jsonl, n: 50, every: 500, max_delta: 0.002,
+             head: rnnt}

@@ -13,7 +13,10 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 def _eval_module():
-    spec = importlib.util.spec_from_file_location("eval_stage1", ROOT / "scripts" / "research" / "eval_stage1.py")
+    path = ROOT / "scripts" / "research" / "eval_stage1.py"
+    if not path.exists():
+        pytest.skip(f"{path.name} is a research driver, not part of this checkout")
+    spec = importlib.util.spec_from_file_location("eval_stage1", path)
     m = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(m)
     return m

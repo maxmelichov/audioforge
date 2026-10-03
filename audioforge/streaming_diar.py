@@ -31,7 +31,7 @@ Ours keeps one encoder pass per frame; theirs lets the encoder itself attend acr
 Because our head then needs to know where the cache is, SortformerHead gets sinusoidal positions
 (``pos_emb: true``).
 
-Training (``python -m audioforge.streaming_diar train research/recipes/streaming_sortformer.yaml``) adds
+Training (``python -m audioforge.streaming_diar train recipes/streaming_sortformer.yaml``) adds
 multi-turn conversations with reappearing speakers and a *streaming-simulation* loss: the head is
 also trained on [cache ‖ fifo ‖ chunk ‖ rc] sequences whose cache is selected from ground truth
 (teacher forcing) with the same slot-major layout as inference, and whose targets use the global
@@ -90,7 +90,7 @@ class AOSCConfig:
         return cls.from_dict(SORTFORMER_PRESETS[name])
 
 
-# NVIDIA streaming Sortformer v2 card configurations (research/archive/raw/cards/diar_streaming_sortformer_4spk-v2.md, table
+# NVIDIA streaming Sortformer v2 card configurations (table
 # "Configuration"), in 80 ms frames. Input buffer latency = (chunk_len + chunk_right_context) * 80 ms. The card lists
 # the same FIFO / update period / cache for both low-latency rows. Used with StreamingDiarizer(mode="window",
 # enc_left_context=188, **SORTFORMER_PRESETS[name]) (scripts/make_sortformer_tracks.py, scripts/eval_stage1.py).

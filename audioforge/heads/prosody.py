@@ -1,4 +1,4 @@
-"""Cheap causal prosody per 80 ms frame (turn head v5, research/TURN_V5.md): energy contour, F0 and a
+"""Cheap causal prosody per 80 ms frame (turn head v5): energy contour, F0 and a
 final-lengthening proxy, from the raw 16 kHz samples only. ``Prosody`` is the streaming form (served path);
 ``prosody_frames`` runs the same object over a whole clip, so offline and served features are identical.
 

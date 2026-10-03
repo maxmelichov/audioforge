@@ -1,4 +1,4 @@
-"""Spoken language ID (research/archive/LID.md): LanguageHead running posterior == streaming steps, padding invariance,
+"""Spoken language ID: LanguageHead running posterior == streaming steps, padding invariance,
 loss, the model registry / single-block tap, the head file round trip, the serving confidence rule and the AmberNet
 x-vector decoder."""
 import sys
@@ -257,7 +257,7 @@ def test_fast_depthwise_matches_conv():
     assert torch.equal(la, lb) and torch.allclose(ya, yb, atol=1e-5)
 
 
-# --------------------------------------------------------------------------- fix pass (research/archive/LID.md, 2026-09-29)
+# --------------------------------------------------------------------------- fix pass (2026-09-29)
 def test_decider_timeout_rule():
     """Evidence threshold or timeout: announce at p >= threshold, or the top language after max_ms of pooled speech
     if nothing was confident; max_ms=None is the previous rule."""

@@ -3,8 +3,7 @@
 No cloud, no API keys: the only network hop is the local audioforge server (``python -m audioforge.serve``).
 
     # 1. the server (another shell; any free port):
-    PYTHONPATH=. .venv/bin/python -m audioforge.serve --asr runs/stage1_heads_pretrained.afm \
-        --diar runs/nemo_sortformer_v2.afm --port 8765 --threads 2
+    audioforge-download --diarizer nemotron3 && audioforge-serve --mode room --port 8765
     # 2. AMI dev turn windows (WAV + label JSON used ONLY for scoring):
     PYTHONPATH=. .venv/bin/python examples/pipecat_local_demo.py prepare --n 5 --out DIR
     # 3. the pipeline, one fresh pipeline + server session per (window, policy):

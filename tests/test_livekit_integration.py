@@ -748,7 +748,7 @@ def test_agent_session_preemptive_generation_on_the_hint(turn_hints):
 
 
 def test_speech_mapper_final_text_with_dual_rate_server():
-    """Server --final-chunk-ms (research/DUAL_RATE.md): final_text="fast" (default) emits FINAL_TRANSCRIPT +
+    """Server --final-chunk-ms: final_text="fast" (default) emits FINAL_TRANSCRIPT +
     END_OF_SPEECH on final_fast and ignores the slow final; "slow" holds the turn until the slow final (same t)."""
     te = {"type": "turn_end", "t": 2.0, "policy": "timeout", "p": None, "silence_ms": 1040}
     ff = {"type": "final_fast", "t": 2.0, "text": "hello their", "speaker": 1}

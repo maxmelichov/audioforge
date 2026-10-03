@@ -15,7 +15,7 @@ __all__ = ["AnySpeakerTimeout", "EnergyGate", "HeadPolicy", "SileroSilence", "Ti
 
 # --------------------------------------------------------------------------- turn policies
 class TimeoutPolicy:
-    """Silence timeout on the diarizer's primary track (the product default, docs/SERVER_INTERNALS.md).
+    """Silence timeout on the diarizer's primary track (the product default).
 
     ``require_quiet=False`` (policy ``timeout``, default): fires after timeout_ms of primary silence regardless of
     the other columns. ``require_quiet=True`` (policy ``timeout_quiet``): additionally waits for no other active column.
@@ -66,7 +66,7 @@ class TimeoutPolicy:
 
 
 class AnySpeakerTimeout:
-    """turn_policy ``timeout_any`` (multi-party rooms; research/archive/DIARIZATION_FIX.md section 3): a turn belongs to
+    """turn_policy ``timeout_any`` (multi-party rooms): a turn belongs to
     whoever spoke last, not to the 5 s dominant column, so every speaker's turns end. Same ``update(row)`` /
     ``primary`` / ``silence_ms`` surface as TimeoutPolicy. Fires
       * ``timeout``: no column active for ``timeout_ms`` and someone spoke since the last firing;
@@ -150,7 +150,7 @@ def frame_db(x) -> float:
 
 
 class EnergyGate:
-    """The energy-aware quiet gate of ``vad_head`` (``--quiet-gate energy``; research/EOT_ASSISTANT.md "Energy gate").
+    """The energy-aware quiet gate of ``vad_head`` (``--quiet-gate energy``).
 
     The served VAD head reads about 0.66 on -50 dBFS room tone and about 0.55 on a fresh session's first frames, so
     on its own the rule's silence (VAD < thr) starts only at digital silence. Per session, one 80 ms frame at a time
@@ -202,7 +202,7 @@ class EnergyGate:
 
 
 class VadHeadPolicy:
-    """turn_policy ``vad_head`` (research/EOT_LATENCY.md; ``--mode single``'s default rule), no Silero. Per 80 ms frame
+    """turn_policy ``vad_head`` (``--mode single``'s default rule), no Silero. Per 80 ms frame
     v (fed in order) with the turn head's p, the served VAD and, when a TS-VAD track is enrolled, P(user) / P(other):
 
     - head path: the served VAD's silence (frames since the last speech frame, a frame with VAD >= ``vad_thr``) >=
@@ -214,10 +214,10 @@ class VadHeadPolicy:
       user went quiet (the any-speaker VAD would wait for the room to go quiet).
 
     One firing per user turn: the head path and the fallback re-arm on a VAD speech frame, the others path on a
-    P(user) >= ``user_p`` frame, and a firing of either disarms both. The same rule as scripts/research/eot_latency.py
-    ``sim_room`` (``fw`` 0).
+    P(user) >= ``user_p`` frame, and a firing of either disarms both. The same rule as the EOT-latency
+    simulation's ``sim_room`` (``fw`` 0).
 
-    ``gate`` (an ``EnergyGate``; None = the VAD alone, as scored in research/EOT_LATENCY.md): when given and a frame's
+    ``gate`` (an ``EnergyGate``; None = the VAD alone, as scored in the EOT-latency benchmark): when given and a frame's
     log energy is passed to ``update``, a frame is a speech frame only if VAD >= ``vad_thr`` AND it is not energy-quiet,
     the head path / fallback re-arm only on an energy onset, and nothing fires before the gate is warm.
 
@@ -242,10 +242,10 @@ class VadHeadPolicy:
         self.model_vad_thr = vad_thr if model_vad_thr is None else float(model_vad_thr)
         self.last_m = -1  # last speech frame on the classifier's clock
         self.model_p = float(model_p)  # the classifier's P(complete) that ends the turn (Pipecat: > 0.5)
-        # model_reask (turn head v5, research/TURN_V5.md): after an "incomplete" answer the classifier is asked again
+        # model_reask (turn head v5): after an "incomplete" answer the classifier is asked again
         # at every further quiet frame of the same silence run (default: once per run, then the fallback)
         self.model_reask = bool(model_reask)
-        # reset_thr (two thresholds, research/FIXALL.md step 2): a frame with VAD >= reset_thr (below the speech
+        # reset_thr (two thresholds): a frame with VAD >= reset_thr (below the speech
         # threshold) does not arm a turn but restarts both silence clocks, so a pause the VAD is unsure about (a noisy
         # channel) is not counted as silence; None = one threshold (the default)
         self.reset_thr = None if reset_thr is None else float(reset_thr)
@@ -262,7 +262,7 @@ class VadHeadPolicy:
     def update(self, p: float, vad: float, p_user: float | None = None, p_other: float | None = None,
                energy_db: float | None = None, vad_m: float | None = None) -> dict | None:
         """The turn head's p, the served VAD, (enrolled TS-VAD track) P(user), P(other) and (with a gate) the
-        frame's log energy on the next frame -> None, or the turn-end event. ``vad_m`` (research/TURN_DATA.md): a
+        frame's log energy on the next frame -> None, or the turn-end event. ``vad_m``: a
         second, stateless VAD for the classifier's clock only (``turn_model``); arming, the gate, the fallback and the
         head path keep reading ``vad``. None = the classifier's clock reads ``vad`` too (the default)."""
         v, self.v = self.v, self.v + 1

@@ -1,4 +1,4 @@
-"""Layer routing for the diar / turn heads (research/archive/LAYER_ROUTING.md): init.from with a re-sized layer mix, weight-0
+"""Layer routing for the diar / turn heads: init.from with a re-sized layer mix, weight-0
 speaker-conditioned heads skip the conditioned pass, from_layers on a condition_on_speaker head reads the CONDITIONED
 encoder pass (training, turn_scores, eval_stage1.turn_scores_given_act), and the driver's diarization scoring."""
 import importlib.util
@@ -6,6 +6,7 @@ import sys
 from pathlib import Path
 
 import numpy as np
+import pytest
 import torch
 import yaml
 
@@ -20,7 +21,10 @@ ROOT = Path(__file__).parent.parent
 
 def _script(name):
     sys.path.insert(0, str(ROOT / "scripts"))
-    spec = importlib.util.spec_from_file_location(name, ROOT / "scripts" / "research" / f"{name}.py")
+    path = ROOT / "scripts" / "research" / f"{name}.py"
+    if not path.exists():
+        pytest.skip(f"{path.name} is a research driver, not part of this checkout")
+    spec = importlib.util.spec_from_file_location(name, path)
     mod = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(mod)
     return mod
@@ -138,11 +142,11 @@ def test_score_diar_perfect_and_half():
 
 def test_recipes_parse():
     for name in ("diar_layer_route", "turn_layer_route_mid"):
-        cfg = yaml.safe_load((ROOT / "research" / "recipes" / f"{name}.yaml").read_text())
+        cfg = yaml.safe_load((ROOT / "recipes" / f"{name}.yaml").read_text())
         assert cfg["init"]["train_only"]
-    t = yaml.safe_load((ROOT / "research" / "recipes" / "turn_layer_route_mid.yaml").read_text())
+    t = yaml.safe_load((ROOT / "recipes" / "turn_layer_route_mid.yaml").read_text())
     assert t["heads"]["turn"]["from_layers"] == list(range(3, 12))
-    trail6 = yaml.safe_load((ROOT / "research" / "recipes" / "stage1_turn_v3_trail6.yaml").read_text())
+    trail6 = yaml.safe_load((ROOT / "recipes" / "stage1_turn_v3_trail6.yaml").read_text())
     same = {k: v for k, v in t["heads"]["turn"].items() if k != "from_layers"}
     assert same == trail6["heads"]["turn"] and t["data"] == trail6["data"]
     assert t["trainer"]["conditioning"] == trail6["trainer"]["conditioning"]

@@ -1,4 +1,4 @@
-"""Label-free voice enrollment: follow the primary speaker's diarizer column by VOICE (research/archive/EOT_BENCH_V2.md §8).
+"""Label-free voice enrollment: follow the primary speaker's diarizer column by VOICE.
 
 A streaming diarizer's columns are slots, not identities: after a pause the same person can come back in another
 column (a column swap), so a binding that picks a column once (or re-binds by "who dominates") follows the wrong slot.
@@ -13,7 +13,7 @@ Pieces (all numpy / torch, no labels anywhere except the explicitly-oracle ``voi
   * ``enroll_voice``      - the bindings ``voice_first`` / ``voice_dominant`` / ``voice_oracle``.
   * ``agreement``         - agreement of a per-frame binding with a reference column at the turn end.
 
-TitaNet-L backend (research/archive/EOT_BENCH_V2.md §9; the own-head embedding above has 34 % within-window EER):
+TitaNet-L backend (the own-head embedding above has 34 % within-window EER):
   * ``TitaNetEmbedder``        - embeds any set of 80 ms frames of a waveform (their audio concatenated) with the
                                  ported NVIDIA TitaNet-Large (``nemo_import.import_titanet``, 192-d, unit norm).
   * ``recent_embeddings_audio`` - the per-frame / per-column look-back embeddings from audio instead of features, on a
@@ -520,7 +520,7 @@ def rebinds(col) -> int:
 
 def print_is_clean(own_vad, other_vad=None, min_speech: float = 0.8, max_other: float = 0.1,
                    thr: float = 0.5) -> tuple[bool, dict]:
-    """Quality check of a voice-print segment (research/TSWER.md "Root cause"): the user must be speaking on at least
+    """Quality check of a voice-print segment: the user must be speaking on at least
     ``min_speech`` of its 80 ms frames (the served VAD head on the user's audio), and where a second channel is
     available (the other party's microphone), the other party at most ``max_other`` of them. A print cut from a
     stretch where the other party talks or laughs over the user (TurnBench tb_160: 62 % of the frames) is a mixture of

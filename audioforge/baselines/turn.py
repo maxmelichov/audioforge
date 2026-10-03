@@ -1,6 +1,6 @@
-"""Dedicated open turn-detection models as per-frame end-of-turn score tracks (research/archive/BASELINES.md, "Turn detection").
+"""Dedicated open turn-detection models as per-frame end-of-turn score tracks.
 
-Every baseline is turned into one score per 80 ms frame of an eot-bench v2 window (scripts/research/eval_stage1.py --bench v2),
+Every baseline is turned into one score per 80 ms frame of an eot-bench v2 window,
 so the SAME scorer (conversation.eot_outcomes / eval_stage1 cross-fitted 5 % FC operating points) applies to them and
 to our detectors. Conventions (the repo's): frame t covers [0.08 t, 0.08 (t + 1)) s from the window start; a score on
 frame t is a decision whose input ends inside frame t; the scorer's emission rule then says when it is available
@@ -16,7 +16,7 @@ What is wrapped (all run offline on the window audio, causally: nothing reads au
 * ``livekit_vad``: LiveKit's Silero plugin endpointing (activation 0.5, deactivation 0.35, min speech 0.05 s,
   min silence 0.55 s): speech-end times and the end-of-speech events.
 * ``pipecat_smartturn_replay``: Pipecat 1.12's own ``LocalSmartTurnAnalyzerV3`` / ``BaseSmartTurn`` driven chunk by
-  chunk under a simulated clock (what research/EOT_LATENCY.md's Pipecat row runs since the smart-turn audit).
+  chunk under a simulated clock (what the EOT-latency benchmark's Pipecat row runs since the smart-turn audit).
 * ``SmartTurn``: pipecat-ai/smart-turn v3.x ONNX (Whisper-tiny encoder + linear head): last <= 8 s of audio,
   left-padded with zeros to 8 s, Whisper log-mel (transformers ``WhisperFeatureExtractor(chunk_length=8)``,
   do_normalize) -> P(complete). Exactly smart-turn's ``inference.py`` / Pipecat's ``LocalSmartTurnAnalyzerV3``.
@@ -306,6 +306,7 @@ def pipecat_smartturn_analyzer(stop_secs: float = 3.0, pre_speech_ms: float = 50
     ``BaseSmartTurn`` buffering / pre-speech / 8 s cap / ``stop_secs`` silence fallback) on a simulated clock, for
     ``pipecat_smartturn_replay``. Patches the module's ``time`` so buffer timestamps are audio time (offline use)."""
     import types
+
     import pipecat.audio.turn.smart_turn.base_smart_turn as bst
     from pipecat.audio.turn.smart_turn.base_smart_turn import SmartTurnParams
     from pipecat.audio.turn.smart_turn.local_smart_turn_v3 import LocalSmartTurnAnalyzerV3

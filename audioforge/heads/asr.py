@@ -246,7 +246,7 @@ class GreedyTransducerStream:
 
 
 class BeamTransducerStream:
-    """RNNT beam search over encoder frames that arrive in pieces (plain RNNT only; research/FIXALL.md step 5).
+    """RNNT beam search over encoder frames that arrive in pieces (plain RNNT only).
 
     Per frame: up to ``max_sym`` non-blank expansions (batched over the live hypotheses, joint + prediction net),
     every hypothesis that emits blank moves to the next frame with its log-probability added; identical token

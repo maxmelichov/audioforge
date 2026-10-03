@@ -3,7 +3,7 @@
 A real-time speech front end for voice agents: one frozen NVIDIA streaming speech model with small heads on top
 gives live words, voice activity, "is it the user?" and "is the turn over?" over one WebSocket.
 
-![architecture](demo/images/architecture_v10.png)
+![architecture](docs/images/architecture_v10.png)
 
 ## What you get
 
@@ -90,14 +90,12 @@ caveats and every loss: [`docs/RESULTS.md`](docs/RESULTS.md).
 
 ## Documentation
 
-All guides are listed in [`docs/README.md`](docs/README.md):
-
 - [`docs/USAGE.md`](docs/USAGE.md): running the server, the two model sizes, voice prints, Pipecat and LiveKit.
 - [`docs/TRAINING.md`](docs/TRAINING.md): training or retraining the heads.
 - [`docs/RESULTS.md`](docs/RESULTS.md): the comparisons, with charts.
-- [`docs/CONFIGURATION.md`](docs/CONFIGURATION.md), [`docs/PROTOCOL.md`](docs/PROTOCOL.md),
-  [`docs/MODELS.md`](docs/MODELS.md), [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md): reference.
-- [`CONTRIBUTING.md`](CONTRIBUTING.md) and [`CHANGELOG.md`](CHANGELOG.md).
+- [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md): the model, the server, the model files and their licences.
+- [`docs/PROTOCOL.md`](docs/PROTOCOL.md): the WebSocket messages.
+- [`docs/CONFIGURATION.md`](docs/CONFIGURATION.md): every server flag.
 
 ## Licence
 
@@ -106,4 +104,4 @@ All guides are listed in [`docs/README.md`](docs/README.md):
   Model License for the 0.6B); `audioforge-download` fetches them from NVIDIA.
 - The language-ID head was trained on NVIDIA AmberNet outputs (NGC Terms of Use); treat it as under those terms
   until its redistribution is confirmed. It is optional.
-- Full list: [`NOTICE`](NOTICE) and [`docs/MODELS.md`](docs/MODELS.md).
+- Full list: [`NOTICE`](NOTICE) and [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md#models-and-files).

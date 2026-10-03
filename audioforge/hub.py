@@ -15,17 +15,17 @@ The served ASR model is NVIDIA's ``stt_en_fastconformer_hybrid_large_streaming_m
 unchanged) plus this project's trained heads (VAD, EOU, turn, speaker, diar, and the turn head v5 segment classifier
 ``turn_seg``, and the speech detector ``speech``; 195 tensors, 29.5 MB), shipped as ``assets/served_heads_v0.4.pt``. ``build_served`` merges the two and
 checks the result's tensor hash against the hash recorded when the heads were exported from
-``runs/stage1_served_v4.afm`` (= ``stage1_served_v3.afm`` + heads.speech, research/FIXALL.md; v3 = v2 + heads.turn_seg,
-research/TURN_V5.md; the turn VAD head reads block 4 only, research/VAD_SINGLE.md), so the rebuilt model is
+``runs/stage1_served_v4.afm`` (= ``stage1_served_v3.afm`` + heads.speech; v3 = v2 + heads.turn_seg;
+the turn VAD head reads block 4 only), so the rebuilt model is
 bit-identical to the shipped one. ``--heads-version 0.3`` rebuilds ``stage1_served_v3.afm`` (no speech head).
 ``--heads-version 0.2`` rebuilds ``stage1_served_v2.afm`` (no v5 classifier: ``--turn-preset fast`` / ``assistant``
-need v0.3) and ``--heads-version 0.1`` ``stage1_served.afm``, the 2026-09-27 checkpoint most numbers in research/ were
+need v0.3) and ``--heads-version 0.1`` ``stage1_served.afm``, the 2026-09-27 checkpoint most numbers in this project were
 measured with.
 
-Second core (``--core 0.6b``, research/CORE_0P6B.md): NVIDIA's ``nemotron-speech-streaming-en-0.6b`` (NVIDIA Open
+Second core (``--core 0.6b``): NVIDIA's ``nemotron-speech-streaming-en-0.6b`` (NVIDIA Open
 Model License; 618 M parameters, every tensor unchanged) plus heads retrained on it (``assets/served_heads_0p6b_v0.4.pt``
--> ``served_0p6b_v0.4.afm``; v0.3 + the assistant preset's own turn classifier and turn VAD, research/TURN_DATA.md;
-v0.3 = v0.2 + the speech detector head, research/FIXALL.md) and its own TS-VAD and LID heads (``tsvad_0p6b.pt``, ``lid_0p6b_v2.pt``). The 115M stays the
+-> ``served_0p6b_v0.4.afm``; v0.3 + the assistant preset's own turn classifier and turn VAD;
+v0.3 = v0.2 + the speech detector head) and its own TS-VAD and LID heads (``tsvad_0p6b.pt``, ``lid_0p6b_v2.pt``). The 115M stays the
 default. ``audioforge-download --core 0.6b`` fetches that set (2.5 GB download, ~2.3 GB on disk).
 
 Output directory: ``--dir``, else ``$AUDIOFORGE_HOME``, else ``<repo>/models`` in a source checkout, else
@@ -53,12 +53,12 @@ __all__ = [
 ]
 
 # the heads asset: v0.3 ships (v0.2 + heads.turn_seg, the turn head v5 segment classifier of --turn-preset fast /
-# assistant, research/TURN_V5.md; every v0.2 tensor unchanged); v0.2 (block-4 VAD head) and v0.1 stay for reproducing
+# assistant; every v0.2 tensor unchanged); v0.2 (block-4 VAD head) and v0.1 stay for reproducing
 # the research measurements
 HEADS = {"0.4": ("served_heads_v0.4.pt", 29614995, "c3301b453f7f3e0b7e85da2c34471ce3c8f604e8c2d201c405cb235c64cd6d99",
                  "stage1_served_v4.afm"),
          # v0.4 = v0.3 + heads.speech (the client's speech probability, a stateless block 2-6 mix head trained on AMI +
-         # ICSI train + oto; research/FIXALL.md step 1); every v0.3 tensor unchanged, the turn rules still read heads.vad
+         # ICSI train + oto); every v0.3 tensor unchanged, the turn rules still read heads.vad
          "0.3": ("served_heads_v0.3.pt", 29481643, "ea1e8331fa9b9efdee76f1b44d4352f9e1660f34e3da6491b5655ce56ab18848",
                  "stage1_served_v3.afm"),
          "0.2": ("served_heads_v0.2.pt", 19629563, "cb5aa06974f27576c0f66b9453868701106969dea5d5ad100b06b2b779f121d2",
@@ -71,18 +71,17 @@ RELEASE_URL = "https://github.com/maxmelichov/audioforge/releases/download/v0.1.
 HEADS_URL = f"{RELEASE_URL}/{HEADS_FILE}"
 SERVED = HEADS[HEADS_VERSION][3]  # what ships: stage1_served_v4.afm (= v3 + heads.speech; runs/stage1_served.afm = v1)
 
-# the second core (--core 0.6b): nemotron-speech-streaming-en-0.6b + heads retrained on it (research/CORE_0P6B.md)
+# the second core (--core 0.6b): nemotron-speech-streaming-en-0.6b + heads retrained on it
 HEADS_0P6B = {"0.4": ("served_heads_0p6b_v0.4.pt", 26952298,
                        "2062496c631372387356bacc93241d5a2a30f5de751c7210fe8cf03e7e0b0ed1", "served_0p6b_v0.4.afm"),
               # v0.4 = v0.3 + heads.turn_vad (stateless block-12 turn VAD) + heads.turn_seg_a (the assistant preset's
-              # own v5 classifier, trained with real two-party channels; balanced / fast unchanged), research/TURN_DATA.md
+              # own v5 classifier, trained with real two-party channels; balanced / fast unchanged)
               "0.3": ("served_heads_0p6b_v0.3.pt", 16309976,
                        "3245e5ee5bc05beb5f2bc9f412c89b455c0b2faa6ab592ddd7c6bab3aa4568f1", "served_0p6b_v0.3.afm"),
-              # v0.3 = v0.2 + heads.speech (stateless block 8-16 mix speech detector, research/FIXALL.md step 1)
+              # v0.3 = v0.2 + heads.speech (stateless block 8-16 mix speech detector)
               "0.2": ("served_heads_0p6b_v0.2.pt", 16045591,
                        "ceff8c8912640e67500ca796d7c983d220ddf581845134e3e7ca68d7c32db3ff", "served_0p6b_v0.2.afm"),
               # v0.2 = v0.1's tensors (same state hash) with the turn presets' constants re-picked on held-out data
-              # (research/CORE_0P6B_TURN.md)
               "0.1": ("served_heads_0p6b_v0.1.pt", 16045143,
                       "664be5a0e498b9268d088ccf2fa079d909cd70311c4096f8d28f94258adc4e6e", "served_0p6b_v0.1.afm")}
 HEADS_0P6B_VERSION = "0.4"
@@ -159,20 +158,20 @@ COMPONENTS: dict[str, Component] = {c.key: c for c in [
               "https://ngc.nvidia.com/legal/terms",
               "language ID (serve --lid ambernet)", "nemo/langid_ambernet.nemo", 111, "keep",
               url="https://api.ngc.nvidia.com/v2/models/nvidia/nemo/langid_ambernet/versions/1.12.0/files/ambernet.nemo"),
-    # this project's small heads for single-model mode (research/SINGLE_MODEL.md): shipped in assets/ and attached to
-    # the v0.1.0 release (docs/RELEASE_CHECKLIST.md), like served_heads_v0.1.pt
+    # this project's small heads for single-model mode: shipped in assets/ and attached to
+    # the v0.1.0 release, like served_heads_v0.1.pt
     Component("tsvad", "audioforge TS-VAD head (target speaker, 0.26 M)", "tsvad_spk.pt", 1048542,
               "dbc6230d8d722bad65aaf598dce69569995bd96bc002da40a2069d664c427683", "Apache-2.0 (audioforge heads)",
               "https://www.apache.org/licenses/LICENSE-2.0", "single-model mode: the user's track (serve --tsvad)",
               "tsvad_spk.pt", 1, "keep", url=f"{RELEASE_URL}/tsvad_spk.pt"),
-    # v2 (research/FIXALL.md step 3): hidden 1024 (2.37 M), same AmberNet distillation; FLEURS-17 test 2 s 91.0 -> 92.4 %,
+    # v2: hidden 1024 (2.37 M), same AmberNet distillation; FLEURS-17 test 2 s 91.0 -> 92.4 %,
     # full 97.8 -> 98.2 %; lid_distill.pt (v1) stays in assets/ for reproduction
     Component("lid", "audioforge LID head v2 (distilled from AmberNet, 2.37 M)", "lid_115m_v2.pt", 9478879,
               "6e9586354538d298f90cffb3dd0c2439a97107f3ab969d7286132fbcd6570e27",
               "Apache-2.0 (audioforge heads; trained on AmberNet outputs, NGC Terms of Use)",
               "https://ngc.nvidia.com/legal/terms", "single-model mode: language ID (serve --lid head)",
               "lid_115m_v2.pt", 10, "keep", url=f"{RELEASE_URL}/lid_115m_v2.pt"),
-    # the 0.6B core's own TS-VAD and LID heads (research/CORE_0P6B.md; a 115M head does not fit the 1024-d encoder)
+    # the 0.6B core's own TS-VAD and LID heads (a 115M head does not fit the 1024-d encoder)
     Component("tsvad_0p6b", "audioforge TS-VAD head for the 0.6B core", "tsvad_0p6b.pt", 1441712,
               "06fc6e3a421ac344216a593bcae0922099435aef8b8834e62fa401eaafa8a9d8",
               "Apache-2.0 (audioforge heads)", "https://www.apache.org/licenses/LICENSE-2.0",
@@ -182,7 +181,7 @@ COMPONENTS: dict[str, Component] = {c.key: c for c in [
               "Apache-2.0 (audioforge heads; trained on AmberNet outputs, NGC Terms of Use)",
               "https://ngc.nvidia.com/legal/terms", "--core 0.6b: language ID", "lid_0p6b_v2.pt", 12, "keep",
               url=f"{RELEASE_URL}/lid_0p6b_v2.pt"),
-    # optional perceived voice-gender heads (research/VOICE_GENDER.md; off by default, never in a default install)
+    # optional perceived voice-gender heads (off by default, never in a default install)
     Component("voice_gender", "audioforge perceived voice-gender head (optional)", "voice_gender_115m.pt", 91813,
               "e1e1b82416bfeb3a83f0fcceebe3af87ab5309e67f64cb01a758bf32e0cc1f54",
               "Apache-2.0 (audioforge heads; trained on FLEURS and LibriSpeech, CC BY 4.0)",
@@ -202,7 +201,7 @@ COMPONENTS: dict[str, Component] = {c.key: c for c in [
 DIARIZERS = {"sortformer": "sortformer", "nemotron3": "nemotron3"}
 OPTIONAL = ("tdt_v3", "titanet", "ambernet", "lid", "silero", "voice_gender", "voice_gender_0p6b")
 # what single-model mode (the default) needs; + "lid" for language ID when available. No Silero: single mode's turn rule
-# (vad_head, research/EOT_LATENCY.md) reads the model's own heads; --with silero for hybrid_silero / hybrid_dyn
+# (vad_head) reads the model's own heads; --with silero for hybrid_silero / hybrid_dyn
 SINGLE = ("asr", "tsvad")
 
 
@@ -419,8 +418,7 @@ def install(keys: list[str], directory: Path, local: list[Path], yes: bool, keep
              else dataclasses.replace(COMPONENTS[k], output=HEADS[heads_version][3]) for k in keys]
     missing = [c.key for c in comps if not c.sha256]
     if missing:
-        raise RuntimeError(f"{', '.join(missing)}: no pinned file yet in this version of audioforge "
-                           f"(research/CORE_0P6B.md); nothing downloaded")
+        raise RuntimeError(f"{', '.join(missing)}: no pinned file yet in this version of audioforge; nothing downloaded")
     todo = [c for c in comps if force or not (directory / c.output).exists()]
     for c in comps:
         if c not in todo:
@@ -473,7 +471,7 @@ def main(argv=None):
     ap.add_argument("--core", choices=list(CORES), default=CORE_DEFAULT,
                     help="which streaming core: 115m (default; NVIDIA FastConformer 114M, CC-BY-4.0, real time on 2 CPU "
                          "threads) | 0.6b (NVIDIA nemotron-speech-streaming-en-0.6b, NVIDIA Open Model License, 2.5 GB; "
-                         "about half the meeting WER; 1 real-time stream per 2 CPU threads (115M: 4), research/CORE_0P6B.md)")
+                         "about half the meeting WER; 1 real-time stream per 2 CPU threads (115M: 4))")
     ap.add_argument("--diarizer", choices=sorted(DIARIZERS), default=None,
                     help="also fetch a diarizer for room mode (audioforge-serve --mode room): nemotron3 = "
                          "Nemotron-3-Diarization (OpenMDW-1.1, the room-mode default), sortformer = Streaming Sortformer "
@@ -487,8 +485,8 @@ def main(argv=None):
                     help="also reuse files under DIR/nemo and DIR/silero (default: $AUDIOFORGE_DATA, else <repo>/data)")
     ap.add_argument("--heads", default=None, help=f"path to {HEADS_FILE} (default: assets/ or the release asset)")
     ap.add_argument("--heads-version", choices=sorted(HEADS), default=HEADS_VERSION,
-                    help="0.2 (default, ships: block-4 VAD head -> stage1_served_v2.afm) | 0.1 (the 2026-09-27 "
-                         "measured checkpoint -> stage1_served.afm, for reproducing research/)")
+                    help=f"{HEADS_VERSION} (default, ships in assets/); older versions download from the release, "
+                         "for reproducing earlier numbers")
     ap.add_argument("--keep-nemo", action="store_true", help="keep downloaded .nemo files after conversion")
     ap.add_argument("--force", action="store_true", help="rebuild outputs that already exist")
     ap.add_argument("--yes", "-y", action="store_true", help="accept the model licences non-interactively")
