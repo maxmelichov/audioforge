@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import argparse
 import asyncio
+import errno
 import json
 import os
 import sys
@@ -579,6 +580,13 @@ def main(argv: list[str] | None = None) -> int:
         asyncio.run(serve(eng, a.host, a.port))
     except KeyboardInterrupt:
         pass
+    except OSError as e:
+        if e.errno not in (errno.EADDRINUSE, getattr(errno, "WSAEADDRINUSE", -1)):
+            raise
+        print(f"[serve] port {a.port} on {a.host} is already in use by another program. Start on a free port, "
+              f"e.g. `audioforge-serve --port {a.port + 1}`, and point clients at ws://{a.host}:{a.port + 1}",
+              file=sys.stderr, flush=True)
+        return 2
     return 0
 
 

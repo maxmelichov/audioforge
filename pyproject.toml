@@ -34,13 +34,14 @@ dependencies = [
     "sentencepiece>=0.1.99",
     "soundfile>=0.12",
     "huggingface_hub>=0.23",
+    "websockets>=13",  # the server and the bundled clients (plain `uv run audioforge-serve` works)
 ]
 
 [project.optional-dependencies]
-# the WebSocket server (audioforge-serve); onnxruntime runs Silero VAD for the hybrid_silero / hybrid_dyn policies
+# onnxruntime runs Silero VAD for the hybrid_silero / hybrid_dyn policies and the smart-turn model (websockets is core)
 serve = ["websockets>=13", "onnxruntime>=1.17"]
 # the Pipecat adapter and demo (audioforge.integrations.pipecat, examples/pipecat_local_demo.py)
-pipecat = ["audioforge[serve]", "pipecat-ai>=1.0"]
+pipecat = ["audioforge[serve]", "pipecat-ai>=1.0; python_version >= '3.11'"]  # pipecat-ai needs Python 3.11+
 # the LiveKit adapter and demos (audioforge.integrations.livekit, examples/livekit_*.py)
 livekit = ["audioforge[serve]", "livekit>=1.0", "livekit-agents>=1.2", "livekit-plugins-silero>=1.2"]
 # importing NVIDIA .nemo checkpoints yourself (audioforge.nemo_import / --from-local); requests fetches NGC files

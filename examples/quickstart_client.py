@@ -23,6 +23,7 @@ import time
 from pathlib import Path
 
 import numpy as np
+from websockets.exceptions import InvalidHandshake, InvalidMessage
 
 HERE = Path(__file__).resolve().parent
 SR, BLOCK_S = 16000, 0.02  # 20 ms blocks, like a microphone
@@ -72,7 +73,8 @@ async def main(a) -> None:
             elif typ == "turn_end_hint_cancel":  # the user went on: drop what the hint started
                 print(f"{m['t']:6.2f}s  hint cancelled")
             elif typ == "final":
-                print(f"{m['t']:6.2f}s  final     speaker={m.get('speaker')} {m['text']!r}")
+                if m["text"]:  # the end-of-stream flush can close a turn with no words
+                    print(f"{m['t']:6.2f}s  final     speaker={m.get('speaker')} {m['text']!r}")
             elif typ == "voiceprint":
                 print(f"{m['t']:6.2f}s  voiceprint source={m['source']} seconds={m['seconds']}")
                 if a.save_voiceprint:
@@ -96,4 +98,10 @@ if __name__ == "__main__":
                     "(needs --enroll explicit on the server; single mode arms after agent_end)")
     ap.add_argument("--save-voiceprint", default=None, help="write the print from the server's voiceprint message here")
     ap.add_argument("--no-realtime", dest="realtime", action="store_false", help="send as fast as possible")
-    asyncio.run(main(ap.parse_args()))
+    a = ap.parse_args()
+    try:
+        asyncio.run(main(a))
+    except (OSError, InvalidHandshake, InvalidMessage) as e:
+        raise SystemExit(f"could not talk to an audioforge server at {a.url} ({type(e).__name__}). Is "
+                         "`uv run audioforge-serve` running? If another program holds the port, start the server "
+                         "with --port 8766 and pass --url ws://127.0.0.1:8766 here.") from None

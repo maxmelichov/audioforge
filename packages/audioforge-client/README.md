@@ -23,9 +23,9 @@ voice-agent framework plugin needs:
 Straight from GitHub (not published to PyPI); it builds from this subdirectory and pulls only `websockets`:
 
 ```bash
-pip install "audioforge-client @ git+https://github.com/maxmelichov/audioforge#subdirectory=packages/audioforge-client"
+uv add "audioforge-client @ git+https://github.com/maxmelichov/audioforge#subdirectory=packages/audioforge-client"
 # pin a release or commit: ...audioforge@<tag-or-sha>#subdirectory=packages/audioforge-client
-# from a clone: pip install ./packages/audioforge-client
+# from a clone: uv add ./packages/audioforge-client
 ```
 
 In a `pyproject.toml`: `"audioforge-client @ git+https://github.com/maxmelichov/audioforge#subdirectory=packages/audioforge-client"`
@@ -54,9 +54,8 @@ asyncio.run(main())
 
 ```bash
 git clone https://github.com/maxmelichov/audioforge && cd audioforge
-pip install -e ".[serve]"
-audioforge-download               # NVIDIA 115M streaming FastConformer + the audioforge heads
-audioforge-serve --port 8765      # single-model mode (the default); --core 0.6b for the larger English core
+uv run audioforge-download        # NVIDIA 115M streaming FastConformer + the audioforge heads
+uv run audioforge-serve --port 8765   # single-model mode (the default); --core 0.6b for the larger English core
 ```
 
 Options a client can ask for per session (the `config` message): `turn_policy` (omitted = the server's default,

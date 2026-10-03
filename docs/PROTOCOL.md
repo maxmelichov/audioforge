@@ -521,7 +521,7 @@ shedding level 2.
 
 ## 8. Minimal Python client
 
-Requires `pip install websockets` (the server uses the `websockets.asyncio` API). It streams a 16 kHz mono 16-bit WAV
+Requires `websockets` (`uv add websockets`; the server uses the `websockets.asyncio` API). It streams a 16 kHz mono 16-bit WAV
 at real time in 20 ms frames and prints every message except `frame`.
 
 ```python

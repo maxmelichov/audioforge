@@ -7,10 +7,13 @@ LiveKit or your own code. Every flag is in [`CONFIGURATION.md`](CONFIGURATION.md
 ## Install and start
 
 ```bash
-pip install -e ".[serve]"            # the server; ".[pipecat]" / ".[livekit]" add the adapters
-audioforge-download                  # the default 115M core and its heads into ./models (asks before each licence)
-audioforge-serve                     # single mode on ws://127.0.0.1:8765
+uv run audioforge-download           # first run sets up Python and the dependencies, then the 115M core and its heads
+uv run audioforge-serve              # single mode on ws://127.0.0.1:8765
 ```
+
+Everything runs through [uv](https://docs.astral.sh/uv/), with no pip and no manual environment. Put `uv run` in front
+of the commands on this page (`uv run audioforge-serve --core 0.6b`), or activate the `.venv` it creates once with
+`source .venv/bin/activate`. `--extra pipecat` / `--extra livekit` add the adapters (`uv run --extra pipecat ...`).
 
 Then, in a second terminal, stream the bundled 16 s two-party call
 ([`examples/audio/two_party_call_16s.wav`](../examples/audio), otoSpeech, CC BY 4.0) with the user's stored print
@@ -141,7 +144,8 @@ To have the adapters forward the slow text instead, pass `final_text="slow"` to 
 
 ## Pipecat
 
-`pip install -e ".[pipecat]"`. One server session per pipeline, shared by the STT, the VAD and the turn analyzer
+`uv run --extra pipecat ...` here, or `uv add "audioforge[pipecat] @ git+https://github.com/maxmelichov/audioforge"` in
+your project. One server session per pipeline, shared by the STT, the VAD and the turn analyzer
 through an `AudioforgeHub`:
 
 ```python
@@ -162,7 +166,8 @@ Early end-of-turn hints (`turn_hints=True` with `AudioforgeEagerTurnStopStrategy
 
 ## LiveKit Agents
 
-`pip install -e ".[livekit]"`. One `AudioforgeFrontend` gives the STT, VAD and turn detector of one server session:
+`uv run --extra livekit ...` here, or `uv add "audioforge[livekit] @ git+https://github.com/maxmelichov/audioforge"` in
+your project. One `AudioforgeFrontend` gives the STT, VAD and turn detector of one server session:
 
 ```python
 from audioforge.integrations.livekit import AudioforgeFrontend
@@ -201,8 +206,8 @@ Everything: [`PROTOCOL.md`](PROTOCOL.md). A torch-free Python client (only `webs
 [`packages/audioforge-client`](../packages/audioforge-client); it is not on PyPI, install it straight from GitHub:
 
 ```bash
-pip install "audioforge-client @ git+https://github.com/maxmelichov/audioforge#subdirectory=packages/audioforge-client"
-# or from a clone: pip install ./packages/audioforge-client
+uv add "audioforge-client @ git+https://github.com/maxmelichov/audioforge#subdirectory=packages/audioforge-client"
+# or from a clone: uv add ./packages/audioforge-client
 ```
 
 The reference client is [`scripts/stream_client.py`](../scripts/stream_client.py).

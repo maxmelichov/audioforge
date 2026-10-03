@@ -15,20 +15,21 @@ gives live words, voice activity, "is it the user?" and "is the turn over?" over
 
 ## Quickstart
 
-Python 3.10+. The download command shows each model's licence and asks before fetching it.
+You only need [uv](https://docs.astral.sh/uv/getting-started/installation/) (`brew install uv`, or
+`curl -LsSf https://astral.sh/uv/install.sh | sh`). The first `uv run` sets up Python and every dependency by itself,
+in about a minute. The download command shows each model's licence and asks before fetching it.
 
 ```bash
 git clone https://github.com/maxmelichov/audioforge && cd audioforge
-pip install -e ".[serve]"
-audioforge-download          # the default 115M model and its heads, checked, into ./models
-audioforge-serve             # ws://127.0.0.1:8765   (add --device mps or --device cuda for a GPU)
+uv run audioforge-download   # the default 115M model and its heads, checked, into ./models
+uv run audioforge-serve      # ws://127.0.0.1:8765  (--device mps or --device cuda for a GPU, --port if 8765 is taken)
 ```
 
 In a second terminal, stream the bundled 16 s two-party call (from otoSpeech, CC BY 4.0) with the user's stored
 voice print:
 
 ```bash
-python examples/quickstart_client.py        # or: python examples/quickstart_client.py my.wav --voiceprint me.json
+uv run examples/quickstart_client.py        # or: uv run examples/quickstart_client.py my.wav --voiceprint me.json
 ```
 
 ```
@@ -42,7 +43,7 @@ python examples/quickstart_client.py        # or: python examples/quickstart_cli
 
 The user's question stays one turn despite a pause after "life"; the other person's answer comes out as `speaker=1`.
 
-**In Python, without a server** (the full script is [`examples/python_api.py`](examples/python_api.py)):
+**In Python, without a server** (`uv run examples/python_api.py` runs the full script, [`examples/python_api.py`](examples/python_api.py)):
 
 ```python
 import json
@@ -60,13 +61,13 @@ for ev in s.feed(pcm) + s.end():                            # the same messages 
 
 **In a voice-agent framework:**
 
-- Pipecat: `pip install -e ".[pipecat]"`, then `AudioforgeSTTService`, `AudioforgeVADAnalyzer` and
-  `AudioforgeTurnAnalyzer` from `audioforge.integrations.pipecat`.
-- LiveKit Agents: `pip install -e ".[livekit]"`, then `AudioforgeFrontend` from `audioforge.integrations.livekit`
-  (`fe.stt()`, `fe.vad()`, `fe.turn_detector()`).
+- Pipecat: `AudioforgeSTTService`, `AudioforgeVADAnalyzer` and `AudioforgeTurnAnalyzer` from
+  `audioforge.integrations.pipecat`. In your own project: `uv add "audioforge[pipecat] @ git+https://github.com/maxmelichov/audioforge"`.
+- LiveKit Agents: `AudioforgeFrontend` from `audioforge.integrations.livekit` (`fe.stt()`, `fe.vad()`,
+  `fe.turn_detector()`). In your own project: `uv add "audioforge[livekit] @ git+https://github.com/maxmelichov/audioforge"`.
 - Anything else: the WebSocket protocol, [`docs/PROTOCOL.md`](docs/PROTOCOL.md). A torch-free Python client
-  (only `websockets`) installs straight from GitHub:
-  `pip install "audioforge-client @ git+https://github.com/maxmelichov/audioforge#subdirectory=packages/audioforge-client"`.
+  (only `websockets`) adds straight from GitHub:
+  `uv add "audioforge-client @ git+https://github.com/maxmelichov/audioforge#subdirectory=packages/audioforge-client"`.
 
 Wiring examples, the larger 0.6B model, turn presets and voice prints: [`docs/USAGE.md`](docs/USAGE.md).
 

@@ -8,7 +8,7 @@ is the how-to.
 ## Set up
 
 ```bash
-pip install -e ".[train]"            # accelerate, TensorBoard, tqdm, pyinject
+uv sync --extra train                # accelerate, TensorBoard, tqdm, pyinject; then `uv run python -m audioforge.train ...`
 ```
 
 Datasets live under `$AUDIOFORGE_DATA` (default `<repo>/data`), checkpoints and logs under `runs/`. Both can be

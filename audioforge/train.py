@@ -41,7 +41,7 @@ from .metrics import frame_der, wer
 from .model import TEXT_HEADS, SpeechModel
 from .tokenizer import load_tokenizer, train_tokenizer
 
-try:  # live inspection of a running job (pip install "audioforge[train]"); the loop runs without it
+try:  # live inspection of a running job (uv sync --extra train); the loop runs without it
     import pyinject
 except ImportError:
     pyinject = None
@@ -500,7 +500,7 @@ class Trainer:
             from accelerate import Accelerator
             from accelerate.utils import DistributedDataParallelKwargs, ProjectConfiguration
         except ImportError as e:
-            raise ImportError('training needs the train extra: pip install "audioforge[train]"') from e
+            raise ImportError("training needs the train extra: uv sync --extra train") from e
         t = self.cfg.get("trainer", {})
         kw = {}
         if run_dir:
