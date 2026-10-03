@@ -22,7 +22,15 @@ from test_nemo_import import _INV, nemo_config
 from audioforge.heads.audio import SortformerHead
 from audioforge.nemo_import import LICENSES, import_nemo, license_of, translate_config
 
-torch.set_num_threads(2)  # machine rule: CPU, 2 threads
+
+@pytest.fixture(autouse=True, scope="module")
+def _threads_2():
+    """2 torch threads for this module only (restored after it, not at import time for the session)."""
+    old = torch.get_num_threads()
+    torch.set_num_threads(2)  # machine rule: CPU, 2 threads
+    yield
+    torch.set_num_threads(old)
+
 
 ROOT = Path(__file__).resolve().parent.parent
 REAL = ROOT / "data" / "nemo" / "diar_streaming_sortformer_4spk-v2.nemo"

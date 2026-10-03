@@ -565,16 +565,17 @@ def test_agent_session_commits_turn_on_our_decision(mode):
 
 
 # --------------------------------------------------------------------------- real checkpoints (slow)
-@pytest.mark.skipif(os.environ.get("RUN_REAL") != "1", reason="starts audioforge.serve with the 440 MB + 450 MB "
-                    "checkpoints and streams an AMI window in real time; RUN_REAL=1")
+@pytest.mark.real
+@pytest.mark.skipif(os.environ.get("RUN_REAL") != "1", reason="starts audioforge-serve (the shipped 115M "
+                    "single-mode stack) and streams an AMI window in real time; RUN_REAL=1")
 def test_real_demo_one_ami_window(tmp_path):
     wav = Path(os.environ.get("LIVEKIT_DEMO_WAV", "")) if os.environ.get("LIVEKIT_DEMO_WAV") else None
     if wav is None or not wav.exists():
         pytest.skip("set LIVEKIT_DEMO_WAV to an AMI window WAV with a sibling .json reference")
     port = int(os.environ.get("LIVEKIT_DEMO_PORT", "8793"))
     env = {**os.environ, "PYTHONPATH": str(ROOT)}
-    srv = subprocess.Popen([sys.executable, "-m", "audioforge.serve", "--asr", "runs/stage1_heads_pretrained.afm",
-                            "--diar", "runs/nemo_sortformer_v2.afm", "--port", str(port), "--threads", "2"],
+    srv = subprocess.Popen([sys.executable, "-c", "import sys; from audioforge.launch import serve_main; "
+                            "serve_main(sys.argv[1:])", "--mode", "single", "--port", str(port), "--threads", "2"],
                            cwd=ROOT, env=env, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
     try:
         t0 = time.time()

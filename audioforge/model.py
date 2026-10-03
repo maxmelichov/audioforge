@@ -236,6 +236,9 @@ def build_head(cfg: dict, d_model: int, tokenizer=None) -> nn.Module:
     if t == "turn_seg":  # turn head v5: segment end-of-turn classifier on the session's window (heads/turn_seg.py)
         from .heads.turn_seg import SegTurn
         return SegTurn(**cfg)
+    if t == "voice_gender":  # optional perceived voice gender (heads/voice_gender.py, research/VOICE_GENDER.md)
+        from .heads.voice_gender import VoiceGenderHead
+        return VoiceGenderHead(d_model, **cfg)
     if t == "completeness":  # utterance completeness, smart-turn's task (heads/completeness.py)
         from .heads.completeness import CompletenessHead
         return CompletenessHead(d_model, **cfg)

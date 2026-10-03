@@ -590,13 +590,21 @@ def test_stream_client_real_time_pacing(tmp_path):
 
 
 # --------------------------------------------------------------------------- real checkpoints (slow)
-@pytest.mark.skipif(os.environ.get("RUN_REAL") != "1", reason="loads the 440 MB + 450 MB checkpoints; RUN_REAL=1")
+@pytest.mark.real
+@pytest.mark.skipif(os.environ.get("RUN_REAL") != "1", reason="loads the shipped 115M single-mode stack; RUN_REAL=1")
 def test_real_models_librispeech_utterance():
+    """The shipped stack (audioforge.load(): stage1_served_v4 + tsvad_spk, --mode single, the vad_head turn rule) on
+    one LibriSpeech test-clean utterance."""
+    import audioforge
+    from audioforge import hub
     from audioforge.data import load_wav
-    eng = Engine.load(str(ROOT / "runs/stage1_heads_pretrained.afm"), str(ROOT / "runs/nemo_sortformer_v2.afm"),
-                      threads=2)
-    x = load_wav(str(ROOT / "data/librispeech/LibriSpeech/test-clean/1089/134686/1089-134686-0001.flac"))
-    s = Session(eng)
+    wav = ROOT / "data/librispeech/LibriSpeech/test-clean/1089/134686/1089-134686-0001.flac"
+    if hub.find_model("asr") is None or hub.find_model("tsvad") is None or not wav.exists():
+        pytest.skip("needs audioforge-download (asr + tsvad) and LibriSpeech test-clean")
+    eng = audioforge.load(warmup=False).engine
+    assert eng.name == Path(hub.SERVED).stem and eng.diar is None
+    x = load_wav(str(wav))
+    s = Session(eng, SessionConfig(turn_policy=eng.turn_policy))
     msgs = []
     for i in range(0, len(x), 320):
         msgs += s.process(x[i:i + 320])
@@ -605,7 +613,7 @@ def test_real_models_librispeech_utterance():
         validate(m)
     text = " ".join(m["text"] for m in msgs if m["type"] == "final")
     assert "belly" in text and ("counselled" in text or "counseled" in text), text
-    assert any(m["type"] == "frame" and m["primary"] is not None for m in msgs)
+    assert any(m["type"] == "frame" and m["vad"] > 0.9 for m in msgs)
 
 
 # --------------------------------------------------------------------------- --enroll (voice binding, EOT_BENCH_V2 §9)

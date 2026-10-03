@@ -56,3 +56,6 @@ tmp/
 .venv*/
 venv*/
 demo/images/redesign/*.png
+
+# chore state (the `changed` builtin)
+.chore/

@@ -30,5 +30,5 @@ def test_recipe_has_no_duplicate_keys(recipe):
 
 
 def test_stage1_runs_heads_at_160ms():
-    cfg = yaml.safe_load(Path("research/recipes/stage1_heads_pretrained.yaml").read_text())
+    cfg = yaml.safe_load((Path(__file__).parent.parent / "research" / "recipes" / "stage1_heads_pretrained.yaml").read_text())
     assert cfg["encoder"]["att_context_size"] == [70, 1]

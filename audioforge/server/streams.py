@@ -28,7 +28,7 @@ class ASRStream(StreamingSession):
     (as ``heads.turn.decoded_text_state``). turn_input "diar": chunks wait in ``pending`` for the diarizer."""
 
     def __init__(self, model, vad: str | None = "vad", turn: str | None = "turn", turn_input: str = "session",
-                 lid=None, vad_gate: float | None = None, vad_hangover_frames: int = 15, att_context_size=None,
+                 lid=None, gender=None, vad_gate: float | None = None, vad_hangover_frames: int = 15, att_context_size=None,
                  beam: int = 0):
         super().__init__(model, att_context_size=att_context_size)
         # --beam K (research/FIXALL.md step 5): an RNNT beam search runs next to the greedy decoder over the same
@@ -39,6 +39,7 @@ class ASRStream(StreamingSession):
             raise ValueError("--beam needs a plain RNNT transducer head")
         self._beam_reset(0)
         self.lid = lid  # audioforge.lid.LIDStream (--lid) or None
+        self.gender = gender  # audioforge.voice_gender.VoiceGenderStream (--voice-gender) or None
         # --asr-vad-gate: the transducer is not decoded on a frame whose VAD <= vad_gate once vad_hangover_frames
         # such frames have passed since the last speech frame (the encoder and the heads still run every frame);
         # bounds the text emitted on long non-speech (research/archive/BULLETPROOF.md section 1)
@@ -237,6 +238,8 @@ class ASRStream(StreamingSession):
             if self.lid is not None:  # same chunk, same per-layer outputs: no extra encoder pass
                 ends = [(self.n_frames + j + 1) * FRAME_MS / 1000 for j in range(n)]
                 self.lid_events += self.lid.feed(enc, hid, vad, ends)
+            if self.gender is not None:  # the speaker head's tap of this chunk: no extra encoder pass
+                self.gender.feed(enc, hid, vad)
             if self.seg is not None:
                 seg_x = torch.cat([hid[b - 1] for b in self.seg_block], -1)[0].float().cpu().numpy()
             if self.seg2 is not None:

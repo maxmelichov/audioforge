@@ -1,15 +1,23 @@
 """Recipe-driven training: YAML -> tokenizer + SpeechModel -> Trainer -> .afm archive."""
 from __future__ import annotations
 
+import argparse
 import copy
 import json
 import logging
 import math
+import os
 import random
+import re
+import shutil
+import signal
+import sys
 import tarfile
 import tempfile
+import threading
 import time
 import traceback
+from collections import Counter
 from collections.abc import Sequence
 from pathlib import Path
 
@@ -17,10 +25,26 @@ import numpy as np
 import torch
 import yaml
 
-from .data import Collate, attach_teacher, prompt_specials, read_manifest, synthetic_dataset, to_device
+from .data import (
+    Collate,
+    ManifestData,
+    attach_teacher,
+    check_disjoint,
+    epoch_batches,
+    prompt_specials,
+    seeded_split,
+    shard_batches,
+    synthetic_dataset,
+    to_device,
+)
 from .metrics import frame_der, wer
 from .model import TEXT_HEADS, SpeechModel
 from .tokenizer import load_tokenizer, train_tokenizer
+
+try:  # live inspection of a running job (pip install "audioforge[train]"); the loop runs without it
+    import pyinject
+except ImportError:
+    pyinject = None
 
 log = logging.getLogger(__name__)
 
@@ -74,14 +98,30 @@ def _load_source(cfg: dict, split: str) -> list[dict]:
     if "smartturn" in d:  # pipecat smart-turn clips (complete / incomplete utterances): audioforge/datasets/smartturn.py
         from .datasets.smartturn import recipe_data as smartturn_data
         return smartturn_data(cfg, split)
-    if "manifest" in d:
-        return read_manifest(d["manifest"][split], cfg.get("sample_rate", 16000))
+    if "manifest" in d:  # the general format; other sources convert with python -m audioforge.datasets.to_manifest
+        return manifest_data(cfg, split)
     n, kind = d["synthetic"][f"n_{split}"], d["synthetic"]["kind"]
     if kind == "conversation":  # speaker-aware end-of-turn data (conversation.py)
         from .conversation import conversation_dataset
         return conversation_dataset(n, seed=0 if split == "train" else 1, preset=d["synthetic"].get("preset", "default"))
     return synthetic_dataset(kind, n, seed=0 if split == "train" else 1,
                              codec=build_codec(d) if kind == "enhance" else None)
+
+
+def manifest_data(cfg: dict, split: str) -> ManifestData:
+    """``data.manifest: {train: a.jsonl, val: b.jsonl}`` (val rows that are also train rows are warned about), or
+    one ``data.manifest: all.jsonl`` split by data.seeded_split with ``data.val_fraction`` (default 0.05) and the
+    recipe seed. Rows decode lazily (data.ManifestData)."""
+    d, sr = cfg["data"], cfg.get("sample_rate", 16000)
+    man = d["manifest"]
+    if isinstance(man, (str, Path)):
+        rows = ManifestData(man, sr).rows
+        tr, va = seeded_split(rows, float(d.get("val_fraction", 0.05)), int(cfg.get("seed", 0)))
+        return ManifestData(rows=tr if split == "train" else va, sample_rate=sr)
+    data = ManifestData(man[split], sr)
+    if split == "val" and "train" in man:
+        check_disjoint(ManifestData(man["train"], sr).rows, data.rows)
+    return data
 
 
 MIX_META = ("weight", "name", "drop_keys")
@@ -226,8 +266,27 @@ def build_tokenizer(cfg: dict, train: list[dict]):
     tc = dict(cfg.get("tokenizer", {"kind": "char"}))
     kind = tc.pop("kind", "char")
     specials = tc.pop("specials", []) + prompt_specials(tc.pop("langs", ["en", "xx"]))
-    texts = [ex[k] for ex in train for k in ("text", "source_text") if k in ex]
+    texts = [ex[k] for ex in getattr(train, "rows", train) for k in ("text", "source_text") if k in ex]
     return train_tokenizer(kind, texts or ["a"], specials=specials, **tc)
+
+
+def _rng_state() -> dict:
+    st = {"py": random.getstate(), "np": np.random.get_state(), "torch": torch.get_rng_state()}
+    if torch.cuda.is_available():
+        st["cuda"] = torch.cuda.get_rng_state_all()
+    if torch.backends.mps.is_available():
+        st["mps"] = torch.mps.get_rng_state()
+    return st
+
+
+def _set_rng_state(st: dict):
+    random.setstate(st["py"])
+    np.random.set_state(st["np"])
+    torch.set_rng_state(st["torch"])
+    if "cuda" in st:
+        torch.cuda.set_rng_state_all(st["cuda"])
+    if "mps" in st:
+        torch.mps.set_rng_state(st["mps"])
 
 
 class Trainer:
@@ -235,6 +294,9 @@ class Trainer:
         self.model, self.cfg = model, cfg
         t = cfg.get("trainer", {})
         self.device = device or pick_device(t.get("device", "auto"))
+        if int(os.environ.get("WORLD_SIZE", "1")) > 1:  # accelerate launch / torchrun: this process's device
+            from accelerate import PartialState
+            self.device = PartialState(cpu=self.device.type == "cpu").device
         self.model.to(self.device)
         self.steps, self.bs = t.get("max_steps", 1000), t.get("batch_size", 16)
         self.clip, self.log_every = t.get("grad_clip", 1.0), t.get("log_every", 50)
@@ -303,6 +365,9 @@ class Trainer:
         self.sched = torch.optim.lr_scheduler.LambdaLR(self.opt, lambda s: min(1.0, (s + 1) / warm) * (
             0.5 * (1 + math.cos(math.pi * min(1.0, s / self.steps))) * 0.95 + 0.05))
         self.history: list[dict] = []
+        self.evals: list[dict] = []  # one record per time-based eval (run_dir runs)
+        self.progress = bool(t.get("progress", True))  # tqdm bars per epoch and per eval
+        self._prepared, self.net, self.acc = False, model, None
         self._setup_guards(t)
 
     # ------------------------------------------------------------------ R2 guards (KL anchor, MCR, WER gate)
@@ -427,19 +492,131 @@ class Trainer:
                 Path(old).unlink(missing_ok=True)
             self.checkpoints = self.checkpoints[-keep:]
 
-    def fit(self, train: list[dict], val: list[dict] | None = None, collate=None, out: str | None = None) -> list[dict]:
+    # ------------------------------------------------------------------ loop: accelerate, run dir, resume
+    def _accelerator(self, run_dir):
+        """One Accelerator per fit: DDP when launched with ``accelerate launch`` / torchrun, plain single process on
+        CPU / MPS / one GPU (the model stays where __init__ put it). TensorBoard logging goes to <run_dir>/tb."""
+        try:
+            from accelerate import Accelerator
+            from accelerate.utils import DistributedDataParallelKwargs, ProjectConfiguration
+        except ImportError as e:
+            raise ImportError('training needs the train extra: pip install "audioforge[train]"') from e
+        t = self.cfg.get("trainer", {})
+        kw = {}
+        if run_dir:
+            kw = {"log_with": "tensorboard",
+                  "project_config": ProjectConfiguration(project_dir=str(run_dir), logging_dir=str(run_dir))}
+        acc = Accelerator(cpu=self.device.type == "cpu", device_placement=False,
+                          mixed_precision=t.get("mixed_precision", "no"), step_scheduler_with_optimizer=False,
+                          kwargs_handlers=[DistributedDataParallelKwargs(find_unused_parameters=True)], **kw)
+        if run_dir:
+            acc.init_trackers("tb")
+        return acc
+
+    def _save(self, acc, run_dir: Path, name: str, state: dict):
+        """accelerate save_state (model, optimizer, scheduler, scaler, every RNG) + trainer_state.json (step,
+        epoch, batch position, sampler RNG at the epoch start, best eval loss), written to a temp dir and swapped
+        in, so a kill mid-save never leaves a broken checkpoint."""
+        tmp, dst = run_dir / f".{name}.tmp", run_dir / name
+        acc.save_state(str(tmp), safe_serialization=False)
+        if acc.is_main_process:
+            (tmp / "trainer_state.json").write_text(json.dumps(state))
+            if name == "best":
+                save_model(acc.unwrap_model(self.model), tmp / "model.afm")
+            old = run_dir / f".{name}.old"
+            if dst.exists():
+                dst.rename(old)
+            tmp.rename(dst)
+            shutil.rmtree(old, ignore_errors=True)
+        acc.wait_for_everyone()
+
+    @torch.no_grad()
+    def eval_loss(self, net, val, collate, acc) -> float | None:
+        """Mean training loss over val (model in eval mode), val sharded over processes and gathered."""
+        from tqdm.auto import tqdm
+        self.model.eval()
+        val = val[: int(self.cfg.get("trainer", {}).get("eval_items", 512))]  # a fixed prefix: same rows every eval
+        chunks = shard_batches([list(range(i, min(i + self.bs, len(val)))) for i in range(0, len(val), self.bs)],
+                               acc.process_index, acc.num_processes)
+        tot = torch.zeros(2, dtype=torch.float64, device=self.device)
+        for idx in tqdm(chunks, desc="eval", leave=False, disable=not (self.progress and acc.is_main_process)):
+            o = net(to_device(collate([val[j] for j in idx]), self.device))
+            if torch.is_tensor(o["loss"]):
+                tot += torch.tensor([float(o["loss"]) * len(idx), len(idx)], dtype=torch.float64, device=self.device)
+        tot = acc.gather(tot[None]).sum(0)
+        self.model.train()
+        return float(tot[0] / tot[1]) if tot[1] > 0 else None
+
+    def _eval_checkpoint(self, acc, net, val, collate, run_dir: Path, state: dict, metrics: bool = True):
+        """Time-based eval: val loss (+ head metrics on the main process), logged to TensorBoard; writes ``last``
+        and, when the eval loss improved, ``best``. All RNG states are restored afterwards, so when an eval fires
+        never changes the training trajectory."""
+        rng = _rng_state()
+        res = {}
+        if val:
+            loss = self.eval_loss(net, val, collate, acc)
+            if loss is not None:
+                res["loss"] = loss
+            if metrics and acc.is_main_process:
+                res.update({k: v for k, v in self.evaluate(val).items() if isinstance(v, (int, float))})
+            self.model.train()
+        _set_rng_state(rng)
+        acc.log({f"eval/{k}": v for k, v in res.items()}, step=state["step"])
+        self.evals.append({"step": state["step"], **res})
+        log.info("eval step=%d %s", state["step"], json.dumps(res))
+        improved = "loss" in res and (state["best"] is None or res["loss"] < state["best"])
+        if improved:
+            state["best"] = res["loss"]
+        self._save(acc, run_dir, "last", state)
+        if improved:
+            self._save(acc, run_dir, "best", state)
+
+    def _on_signal(self, signum, frame):
+        self._signal = signum
+        log.info("[trainer] %s: checkpointing at the end of this step, then stopping (send again to kill now)",
+                 signal.Signals(signum).name)
+        for s, h in self._old_handlers.items():  # a second signal falls through to the default action
+            signal.signal(s, h)
+
+    def fit(self, train: list[dict], val: list[dict] | None = None, collate=None, out: str | None = None,
+            run_dir: str | Path | None = None, resume: bool = False) -> list[dict]:
         """Train for max_steps. With ``wer_gate`` the run stops early (``self.stopped`` is set) when WER rises
         more than max_delta over the step-0 baseline; the model is then reloaded from the last good
-        checkpoint, if one was written."""
+        checkpoint, if one was written.
+
+        ``run_dir`` (also ``trainer.run_dir``) turns on the run machinery: TensorBoard, an eval every
+        ``trainer.eval_minutes`` that writes ``last`` (and ``best`` on a lower eval loss) under run_dir, a
+        SIGINT/SIGTERM handler that checkpoints before stopping, and ``resume`` from ``last`` at the exact step,
+        batch and RNG state. Without run_dir the loop is the plain one (no files, no handlers)."""
+        t = self.cfg.get("trainer", {})
+        run_dir = run_dir or t.get("run_dir")
+        run_dir = Path(run_dir) if run_dir else None
         if len(train) < max(1, self.bs):
             raise ValueError(f"train has {len(train)} items but trainer.batch_size={self.bs}: no full batch "
                              "can be formed (lower trainer.batch_size or add data)")
+        if run_dir and not resume and (run_dir / "last").exists():
+            raise FileExistsError(f"{run_dir}/last exists: pass --resume to continue it (or pick another run name)")
+        if resume and not (run_dir and (run_dir / "last").exists()):
+            raise FileNotFoundError(f"--resume: no checkpoint at {run_dir}/last")
         mixed = getattr(train, "batching", None) == "mixed"
         if mixed:
             log.info("[trainer] data.batching=mixed: frame/sortformer/speaker/text heads do not honour <key>_present "
                   "yet and train on placeholders for items without their labels (see MixCollate)")
         collate = collate or (MixCollate(Collate(self.model.tokenizer)) if mixed else Collate(self.model.tokenizer))
-        rng = random.Random(0)
+        from tqdm.auto import tqdm
+        acc = self.acc = self.acc if self._prepared else self._accelerator(run_dir)
+        if not self._prepared:  # registers model / optimizer / scheduler (/ scaler) for save_state & load_state
+            self.net, self.opt, self.sched = acc.prepare(self.model, self.opt, self.sched)
+            self._prepared = True
+        net = self.net
+        rng = random.Random(int(t.get("sampler_seed", 0)))
+        state = {"step": 0, "epoch": 0, "pos": 0, "best": None, "rng": None}
+        if resume:
+            acc.load_state(str(run_dir / "last"))
+            state = json.loads((run_dir / "last" / "trainer_state.json").read_text())
+            rng.setstate((state["rng"][0], tuple(state["rng"][1]), state["rng"][2]))
+            log.info(f"[trainer] resumed {run_dir}/last at step {state['step']} (epoch {state['epoch']}, "
+                     f"batch {state['pos']})")
         self.out = out
         if self.checkpoint_every and not out:
             log.info("[trainer] checkpoint_every set but no output path: checkpoints disabled")
@@ -450,80 +627,121 @@ class Trainer:
             gate_base = self._gate_wer()
             self.history.append({"step": 0, "wer_gate": gate_base, "wer_gate_baseline": gate_base})
             log.info(f"wer_gate baseline={gate_base:.4f}")
+        eval_sec = float(t.get("eval_minutes", 0) or 0) * 60
+        self._signal, self._old_handlers = None, {}
+        if run_dir and threading.current_thread() is threading.main_thread():
+            self._old_handlers = {s: signal.signal(s, self._on_signal) for s in (signal.SIGINT, signal.SIGTERM)}
+        if run_dir and pyinject is not None:
+            pyinject.listen()  # `pyinject <pid> 'step, float(loss)'` from another shell; jobs run at poll() below
         self.model.train()
-        t0, step = time.time(), 0
-        while step < self.steps:
-            trained = False
-            for b_idx in self._batches(train, rng):
-                batch = to_device(collate([train[j] for j in b_idx]), self.device)
-                o = self.model(batch, **fkw)
-                if not (torch.is_tensor(o["loss"]) and o["loss"].requires_grad):
-                    continue  # no head had labels in this batch (or all of them are frozen)
-                trained = True
-                if guard:
-                    terms = self._consistency(batch, o.pop("enc"))
-                    for k, v in terms.items():
-                        w = 1.0 if k.startswith("loss_") else (self.anchor if k == "kl_anchor" else self.mcr)["weight"]
-                        o["loss"] = o["loss"] + w * v
-                    o.update(terms)
-                self.opt.zero_grad(set_to_none=True)
-                o["loss"].backward()
-                gn = torch.nn.utils.clip_grad_norm_(self.model.parameters(), self.clip)
-                self.opt.step()
-                self.sched.step()
-                step += 1
-                rec = {"step": step, **{k: float(v.detach()) for k, v in o.items()}, "grad_norm": float(gn),
-                       "lr": self.sched.get_last_lr()[0], "sec": round(time.time() - t0, 1)}
-                self.history.append(rec)
-                if step % self.log_every == 0 or step == 1:
-                    log.info(" ".join(f"{k}={v:.4g}" if isinstance(v, float) else f"{k}={v}" for k, v in rec.items()))
-                if val and self.eval_every and step % self.eval_every == 0:
-                    log.info("%s %s", "eval", self.evaluate(val))
-                    self.model.train()
-                if self.wer_gate and step % self.wer_gate["every"] == 0:
-                    w = self._gate_wer()
-                    rec.update(wer_gate=w, wer_gate_baseline=gate_base)
-                    log.info(f"wer_gate step={step} wer={w:.4f} baseline={gate_base:.4f}")
-                    if w - gate_base > self.wer_gate["max_delta"]:
-                        good = self.checkpoints[-1] if self.checkpoints else None
-                        self.stopped = {"step": step, "wer": w, "baseline": gate_base, "restored_from": good}
-                        log.info(f"[trainer] STOP: WER {w:.4f} > baseline {gate_base:.4f} + "
-                              f"{self.wer_gate['max_delta']}; last good checkpoint: {good}")
-                        if good:
-                            self.model.load_state_dict(load_model(good, self.device).state_dict())
+        t0, step, last_eval = time.time(), state["step"], time.time()
+        try:
+            while step < self.steps:
+                trained = state["pos"] > 0
+                state["rng"] = list(rng.getstate())  # the epoch's batches are a function of this state
+                batches = shard_batches(self._batches(train, rng), acc.process_index, acc.num_processes)
+                if resume and state["pos"] < len(batches):
+                    log.info(f"[trainer] next batch ids {batches[state['pos']]}")
+                    resume = False
+                bar = tqdm(total=len(batches), initial=state["pos"], desc=f"epoch {state['epoch']}",
+                           disable=not (self.progress and acc.is_main_process), dynamic_ncols=True)
+                loader = torch.utils.data.DataLoader(batches[state["pos"]:], batch_size=None, collate_fn=lambda b: collate(
+                    [train[j] for j in b]), num_workers=int(t.get("num_workers", 0) or 0),
+                    generator=torch.Generator())  # own generator: iterating never draws from the global torch RNG
+                for batch in loader:
+                    state["pos"] += 1
+                    bar.update(1)
+                    if run_dir and pyinject is not None:
+                        pyinject.poll()  # safe point: queued snippets see step, loss, batch, self
+                    batch = to_device(batch, self.device)
+                    o = net(batch, **fkw)
+                    if not (torch.is_tensor(o["loss"]) and o["loss"].requires_grad):
+                        continue  # no head had labels in this batch (or all of them are frozen)
+                    trained = True
+                    if guard:
+                        terms = self._consistency(batch, o.pop("enc"))
+                        for k, v in terms.items():
+                            w = 1.0 if k.startswith("loss_") else (self.anchor if k == "kl_anchor" else self.mcr)["weight"]
+                            o["loss"] = o["loss"] + w * v
+                        o.update(terms)
+                    self.opt.zero_grad(set_to_none=True)
+                    acc.backward(o["loss"])
+                    gn = acc.clip_grad_norm_(self.model.parameters(), self.clip)
+                    self.opt.step()
+                    self.sched.step()
+                    step += 1
+                    state["step"] = step
+                    loss = float(o["loss"].detach())
+                    rec = {"step": step, **{k: float(v.detach()) for k, v in o.items()}, "grad_norm": float(gn),
+                           "lr": self.sched.get_last_lr()[0], "sec": round(time.time() - t0, 1)}
+                    self.history.append(rec)
+                    bar.set_postfix(loss=f"{loss:.4f}", step=step, refresh=False)
+                    if step % self.log_every == 0 or step == 1:
+                        log.info(" ".join(f"{k}={v:.4g}" if isinstance(v, float) else f"{k}={v}" for k, v in rec.items()))
+                        acc.log({f"train/{k}": v for k, v in rec.items() if k not in ("step", "sec")}, step=step)
+                    if val and self.eval_every and step % self.eval_every == 0:
+                        log.info("%s %s", "eval", self.evaluate(val))
+                        self.model.train()
+                    if run_dir and eval_sec and time.time() - last_eval >= eval_sec:
+                        self._eval_checkpoint(acc, net, val, collate, run_dir, state)
+                        last_eval = time.time()
+                    if self.wer_gate and step % self.wer_gate["every"] == 0:
+                        w = self._gate_wer()
+                        rec.update(wer_gate=w, wer_gate_baseline=gate_base)
+                        log.info(f"wer_gate step={step} wer={w:.4f} baseline={gate_base:.4f}")
+                        if w - gate_base > self.wer_gate["max_delta"]:
+                            good = self.checkpoints[-1] if self.checkpoints else None
+                            self.stopped = {"step": step, "wer": w, "baseline": gate_base, "restored_from": good}
+                            log.info(f"[trainer] STOP: WER {w:.4f} > baseline {gate_base:.4f} + "
+                                  f"{self.wer_gate['max_delta']}; last good checkpoint: {good}")
+                            if good:
+                                self.model.load_state_dict(load_model(good, self.device).state_dict())
+                            return self.history
+                    if self.checkpoint_every and out and step % self.checkpoint_every == 0:
+                        self._checkpoint(step)
+                    if run_dir and self._stop_requested(acc):
+                        self._save(acc, run_dir, "last", state)
+                        self.stopped = {"step": step, "signal": signal.Signals(self._signal or 15).name}
+                        log.info(f"[trainer] stopped at step {step}: {run_dir}/last written; continue with --resume")
                         return self.history
-                if self.checkpoint_every and out and step % self.checkpoint_every == 0:
-                    self._checkpoint(step)
-                if step >= self.steps:
-                    break
-            if not trained:
-                raise ValueError("a full pass over train produced no trainable loss: no batch carries labels "
-                                 "for a head with trainable parameters")
-        return self.history
+                    if step >= self.steps:
+                        break
+                bar.close()
+                if not trained:
+                    raise ValueError("a full pass over train produced no trainable loss: no batch carries labels "
+                                     "for a head with trainable parameters")
+                if step < self.steps:
+                    state["epoch"], state["pos"] = state["epoch"] + 1, 0
+            if run_dir:  # the run ends on an eval + checkpoint like any other
+                self._eval_checkpoint(acc, net, val, collate, run_dir, state)
+            return self.history
+        finally:
+            for s, h in self._old_handlers.items():
+                signal.signal(s, h)
+            acc.end_training()
+
+    def _stop_requested(self, acc) -> bool:
+        flag = self._signal is not None
+        if acc.num_processes > 1:  # every rank stops at the same step
+            f = torch.tensor([float(flag)], device=self.device)
+            flag = bool(acc.reduce(f, "max").item())
+        return flag
 
     def _batches(self, train, rng) -> list[list[int]]:
-        """Index batches for one epoch (full batches only). A MixedData with batching "source" gets
-        single-source batches (sources smaller than batch_size contribute none), in shuffled order."""
-        n, bs = len(train), self.bs
-        src = getattr(train, "source_ids", None)
-        if src is None or getattr(train, "batching", "source") != "source":
-            idx = list(range(n))
-            rng.shuffle(idx)
-            return [idx[i: i + bs] for i in range(0, n - bs + 1, bs)]
-        groups: dict[int, list[int]] = {}
-        for i, s in enumerate(src):
-            groups.setdefault(s, []).append(i)
-        out = []
-        for s, g in sorted(groups.items()):
-            if len(g) < bs and not getattr(self, "_warned_small", False):
-                log.info(f"[trainer] source {train.names[s]!r} has {len(g)} < batch_size items: never batched")
-            rng.shuffle(g)
-            out += [g[i: i + bs] for i in range(0, len(g) - bs + 1, bs)]
-        self._warned_small = True
-        if not out:
-            raise ValueError(f"no data source has >= trainer.batch_size={bs} items")
-        rng.shuffle(out)
-        return out
+        """Index batches for one epoch (data.epoch_batches). A MixedData with batching "source" gets single-source
+        batches; ``trainer.bucket: k`` sorts k-batch windows by duration when the data knows its durations."""
+        bs, t = self.bs, (getattr(self, "cfg", None) or {}).get("trainer", {})
+        src, batching = getattr(train, "source_ids", None), getattr(train, "batching", "source")
+        if src is not None and batching == "source" and not getattr(self, "_warned_small", False):
+            for s, c in sorted(Counter(src).items()):
+                if c < bs:
+                    log.info(f"[trainer] source {train.names[s]!r} has {c} < batch_size items: never batched")
+            self._warned_small = True
+        bucket = int(t.get("bucket", 0) or 0)
+        dur = getattr(train, "durations", None) if bucket else None
+        if bucket and dur is None and isinstance(train, list):
+            dur = [len(ex["audio"]) for ex in train]
+        return epoch_batches(len(train), bs, rng, src, batching, dur, bucket, getattr(train, "names", None))
 
     @torch.no_grad()
     def evaluate(self, val: list[dict], n: int = 64, chunk: int = 16) -> dict:
@@ -733,8 +951,13 @@ def build_model(cfg: dict, train: list[dict]) -> tuple[SpeechModel, dict]:
     return SpeechModel(cfg, tok), cfg
 
 
-def run_recipe(path: str, overrides: list[str] | None = None, out: str | None = None) -> tuple[SpeechModel, dict]:
+def run_recipe(path: str, overrides: list[str] | None = None, out: str | None = None,
+               run_dir: str | Path | None = None, resume: bool = False) -> tuple[SpeechModel, dict]:
+    """Recipe -> data -> model -> Trainer.fit -> .afm. ``run_dir`` / ``resume``: see Trainer.fit. A run stopped by a
+    signal returns ``{"stopped": ...}`` without the final save / eval (its ``last`` checkpoint is the result)."""
     cfg = load_recipe(path, overrides)
+    # NOTE: Python's global random (att-context / sortformer prefix / turn decoded_prob draws) is left unseeded as
+    # before; seeding it makes tests/test_diag_turn.py's 3-step diagnostics test fail every time (plans/trainer/parity.md)
     torch.manual_seed(cfg.get("seed", 0))
     np.random.seed(cfg.get("seed", 0))
     train, val = load_data(cfg, "train"), load_data(cfg, "val")
@@ -743,7 +966,9 @@ def run_recipe(path: str, overrides: list[str] | None = None, out: str | None = 
     log.info(f"[{cfg.get('name')}] params={model.num_params() / 1e6:.2f}M vocab={tok.vocab_size if tok else '-'} "
           f"heads={list(model.heads)} frame={model.frame_sec * 1000:.0f}ms")
     tr = Trainer(model, cfg)
-    tr.fit(train, val, out=out)
+    tr.fit(train, val, out=out, run_dir=run_dir, resume=resume)
+    if tr.stopped and "signal" in tr.stopped:
+        return model.cpu(), {"stopped": tr.stopped}
     if out:  # save first: an evaluation error must never throw away the trained weights
         save_model(model, out)
         log.info("%s %s", "saved", out)
@@ -754,6 +979,93 @@ def run_recipe(path: str, overrides: list[str] | None = None, out: str | None = 
         metrics = {"eval_error": f"{type(e).__name__}: {e}"}
     log.info("%s %s", "final", json.dumps(metrics))
     return model.cpu(), metrics
+
+
+# every size the trainer builds is a recipe entry and a --flag: the encoder's sizes always, plus every size-like
+# integer the recipe sets under heads.* / preprocessor / tokenizer (the heads read them from their config)
+ENCODER_SIZES = ("d_model", "n_layers", "n_heads", "conv_kernel", "ff_expansion", "subsampling_channels")
+SIZE_KEY = re.compile(r"(^|_)(d_model|d_hidden|hidden|dim|channels|n_layers|layers|n_heads|heads|kernel|expansion|"
+                      r"size|units|width|depth|emb|num_spks|num_speakers|num_classes|n_mels|vocab_size)($|_)")
+TRAINER_FLAGS = {  # --flag: (trainer key, type, help); unset flags leave the recipe value alone
+    "max-steps": ("max_steps", int, "optimizer steps"), "batch-size": ("batch_size", int, "items per batch"),
+    "lr": ("lr", float, "peak learning rate"), "device": ("device", str, "auto | cpu | mps | cuda"),
+    "eval-minutes": ("eval_minutes", float, "wall-clock minutes between evals (each writes last / best)"),
+    "eval-items": ("eval_items", int, "val rows in the eval loss (a fixed prefix, default 512)"),
+    "num-workers": ("num_workers", int, "DataLoader workers decoding audio on the fly"),
+    "bucket": ("bucket", int, "duration bucketing: sort windows of k batches by duration (0 = off)"),
+    "sampler-seed": ("sampler_seed", int, "seed of the batch order"),
+    "mixed-precision": ("mixed_precision", str, "accelerate mixed precision: no | fp16 | bf16"),
+}
+
+
+def size_flags(cfg: dict) -> list[str]:
+    keys = [f"encoder.{k}" for k in ENCODER_SIZES] + ["preprocessor.n_mels"]
+
+    def walk(node, prefix):
+        for k, v in (node or {}).items():
+            if isinstance(v, dict):
+                walk(v, f"{prefix}{k}.")
+            elif isinstance(v, int) and not isinstance(v, bool) and SIZE_KEY.search(str(k)):
+                keys.append(f"{prefix}{k}")
+    walk(cfg.get("heads"), "heads.")
+    walk(cfg.get("tokenizer"), "tokenizer.")
+    return list(dict.fromkeys(keys))
+
+
+def _cfg_get(cfg: dict, dotted: str):
+    node = cfg
+    for p in dotted.split("."):
+        if not isinstance(node, dict) or p not in node:
+            return None
+        node = node[p]
+    return node
+
+
+def main(argv: list[str] | None = None) -> int:
+    """``python -m audioforge.train RECIPE [key=value ...] [--name N] [--resume] [--eval-minutes M] [--<size> V]``:
+    trains into runs/<name>/ (TensorBoard under tb/, checkpoints last/ and best/, best/model.afm), evaluating every
+    --eval-minutes; Ctrl-C / SIGTERM checkpoints and stops, --resume continues at the same step. Multi-GPU:
+    ``accelerate launch -m audioforge.train RECIPE ...``."""
+    argv = sys.argv[1:] if argv is None else argv
+    pre = argparse.ArgumentParser(add_help=False)
+    pre.add_argument("recipe", nargs="?")
+    known, _ = pre.parse_known_args(argv)
+    cfg = load_recipe(known.recipe) if known.recipe and Path(known.recipe).exists() else {}
+    ap = argparse.ArgumentParser(prog="python -m audioforge.train", description=main.__doc__,
+                                 formatter_class=argparse.RawDescriptionHelpFormatter)
+    ap.add_argument("recipe")
+    ap.add_argument("overrides", nargs="*", help="dotted.key=value recipe overrides (value parsed as YAML)")
+    ap.add_argument("--name", help="run name (default: recipe name): everything goes to <runs>/<name>/")
+    ap.add_argument("--runs", default="runs", help="parent directory of run dirs")
+    ap.add_argument("--resume", action="store_true", help="continue <runs>/<name>/last at its step, batch and RNG")
+    ap.add_argument("-o", "--out", help="also write the final model here (.afm)")
+    ap.add_argument("--no-progress", action="store_true", help="no tqdm bars")
+    for flag, (key, typ, hlp) in TRAINER_FLAGS.items():
+        ap.add_argument(f"--{flag}", type=typ, help=f"trainer.{key}: {hlp} (recipe: {_cfg_get(cfg, 'trainer.' + key)})")
+    sizes = size_flags(cfg)
+    for k in sizes:  # value parsed as YAML; recipes record whether a size was swept (plans/) or is a placeholder
+        ap.add_argument(f"--{k}", dest=k, type=yaml.safe_load, metavar="N",
+                        help=f"size (recipe: {_cfg_get(cfg, k) if _cfg_get(cfg, k) is not None else 'model default'})")
+    a = ap.parse_args(argv)
+    ov = list(a.overrides)
+    ov += [f"trainer.{key}={getattr(a, flag.replace('-', '_'))}" for flag, (key, _, _) in TRAINER_FLAGS.items()
+           if getattr(a, flag.replace("-", "_")) is not None]
+    ov += [f"{k}={getattr(a, k)}" for k in sizes if getattr(a, k) is not None]
+    if a.no_progress:
+        ov.append("trainer.progress=false")
+    name = a.name or cfg.get("name") or Path(a.recipe).stem
+    run_dir = Path(a.runs) / name
+    run_dir.mkdir(parents=True, exist_ok=True)
+    if not logging.getLogger().handlers:
+        logging.basicConfig(level=logging.INFO, format="%(asctime)s %(message)s", datefmt="%H:%M:%S")
+    logging.getLogger("accelerate").setLevel(logging.WARNING)  # no per-file "saved" lines on every checkpoint
+    if a.eval_minutes is None and _cfg_get(cfg, "trainer.eval_minutes") is None:
+        ov.append("trainer.eval_minutes=10")  # a run started here always evaluates and checkpoints by the clock
+    if not a.resume:
+        (run_dir / "recipe.yaml").write_text(yaml.safe_dump(load_recipe(a.recipe, ov), sort_keys=False))
+    log.info(f"[train] run dir {run_dir} overrides {ov}")
+    _, metrics = run_recipe(a.recipe, ov, out=a.out, run_dir=run_dir, resume=a.resume)
+    return 130 if "stopped" in metrics else 0
 
 
 # --------------------------------------------------------------------------- codec & speech-LLM
@@ -883,3 +1195,7 @@ def train_speech_llm(steps: int = 300, batch_size: int = 16, lr: float = 1e-3, d
         a = torch.from_numpy(ex["audio"])[None].to(device)
         hyps.append(tok.decode(model.generate(a, torch.tensor([a.shape[1]], device=device), prompt, 40)))
     return model, hist, wer([ex["text"] for ex in val], hyps)
+
+
+if __name__ == "__main__":
+    sys.exit(main())

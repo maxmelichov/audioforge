@@ -11,8 +11,10 @@ negative or background) moved unchanged to [`archive/`](archive/) on 2026-09-30,
 
 Each doc is a dated note, kept as written. When a later measurement supersedes a number, it is corrected in place
 (marked "Corrected <date>") or listed in the corrections log in [EARLY_RESULTS.md](EARLY_RESULTS.md#corrections-log-2026-09-25);
-otherwise the newer doc wins. **The numbers to quote are in [METRICS.md](METRICS.md)** (2026-09-29: the standard
-voice-agent scorecard, one definition per metric). For the history, start with [FINAL_REPORT.md](FINAL_REPORT.md) (the single-document final report, also rendered as
+otherwise the newer doc wins. **The numbers to quote are in [FINAL_COMPARE.md](FINAL_COMPARE.md)** (2026-10-03: both cores against
+the best open models on public test splits) and its summary scorecard [METRICS.md](METRICS.md) (one definition per
+metric). Numbers in older notes are often on dev splits (AMI / ICSI dev); they document why a default was chosen, not
+the current result. For the history, start with [FINAL_REPORT.md](FINAL_REPORT.md) (the single-document final report, also rendered as
 [FINAL_REPORT.html](FINAL_REPORT.html)), then the product comparison [E2E_FINAL.md](E2E_FINAL.md);
 [INTERIM_SCORECARD.md](archive/INTERIM_SCORECARD.md) is the earlier snapshot it supersedes (its disagreements with the JSON
 are listed in FINAL_REPORT Appendix B).
@@ -31,11 +33,12 @@ Dates come from the doc header or git history (first commit → last change wher
 
 | doc | what it answers | key number | date |
 |---|---|---|---|
-| [CORE_0P6B.md](CORE_0P6B.md) | nemotron-speech-streaming-en-0.6b as a second served core (`--core 0.6b`), every head retrained, side by side with the 115M on the same benchmarks | meeting WER 24.4 → 11.2 % (AMI), live calls 22.5 → 13.7 %; speaker EER 17.4 → 13.6 %; end of turn not better (calls miss 11.0 vs 7.3 %); 96 vs 30 ms per chunk on CPU, 1 vs 4 streams | 2026-10-01 |
+| [FINAL_COMPARE.md](FINAL_COMPARE.md) | both cores (heads v0.4, LID head v2) against the best open models on public test splits, every baseline re-run on the same audio; leakage-flagged rows in its Appendix A | AMI test WER 7.9 % (0.6B) vs 8.3 % Parakeet-TDT v3 (offline) and 10.7 % Whisper large-v3; assistant clips 97.7 % accuracy at 351 ms p50 (0.6B) vs 85.2 % LiveKit, 75.9 % Pipecat | 2026-10-03 |
+| [CORE_0P6B.md](CORE_0P6B.md) | nemotron-speech-streaming-en-0.6b as a second served core (`--core 0.6b`), every head retrained, side by side with the 115M on the same benchmarks | test splits (FINAL_COMPARE.md), 115M → 0.6B: WER 16.1 → 7.9 % (AMI test), live calls 20.3 → 11.6 %; speaker EER 5.0 → 3.8 % (AMI test); AMI test turns (`balanced`) 15.5 / 36.0 → 10.0 / 33.5 % false interruptions / missed; 30 vs 97 ms per chunk on CPU, 4 vs 1 streams | 2026-10-01 |
 | [LAYER_SWEEP_0P6B.md](LAYER_SWEEP_0P6B.md) | which of the 0.6B's 24 blocks each head should read (every block, the mix, the top-3 concat; held-out selection) | speaker / TS-VAD best at blocks 4-6 (moved from 11), v5 classifier mid (12), LID deep (18-20); VAD peaks differ by corpus (AMI 13-14, ICSI 2-4) | 2026-10-01 |
-| [METRICS.md](METRICS.md) | the standard scorecard: WER, partial / final latency, end-of-turn latency, false interruptions, response rate, TurnBench F1, VAD AUC, target-speaker DER, compute | partial latency 441 ms p50; false interruptions 17.4 % of turns vs 23.9 % LiveKit default; end-of-turn latency 1382 vs 1350 ms (a tie) | 2026-09-29 |
+| [METRICS.md](METRICS.md) | the standard scorecard on the test splits, both cores: WER, partial / final latency, end-of-turn accuracy / latency, false interruptions, missed, VAD AUC / F1, tWER, speaker EER, LID, compute | partial latency 274 / 291 ms p50 (115M / 0.6B, MPS); AMI test `balanced` 15.5 / 10.0 % false interruptions vs 13.0 % LiveKit, 39.5 % Pipecat | 2026-09-29 → 2026-10-03 |
 | [INTERIM_SCORECARD.md](archive/INTERIM_SCORECARD.md) | every committed, source-verified result in one place | ASR AMI dev WER 20.63 % ours (streaming @160ms) vs 14.14 % Parakeet-CTC 0.6B offline (+5.11 [+3.4, +7.1] pts); equal on LibriSpeech (2.27 % vs 1.63 %) | 2026-09-27 |
-| [FINAL_REPORT.md](FINAL_REPORT.md) | single-document final report (supersedes INTERIM_SCORECARD): 14-row scorecard vs measured and published systems, per-task tables, product results, recommended stack, negative results, unfinished items, limitations | better than every streaming VAD and every dedicated turn detector on AMI / ICSI all-ends (hybrid 61.9 % vs Silero timeout 72.7 % missed, n=974, 6 s); worse at meeting ASR (24.4 % vs 19.3 %; hybrid TDT v3 per turn 9.7 %), speaker, diarization, LID | 2026-09-27 |
+| [FINAL_REPORT.md](FINAL_REPORT.md) | single-document final report (supersedes INTERIM_SCORECARD): 14-row scorecard vs measured and published systems, per-task tables, product results, recommended stack, negative results, unfinished items, limitations | dev-era, superseded by FINAL_COMPARE.md: better than every streaming VAD and every dedicated turn detector on AMI / ICSI all-ends (hybrid 61.9 % vs Silero timeout 72.7 % missed, n=974, 6 s); worse at meeting ASR on AMI dev (FINAL_REPORT §1; TDT v3 per turn far ahead), speaker, diarization, LID | 2026-09-27 |
 | [BRIEF.md](archive/BRIEF.md) | project goal, what exists, scorecard as of the brief (context for collaborators) | - (scorecard superseded by INTERIM_SCORECARD) | 2026-09-26 |
 | [PLAN.md](archive/PLAN.md) | the claim to earn, risks, gated execution queue, findings log | - | 2026-09-25 (header); git 2026-09-25 → 2026-09-26 |
 | [GAME_CHANGER.md](archive/GAME_CHANGER.md) | is a unified streaming voice-agent front end new? landscape and targets | verdict: gap is real but narrower than the thesis; the unshipped piece is speaker-aware end-of-turn in one model | 2026-09-25 |
@@ -48,6 +51,7 @@ Dates come from the doc header or git history (first commit → last change wher
 | [LATENCY_BUDGET.md](LATENCY_BUDGET.md) | every delay on the live path except the turn rule's own wait | see the note | 2026-09-30 |
 | [TSWER.md](TSWER.md) | target-speaker WER: how well single mode transcribes only the enrolled user | see the note | 2026-09-29 |
 | [VAD_SINGLE.md](VAD_SINGLE.md) | a block-4 single-layer VAD head vs the served all-layer head | see the note | 2026-09-29 |
+| [VOICE_GENDER.md](VOICE_GENDER.md) | an optional perceived voice-gender head (female / male voice probabilities, not gender identity) on both cores | LibriSpeech test-clean balanced accuracy 97.8 / 97.7 % at 2 s (115M / 0.6B; 40 speakers, CI ~94-100), FLEURS-17 test 96.3 / 96.7 % | 2026-10-03 |
 
 ## ASR and model import
 
@@ -69,7 +73,7 @@ and [IMPROVE_115M.md](IMPROVE_115M.md) (TS-VAD head prototype and other 115M imp
 | doc | what it answers | key number | date |
 |---|---|---|---|
 | [SORTFORMER_IMPORT.md](archive/SORTFORMER_IMPORT.md) | NVIDIA Streaming Sortformer v2 (and v2.1, Nemotron-3-Diarization) in audioforge | Sortformer v2 pooled DER 0.201 offline / 0.252 streaming (1.04 s) vs 0.384 for our stage-1 head, AMI dev 64 × 20 s windows | 2026-09-26 |
-| [SPK_HEAD.md](archive/SPK_HEAD.md) | is the weak speaker head an architecture or a supervision problem? | block-4 relational head 14.4 % AMI / 5.2 % ICSI within-meeting EER (n=64) vs 32.2 % / 42.3 % for the stage-1 all-layer head | 2026-09-26 |
+| [SPK_HEAD.md](archive/SPK_HEAD.md) | is the weak speaker head an architecture or a supervision problem? | dev-era (n=64): the block-4 relational head cuts within-meeting EER by about 18 points (AMI) and 37 points (ICSI) against the stage-1 all-layer head (32.2 % / 42.3 %) | 2026-09-26 |
 | [LAYER_ROUTING.md](archive/LAYER_ROUTING.md) | do single-block taps help the diarization and turn heads? | negative: best diar tap (block 6) −0.019 AMI / −0.023 ICSI DER (seed mean), below the pre-registered 0.03 bar; gap to Sortformer v2 0.16-0.18 | 2026-09-27 |
 | [VAD_LAYERS.md](archive/VAD_LAYERS.md) | which encoder block carries VAD, and does a gated encoder save compute? | block-4 probe F1 0.9476 vs served head 0.9485; gating needs 420 frames (34 s) of re-prime per onset, so do not gate | 2026-09-26 |
 

@@ -1,3 +1,10 @@
+# /// script
+# requires-python = ">=3.10"
+# dependencies = ["audioforge"]
+#
+# [tool.uv.sources]
+# audioforge = { path = "../..", editable = true }
+# ///
 """Regenerate the flag reference of docs/CONFIGURATION.md from the server's flag table.
 
     python scripts/dev/gen_config_doc.py           # rewrite the generated block in place

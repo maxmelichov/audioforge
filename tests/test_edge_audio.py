@@ -1,12 +1,20 @@
 """Edge cases for audioforge/heads/audio.py (CodecTokenHead upsampling, SortformerHead num_spks/PIL)."""
 import itertools
 
+import pytest
 import torch
 import torch.nn.functional as F
 
 from audioforge.heads.audio import CodecTokenHead, SortformerHead, sort_by_arrival
 
-torch.set_num_threads(1)
+
+@pytest.fixture(autouse=True, scope="module")
+def _threads_1():
+    """1 torch thread for this module only (restored after it, not at import time for the session)."""
+    old = torch.get_num_threads()
+    torch.set_num_threads(1)
+    yield
+    torch.set_num_threads(old)
 
 
 def test_codec_upsample_subframes_are_distinguishable():

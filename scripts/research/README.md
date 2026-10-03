@@ -45,6 +45,7 @@ repository root with `PYTHONPATH=.`, or through pytest (`tests/conftest.py` puts
 | `tsvad_turn.py` | research/archive/IMPROVEMENTS.md section 2: a predictive turn head trained on TS-VAD tracks (heads only, frozen encoder). |
 | `diar_distill.py` | research/archive/DIARIZATION_FIX.md section 5: distil NVIDIA's diarizer into our own head on the frozen served encoder. |
 | `lid.py` | Spoken language identification on the single-model front end vs dedicated LID models (research/archive/LID.md). |
+| `voice_gender.py` (+ `voice_gender_train.py`) | The optional perceived voice-gender head (research/VOICE_GENDER.md): split checks, speaker-tap features, the equal wall-clock size sweep that trains the shipped files, test tables, served latency. |
 | `turn_error_analysis.py` | Turn-head error analysis on AMI dev: why the v3 turn head works with oracle speaker activity and fails with NVIDIA's streaming Sortformer track, and why a silence timeout on the same noisy track does better ... |
 | `contamination_probe.py` | Contamination probe: a speaker-conditioned streaming model gets a WRONG speaker assignment for a short window, then the correct one again. |
 | `tsvad_chain.sh` | research/IMPROVE_115M.md A.2 / A.3: the whole TS-VAD turn-bench chain, resumable stage by stage (re-run this script; finished. |

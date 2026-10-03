@@ -120,7 +120,7 @@ def test_titanet_strict_load_and_card_pair():
         from huggingface_hub import hf_hub_download
         wavs = [soundfile.read(hf_hub_download("nvidia/speakerverification_en_titanet_large", f, local_files_only=True))[0]
                 for f in ("an255-fash-b.wav", "cen7-fash-b.wav")]
-    except Exception:  # noqa: BLE001
+    except (OSError, ImportError):  # LocalEntryNotFoundError is an OSError
         pytest.skip("card example wavs not cached")
     e = m.embed(wavs)
     assert float(e[0] @ e[1]) > 0.7   # same speaker ("fash"); NeMo's verify_speakers threshold is 0.7

@@ -9,7 +9,9 @@ outputs (and the earlier run files that are reused, each named in the json) and 
                                whisper_large_v3 (transformers fp16 on MPS), tdt_v3 (NeMo Parakeet-TDT 0.6B v3, CPU),
                                core_115m / core_0p6b (the served cores' streaming RNNT, masked forward == 160 ms
                                streaming, CPU); X: libri | ami | icsi (the 200-item sets of final_asr / hybrid_asr) |
-                               live (the 32 two-party sessions with references: 16 TurnBench clips x mono / user)
+                               live (the 32 two-party sessions with references: 16 TurnBench clips x mono / user) |
+                               fleurs_en (the 150 FLEURS en_us test clips cached for the LID test, raw transcription);
+                               also core_115m_f1120 / core_0p6b_f1120 (the 1.12 s final, att [70,13], DUAL_RATE.md)
   sttlat  --sys 115m|0p6b      streaming word latency (stt_latency.py protocol) through the served engine on --device
   vad     --system S           per-frame speech scores on AMI dev 64 x 20 s and ICSI dev 64 x 20 s (vad_layers sets)
   lid     --system S           FLEURS-17 test (2550 clips), 2 s from the speech onset and the full clip
@@ -47,17 +49,35 @@ OUT = ROOT / "runs" / "final_compare.json"
 SR = 16000
 CHUNK = 2560  # 160 ms
 HUB = Path.home() / ".cache/huggingface/hub"
-AFM_115M = Path(os.environ.get("FINAL_115M_AFM", ROOT / "runs" / "stage1_served_v3.afm"))  # served heads (hub.SERVED)
-# the 0.6B served model: the turn fix's v0.2 build when it exists (research/CORE_0P6B_TURN.md), else v0.1
-AFM_0P6B_V02 = SSD / "scratch" / "core_0p6b" / "served_0p6b_v0.2.afm"
-AFM_0P6B_V01 = SSD / "scratch" / "core_0p6b" / "served_0p6b_v0.1.afm"
+# The shipped builds are the defaults (no environment variable is needed to reproduce the published numbers): the
+# 115M with served heads v0.4, the English 0.6B with heads v0.4 (hub.HEADS / HEADS_0P6B) and the LID heads v2. The
+# environment variables only point a stage at a candidate build.
+AFM_115M = Path(os.environ.get("FINAL_115M_AFM", ROOT / "runs" / "stage1_served_v4.afm"))
+AFM_0P6B = SSD / "scratch" / "core_0p6b" / "served_0p6b_v0.4.afm"
+LID_HEAD = {"115m": ROOT / "assets" / "lid_115m_v2.pt", "0p6b": ROOT / "assets" / "lid_0p6b_v2.pt"}
 E2E = SSD / "scratch" / "e2e_tsvad"
 T_START = time.time()
+# the AMI turn rows come from the AMI test (eval) meetings (eot_latency reads this when it is imported)
+os.environ.setdefault("EOT_AMI_SPLIT", "eval")
+# served-engine turn dumps per core: the 0.6B's were re-made with heads v0.4 (research/TURN_DATA.md stage fc_v04)
+EOT_DIR = {"115m": WORK / "eot", "0p6b": SSD / "scratch" / "turndata" / "fc_v04" / "eot"}
+# Files that produced each published section (labels only: the per-item outputs do not record the build). The 0.6B
+# v0.3 and v0.4 builds have bit-identical tensors except v0.4's two extra turn heads (turn_vad, turn_seg_a) and its
+# assistant preset; the 115M v0.3 and v0.4 builds are identical except v0.4's extra speech head (plans/fixwave).
+FILES_USED = {
+    "words": {"115m": "runs/stage1_served_v4.afm", "0p6b": "served_0p6b_v0.3.afm (tensors = v0.4 minus the turn heads)"},
+    "vad": {"115m": "runs/stage1_served_v4.afm (heads.speech)", "0p6b": "served_0p6b_v0.3.afm (heads.speech, = v0.4)"},
+    "lid": {"115m": "assets/lid_115m_v2.pt on stage1_served_v4.afm", "0p6b": "assets/lid_0p6b_v2.pt on served_0p6b_v0.3.afm"},
+    "speaker_eer": {"115m": "runs/stage1_served_v4.afm (heads.spk)", "0p6b": "served_0p6b_v0.3.afm (heads.spk, = v0.4)"},
+    "turn": {"115m": "dumps: calls + assistant clips with stage1_served_v3.afm, AMI test with stage1_served_v4.afm (the "
+                     "turn path reads heads.vad / turn / turn_seg, bit-identical in v3 and v4)",
+             "0p6b": "dumps: served_0p6b_v0.4.afm (scratch/turndata/fc_v04/eot)"},
+    "cost": {"115m": "runs/stage1_served_v4.afm + lid_115m_v2.pt", "0p6b": "served_0p6b_v0.3.afm + lid_0p6b_v2.pt"},
+}
 
 
 def afm_0p6b() -> Path:
-    p = Path(os.environ.get("FINAL_0P6B_AFM", AFM_0P6B_V02 if AFM_0P6B_V02.exists() else AFM_0P6B_V01))
-    return p
+    return Path(os.environ.get("FINAL_0P6B_AFM", AFM_0P6B))
 
 
 def log(*a):
@@ -109,6 +129,19 @@ def asr_set(name: str):
             assert sr == SR
             xs.append(x if x.ndim == 1 else x.mean(1))
         return xs, [s["ref"] for s in S], [s["clip"] for s in S]
+    if name == "fleurs_en":  # FLEURS en_us test: the 150 clips of data/lid/fleurs/manifest.jsonl (the LID test subset,
+        import soundfile as sf  # fixed before any WER); references = raw transcription column of the en_us test.tsv
+        tsv = ROOT / "data/lid/fleurs/_tsv/data/en_us/test.tsv"
+        ref = {r[1].rsplit(".", 1)[0]: r[2] for r in (ln.split("\t") for ln in tsv.read_text().splitlines() if ln)}
+        rows = [r for r in map(json.loads, (ROOT / "data/lid/fleurs/manifest.jsonl").read_text().splitlines())
+                if r.get("lang") == "en" and r.get("split") == "test"]
+        assert len(rows) == 150, len(rows)
+        xs = []
+        for r in rows:
+            x, sr = sf.read(str(ROOT / r["path"]), dtype="float32")
+            assert sr == SR
+            xs.append(x if x.ndim == 1 else x.mean(1))
+        return xs, [ref[r["id"]] for r in rows], list(range(len(rows)))
     if name in ("ls_clean", "ls_other"):  # LibriSpeech test-clean / test-other: 300 utterances, seeded random over the
         import random                        # whole split (every speaker can be drawn; FIXALL test audit)
         import soundfile as sf
@@ -143,48 +176,67 @@ def asr_set(name: str):
             (WORK / "asr_sets" / f"{name}_refs.json").write_text(json.dumps([segs[j]["text"] for j in idx]))
         z = np.load(f)
         refs = json.loads((WORK / "asr_sets" / f"{name}_refs.json").read_text())
-        return [z[f"a{i}"] for i in range(len(refs))], refs, list(range(len(refs)))
+        import final_scoring as FS  # bootstrap groups = meetings (WORK/meta, final_scoring.py meta)
+        groups = FS.asr_groups(name)
+        assert groups is None or len(groups) == len(refs), name
+        return [z[f"a{i}"] for i in range(len(refs))], refs, groups if groups else list(range(len(refs)))
     import hybrid_asr as H
     xs, refs = H.load_fa_set(name)
     return xs, refs, list(range(len(refs)))
 
 
 ASR_SYSTEMS = {
+    "whisper_small_b5": "OpenAI Whisper small (244M) via faster-whisper 1.2.1 / CTranslate2 (Systran/faster-whisper-small), "
+                        "int8, CPU 2 threads, faster-whisper's own transcribe() defaults (beam 5, best_of 5, temperature "
+                        "fallback, previous-text conditioning, timestamps) with language en: what Pipecat 1.12's local "
+                        "WhisperSTTService calls (it passes only language / hotwords / prompt)",
     "whisper_small": "OpenAI Whisper small (244M) via faster-whisper 1.2.1 / CTranslate2 (Systran/faster-whisper-small), "
-                     "int8, CPU 2 threads, beam 1, language en, no timestamps, no VAD filter, no previous-text "
-                     "conditioning (final_asr.py settings; LiveKit's default STT model)",
+                     "int8, CPU 2 threads, beam 1 (greedy), language en, no timestamps, no VAD filter, no previous-text "
+                     "conditioning (final_asr.py settings; second row, the headline row is whisper_small_b5)",
     "whisper_turbo": "OpenAI Whisper large-v3-turbo (809M) via transformers 5.17 (openai/whisper-large-v3-turbo), fp16 "
                      "on MPS, greedy, language en; clips > 30 s: Whisper's sequential long-form decoding",
     "whisper_large_v3": "OpenAI Whisper large-v3 (1.55B) via transformers 5.17 (openai/whisper-large-v3), fp16 on MPS, "
                         "greedy, language en; clips > 30 s: sequential long-form decoding",
     "tdt_v3": "NVIDIA Parakeet-TDT 0.6B v3 (data/nemo/parakeet-tdt-0.6b-v3.nemo imported with audioforge.nemo_import), "
               "offline full context, greedy TDT, batch 1, CPU 2 threads (hybrid_asr.py load_tdt / tdt_transcribe)",
-    "core_115m": "audioforge 115M core (runs/stage1_served_v3.afm), streaming RNNT at att [70,1] = 160 ms chunks "
+    "core_115m": "audioforge 115M core (runs/stage1_served_v4.afm), streaming RNNT at att [70,1] = 160 ms chunks "
                  "(masked offline forward == cache-aware streaming, tests/test_streaming.py), greedy, CPU 2 threads",
     "core_115m_beam8": "audioforge 115M core as core_115m, RNNT beam search width 8 (<= 3 tokens per frame; serve "
                        "--beam 8, research/FIXALL.md step 5), CPU 2 threads",
-    "core_0p6b": "audioforge 0.6B core (nemotron-speech-streaming-en-0.6b inside served_0p6b afm, base tensors "
-                 "unchanged by the heads), streaming RNNT at [70,1], greedy, CPU 2 threads",
+    "core_0p6b": "audioforge 0.6B core (nemotron-speech-streaming-en-0.6b inside served_0p6b_v0.3.afm; base tensors "
+                 "unchanged by the heads and identical in v0.4), streaming RNNT at [70,1], greedy, CPU 2 threads",
+    "core_115m_f1120": "audioforge 115M core, the 1.12 s final (--final-chunk-ms 1120): masked offline forward at att "
+                       "[70,13] (== cache-aware streaming in 1120 ms chunks, research/DUAL_RATE.md), greedy RNNT, CPU 2 threads",
+    "core_0p6b_f1120": "audioforge 0.6B core, the 1.12 s final (--final-chunk-ms 1120): masked offline forward at att "
+                       "[70,13], greedy RNNT, CPU 2 threads",
 }
+OPTIONAL_ASR = ("core_115m_f1120", "core_0p6b_f1120", "whisper_small_b5")  # scored only on the sets where they were run
 
 
 def make_asr(system: str, device: str):
     """-> transcribe(np.ndarray) -> str."""
     import torch
     torch.set_num_threads(2)
-    if system == "whisper_small":
+    if system in ("whisper_small", "whisper_small_b5"):
         from faster_whisper import WhisperModel
         wm = WhisperModel(snap("Systran/faster-whisper-small"), device="cpu", compute_type="int8", cpu_threads=2,
                           num_workers=1)
+        if system == "whisper_small_b5":
+            def fn5(x):  # faster-whisper's transcribe() defaults, English (Pipecat's WhisperSTTService call)
+                segs, _ = wm.transcribe(np.asarray(x, np.float32), language="en")
+                return " ".join(s.text.strip() for s in segs)
+            return fn5
 
         def fn(x):
             segs, _ = wm.transcribe(x, language="en", beam_size=1, without_timestamps=True, vad_filter=False,
                                     condition_on_previous_text=False)
             return " ".join(s.text.strip() for s in segs)
         return fn
-    if system in ("whisper_turbo", "whisper_large_v3"):
+    if system in ("whisper_turbo", "whisper_large_v3", "whisper_small_hf_b5"):
         from transformers import WhisperForConditionalGeneration, WhisperProcessor
-        repo = {"whisper_turbo": "openai/whisper-large-v3-turbo", "whisper_large_v3": "openai/whisper-large-v3"}[system]
+        repo = {"whisper_turbo": "openai/whisper-large-v3-turbo", "whisper_large_v3": "openai/whisper-large-v3",
+                "whisper_small_hf_b5": "openai/whisper-small"}[system]
+        nb = 5 if system == "whisper_small_hf_b5" else 1  # Whisper small on MPS: transformers, beam 5
         proc = WhisperProcessor.from_pretrained(snap(repo))
         dt = torch.float16 if device != "cpu" else torch.float32
         model = WhisperForConditionalGeneration.from_pretrained(snap(repo), dtype=dt).to(device).eval()
@@ -194,23 +246,28 @@ def make_asr(system: str, device: str):
             with torch.inference_mode():
                 if len(x) <= 30 * SR:
                     f = proc(x, sampling_rate=SR, return_tensors="pt").input_features.to(device, dt)
-                    ids = model.generate(f, language="en", task="transcribe", num_beams=1, do_sample=False)
+                    ids = model.generate(f, language="en", task="transcribe", num_beams=nb, do_sample=False)
                 else:
                     inp = proc(x, sampling_rate=SR, return_tensors="pt", truncation=False, padding="longest",
                                return_attention_mask=True)
                     ids = model.generate(inp.input_features.to(device, dt), attention_mask=inp.attention_mask.to(device),
-                                         language="en", task="transcribe", num_beams=1, do_sample=False,
+                                         language="en", task="transcribe", num_beams=nb, do_sample=False,
                                          return_timestamps=True, condition_on_prev_tokens=False)
             return proc.batch_decode(ids, skip_special_tokens=True)[0].strip()
         return fn
     if system == "tdt_v3":
         import hybrid_asr as H
-        m = H.load_tdt("cpu")
+        m = H.load_tdt(device)
         return lambda x: H.tdt_transcribe(m, np.asarray(x, np.float32))
     from audioforge.train import load_model
     path = AFM_115M if system.startswith("core_115m") else afm_0p6b()
     m = load_model(str(path), "cpu").eval()
     assert list(m.encoder.att_context_size) == [70, 1], m.encoder.att_context_size
+    if system.endswith("_f1120"):
+        def fns(x):
+            with torch.inference_mode():
+                return m.transcribe([np.asarray(x, np.float32)], head="rnnt", att_context_size=[70, 13])[0]
+        return fns
     if system.endswith("_beam8"):
         def fnb(x):
             with torch.inference_mode():
@@ -237,7 +294,7 @@ def stage_asr(a):
     if not todo:
         log("STAGE_COMPLETE")
         return
-    fn = make_asr(a.system, a.device)
+    fn = make_asr(a.system, "cpu" if a.system == "tdt_v3" else a.device)  # the words table runs Parakeet-TDT on CPU
     fn(xs[todo[0]][: 3 * SR])  # warm-up, not timed
     with p.open("a") as f:
         n = 0
@@ -270,20 +327,27 @@ def score_asr() -> dict:
     """Every system on every set with Whisper's English normalizer (Open ASR Leaderboard; primary) and
     audioforge.teachers.normalize_text (the repo's earlier tables); 1000-resample bootstrap CIs (items; clips for the
     live sessions) and paired deltas against each core."""
+    import final_scoring as FS
     import hybrid_asr as H
     norms, _ = H._normalizers()
+    norms = {**norms, "whisper_norm_disfl": FS.disfl_norm(norms["whisper_norm"])}
     res = {}
-    for set_name in ("libri", "ami", "icsi", "live", "ami_eval", "icsi_eval", "ls_clean", "ls_other"):
+    for set_name in ("libri", "ami", "icsi", "live", "ami_eval", "icsi_eval", "ls_clean", "ls_other", "fleurs_en"):
         if set_name.endswith("_eval") and not (WORK / "asr_sets" / f"{set_name}_refs.json").exists():
             continue
-        if set_name.startswith("ls_") and not any((WORK / "asr").glob(f"*_{set_name}.jsonl")):
+        if (set_name.startswith("ls_") or set_name == "fleurs_en") and not any((WORK / "asr").glob(f"*_{set_name}.jsonl")):
             continue
         hyp = {s: jl_rows(WORK / "asr" / f"{s}_{set_name}.jsonl") for s in ASR_SYSTEMS}
         _, refs, groups = asr_set(set_name)
         n = len(refs)
         full = [s for s in ASR_SYSTEMS if len(hyp[s]) >= n]
-        out = {"n": n, "systems_complete": full, "missing": {s: n - len(hyp[s]) for s in ASR_SYSTEMS if s not in full}}
-        for nn in ("whisper_norm", "normalize_text"):
+        out = {"n": n, "systems_complete": full, "missing": {s: n - len(hyp[s]) for s in ASR_SYSTEMS if s not in full
+                                                             and not (s in OPTIONAL_ASR and not hyp[s])},
+               "bootstrap": ("1000 resamples of meetings" if set_name.endswith("_eval") and isinstance(groups[0], str)
+                             else "1000 resamples of sessions (clips; mono and user channel together)" if set_name == "live"
+                             else "1000 resamples of items"),
+               "bootstrap_groups": len(set(groups))}
+        for nn in ("whisper_norm", "normalize_text") + (("whisper_norm_disfl",) if set_name == "live" else ()):
             fn = norms[nn]
             rr = [fn(r) for r in refs]
             E = {}
@@ -389,9 +453,10 @@ VAD_SYSTEMS = {
                      "Offline (sees up to 10 s of future audio)",
     "ten_vad": "TEN VAD 1.0.6.8 (pip ten-vad, Agora; Apache-2.0 with conditions), 16 ms hop on int16 PCM, max-pooled "
                "onto 80 ms. Causal",
-    "core_115m": "audioforge 115M served VAD head (stage1_served_v3.afm, block 4), native 80 ms frames, att [70,1] "
-                 "(80 ms right context)",
-    "core_0p6b": "audioforge 0.6B served VAD head (served 0.6B afm), native 80 ms frames, att [70,1]",
+    "core_115m": "audioforge 115M served speech head (heads.speech of stage1_served_v4.afm), native 80 ms frames, "
+                 "att [70,1] (80 ms right context)",
+    "core_0p6b": "audioforge 0.6B served speech head (heads.speech of served_0p6b_v0.3.afm, identical in v0.4), native "
+                 "80 ms frames, att [70,1]",
 }
 
 
@@ -468,75 +533,10 @@ def stage_vad(a):
         log(f"vad {a.system} {sn}: {len(val)} windows, {sum(len(y) for y in L)} frames, {time.perf_counter() - t0:.1f} s")
 
 
-def _onset_lags(p, y, lens, thr=0.5, min_sil=5, horizon=12):
-    """Per labelled speech onset that follows >= min_sil frames (400 ms) of labelled non-speech inside a window: frames
-    until the score first exceeds thr (within horizon frames = 1 s), else missed."""
-    lags, missed, i0 = [], 0, 0
-    for n in lens:
-        pp, yy = p[i0:i0 + n], y[i0:i0 + n] > 0.5
-        for i in range(min_sil, n):
-            if yy[i] and not yy[i - min_sil:i].any():
-                j = np.nonzero(pp[i:i + horizon + 1] > thr)[0]
-                if len(j):
-                    lags.append(int(j[0]))
-                else:
-                    missed += 1
-        i0 += n
-    return np.array(lags), missed
-
-
-def _vad_metrics(p, y):
-    from sklearn.metrics import roc_auc_score
-    t = y > 0.5
-    d = p > 0.5
-    tp, fp, fn = float((d & t).sum()), float((d & ~t).sum()), float((~d & t).sum())
-    f1 = 2 * tp / max(2 * tp + fp + fn, 1)
-    auc = roc_auc_score(t, p)
-    # miss at FPR 7.5 % (vad_layers.FPR_POINT): the threshold at the 92.5th percentile of non-speech scores
-    th = np.quantile(p[~t], 1 - 0.075)
-    miss = float((p[t] <= th).mean())
-    return f1, auc, miss
-
-
 def score_vad() -> dict:
-    res = {}
-    for sn in VAD_SETS:
-        Z = {s: np.load(WORK / "vad" / f"{s}_{sn}.npz") for s in VAD_SYSTEMS if (WORK / "vad" / f"{s}_{sn}.npz").exists()}
-        if not Z:
-            continue
-        ref = next(iter(Z.values()))
-        y, lens = ref["y"], ref["lens"]
-        for s, z in Z.items():
-            assert np.array_equal(z["y"], y) and np.array_equal(z["lens"], lens), f"{s} {sn}: labels differ"
-        off = np.concatenate([[0], np.cumsum(lens)])
-        rows = [np.arange(off[w], off[w + 1]) for w in range(len(lens))]
-        rng = np.random.default_rng(0)
-        boots = [np.concatenate([rows[k] for k in rng.integers(0, len(rows), len(rows))]) for _ in range(1000)]
-        o = {"n_windows": int(len(lens)), "n_frames": int(len(y)), "speech_frac": round(float((y > 0.5).mean()), 4)}
-        B = {}
-        for s, z in Z.items():
-            p = z["p"].astype(np.float64)
-            f1, auc, miss = _vad_metrics(p, y)
-            B[s] = np.array([_vad_metrics(p[ii], y[ii]) for ii in boots])
-            lags, missed = _onset_lags(p, y, lens)
-            ci = lambda k: [round(float(np.percentile(B[s][:, k], q)), 4) for q in (2.5, 97.5)]  # noqa: E731
-            o[s] = {"f1_at_0.5": round(f1, 4), "f1_ci95": ci(0), "auc": round(auc, 4), "auc_ci95": ci(1),
-                    "miss_at_fpr_7.5_pct": round(100 * miss, 2),
-                    "miss_ci95_pct": [round(100 * x, 2) for x in ci(2)],
-                    "onset_lag_ms_p50": int(80 * np.median(lags)) if len(lags) else None,
-                    "onset_lag_ms_p90": int(80 * np.percentile(lags, 90)) if len(lags) else None,
-                    "onsets": int(len(lags) + missed), "onsets_detected_within_1s_pct":
-                        round(100 * len(lags) / max(len(lags) + missed, 1), 1),
-                    "compute_s": round(float(z["sec"]), 1)}
-        for base in ("core_0p6b", "core_115m"):
-            if base in B:
-                for s in B:
-                    if s != base:
-                        dd = B[s] - B[base]
-                        o[f"{s} - {base}"] = {"f1_delta_ci95": [round(float(np.percentile(dd[:, 0], q)), 4) for q in (2.5, 97.5)],
-                                              "auc_delta_ci95": [round(float(np.percentile(dd[:, 1], q)), 4) for q in (2.5, 97.5)]}
-        res[sn] = o
-    return res
+    """final_scoring.score_vad: frames inside the audio only (every system), meeting bootstrap."""
+    import final_scoring as FS
+    return FS.score_vad(WORK, VAD_SYSTEMS, VAD_SETS)
 
 
 # =========================================================================== language ID
@@ -589,10 +589,10 @@ def stage_lid(a):
         from audioforge.train import load_model
         if a.system == "core_115m":  # FIXALL: the 115M through this path too (FINAL_LID_HEAD: a candidate head file)
             model = load_model(str(AFM_115M), dev).eval()
-            name = attach_head(model, Path(os.environ.get("FINAL_LID_HEAD", ROOT / "assets" / "lid_distill.pt")))
+            name = attach_head(model, Path(os.environ.get("FINAL_LID_HEAD", LID_HEAD["115m"])))
         else:
             model = load_model(str(afm_0p6b()), dev).eval()
-            name = attach_head(model, Path(os.environ.get("FINAL_LID_HEAD", ROOT / "assets" / "lid_0p6b.pt")))
+            name = attach_head(model, Path(os.environ.get("FINAL_LID_HEAD", LID_HEAD["0p6b"])))
         head = model.heads[name]
 
         def probs(clips):
@@ -734,9 +734,15 @@ def stage_eou(a):
     log(f"eou {a.which}: {n} this call, {len(todo) - n} left")
 
 
+def eot_dir(sys_: str, which: str, noprint: bool = False) -> Path:
+    """Where a core's served-engine turn dumps live: EOT_DIR[sys]/<sys>_<which>; no-print runs: WORK/eot/..._noprint."""
+    return (WORK / "eot" if noprint else EOT_DIR[sys_]) / (f"{sys_}_{which}" + ("_noprint" if noprint else ""))
+
+
 def stage_eotdump(a):
     """core_0p6b_turn.stage_evdump (the served single-mode session, every per-frame signal a preset reads, its own
-    chunk compute) for either core on --device -> WORK/eot/<sys>_<which>/."""
+    chunk compute) for either core on --device -> eot_dir(sys, which). ``--noprint``: the AMI test sessions only, with
+    no voice print armed (no TS-VAD "others" path), to measure what knowing the user's voice is worth."""
     import torch
     import audioforge.serve as S
     import core_0p6b_heads as C
@@ -744,9 +750,12 @@ def stage_eotdump(a):
     import eot_latency as E
     from audioforge.server.cli import MODES
     torch.set_num_threads(2)
-    od = WORK / "eot" / f"{a.sys}_{a.which}"
+    od = eot_dir(a.sys, a.which, a.noprint)
     od.mkdir(parents=True, exist_ok=True)
     items = E.sessions() if a.which == "calls" else EA.clips()
+    if a.noprint:
+        assert a.which == "calls" and E.AMI_SPLIT == "eval"
+        items = [x for x in items if x["set"] == "ami"]
     todo = [x for x in items if not (od / f"{x['key']}.json").exists()]
     log(f"eotdump {a.sys} {a.which}: {len(todo)} of {len(items)} to do")
     if not todo:
@@ -754,10 +763,10 @@ def stage_eotdump(a):
         return
     if a.sys == "0p6b":
         prints = json.loads(C.PRINTS.read_text())  # the 5 s prints re-made for the 0.6B's speaker head
-        afm, ts, lid = afm_0p6b(), ROOT / "assets" / "tsvad_0p6b.pt", ROOT / "assets" / "lid_0p6b.pt"
+        afm, ts, lid = afm_0p6b(), ROOT / "assets" / "tsvad_0p6b.pt", LID_HEAD["0p6b"]
     else:
         prints = None
-        afm, ts, lid = AFM_115M, ROOT / "assets" / "tsvad_spk.pt", ROOT / "assets" / "lid_distill.pt"
+        afm, ts, lid = AFM_115M, ROOT / "assets" / "tsvad_spk.pt", LID_HEAD["115m"]
     opts = {**MODES["single"], "enroll": "explicit", "tsvad": str(ts), "lid": str(lid) if lid.exists() else None,
             "silero": str(ROOT / "data" / "silero" / "silero_vad_v5.onnx"), "preload_silero": True}
     eng = S.Engine.load(str(afm), None, a.device, threads=2, **opts)
@@ -771,7 +780,7 @@ def stage_eotdump(a):
             x = E.read_audio(it)
             s = S.Session(eng, S.SessionConfig(turn_policy="hybrid_dyn", timeout_ms=1000))
             emb = (prints.get(k) if prints is not None else it["embedding"]) if it["embedding"] is not None else None
-            if emb is not None:
+            if emb is not None and not a.noprint:
                 s.arm_enrollment("enroll", 0, embedding=emb)
             blk = SR * 160 // 1000
         else:
@@ -784,7 +793,7 @@ def stage_eotdump(a):
         if "turn_seg_a" in s.asr.m.heads and s.asr.seg2 is None:  # research/TURN_DATA.md: the second classifier
             s.asr.attach_seg2("turn_seg_a", next(s.asr.m.heads["turn_seg_a"].parameters()).device)
         rec = []
-        C._record(s, rec, enrolled_only=a.which == "asst")
+        C._record(s, rec, enrolled_only=a.which == "asst" or a.noprint)
         msgs = []
         for i in range(0, len(x), blk):
             msgs += s.process(x[i:i + blk])
@@ -799,7 +808,7 @@ def stage_eotdump(a):
               "turn_ends": [{kk: m_.get(kk) for kk in ("t", "policy", "p", "path")} for m_ in msgs
                             if m_["type"] == "turn_end"]}
         if a.which == "calls":
-            dd.update({"set": it["set"], "cond": it["cond"], "has_print": it["embedding"] is not None})
+            dd.update({"set": it["set"], "cond": it["cond"], "has_print": it["embedding"] is not None and not a.noprint})
         else:
             dd.update({"complete": it["complete"], "clip_s": round((it["b"] - it["a"]) / SR, 4)})
         (od / f"{k}.json").write_text(json.dumps(dd))
@@ -862,10 +871,16 @@ def _score_times(tcalls, ccalls, tasst, casst, boot=1000):
 
 
 def score_turn(boot=1000) -> dict:
+    """Every system on the identical sessions; assistant clips also at false-fire windows 2.0 / 2.5 / 3.0 / 3.5 s
+    (final_scoring.asst_curve) with the headline window chosen by final_scoring.headline_window; AMI test also with
+    our cores un-enrolled (no voice print, eotdump --noprint)."""
     import core_0p6b_turn as CT
     import eot_assistant as EA
     import eot_latency as E
+    import final_scoring as FS
+    assert E.AMI_SPLIT == "eval", "the AMI turn rows are scored on the AMI test meetings"
     out = {}
+    asess = EA.sessions(EA.load_dump())
     # ---- baselines on the identical sessions: the stored per-session decisions of eot_latency.cmd_baselines
     # (baselines4) and eot_assistant.cmd_baselines, rescored here with CIs
     bl_c = {d["key"]: d for d in (json.loads(p.read_text()) for p in sorted(E.BASE.glob("*.json")))}
@@ -882,6 +897,8 @@ def score_turn(boot=1000) -> dict:
             T2 = {c["key"]: tc(bl_a, c["key"]) for c in clips}
             out[name] = _score_times({k: v[0] for k, v in T1.items()}, {k: v[1] for k, v in T1.items()},
                                      {k: v[0] for k, v in T2.items()}, {k: v[1] for k, v in T2.items()}, boot)
+            out[name]["asst_windows"] = FS.asst_curve(asess, {k: v[0] for k, v in T2.items()},
+                                                      {k: v[1] for k, v in T2.items()}, boot)
             out[name]["source"] = f"{E.BASE} + {EA.BASE} (per-session decisions, rescored with CIs)"
     # ---- Parakeet-Realtime-EOU
     ec = {p.stem: json.loads(p.read_text()) for p in (WORK / "eou" / "calls").glob("*.json")}
@@ -894,6 +911,7 @@ def score_turn(boot=1000) -> dict:
         t1, c1 = f(ec)
         t2, c2 = f(ea)
         out["parakeet_realtime_eou"] = _score_times(t1, c1, t2, c2, boot)
+        out["parakeet_realtime_eou"]["asst_windows"] = FS.asst_curve(asess, t2, c2, boot)
         out["parakeet_realtime_eou"]["chunk_ms_p50"] = round(float(np.median([d["chunk_ms_p50"] for d in ec.values()])), 1)
     else:
         out["parakeet_realtime_eou"] = {"complete": False, "calls": len(ec), "asst": len(ea)}
@@ -912,8 +930,9 @@ def score_turn(boot=1000) -> dict:
                                                    "same model file)"}
     # ---- ours: the served engines' dumps, each preset as the served model resolves it (cfg turn_presets merged)
     sd = EA.load_dump()
+    fallbacks = {}
     for sysn, afm in (("115m", AFM_115M), ("0p6b", afm_0p6b())):
-        dc, da = WORK / "eot" / f"{sysn}_calls", WORK / "eot" / f"{sysn}_asst"
+        dc, da = eot_dir(sysn, "calls"), eot_dir(sysn, "asst")
         D = {x["key"]: x for x in (json.loads(p_.read_text()) for p_ in sorted(dc.glob("*.json")))}
         A = {x["key"]: x for x in (json.loads(p_.read_text()) for p_ in sorted(da.glob("*.json")))}
         if not all(s["key"] in D for s in sess_c) or not all(c["key"] in A for c in clips):
@@ -923,12 +942,23 @@ def score_turn(boot=1000) -> dict:
         for kk, d in A.items():
             d["conf"] = sd[kk]["conf"]
         rules = CT.served_rules(afm)
-        o = {"afm": str(afm), "rules": rules,
+        afms = sorted({d["afm"] for d in list(D.values()) + list(A.values())})
+        o = {"afm": str(afm), "dump_dirs": [str(dc), str(da)], "dump_afms": afms, "rules": rules,
              "chunk_ms_p50_median": round(float(np.median([d["chunk_ms"]["p50"] for d in D.values()])), 2),
              "device": next(iter(D.values()))["device"]}
+        Dn = {x["key"]: x for x in (json.loads(p_.read_text()) for p_ in sorted(eot_dir(sysn, "calls", True).glob("*.json")))}
+        n_ami = sum(s["set"] == "ami" for s in sess_c)
         for pn, r in rules.items():
             o[pn] = CT.ev_score(D, A, r, boot=boot)
+            tt, cc = FS.ours_asst_times(A, r, asess)
+            o[pn]["asst_windows"] = FS.asst_curve(asess, tt, cc, boot)
+            assert o[pn]["asst_windows"]["3"]["accuracy_pct"] == o[pn]["asst"]["accuracy_pct"], "window replay drifted"
+            if len(Dn) >= n_ami:  # AMI test, no voice print armed (no "others" path): the value of knowing the voice
+                o[pn]["ami_noprint"] = FS.ours_ami_score(Dn, r, boot=200)
+            fallbacks[f"audioforge {sysn} {pn} (fallback {r['fb']} frames)"] = round(r["fb"] * 0.08, 2)
+        o["ami_noprint_dumps"] = {"dir": str(eot_dir(sysn, "calls", True)), "n": len(Dn), "of": n_ami}
         out[f"ours_{sysn}"] = o
+    out["asst_headline_window"] = FS.headline_window(fallbacks)
     return out
 
 
@@ -989,9 +1019,9 @@ def stage_spkeer(a):
 
 
 def score_spkeer() -> dict:
-    import torch
-    import spk_head as SH
-    from audioforge.metrics import eer
+    """Within-meeting EER; CI = 1000 resamples of meetings (each draw pools the within-meeting pairs of the drawn
+    meetings; final_scoring.eer_meeting_boot)."""
+    import final_scoring as FS
     out = {}
     for c in ("ami", "icsi", "ami_eval", "icsi_eval"):
         if c.endswith("_eval") and not any((WORK / "spk").glob(f"*_{c}.npy")):
@@ -999,26 +1029,15 @@ def score_spkeer() -> dict:
         val = spk_segments(c)
         spk = np.array([v["speaker"] for v in val])
         meet = np.array([v["meeting"] for v in val])
-        n = len(val)
-
-        def eer_w(Em, idx):
-            X = Em[idx] / np.linalg.norm(Em[idx], axis=1, keepdims=True)
-            iu = np.triu_indices(len(idx), 1)
-            s = (X[iu[0]] * X[iu[1]]).sum(1)
-            lab = spk[idx][iu[0]] == spk[idx][iu[1]]
-            same = (meet[idx][iu[0]] == meet[idx][iu[1]]) & (idx[iu[0]] != idx[iu[1]])
-            return float(eer(torch.tensor(s[same]), torch.tensor(lab[same].astype(np.int64))))
-        rng = np.random.default_rng(0)
-        bi = [rng.integers(0, n, n) for _ in range(500)]
-        o = {"n_segments": n}
+        o = {"n_segments": len(val), "meetings": sorted(set(meet.tolist())), "bootstrap": "1000 resamples of meetings"}
         for s in ("core_115m", "core_0p6b", "titanet_l", "wespeaker_pyannote"):
             f = WORK / "spk" / f"{s}_{c}.npy"
             if not f.exists():
                 continue
-            E = np.load(f)
-            b = [eer_w(E, k) for k in bi]
-            o[s] = {"eer_within_meeting_pct": round(100 * eer_w(E, np.arange(n)), 2),
-                    "ci95": [round(100 * float(np.percentile(b, q)), 2) for q in (2.5, 97.5)]}
+            pairs = FS.eer_pairs(np.load(f), spk, meet)
+            pt, b = FS.eer_meeting_boot(pairs)
+            o[s] = {"eer_within_meeting_pct": round(100 * pt, 2), "ci95": FS.ci95(b, 2, 100),
+                    "n_pairs": int(sum(len(v[1]) for v in pairs.values()))}
         out[c] = o
     return out
 
@@ -1384,8 +1403,11 @@ def stage_report(a):
     res = json.loads(OUT.read_text()) if OUT.exists() else {}
     res["generated"] = time.strftime("%Y-%m-%d %H:%M")
     res["machine"] = "Apple M5 laptop (macOS), MPS for the served cores' served metrics and the large Whisper models, CPU 2 threads elsewhere"
-    res["afm"] = {"115m": str(AFM_115M), "0p6b": str(afm_0p6b()),
-                  "0p6b_heads": Path(afm_0p6b()).stem}
+    res["afm"] = {"115m": str(AFM_115M), "0p6b": str(afm_0p6b()), "0p6b_heads": Path(afm_0p6b()).stem,
+                  "lid_heads": {k: str(v.relative_to(ROOT)) for k, v in LID_HEAD.items()},
+                  "note": "the builds the report resolves turn presets from; the files that produced each section: "
+                          "files_used"}
+    res["files_used"] = FILES_USED
     for k, fn in (("words", score_asr), ("stt_latency", score_sttlat), ("vad", score_vad), ("lid", score_lid),
                   ("turn", score_turn), ("speaker_eer", score_spkeer), ("pyannote_frame", score_pyaframe),
                   ("pyannote_twer", score_pyatwer)):
@@ -1414,6 +1436,12 @@ def stage_report(a):
         res.setdefault("errors", {})["words_nemotron35"] = f"{type(ex).__name__}: {ex}"
     if (WORK / "params.json").exists():
         res["params"] = json.loads((WORK / "params.json").read_text())
+    import torch
+    for c, f in LID_HEAD.items():  # the LID heads v2 (attached at load, not inside the afm)
+        t = torch.load(f, map_location="cpu", weights_only=False)
+        sd = t.get("tensors") or t.get("state_dict") or t
+        res.setdefault("params", {})[f"lid_head_v2_{c}"] = {
+            "params": int(sum(v.numel() for v in sd.values() if hasattr(v, "numel"))), "file": str(f.relative_to(ROOT))}
     res["cost"] = {c: {p.stem: json.loads(p.read_text()) for p in (WORK / "cost" / c).glob("*.json")}
                    for c in ("115m", "0p6b") if (WORK / "cost" / c).exists()}
     res["cost_summary"] = cost_summary(res["cost"])
@@ -1426,13 +1454,21 @@ def stage_report(a):
     fx = load_json("runs/fixall.json") if (ROOT / "runs/fixall.json").exists() else {}
 
     def frame_best(fr):
+        """der_pct here is the target-speaker miss + false-alarm rate ((missed + false target frames) / target
+        frames, 80 ms, no collar), not the standard DER (that one: stdder)."""
         if not fr:
             return {}
-        return {"ours_115m": fr["pyannote31"]["tsvad_spk_vp5p0"], "ours_0p6b": fr["ours_0p6b"],
-                "nemotron3": max((fr["nemotron3"]["nemotron3_vp_spk_vp5p0"], fr["nemotron3"]["nemotron3_vp_titanet_vp5p0"]),
-                                 key=lambda r: r["f1"]),
-                "pyannote31": max((fr["pyannote31"]["pyannote31_vp_spk_vp5p0"], fr["pyannote31"]["pyannote31_vp_titanet_vp5p0"]),
-                                  key=lambda r: r["f1"])}
+        o = {"ours_115m": fr["pyannote31"]["tsvad_spk_vp5p0"], "ours_0p6b": fr["ours_0p6b"],
+             "nemotron3": max((fr["nemotron3"]["nemotron3_vp_spk_vp5p0"], fr["nemotron3"]["nemotron3_vp_titanet_vp5p0"]),
+                              key=lambda r: r["f1"]),
+             "pyannote31": max((fr["pyannote31"]["pyannote31_vp_spk_vp5p0"], fr["pyannote31"]["pyannote31_vp_titanet_vp5p0"]),
+                               key=lambda r: r["f1"]),
+             # upper bound of the diarizer arms: the column that best matches the target, chosen with the labels
+             "nemotron3_oracle_binding": fr["nemotron3"]["nemotron3_oracle_column"],
+             "pyannote31_oracle_binding": fr["pyannote31"]["pyannote31_oracle_column"]}
+        for r in o.values():
+            r["target_miss_fa_pct"] = r["der_pct"]
+        return o
     if fx.get("twsub"):  # target-speaker rows on the ICSI / AMI TEST meetings (research/FIXALL.md test audit)
         fr = fx.get("frsub") or {}
         res["speaker_test"] = {"icsi": {"twer": fx["twsub"], "frame": fr, "frame_best": frame_best(fr)},
@@ -1443,7 +1479,49 @@ def stage_report(a):
         if fx.get("twsub_ami_eval"):
             fa = fx.get("frsub_ami_eval") or {}
             res["speaker_test"]["ami_eval"] = {"twer": fx["twsub_ami_eval"], "frame": fa, "frame_best": frame_best(fa)}
-    res["ami_turn_split"] = os.environ.get("EOT_AMI_SPLIT", "dev")
+    import eot_latency as E
+    import final_scoring as FS
+    res["ami_turn_split"] = E.AMI_SPLIT
+    td = load_json("runs/turn_data.json")["evalv04"]  # the 0.6B heads v0.3 turn row (before v0.4), from its run file
+    res["superseded"] = {"turn.ours_0p6b (heads v0.3)": {**td["v0.3"], "source": "runs/turn_data.json evalv04 > v0.3 "
+                                                         "(the same scorer, dumps of served_0p6b_v0.3.afm)"}}
+    if (ROOT / "runs/turn_clean.json").exists():  # held-out re-pick of the turn presets (plans/fixwave/turn_clean.md)
+        tc = load_json("runs/turn_clean.json")
+        res["turn_clean"] = {"source": "runs/turn_clean.json (the turn-clean agent's run; keys: plans/fixwave/turn_clean.md "
+                                       "section 7)", **tc}
+    # speech heads retrained without any ICSI training meeting holding an ICSI test speaker (turn_clean.json speech):
+    # their per-frame outputs scored here with the same scorer and the same baselines (frames inside the audio, meeting
+    # CIs). The ICSI headline speech row of our cores; the shipped heads' ICSI row is seen-speaker (leakage item 3).
+    sc = SSD / "scratch" / "speech_clean"
+    if all((sc / f"fc_{c}_new" / "vad" / f"core_{c}_icsi_eval.npz").exists() for c in ("115m", "0p6b")):
+        mix = WORK / "vad_speakers_unseen"
+        (mix / "vad").mkdir(parents=True, exist_ok=True)
+        for sn in ("ami_eval", "icsi_eval"):
+            for s_ in VAD_SYSTEMS:
+                c = s_.replace("core_", "")
+                src = (sc / f"fc_{c}_new" / "vad" / f"{s_}_{sn}.npz") if s_.startswith("core_") else (WORK / "vad" / f"{s_}_{sn}.npz")
+                dst = mix / "vad" / f"{s_}_{sn}.npz"
+                if dst.is_symlink() or dst.exists():
+                    dst.unlink()
+                dst.symlink_to(src)
+        res["vad_speakers_unseen"] = {
+            "label": "speakers unseen in training: our speech heads retrained without every ICSI training meeting that "
+                     "holds any of the 13 ICSI test speakers (runs/turn_clean.json speech; not shipped); baselines as in vad",
+            "heads": {c: str(sc / f"fc_{c}_new") for c in ("115m", "0p6b")},
+            **FS.score_vad(mix, VAD_SYSTEMS, ("ami_eval", "icsi_eval"))}
+    old = SSD / "scratch" / "fixall" / "fc_old"  # the previous heads (115M v0.3 / 0.6B v0.2 VAD; lid_distill / lid_0p6b)
+    if not a.only or "vad" in a.only.split(","):
+        res["vad_previous_heads"] = {"source": str(old / "vad"), **FS.score_vad(old, VAD_SYSTEMS, VAD_SETS)}
+    import lid as L
+    y = np.array([L.CODES.index(r["lang"]) for r in L.rows_for("fleurs")])
+    res["lid_previous_heads"] = {"source": str(old / "lid")}
+    for s_ in ("core_115m", "core_0p6b"):
+        z = np.load(old / "lid" / f"{s_}.npz")
+        res["lid_previous_heads"][s_] = {f"acc_{c}_pct": round(100 * float(np.mean(z["P"][:, i].argmax(-1) == y)), 2)
+                                         for i, c in enumerate(LID_COND)}
+    fsd = WORK / "meta" / "stdder.json"
+    if fsd.exists() and "speaker_test" in res:  # standard DER of the open diarizers' tracks (final_scoring.py stdder)
+        res["speaker_test"]["stdder"] = json.loads(fsd.read_text())
     res["systems"] = {"asr": ASR_SYSTEMS, "vad": VAD_SYSTEMS}
     OUT.write_text(json.dumps(res, indent=1, default=float))
     log(f"-> {OUT}")
@@ -1469,6 +1547,7 @@ def main():
     p.add_argument("--ks", default="1,2,3,4,5,6")
     p.add_argument("--seconds", type=float, default=60)
     p.add_argument("--only", default="")
+    p.add_argument("--noprint", action="store_true")
     a = p.parse_args()
     STAGES[a.stage](a)
 

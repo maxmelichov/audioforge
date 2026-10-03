@@ -1,0 +1,90 @@
+require 1.10.0
+
+# audioforge tasks: `chore list` shows them, `chore <task> --dry` previews one.
+#
+# Long tasks (tests, the public build, servers) run in the background through scripts/dev/logged.sh: they print a
+# pid and a log path under runs/logs/ and return at once; `chore log <name>` prints the tail of the newest log.
+# Heavy ones also go through the machine gate (scripts/dev/gate.sh). The project venv is .venv
+# (CONTRIBUTING.md "Set up"); no task installs anything into it. Rules: AGENTS.md and docs/PROJECT.md.
+
+py=.venv/bin/python
+bin=.venv/bin
+
+# Full test suite in the background, log under runs/logs/test_*.log; extra args go to pytest.
+task test {
+    scripts/dev/logged.sh -b test scripts/dev/gate.sh $py -m pytest -q $@
+}
+
+# The CPU subset CI runs (tests/fast_ci.txt) in the background, log under runs/logs/test-fast_*.log.
+task test-fast {
+    files=$(^grep -v "^#" tests/fast_ci.txt)
+    scripts/dev/logged.sh -b test-fast scripts/dev/gate.sh $py -m pytest -q -m "not real" $files $@
+}
+
+# The real-model tests (pytest -m real: the shipped 115M / 0.6B stacks on the bundled clip, a missing served 0.6B is
+# built once into runs/, and the RUN_REAL=1 integration tests) in the background, log under runs/logs/test-real_*.log.
+task test-real {
+    env RUN_REAL 1
+    scripts/dev/logged.sh -b test-real scripts/dev/gate.sh $py -m pytest -q -rs -m real tests $@
+}
+
+# Ruff (the CI selection), the client package, and the generated config doc check.
+task lint {
+    $bin/ruff check audioforge tests integrations examples scripts
+    $bin/ruff check packages/audioforge-client
+    $py scripts/dev/gen_config_doc.py --check
+}
+
+# Regenerate the flag reference in docs/CONFIGURATION.md from audioforge/server/cli.py.
+task config-doc {
+    $py scripts/dev/gen_config_doc.py
+}
+
+# Start the server in single mode (the default, ws://127.0.0.1:8765) in the background; extra args go to it.
+task serve {
+    scripts/dev/logged.sh -b serve scripts/dev/gate.sh $bin/audioforge-serve $@
+}
+
+# Start the server on the 0.6B core (needs `chore download-models 0.6b`) in the background.
+task serve-0.6b device=mps {
+    scripts/dev/logged.sh -b serve-0.6b scripts/dev/gate.sh $bin/audioforge-serve --core 0.6b --device $1
+}
+
+# Fetch a core and its heads into ./models (115m or 0.6b); asks before each licence, so it stays in the foreground.
+task download-models core=115m {
+    scripts/dev/logged.sh download $bin/audioforge-download --core $1
+}
+
+# Build the public snapshot (git archive HEAD minus assets/lid_*.pt), scan it for tokens and run pytest in it.
+task build-public out= {
+    scripts/dev/logged.sh -b build-public scripts/dev/gate.sh scripts/dev/build_public.sh $1
+}
+
+# Render the README comparison images (demo/images/compare_*.png) from arch_vs.html with the Playwright venv.
+task images keys=asr,turn,vad,spk,lid playwright=/Volumes/afdev/venvs/video/bin/python {
+    python3 demo/images/redesign/export_final.py
+    $2 scripts/dev/render_compare.py $1
+}
+
+# Run any command through the machine gate (load, swap and disk checks; 2 threads, nice 5).
+task gate {
+    scripts/dev/gate.sh $@
+}
+
+# Run any command in the background, logged to runs/logs/<name>_*.log: chore bg <name> <command...>.
+task bg {
+    scripts/dev/logged.sh -b $@
+}
+
+# Print the tail of the newest runs/logs/<name>_*.log.
+task log name lines=20 {
+    last=""
+    for f in $(find runs/logs "$1_*.log") { last=$f }
+    if $last == "" { fail "no runs/logs/$1_*.log" }
+    ^tail -n $2 $last
+}
+
+# Check the repository rules (root entries, 700-line files, PEP 723 headers, chorefile, commit trailers).
+task rules {
+    uv run plans/repo_rules/repo_rules_001.py
+}

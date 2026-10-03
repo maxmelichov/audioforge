@@ -1,342 +1,113 @@
-# results_v10.png and architecture_v9.png: turn head v5
+# The published images: architecture_v10.png and compare_*.png
 
-`results_v10.png` (and `_square`, `_notext`, `_square_notext`) is results_v9 in the same style (2 × 2 white cards,
-paired vertical bars, a green bracket with the relative change, footnotes, footer), updated for turn head v5 (commit
-21b55cb, research/TURN_V5.md). The meetings card is replaced by a card on speech to an agent, and the calls card now
-uses `--turn-preset fast` and shows end-of-turn latency as a third bar pair: it is a near-tie with LiveKit now, so it
-is shown. Cards 3 and 4 are unchanged from v9.
+The README shows six images. All numbers on them are public **test**-split numbers from
+[research/FINAL_COMPARE.md](../../research/FINAL_COMPARE.md) (headline tables only; nothing from its Appendix A of
+rows tuned on their own test audio). Updated 2026-10-03 after the evaluation fix wave.
 
-**How the numbers get on.** As in v9: every bar value is a key in `redesign/numbers_single.json`, written by
-`export_single.py` from `runs/*.json`. The new keys are `v10/...` (function `v10()`); the LiveKit bars reuse the
-`v8/calls/livekit/*` keys (`runs/eot_latency.json`, the same 109 turn ends). The changes are computed from the printed
-bar labels; the export stops if one is not an improvement. `v10()` also cross-checks the `final` summary rows of
-`runs/turn_v5.json` against the candidate rows they summarise (`candidates > c5 > scan_orig > ...`), and that the
-calls row has the same 109 turn ends as LiveKit's.
-
-| Card | Chart | audioforge | Grey bar | Change (raw) | Source |
-|---|---|---|---|---|---|
-| 1. Turn-taking: speech to an agent | Accuracy, % of clips judged right | 92 (92.2) | Pipecat smart-turn 70 (69.7) | ↑ 31% (32.3) | `runs/turn_v5.json` `final > presets > assistant_v5_c5 > assistant_offline`; `runs/eot_assistant.json` `systems > Pipecat smart-turn v3.2 + Silero (defaults) > accuracy_pct` |
-| | False fires, % of unfinished sentences answered | 5 (5.4) | Pipecat smart-turn 40 (40.2) | ↓ 88% (86.6) | same rows, `[2]` / `incomplete > false_fire_pct` |
-| 2. Turn-taking on calls | End-of-turn latency, median ms | 547 | LiveKit 567 | ↓ 4% (3.5) | `runs/turn_v5.json` `final > presets > fast_v5_c5 > calls`; `runs/eot_latency.json` `table > two_party_user` |
-| | False interruptions, % of your turns | 25 (24.8) | LiveKit 27 (26.6) | ↓ 7% (6.8) | same |
-| | Missed turn ends, % of turn ends | 5.5 | LiveKit 23 (22.9) | ↓ 76% (76.0) | same |
-| 3. Your words when others talk | unchanged from v9 | 40 | no speaker filter 63 | ↓ 37% | `runs/tswer_live.json` @ fe28a9e |
-| 4. Voice activity detection | unchanged from v9 | 0.951 | NVIDIA MarbleNet 0.937 | ↑ 1.5% | `runs/vad_auc.json` |
-
-- **Card 1: Turn-taking: speech to an agent.** audioforge runs `--turn-preset assistant` (the v5 classifier after
-  240 ms of energy-or-VAD quiet, P > 0.9, ~3 s timer). The grey bar is Pipecat smart-turn v3.2 + Silero at its
-  defaults. Footnote: "smart-turn's 399 public test clips · same clips for both". Accuracy counts a complete clip
-  answered and an incomplete clip not answered; a false fire is an incomplete clip (a sentence cut off mid-way)
-  answered anyway. The values are the offline row TURN_V5.md quotes (92.2 % / 292 ms / 5.4 %); the served row is 93.0 %
-  / 317 ms / 5.4 %. Not shown: smart-turn answers complete clips faster (211 vs 292 ms p50).
-- **Card 2: Turn-taking on calls.** `--turn-preset fast` (v5 classifier after 80 ms of VAD < 0.6, re-asked every quiet
-  frame, P > 0.7, 640 ms fallback) against LiveKit EnglishModel + Silero at its defaults. Footnote: "109 turn ends,
-  user's own channel, 32 two-party calls". "lower is better" is said once, on the title row (wide) or legend row
-  (square). Missed turn ends print with one decimal (5.5): rounding to 6 would misstate the value; the LiveKit bar
-  keeps v9's 23. The default preset (balanced) is still 956 ms on these calls; the card says "Fast preset".
-- **Layout.** Row 1 is split 47 / 53 (wide) and 44 / 56 (square) because the calls card carries three charts. Wide
-  cards put names under the bars (bars at 25 % / 77 % of the plot so "Pipecat smart-turn" fits); square cards with two
-  or more charts use the legend row, as in v9. The square card-1 headers are "Accuracy, %" / "False fires, %" with the
-  direction as the unit line.
-- **Checks.** `render.py r10`: the v9 checks (values, bar labels and heights, each change = formula over the printed
-  labels, arrows, plain line, footnote, tWER labelling) with latency words allowed, plus the card set (2 / 3 / 1 / 1
-  charts) and exactly the seven expected changes. Both sizes pass (`redesign/checks.json`).
-
-## architecture_v9.png
-
-architecture_v8 with turn head v5. Verified in `audioforge/server/streams.py` (`ASRStream.attach_seg` / `seg_prob`,
-the segment classifier's inputs: `hid[block - 1]` of the first run, served VAD, TS-VAD P(user) / P(other), the RNNT
-token count and tokens), `audioforge/heads/turn_seg.py`, `audioforge/server/constants.py` (`TURN_PRESETS`) and
-`runs/turn_v5.json` (`final > shipped_model`: c5, block 8, 2 455 301 parameters).
-- **The GRU turn head (0.32M) stays**: `balanced` (the default) still ends turns at VAD quiet ≥ 160 ms + turn head
-  ≥ 0.99, and the head still runs on the second pass under every preset.
-- **The turn-end box** reads two lines: "VAD quiet ≥ 160 ms + turn head ≥ 0.99" / "or classifier at each quiet frame
-  (v5, 2.5M, layer 8 + words)" (square: three lines). The classifier is not drawn as a separate box or wire; the
-  annotation names its inputs.
-- **Subtitle and footer**: "Six small heads"; "109M frozen NVIDIA encoder · 6 small heads · no Silero · no diarizer"
-  (VAD, speaker, TS-VAD, turn GRU, turn classifier v5, LID).
-- Square: the voice-print annotation moved to the left of its stem so the taller turn-end box does not overlap it.
-
-# results_v9.png: the mock-up version
-
-`results_v9.png` (and `_square`, `_notext`, `_square_notext`) follows the user's mock-up. It has four white cards in a
-2 × 2 grid. Each card has a title, one grey plain-English line, and one or two paired vertical bar charts: audioforge in
-orange against one competitor in grey. Every chart has a y-axis with ticks and a value on each bar. A green bracket joins
-the two bars and shows the relative change ("↓ 26%"). Latency is not shown: we lose on it, and the user chose to show
-only the results where we win. The architecture image stays `architecture_v8.png`; there is no `architecture_v9`.
-
-Title: "audioforge: higher quality, fewer mistakes". Subtitle: "Standard evaluation against LiveKit and Pipecat models,
-same audio for every system."
-
-**How the numbers get on.** Every bar value is an existing `v8/...` key in `redesign/numbers_single.json`
-(`export_single.py`, read from `runs/*.json`). The relative changes are new `v9/...` keys. `export_single.py` computes
-them from the same rounded values printed on the bars (the `shown` strings), so a reader who divides the two bar labels
-gets the printed %. They are never typed in, and the export stops if any of them is not an improvement. The raw-value
-change is kept in each entry's `raw` field.
-- Lower is better: `100 × (1 − ours / theirs)`.
-- Higher is better (VAD F1): `100 × (ours / theirs − 1)`.
-
-**Checks.** `render.py r9` renders the page, copies the finals to `demo_out/images/` (full size) and `demo/images/`
-(half size), and checks:
-- every number equals its `numbers_single.json` string;
-- every bar has a value label, and its height matches its value on its axis;
-- each change equals the formula applied to the printed bar labels, and its arrow points the right way;
-- every card has a plain line and a footnote, and one change per chart;
-- the tWER card does not name LiveKit or Pipecat, and its grey bar reads "no speaker filter";
-- the words "latency", "ms" and "p50" do not appear;
-- plus the usual type-size, edge, contrast, overlap and clipping checks.
-
-All of these pass for both sizes (`redesign/checks.json`).
-
-| Card | Chart | audioforge | Grey bar | Change | Source |
-|---|---|---|---|---|---|
-| 1. Turn-taking on calls | False interruptions, % of your turns | 20 (20.2) | LiveKit 27 (26.6) | ↓ 26% | `runs/eot_latency.json`, `table > two_party_user` |
-| | Missed turn ends, % of turn ends | 7 (7.3) | LiveKit 23 (22.9) | ↓ 70% | same |
-| 2. Turn-taking in meetings | False interruptions | 11 (10.5) | Pipecat 28 (28.0) | ↓ 61% | `runs/eot_latency.json`, `table > ami` |
-| | Missed turn ends | 34 (33.5) | Pipecat 45 (44.5) | ↓ 24% | same |
-| 3. Your words when others talk | Target-speaker WER, words wrong per 100 of yours | 40 (40.24) | no speaker filter 63 (62.72) | ↓ 37% | `runs/tswer_live.json` @ fe28a9e, `results > mono` |
-| 4. Voice activity detection | F1 at threshold 0.5, y-axis 0.8–1.0 | 0.951 (0.9511) | NVIDIA MarbleNet 0.937 (0.9367) | ↑ 1.5% | `runs/vad_auc.json`; `runs/vad_single.json` and `runs/baselines_sd.json` agree |
-
-- **Card 1: Turn-taking on calls.** Plain line: "audioforge cuts you off less and misses the fewest turn ends."
-  - False interruptions: how often the agent answers while you are still mid-turn.
-  - Missed turn ends: how often it never notices you finished.
-  - audioforge runs the shipped `vad_head` rule (160 ms of quiet, p ≥ 0.99, 640 ms fallback). LiveKit runs
-    EnglishModel + Silero at its defaults.
-  - Footnote: 109 turn ends, user's own channel, 32 two-party calls. Every system is scored on the same turn ends.
-- **Card 2: Turn-taking in meetings.** Same two measures on 200 AMI turns. The comparison is against Pipecat
-  smart-turn v3.2 + Silero at its defaults. audioforge also beats LiveKit here (LiveKit: 12.5 % false interruptions,
-  67.5 % missed turn ends).
-- **Card 3: Your words when others talk.** Plain line: "Lower WER — fewer other people's words transcribed as yours."
-  - It shows target-speaker WER on 16 calls with both voices mixed into one channel.
-  - **Label correction.** The mock-up labels the grey bar "LiveKit". That is not what was measured. The 63 is our own
-    speech-to-text with no speaker filter, which is what LiveKit and Pipecat do: neither has a speaker filter. The bar
-    is labelled "no speaker filter", and the checks fail if the card names LiveKit or Pipecat.
-- **Card 4: Voice activity detection.** Plain line: "Higher F1 — better balance of missed and false speech."
-  - F1 at threshold 0.5 on AMI dev (64 × 20 s windows).
-  - The y-axis starts at 0.8, as in the mock-up. That makes the 1.5 % gap look larger than it is; the printed values
-    and the "↑ 1.5%" are exact.
-  - Our head was trained on AMI labels.
-- **Footer.** Pipecat 1.12 / LiveKit Agents 1.8 defaults. Turn detectors are replayed without waiting for their
-  speech-to-text, which is in their favour. Word accuracy is that of a 115M streaming model: 2.3 % WER on LibriSpeech,
-  23.2 % on live calls (LiveKit default 19.3 %).
-
-**Printed % vs raw-value %.** The printed % are worked out from the bar labels, so the picture is consistent with
-itself, and they match the mock-up. Worked out from the raw file values, four of them come out slightly different:
-
-| Chart | Printed (from bar labels) | Raw file values |
+| image | page | what it shows |
 |---|---|---|
-| Calls, false interruptions | 26 % (1 − 20/27) | 24 % (1 − 20.2/26.6) |
-| Calls, missed turn ends | 70 % (1 − 7/23) | 68 % (1 − 7.3/22.9) |
-| Meetings, false interruptions | 61 % (1 − 11/28) | 63 % (1 − 10.5/28.0) |
-| Meetings, missed turn ends | 24 % (1 − 34/45) | 25 % (1 − 33.5/44.5) |
-| tWER | 37 % (1 − 40/63) | 36 % (1 − 40.24/62.72) |
-| VAD F1 | 1.5 % (0.951/0.937 − 1) | 1.5 % (0.9511/0.9367 − 1) |
+| `architecture_v10.png` | `redesign/arch_v10.html` | the frozen NVIDIA encoder (115M or 0.6B) and its heads, with sizes |
+| `compare_asr.png` | `redesign/arch_vs.html`, `buildVs(…, 'asr')` | words: WER on the README table's five test sets, final-text latency |
+| `compare_turn.png` | same, `'turn'` | turn taking on the 399 smart-turn v3.2 test clips |
+| `compare_vad.png` | same, `'vad'` | speech detection on AMI / ICSI test meetings |
+| `compare_spk.png` | same, `'spk'` | speaker tracking on AMI test meetings |
+| `compare_lid.png` | same, `'lid'` | language ID on FLEURS-17 test |
 
-Differences from the mock-up:
-- The square version puts a legend row above the turn-taking charts in place of names under the bars, and says
-  "lower is better" once per card.
-- In the square version's single-chart cards, the change sits on the bracket line.
+## How the numbers get onto the images
 
-# What the two audioforge images show (v8)
+`arch_vs.html` has no number in it. Each bar names a key of `redesign/numbers_final.json` (loaded as
+`numbers_final.js`), which `redesign/export_final.py` writes from `runs/final_compare.json` and `runs/dual_rate.json`.
+The printed value is that entry's own `shown` string, so the images round exactly like the README. A key that is
+missing stops the page with an error; a key whose value is null draws a dashed "still running" bar. The green / red
+number over each of our bars is our value minus the best grey (baseline) bar on that chart; "same" means within half a
+percent. The 83 keys the pages read are checked by `plans/audit/fairness_001.py` against the run json.
 
-This covers `architecture_v8.png` and `results_v8.png` in `demo/images/` (half size), each with a `_square` version and
-a `_notext` version (the same render with the explanatory lines hidden). Full-size copies are in `demo_out/images/`
-on the SSD.
+Render:
 
-Both images describe **single-model mode** (`audioforge-serve --mode single`, the default): one frozen NVIDIA
-streaming speech model with 115M parameters, five small heads of ours, and the user's stored 5-second voice sample.
-There is no diarizer and no Silero in this mode.
+```bash
+python3 demo/images/redesign/export_final.py                                  # numbers_final.js(on) from runs/
+PLAYWRIGHT_BROWSERS_PATH=/Volumes/afdev/venvs/video/browsers \
+  /Volumes/afdev/venvs/video/bin/python scripts/dev/render_compare.py         # compare_*.png, with the check
+chore images                                                                  # both steps
+```
 
-## How the numbers get onto the image
+**The layout check.** `render_compare.py` checks every page before taking its screenshot and exits 1 on a problem:
+no two text runs overlap (measured on the text itself, so a long word overflowing its box counts), x-axis labels keep
+6 px apart and other chart labels 3 px, no text spills out of its chart card or the 1920 × 1080 frame, and no chart
+card overlaps another block. `--check-only` runs the check without writing PNGs. Inside each chart, `barchart()`
+first shrinks the x labels (19 → 13 px) until they fit. `architecture_v10.png` gets the same text-overlap and frame
+check when it is rendered from `arch_v10.html` (`build(1920, 1080)` at device scale 2).
 
-- `demo/images/redesign/export_single.py` reads the run files and writes `numbers_single.json`. The v8 entries are the
-  `v8/...` keys. Each entry holds the value, the string shown, the file and the path inside the file. Nothing is typed
-  by hand.
-- The pages are `redesign/arch_v8.html` and `redesign/results_v8.html`. `render.py v8 r8` renders them with Playwright.
-  It then checks the rendered page:
-  - every number on the page equals its `numbers_single.json` string;
-  - every bar carries its value;
-  - every card has a plain-English line, a metric name and a BETTER cue;
-  - a card that shows F1 says what F1 means;
-  - none of these words appear: "dead air", "cut-in", "first words", "unanswered", "0.6B", "Parakeet", "per call";
-  - no text is smaller than 22 px, closer than 64 px to the edge, below 7:1 contrast, overlapping or clipped;
-  - no card runs into the footer.
+## architecture_v10.png
 
-  The results are in `redesign/checks.json`.
-- Style, as before: white page, dark ink, one orange for audioforge, grey for every other system, the value printed on
-  every bar, and a "← BETTER" or "BETTER →" cue under each set of bars.
+One frozen encoder, drawn once: FastConformer Hybrid Streaming 115M (17 blocks) or Nemotron Speech Streaming 0.6B
+(24 blocks); block numbers are written 115M / 0.6B. Around it:
+- speech detector on a learned mix of blocks 2-6 / 8-16 ("Speech?", every 80 ms);
+- language detector LID v2 on blocks 8-12 / 16-20 (optional);
+- RNNT decoder → streaming words, every 160 ms;
+- speaker tracker ("Is it you?") on block 4 / 5, fed the voice print (a 5 s sample run once through block 4 / 5 and
+  the speaker head);
+- the 115M's second, voice-conditioned run into the turn detector (0.32M); the turn-end rule box names both deciders
+  (turn detector at ≥ 160 ms of quiet, or the end-of-turn classifier at each quiet frame).
 
-## results_v8.png
+The footer lists every head with its size, 115M / 0.6B: speech detector 33K / 66K, the turn-rule VAD 33K, speaker
+head 0.5M, tracker 0.26M, turn detector 0.32M (115M only), end-of-turn classifier 2.5M, and the optional LID v2
+(2.4M / 2.9M) and voice-gender (22K) heads.
 
-Title: "audioforge: one 115M model for voice agents". Subtitle: standard metrics against LiveKit, Pipecat and NVIDIA
-models, on the same audio for every system in a card.
+## compare_asr.png: words
 
-Every card has a title, one plain line saying what is measured, the metric's standard name and unit, the bars, and a
-line saying which audio it was run on. Where audioforge is not best, the card says so in bold.
+- Five WER charts with the README words table's columns: LibriSpeech test-clean, test-other, AMI test, ICSI test,
+  the live calls' user channel. Ours are the **default 160 ms streaming pass** (the subtitle says so), the same values
+  as the README table. Bars: ours 0.6B, ours 115M, Parakeet-TDT 0.6B v3, Whisper large-v3. Whisper small (beam 5) is
+  in the README table, not on the image (five bars do not fit five charts at this width).
+- "Final text after you stop" (top right): median ms from the labelled end of a user turn to its final text, **every
+  system on the Mac GPU (MPS)**; ours with the 1.12 s final (`--final-chunk-ms 1120`), Parakeet-TDT and Whisper turbo
+  offline on the whole turn. The chart says both. Not shown: the WER of the timed texts (README table) and that the
+  1.12 s mode costs real-time streams.
 
-### 1. Turn-taking on calls
+## compare_turn.png: turn taking
 
-- **What it means.** How long after you stop talking the agent may answer, how often it cuts you off, and how often it
-  never notices you finished.
-- **Metrics, lower is better for all three.**
-  - End-of-turn latency, p50, in ms.
-  - False interruptions, in % of your turns.
-  - Missed turn ends, in % of turn ends.
-- **Numbers.** audioforge 956 ms, 20 %, 7 % (20.2 %, 7.3 % in the file). LiveKit turn detector 567 ms, 27 %, 23 %.
-  Pipecat smart-turn v3 2268 ms, 38 %, 25 %.
-- **Where we lose.** LiveKit answers sooner (567 vs 956 ms). The card says so: "LiveKit answers sooner; audioforge
-  cuts you off least and misses the fewest."
-- **Audio.** The user's own channel of 32 two-party calls (16 TurnBench, 16 otoSpeech), 109 reference turn ends,
-  the same for every system.
-- **Source.** `runs/eot_latency.json`, `table > two_party_user > <rule>`. For audioforge the rule is the shipped
-  `vad_head` rule; its key is taken from `selection > fastest_print_fix_goal_no_clip_cut` (commit 6ad219a), and the
-  export stops if that key is not the 160 ms / p ≥ 0.99 / 640 ms rule.
+Accuracy, median answer latency and cut-offs on the 399 smart-turn v3.2 test clips, `assistant` preset.
+- The cut-off window is **2.5 s** (named on both charts that depend on it): a turn end within 2.5 s of where an
+  unfinished clip stops counts as a cut-off. 2.5 s keeps clear of every system's fallback timer (3.0 s for Pipecat and
+  LiveKit, 3.0 / 3.4 s for ours).
+- Latency includes the measured compute: ours and Parakeet-EOU on MPS, smart-turn and LiveKit's ONNX models on CPU
+  (the unit line says so).
+- "ours 115M" is the rule re-picked on held-out audio only (candidate heads v0.5, not the default), as in the
+  README; the shipped 115M `assistant` rule was tuned on these clips and is not shown.
+- Not shown: AMI meeting turns (README text; knowing the user's voice print is what wins there).
 
-### 2. Turn-taking in meetings
+## compare_vad.png: speech detection
 
-- **What it means.** The same three measures in meetings, where other people keep talking after you stop.
-- **Numbers.** audioforge 1326 ms, 11 %, 34 % (10.5 %, 33.5 % in the file; the image rounds half away from zero).
-  LiveKit 1890 ms, 13 %, 68 %. Pipecat 384 ms, 28 %, 45 %.
-- **Where we lose.** Pipecat answers sooner (384 vs 1326 ms), and the card says so.
-- **Audio.** 200 AMI dev turns, with the other speakers in the audio, the same for every system.
-- **Caveat on the card.** Only audioforge uses your 5 s voice sample; the other two have none.
-- **Source.** `runs/eot_latency.json`, `table > ami > <rule>`.
+AMI test and ICSI test meetings, live-capable detectors only (pyannote, which reads 10 s ahead, is in the README
+text). Four charts: F1 **at threshold 0.5** and ROC-AUC (**threshold-free**) for each corpus. On AMI the threshold
+matters: our F1 lead over MarbleNet v2 disappears on AUC ("same"). The ICSI bars of ours are the heads retrained
+without the ICSI test speakers (the shipped heads heard them in training; their row is in Appendix A), as the
+subtitle says.
 
-**How the turn-taking cards were measured** (research/EOT_LATENCY.md):
-- All three systems were scored by one offline harness on the same audio.
-- **End-of-turn latency** = the time from the annotated end of your speech to the system's "turn over", including
-  the decision's compute. The agent's own reply time is not included. p50 is over the turn ends that got a "turn over"
-  within 6 s.
-- **False interruption** = a "turn over" while you are still in your turn, in your speech or in a pause inside it.
-- **Missed turn end** = no "turn over" between the end of your speech and 6 s later (or your next turn).
-- **The baselines** are Pipecat 1.12 and LiveKit Agents 1.8 at their default settings, each with Silero VAD.
-  - Pipecat: smart-turn v3.2 at each VAD stop, with the 3 s fallback.
-  - LiveKit: the English turn-detector model on the transcript at each end of speech, with its 0.5 s minimum and 3 s
-    fallback.
-  - Neither baseline waits for its speech-to-text final, which it would in a live call. Both are therefore measured in
-    their favour; the footer says so.
-- **audioforge** is the shipped `vad_head` rule (since 6ad219a): our VAD head below 0.4 for at least 160 ms and the
-  turn head at 0.99 or more. Otherwise it fires after 640 ms of that silence, or, when someone else holds the floor,
-  after 960 ms of your own silence. No Silero.
-- The rule was chosen on both corpora, on the dump made after the TS-VAD print fix (fe28a9e): the fastest calls p50
-  that keeps calls false interruptions ≤ 22.9 % and misses ≤ 7.3 %, AMI misses ≤ 34.0 % and false interruptions
-  ≤ 10.5 %, and does not cut the bundled quickstart clip under any of six input deliveries. Neither corpus is held out.
-- The LiveKit and Pipecat rows did not change: they read Silero and the ASR text, which the print fix does not touch.
+## compare_spk.png: speaker tracking
 
-### 3. Your words when others talk
+AMI test meetings only (every ICSI test speaker is in our training meetings, so those rows are in Appendix A). The
+same 5 s voice print for every system.
+- Your words only (target-speaker WER): ours on our own words; Nemotron-3 and pyannote 3.1 on the 0.6B's words,
+  bound to the print; dashed "perfect filter" = the 0.6B's words with the reference speaker mask.
+- Tracking F1: the dashed bar is Nemotron-3 with its column picked from the labels (an upper bound for any binder),
+  named in the chart's third header line. Most of our margin over Nemotron-3 is the binding step.
+- Voice match error (EER within a meeting): TitaNet-L and WeSpeaker beat our speaker heads; shown on purpose.
 
-- **What it means.** Other people's words that land in your transcript count as errors. Lower means a cleaner
-  transcript of just you.
-- **Metric.** Target-speaker WER (tWER): words wrong per 100 of your words, lower is better.
-- **Calls with both voices mixed into one channel** (16 TurnBench calls):
-  - audioforge 40;
-  - the same streaming words with no speaker filter 63;
-  - perfect speaker labels 36. This is drawn as a dashed outline: it is a limit, not a system.
-- **Meetings, ICSI** (held out for every system):
-  - audioforge 37;
-  - NVIDIA Nemotron-3-Diarization 65, with one of its speaker columns bound to you by the same 5 s sample;
-  - no speaker filter 101.
-- **Sources.** Both files as committed at HEAD (commit fe28a9e, the TS-VAD print fix; `export_single.py`
-  `load_committed` reads them with `git show HEAD:`).
-  - Calls: `runs/tswer_live.json`, `results > mono > {tsvad_d2, none, oracle_d2} > wer`.
-  - Meetings: `runs/tswer.json`, `results > icsi > primary > arms > {tsvad_d2, none, n3_*_d2} > twer`.
-- **How it was measured** (research/TSWER.md). The served streaming words are kept where our target-speaker track
-  says "you". Each word is timed by the frame where it was emitted, shifted back by the median lag of 400 ms, and the
-  track is widened by ±160 ms. The reference is only your own words. tWER = (substitutions + deletions + insertions) /
-  your reference words.
-- **Nemotron-3's binding.** It is shown with the better of the two binders: TitaNet-L, 65.1 (the speaker head gives
-  66.8). AMI is in Nemotron-3's training data, which is why the card uses ICSI.
-- **Not shown.** On the user's own channel, where there is no one to filter out, the filter only costs words
-  (17.1 → 18.1 %, after the print fix).
+## compare_lid.png: language ID
 
-### 4. Voice activity detection
+FLEURS-17 test, 2550 clips, after 2 s of speech and on the whole clip. Whisper large-v3 and AmberNet beat our heads
+at 2 s. FINAL_COMPARE marks our rows ⚑: the encoder blocks the heads read were chosen with a probe scored on FLEURS
+test (probably well under a point).
 
-- **What it means.** Detecting when anyone is speaking.
-- **Metrics.**
-  - F1 at threshold 0.5, higher is better. F1 balances missed and false speech; 1 is perfect.
-  - Miss rate, lower is better: the % of speech frames missed when each system is set to the same false-alarm rate of
-    7.5 %.
-- **Numbers.**
-  - F1: audioforge 0.951, Silero VAD 0.915, NVIDIA MarbleNet 0.937.
-  - Miss rate: 10.6, 13.8 and 12.3 %.
-- **Audio.** 64 windows of 20 s from AMI dev meetings, 80 ms frames.
-- **Caveat on the card.** Our VAD head was trained on AMI labels; AMI is in domain for it and not for the other two.
-- **Sources.**
-  - F1: `runs/vad_auc.json`, `<system> > f1_at_0.5`.
-  - Miss rate, ours: `runs/vad_single.json`, `eval > ami_dev > L3 > at_fpr0.075`.
-  - Miss rate, the others: `runs/baselines_sd.json`, `vad > <system> > sweep`, at the threshold whose false-alarm rate
-    is closest to ours. The export stops if they are more than 0.2 points apart.
+## Not on any image
 
-### 5. Cost
-
-- **What it means.** Compute time for each 160 ms of audio. Under 160 ms keeps up with live speech.
-- **Metric.** Compute per 160 ms of audio, p50, in ms, for the whole single-mode engine (every head and the streaming
-  words), lower is better. A dashed line marks 160 ms.
-- **Numbers.**
-  - 29.8 ms on the Mac CPU with 2 threads and 28.7 ms on the Mac GPU (MPS): `runs/mps_115m.json`,
-    `engine > {cpu, mps} > chunk_ms_p50`. One run, same machine (Apple M5), the full `--mode single` engine on the
-    bundled 16 s clip with its stored print (research/MPS_115M.md). The MPS engine emits the same events as the CPU
-    one. It is only 4 % faster because the turn pass and the heads are tiny batch-1 calls; the ASR core alone is
-    10.2 vs 17.6 ms. The square image labels the rows "Mac CPU", "Mac GPU", "RTX 5090".
-  - 20 ms on an RTX 5090, from PR #1 (`research/GPU_RUN_2026-09-29.md` on that branch). No GPU run file exists in
-    `runs/` locally. The value is read from the citation in `runs/stt_latency.json` (`gpu_estimate > note`), and the
-    label says "(PR #1)".
-- **Line under the bars.** One 115M model + 5 small heads, no Silero, no diarizer.
-- **No comparison bar.** The default stacks run Whisper once per utterance, not per chunk, so there is no like-for-like
-  number for them.
-
-### Footer
-
-- **Word accuracy.** "Word accuracy is that of a 115M streaming model: 2.3 % WER on clean speech (LibriSpeech; Whisper
-  small 2.4 %), 23.2 % on live calls vs 19.3 % for LiveKit's default." This is where we lose, stated once, in the
-  footer. Pipecat's default scored 23.5 % on the same calls.
-  - Clean speech: `runs/hybrid_asr.json`, LibriSpeech test-clean, 200 utterances.
-  - Live calls: `runs/single_model.json`, `table > live_69 > systems`: the 32 live sessions that have transcripts,
-    each system through its own framework.
-- **Setup.** The same audio for every system in a card; Pipecat 1.12 and LiveKit Agents 1.8 defaults, each with Silero
-  VAD, replayed without their speech-to-text wait.
-- **Datasets.** TurnBench and otoSpeech calls, AMI and ICSI meetings, LibriSpeech. AMI is in Nemotron-3's training
-  data.
-
-## architecture_v8.png
-
-v8 is architecture_v7 with the shipped turn rule drawn in. The rest was checked against `audioforge/server/streams.py`,
-`policies.py`, `constants.py` and `cli.py` (`MODES["single"]`) and is unchanged.
-
-- **The dark block** is NVIDIA's frozen streaming FastConformer, drawn as 17 layers. We never change its weights. Audio
-  enters on the left in 160 ms chunks (①, the first run).
-- **Streaming words.** Layer 17 feeds NVIDIA's own RNNT decoder, which sends words every 160 ms while you talk.
-- **VAD head** (33K parameters, layer 4) answers "Speech?" every 80 ms.
-- **Language head** (0.92M, layers 8-12) answers "Language?".
-- **"Is it you?"** is the target-speaker head (TS-VAD, 0.26M, layer 4). It is conditioned on your voice print, which
-  the speaker head makes once from your 5 s sample (layer 4).
-- **Your voice track** (②) goes back into the same model at layers 1 and 3 for a second run.
-- **Turn head** (0.32M) reads that second run and gives "Turn over?" every 80 ms.
-- **The turn decision box** reads "Turn end: VAD quiet ≥ 160 ms + turn head ≥ 0.99". These are the `VadHeadPolicy`
-  defaults in `audioforge/server/constants.py` (`VAD_HEAD_SIL_THR` 0.4, `VAD_HEAD_WAIT_MS` (160, 640),
-  `POLICY_THETA["vad_head"]` 0.99). The 640 ms fallback and the path for when someone else has the floor are in
-  research/EOT_LATENCY.md; they are not drawn.
-- **Footer.** "109M frozen NVIDIA encoder · 5 small heads · no Silero · no diarizer". In v7 it said "+ 2.3 MB Silero for
-  silence timing". Single mode no longer loads Silero.
-
-## Mismatches with the brief (the files were used)
-
-- **Silero VAD F1** is 0.915 at the 0.5 threshold (`runs/vad_auc.json`, `runs/baselines_sd.json` sweep 0.5). The 0.938
-  in the brief is Silero's F1 at threshold 0.1, its best threshold. Every system is shown at 0.5.
-- **Nemotron-3 tWER on ICSI** is shown as 65 (the TitaNet-L binder, the better one for NVIDIA). The brief's 67 is the
-  speaker-head binder (66.8).
-- **Meeting turn-taking rates** are 10.5 % and 33.5 % in `runs/eot_latency.json`; the image shows whole percents,
-  rounded half away from zero, so 11 % and 34 %.
-- **Mac CPU compute** is 29.8 ms from `runs/mps_115m.json` (the same run as the MPS row). The previous v8 image showed
-  31 ms from `runs/latency_budget.json`, an older run of the whole session; the card now uses one run for both Mac rows.
-- **Word accuracy line.** "4 points behind Whisper small on calls" would be wrong: Pipecat's default also runs Whisper
-  small and scored 23.5 %, worse than our 23.2 %. The footer gives the two measured numbers against LiveKit's default
-  (23.2 vs 19.3 %) instead.
-- **Head sizes.** "~1.6M" for the five heads could not be sourced from `runs/`. The heads the files do record already
-  add up to 1.45M: VAD 32 897, speaker 496 448, language 924 817. Adding TS-VAD 0.26M and turn 0.32M gives about
-  2.0M. The cost card therefore says "5 small heads" with no total.
+- Voice gender: no open baseline was available to compare with (research/VOICE_GENDER.md), so it has no page.
+- Two-party calls: no labelled public test split exists for them.
 
 ## Earlier images
 
-`architecture_v3`-`v7` and `results_v3`-`v7`, `architecture_single` and `results_single` are kept in this folder as a
-record. Do not quote them: they use metric names and session pools replaced by research/METRICS.md.
+The v8-v10 result cards and the v8 / v9 architecture drafts (and their `_square` / `_notext` variants) are retired:
+they used first-pass dev-split numbers and are not referenced from the README. Their write-ups are in this file's git
+history.

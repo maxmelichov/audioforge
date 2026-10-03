@@ -37,6 +37,7 @@ class CompletenessStreamState:
 class CompletenessHead(Head):
     key = "completeness"
 
+    # not shipped; hidden: placeholder: never swept
     def __init__(self, d_model: int, hidden: int = 96, pool_frames: int = 25, frame_weight: float = 0.5,
                  mid_weight: float = 0.1, dropout: float = 0.1):
         super().__init__()

@@ -25,7 +25,7 @@ from .constants import (
 
 __all__ = [
     "DEBUG_KEYS", "decode_pcm", "ENROLL_KEYS", "error_msg", "FINAL_ASR_EXTRA", "FINAL_ASR_KEYS", "LID_KEYS",
-    "OPTIONAL_KEYS", "SCHEMA", "SessionConfig", "validate",
+    "OPTIONAL_KEYS", "VOICE_GENDER_KEYS", "SCHEMA", "SessionConfig", "validate",
 ]
 
 
@@ -69,6 +69,13 @@ OPTIONAL_KEYS = {"stats": {"degraded": (dict,), "speakers_seen": (int,),  # degr
                  "final": {"speaker_conf": _NUM + (type(None),), "diar_shed": (bool,), "pass": (str,)},
                  "final_fast": {"speaker_conf": _NUM + (type(None),), "diar_shed": (bool,)},
                  "ready": {"final_chunk_ms": _NUM}}  # pass / final_chunk_ms: --final-chunk-ms only
+# present only with --voice-gender (optional, off by default): the perceived voice-gender posterior,
+# {"female": p, "male": p, "speech_ms": n} or None before any pooled speech; on each streaming final (that segment's
+# speech) and in stats (the session's speech). A perceived vocal characteristic, not a person's gender identity.
+VOICE_GENDER_KEYS = {"final": {"voice_gender": (dict, type(None))}, "final_fast": {"voice_gender": (dict, type(None))},
+                     "stats": {"voice_gender": (dict, type(None))}}
+for _t, _ks in VOICE_GENDER_KEYS.items():
+    OPTIONAL_KEYS.setdefault(_t, {}).update(_ks)
 # present only with --final-asr: every final has "source"; the offline model's finals add start / end / latency_ms
 FINAL_ASR_KEYS = {"ready": {"final_asr": (str,)},
                   "final": {"source": (str,)},

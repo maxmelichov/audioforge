@@ -14,6 +14,18 @@ import audioforge.serve as S
 from audioforge.serve import Engine, Session, SessionConfig, validate
 from audioforge.speaker_registry import DEFAULT_THR, SpeakerRegistry, held_row, turn_column
 
+
+@pytest.fixture(autouse=True)
+def _seeded():
+    """Fixed torch / numpy / random seeds per test: random inputs do not depend on which tests ran before."""
+    import random
+
+    import numpy as np
+    random.seed(0)
+    np.random.seed(0)
+    torch.manual_seed(0)
+
+
 ROOT = Path(__file__).resolve().parents[1]
 SR = 16000
 FR = 1280  # samples per 80 ms frame

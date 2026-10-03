@@ -383,7 +383,11 @@ def stage_vtrain(a):
     t0 = time.time()
     shares = {k: float(v) for k, v in (kv.split(":") for kv in a.shares.split(","))}
     srcs = []
-    for name, hold in (("ami", AMI_HOLD), ("icsi", ICSI_HOLD), ("oto", None), ("otoq", None)):
+    icsi_hold = ICSI_HOLD
+    if a.icsi_exclude_test_speakers:  # also drop every ICSI meeting with an ICSI test speaker (speech_clean.py)
+        import speech_clean as SC
+        icsi_hold = tuple(ICSI_HOLD) + tuple(SC.excluded_meetings())
+    for name, hold in (("ami", AMI_HOLD), ("icsi", icsi_hold), ("oto", None), ("otoq", None)):
         if shares.get(name, 0) <= 0:
             continue
         set_name = {"ami": "ami1200", "icsi": "icsi600", "oto": "oto_tr", "otoq": "otoq_tr"}[name]
@@ -488,7 +492,8 @@ def stage_vtrain(a):
                             for k in ("ami_ho", "icsi_ho")]))
     b_best = float(shifts[int(np.argmax(f1s))])
     r = {"ho": v, "hist": hist, "calib_shift": b_best, "calib_f1_mi": round(float(max(f1s)), 4),
-         "args": {k: getattr(a, k) for k in ("hidden", "vblocks", "shares", "lab", "teach", "lam", "sa", "steps", "seed", "calib")},
+         "args": {k: getattr(a, k) for k in ("hidden", "vblocks", "shares", "lab", "teach", "lam", "sa", "steps", "seed", "calib",
+                                             "icsi_exclude_test_speakers")},
          "params": sum(p_.numel() for p_ in net.parameters()), "sec": round(time.time() - t0)}
     if a.calib and b_best != 0:
         with torch.no_grad():
@@ -1501,6 +1506,7 @@ def main():
     ap.add_argument("--steps", type=int, default=3000)
     ap.add_argument("--patience", type=int, default=6)
     ap.add_argument("--calib", action="store_true")
+    ap.add_argument("--icsi-exclude-test-speakers", action="store_true")
     ap.add_argument("--hidden", type=int, default=64)
     ap.add_argument("--speech", default="")
     ap.add_argument("--ship", action="store_true")

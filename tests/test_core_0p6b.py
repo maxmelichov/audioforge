@@ -1,7 +1,10 @@
 """The second core (--core 0.6b, research/CORE_0P6B.md): registry, download set, launcher wiring and clear errors run
-everywhere; the served-model checks run only when the 0.6B has been downloaded / built (skipped otherwise)."""
+everywhere (fast, in CI); the served-model checks stream the shipped 0.6B v0.4 on the bundled clip. They skip only when
+the NVIDIA base .nemo is absent; a missing served model is built once from it and assets/served_heads_0p6b_v0.4.pt
+(tests/conftest.served_0p6b, cached in runs/)."""
 from pathlib import Path
 
+import numpy as np
 import pytest
 
 from audioforge import hub, launch
@@ -23,8 +26,7 @@ def test_registry_pins_the_0p6b_core():
 
 def test_shipped_0p6b_heads_match_their_pins():
     name, size, sha, out = hub.HEADS_0P6B[hub.HEADS_0P6B_VERSION]
-    if not sha:
-        pytest.skip("0.6B heads not pinned yet in this revision")
+    assert len(sha) == 64 and out == hub.SERVED_0P6B
     p = ROOT / "assets" / name
     assert p.exists(), f"{p} ships in the repository"
     assert p.stat().st_size == size and hub.sha256_file(p) == sha
@@ -88,27 +90,39 @@ def test_serve_help_lists_core(capsys):
 
 
 def _served_0p6b():
-    p = hub.find_model("asr_0p6b")
-    t = hub.find_model("tsvad_0p6b")
-    if p is None or t is None:
-        pytest.skip("the 0.6B core is not downloaded (audioforge-download --core 0.6b)")
-    return p, t
+    from tests.conftest import served_0p6b
+    return served_0p6b()
 
 
+_M = {}
+
+
+def _model():
+    if "m" not in _M:
+        from audioforge.train import load_model
+        _M["m"] = load_model(str(_served_0p6b()[0]), "cpu")
+    return _M["m"]
+
+
+@pytest.mark.real
 def test_served_0p6b_model_streams_like_the_offline_forward():
-    import numpy as np
+    """The served v0.4: encoder stream == offline forward, and the streaming transcript of real speech (the bundled
+    clip) == the offline transcript, non-empty."""
     import torch
 
+    from audioforge.data import load_wav
     from audioforge.model import StreamingSession
-    from audioforge.train import load_model
-    p, _ = _served_0p6b()
-    m = load_model(str(p), "cpu")
+    from tests.conftest import CLIP
+    m = _model()
+    blob = torch.load(ROOT / "assets" / hub.HEADS_0P6B[hub.HEADS_0P6B_VERSION][0], map_location="cpu",
+                      weights_only=True)
+    assert hub.state_hash(m.state_dict()) == blob["state_hash"]  # the cached .afm is still base + v0.4 heads
     assert m.encoder.d_model == 1024 and len(m.encoder.layers) == 24
     assert m.encoder.att_context_size == [70, 1]
-    assert {"rnnt", "vad", "spk", "turn", "turn_seg"} <= set(m.heads)
+    assert {"rnnt", "vad", "spk", "turn", "turn_seg", "turn_seg_a", "turn_vad", "speech"} <= set(m.heads)
     assert m.layer_tap["spk"] == [4] and not m.head_cfg["turn"].get("condition_on_speaker")  # block 5
-    rng = np.random.default_rng(0)
-    x = (0.05 * rng.standard_normal(16000 * 3)).astype(np.float32)
+    assert m.cfg["turn_presets"]["assistant"]["turn_model"]["head"] == "turn_seg_a"
+    x = load_wav(str(CLIP), 16000).astype(np.float32)[: 16000 * 11]  # the user's turn (3.9-10.8 s)
     feats, fl = m.preprocessor(torch.tensor(x)[None], torch.tensor([len(x)]))
     with torch.no_grad():
         off, olen = m.encoder(feats, fl, [70, 1])
@@ -121,16 +135,37 @@ def test_served_0p6b_model_streams_like_the_offline_forward():
     sess = StreamingSession(m, "rnnt", [70, 1])
     for i in range(0, len(x), 2560):
         sess.feed(x[i:i + 2560])
-    assert sess.feed(x[:0], final=True) == m.transcribe([x], head="rnnt", att_context_size=[70, 1])[0]
+    text = sess.feed(x[:0], final=True)
+    assert text == m.transcribe([x], head="rnnt", att_context_size=[70, 1])[0]
+    assert len(text.split()) >= 4, text  # real speech, not the empty transcript of noise
 
 
+@pytest.mark.real
 def test_single_mode_engine_on_the_0p6b_emits_events():
+    """audioforge.load(core="0.6b") on the shipped v0.4 + tsvad_0p6b + lid_0p6b_v2: turn_end and finals on the
+    bundled clip, the speech head's frame VAD in [0, 1], and the 0.6B LID head (d_model 1024) names English."""
     import audioforge
-    p, t = _served_0p6b()
+    from audioforge.serve import validate
+    from tests.conftest import CLIP
+    _served_0p6b()
     fe = audioforge.load(core="0.6b", warmup=False)
-    assert fe.engine.asr.encoder.d_model == 1024
-    ev = fe.run_file(ROOT / "examples" / "audio" / "two_party_call_16s.wav")
-    assert any(e["type"] == "final" for e in ev) and any(e["type"] == "turn_end" for e in ev)
+    e = fe.engine
+    assert e.asr.encoder.d_model == 1024 and e.name == Path(hub.SERVED_0P6B).stem
+    ev = fe.run_file(CLIP, frames=True)
+    for m in ev:
+        validate(m)
+    assert any(e_["type"] == "turn_end" for e_ in ev)
+    assert any(len(e_["text"].split()) >= 3 for e_ in ev if e_["type"] == "final")
+    v = [e_["vad"] for e_ in ev if e_["type"] == "frame"]
+    assert len(v) >= 190 and all(0.0 <= x <= 1.0 for x in v) and max(v) > 0.9 and min(v) < 0.5
+    if e.lid_name is None:  # the LID head is optional (licence, docs/MODELS.md)
+        assert launch.find_head("lid_0p6b_v2.pt") is None
+        return
+    from audioforge.lid import load_head
+    blob = load_head(str(launch.find_head("lid_0p6b_v2.pt")))
+    assert blob["encoder"]["d_model"] == 1024
+    lang = [e_ for e_ in ev if e_["type"] == "language"]
+    assert lang and lang[0]["language"] == "en" and 0 < lang[0]["confidence"] <= 1
 
 
 def test_frame_gru_head_streams_like_the_whole_sequence():

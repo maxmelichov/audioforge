@@ -6,6 +6,22 @@ versions follow [Semantic Versioning](https://semver.org/). Every measured numbe
 
 ## [Unreleased]
 
+### Added (2026-10-03): optional perceived voice-gender head, both cores (research/VOICE_GENDER.md)
+- `serve --voice-gender head|PATH` (off by default, never in a default install): probabilities for the two classes
+  the training data annotate, female voice / male voice, on each streaming `final` (`voice_gender`: that segment's
+  speech) and in `stats` (the session's). A perceived vocal characteristic estimated from audio, not a person's
+  gender identity; it can be wrong for any individual.
+- Causal attentive statistics pooling (the ECAPA / TitaNet / AmberNet decoder) + a linear classifier on the speaker
+  head's tap (115M block 4, 0.6B block 5; a block probe shows them on the plateau). Sized by an equal wall-clock
+  sweep (hidden 16-256): `assets/voice_gender_115m.pt` (hidden 32, 21.8 K parameters) and
+  `assets/voice_gender_0p6b.pt` (hidden 16, 20.6 K), hub OPTIONAL components `voice_gender` / `voice_gender_0p6b`.
+- Trained on FLEURS train (17 languages) + LibriSpeech train-clean-100 (CC BY 4.0), selected on FLEURS dev +
+  LibriSpeech dev-clean; LibriSpeech splits speaker-disjoint (checked), FLEURS has no speaker ids. Test, balanced
+  accuracy at 2 s of speech (115M / 0.6B): LibriSpeech test-clean 97.8 / 97.7 % (95 % CI over 40 speakers about
+  94-100), FLEURS-17 test 96.3 / 96.7 %. Engine cost on MPS within noise (Δ p50 −0.4 / +0.4 ms
+  best-of-9, 115M / 0.6B); the stream's own time 0.05-0.08 ms per 160 ms chunk (it runs the head once per final,
+  not per chunk).
+
 ### Added (2026-10-02): dual rate, `serve --final-chunk-ms {160,560,1120}` (research/DUAL_RATE.md)
 - Heads, partials and turn decisions keep the 160 ms pass (turn ends and fast finals byte-identical, 32 / 32 live
   sessions, both cores); a text-only pass of the same encoder at [70,6] / [70,13] writes the `final` (`source: slow`),

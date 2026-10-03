@@ -2,6 +2,9 @@
 # Left out: files that import research-only packages (sklearn, scipy, pyarrow, pyannote, silero_vad via the
 # TurnBench scorer / baselines), the recipe end-to-end trainer (minutes), and the RUN_REAL=1 integration tests.
 # Measured 2026-09-28 in a fresh venv on a shared laptop: the files below ran in about 80 s.
+# Run with -m "not real": the real-model tests (test_core_0p6b's served 0.6B, test_real_115m) need checkpoints.
+# Added 2026-10-03 (the guards of the turn presets, the shipped heads' constants, dual rate, the energy gate and the
+# 0.6B registry; plans/audit/tests_001.md H2/H3): 122 tests in 5.7 s on this laptop (2 threads).
 tests/test_ami.py
 tests/test_api.py
 tests/test_baselines_sd.py
@@ -58,3 +61,11 @@ tests/test_yield_tokens.py
 tests/test_single_mode.py
 tests/test_fixall.py
 tests/test_turn_data.py
+tests/test_turn_preset.py
+tests/test_turn_seg.py
+tests/test_vad_head_policy.py
+tests/test_dual_rate.py
+tests/test_energy_gate.py
+tests/test_core_0p6b.py
+tests/test_shipped_heads.py
+tests/test_voice_gender.py

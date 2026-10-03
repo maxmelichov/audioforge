@@ -230,22 +230,23 @@ def test_engine_default_is_exact_set():
     assert off.perf_opts == () and off.perf_info == {"joint_cache": False}
 
 
-@pytest.mark.skipif(not os.environ.get("RUN_REAL"), reason="RUN_REAL=1: served checkpoints, ~1 min")
+@pytest.mark.real
+@pytest.mark.skipif(not os.environ.get("RUN_REAL"), reason="RUN_REAL=1: the shipped 115M stack, ~1 min")
 def test_real_checkpoints_exact_set_identical_messages():
-    asr, diar = ROOT / "runs/stage1_served.afm", ROOT / "runs/nemo_nemotron3_diar.afm"
-    if not (asr.exists() and diar.exists()):
-        pytest.skip("served checkpoints not present")
-    import soundfile as sf
-    wav = ROOT / "examples/audio/two_speakers_10s.wav"
-    x, sr = sf.read(str(wav), dtype="float32")
-    assert sr == 16000
-    x = x if x.ndim == 1 else x.mean(1)
+    """The shipped single-mode stack (stage1_served_v4 + tsvad_spk): --perf none and the EXACT fast paths give
+    identical messages on the bundled two-party clip."""
+    import audioforge
+    from audioforge import hub
+    if hub.find_model("asr") is None or hub.find_model("tsvad") is None:
+        pytest.skip("needs audioforge-download (asr + tsvad)")
+    from audioforge.data import load_wav
+    x = load_wav(str(ROOT / "examples/audio/two_party_call_16s.wav"), 16000).astype(np.float32)
     outs = []
-    for opts in ((), EXACT):
-        eng = Engine.load(str(asr), str(diar), "cpu", diar_pool="max", diar_spks=4, threads=2, diar_left=1)
-        perf.apply(eng.asr, eng.diar, opts)
-        outs.append(_run_session(eng, x)[0])
+    for opts in ("none", ",".join(EXACT)):
+        eng = audioforge.load(warmup=False, perf=opts).engine
+        assert eng.perf_opts == (() if opts == "none" else EXACT)
+        outs.append(_run_session(eng, x, policy=eng.turn_policy)[0])
         del eng
     assert outs[0] == outs[1]
     assert any(m["type"] == "final" and m["text"] for m in outs[0])
-    np.testing.assert_equal(len(outs[0]), len(outs[1]))
+    assert any(m["type"] == "turn_end" for m in outs[0])

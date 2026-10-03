@@ -49,7 +49,7 @@ def _have_ami_train():
     try:
         m = ami.DEFAULT_MEETINGS["train"][0]
         return (ami.DEFAULT_ROOT / "cache" / f"{m}.f32.npy").exists()
-    except Exception:
+    except (OSError, KeyError, IndexError):  # no AMI config / cache here; any other error is a bug and fails loudly
         return False
 
 

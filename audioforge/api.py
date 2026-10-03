@@ -17,6 +17,7 @@ per 80 ms) are left out unless ``frames=True``.
 from __future__ import annotations
 
 import os
+import sys
 from pathlib import Path
 from typing import Any
 
@@ -167,9 +168,14 @@ def load(diarizer: str | None = None, models_dir: str | Path | None = None, *, a
                 raise FileNotFoundError(f"mode='single' needs the TS-VAD head {tsvad_file}; run: audioforge-download"
                                         + (f" --core {core}" if core != hub.CORE_DEFAULT else ""))
             opts["tsvad"] = str(p)
-        if core != hub.CORE_DEFAULT and opts.get("lid") == "head" and "lid" not in engine_options:
-            p = find_head(lid_file, models_dir)  # the core's own LID head ("head" = the 115M file)
-            opts["lid"] = str(p) if p is not None else None
+        if opts.get("lid") == "head" and "lid" not in engine_options:
+            p = find_head(lid_file, models_dir)  # the core's own LID head; optional (absent from the public snapshot)
+            if p is None:
+                print(f"audioforge.load: {lid_file} not found, language ID is off", file=sys.stderr)
+                opts["lid"] = None
+            elif core != hub.CORE_DEFAULT:
+                opts["lid"] = str(p)  # the 0.6B's own head file ("head" means the 115M file)
+            # 115M: keep "head", which also selects the head's pre-registered decision rule in Engine.load
         engine = Engine.load(asr or need(asr_key), None, device, threads=threads, **opts)
         if warmup:
             engine.warmup()

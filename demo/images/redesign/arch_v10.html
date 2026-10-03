@@ -100,7 +100,7 @@ function build(W, H) {
   const Lz = sq ? 26 : 30, Mz = sq ? 22 : 24;
   const P = sq ? { tz: 32, bx: 250, bw: 460, bt: 376, bh: 290, pad: 18, sw: 14, wav: [64, 80], ex: 764, rn: 96, th: 150, ts: [420, 200], tsy: 782, ly: 710, sm: [64, 124], lpx: 690, vy: 824 }
                : { tz: 44, bx: 480, bw: 760, bt: 388, bh: 300, pad: 26, sw: 26, wav: [110, 120], ex: 1290, rn: 170, th: 170, ts: [525, 220], tsy: 782, ly: 0, sm: [110, 160], lpx: 1000, vy: 900 };
-  l1("One frozen NVIDIA speech model, six small heads on top", M, M + 4, P.tz);
+  l1("One frozen NVIDIA speech model, small heads on top", M, M + 4, P.tz);
   const sub = el("sub abs", "Pick the model: FastConformer Hybrid Streaming 115M (17 blocks) or Nemotron Speech Streaming 0.6B (24 blocks). Same heads on both.", M, 0); sub.style.fontSize = (sq ? 24 : 26) + "px"; place(sub, M, M + 2 + (sq ? 44 : 58));
   // the two runs as a sequence, one line of tiny grey boxes
   const seq = sq ? ["every 160 ms", "① run model", "voice track", "② run again, conditioned", "turn decision"]
@@ -124,7 +124,7 @@ function build(W, H) {
   // all 17 layers -> VAD head, directly above -> Speech?
   // the VAD head reads layer 4 (block index 3): one stem up from slab 4, sharing the layer-4 tap with "Is it you?"
   const s4t = A.cx[3], vtop = A.R.t - (sq ? 48 : 56) - 16 - 48;
-  const vw = sq ? 200 : 250, vb = box("ours", "Speech detector", "VAD · block 4 / 12", s4t - vw / 2, 0, vw, 56, Mz); place(vb, s4t - vw / 2, vtop, 0, 1);
+  const vw = sq ? 200 : 250, vb = box("ours", "Speech detector", "blocks 2–6 / 8–16", s4t - vw / 2, 0, vw, 56, Mz); place(vb, s4t - vw / 2, vtop, 0, 1);
   const br = { mx: s4t, tip: A.R.t };
   wire([[s4t, A.R.t - 2], [s4t, R(vb).b + 6]], R1); circ(1, s4t, (A.R.t + R(vb).b) / 2, S1);
   // inside the block: the tap leaves the top of slab 4 (light line); the block title moves right, clear of it
@@ -136,7 +136,7 @@ function build(W, H) {
   // language head (verified: assets/lid_distill.pt from_layers [7..11] = layers 8-12, 0.92 M; pass 1, same chunk outputs,
   // server/streams.py self.lid.feed(enc, hid, ...)): a short bracket over slabs 8-12
   const b8 = A.cx[7], b12 = A.cx[11], lm = (b8 + b12) / 2, lb = brace(b8, b12, A.R.t - 8, true, S1);
-  const lw = sq ? 220 : 290, lbx = box("ours", "Language detector", sq ? "blocks 8–12 / 16–20" : "blocks 8–12 / 16–20", lm - lw / 2, 0, lw, 60, Mz);
+  const lw = sq ? 240 : 330, lbx = box("ours", "Language detector", sq ? "LID v2 · blocks 8–12 / 16–20" : "LID v2 · blocks 8–12 / 16–20", lm - lw / 2, 0, lw, 60, Mz);
   place(lbx, Math.max(vr.r + 16, lm - lw / 2), vr.b, 0, 1);   // level with the VAD head
   const lr = R(lbx); wire([[lm, lb.tip], [lm, lr.b + 6]], R1); circ(1, lm, (lb.tip + lr.b) / 2 + 2, S1);
   // layer 17 (right edge, top) -> RNNT -> streaming words
@@ -188,7 +188,7 @@ function build(W, H) {
   const tby = gyy + gh + (sq ? 40 : 52); place(te, Math.min(cr[0] - 60, W - M - te.offsetWidth), tby);
   wire([[cr[0], cr[1] + 8], [cr[0], tby - 6]], R2);
   // optional: tiny grey dashed branch, no container
-  const f = el("foot abs", "blocks shown as 115M / 0.6B · the voice-aware second run exists on the 115M; the 0.6B decides from the first run · heads: speech detector, speaker head (voice print), speaker tracker, turn detector, end-of-turn classifier, language detector", M, 0, W - 2 * M); f.style.top = (H - M - f.offsetHeight - 2) + "px";
+  const f = el("foot abs", "heads (115M / 0.6B): speech 33K / 66K, VAD 33K, speaker 0.5M, tracker 0.26M, turn 0.32M (115M), end-of-turn 2.5M · optional: LID 2.4M / 2.9M, voice gender 22K", M, 0, W - 2 * M); f.style.top = (H - M - f.offsetHeight - 2) + "px";
   const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg"); svg.setAttribute("class", "wires"); svg.setAttribute("width", W); svg.setAttribute("height", H);
   svg.innerHTML = wires.join(""); st.prepend(svg);
   if (new URLSearchParams(location.search).get("notext")) notext();

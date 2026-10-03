@@ -75,7 +75,7 @@ def test_pseudo_label_honors_offset_duration_segments(tmp_path):
 
 def _tiny_teacher(repo, auto_name, kind):
     """Random-init tiny model with the real config / processor / generation config (HF cache only)."""
-    os.environ.setdefault("HF_HUB_OFFLINE", "1")
+    os.environ.setdefault("HF_HUB_OFFLINE", "1")  # restored after each test by tests/conftest.py
     transformers = pytest.importorskip("transformers")
     from audioforge.teachers import Teacher, _patch_librosa
     _patch_librosa()
@@ -83,7 +83,7 @@ def _tiny_teacher(repo, auto_name, kind):
         cfg = transformers.AutoConfig.from_pretrained(repo)
         processor = transformers.AutoProcessor.from_pretrained(repo)
         gen_cfg = transformers.GenerationConfig.from_pretrained(repo)
-    except Exception as ex:  # not in the local HF cache
+    except OSError as ex:  # not in the local HF cache (LocalEntryNotFoundError / OSError from from_pretrained)
         pytest.skip(f"{repo} not cached: {ex}")
     e = cfg.encoder_config
     e.hidden_size, e.intermediate_size, e.num_hidden_layers, e.subsampling_conv_channels = 32, 64, 1, 8

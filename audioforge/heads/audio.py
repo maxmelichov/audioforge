@@ -58,6 +58,8 @@ class SortformerHead(Head):
     key = "spk_targets"
     MAX_PIL_SPKS = 8  # PIL enumerates num_spks! permutations; skipped (with a warning) above this
 
+    # Sizes: d_hidden 192, n_layers 4, n_heads 4 (the 115M served heads.diar uses these defaults; NVIDIA's imported
+    # Sortformer sets its own). placeholder: never swept.
     def __init__(self, d_model: int, num_spks: int = 4, d_hidden: int = 192, n_layers: int = 4,
                  n_heads: int = 4, dropout: float = 0.1, pil_weight: float = 0.5, pos_emb: bool = False,
                  prefix_prob: float = 0.0, prefix_min: int = 8, norm_first: bool = True,
@@ -179,7 +181,7 @@ class SortformerHead(Head):
 
 # --------------------------------------------------------------------------- speaker embedding
 class AttentiveStatsPool(nn.Module):
-    def __init__(self, d: int, bottleneck: int = 128):
+    def __init__(self, d: int, bottleneck: int = 128):  # placeholder: never swept (bottleneck)
         super().__init__()
         self.att = nn.Sequential(nn.Linear(3 * d, bottleneck), nn.Tanh(), nn.Linear(bottleneck, d))
 
@@ -210,7 +212,10 @@ class SpeakerHead(Head):
                  scale: float = 30.0, distill: dict | None = None, aam_weight: float = 1.0, hidden: int = 0):
         super().__init__()
         self.pool = AttentiveStatsPool(d_model)
-        # hidden > 0: a two-layer projection (research/FIXALL.md step 4); 0 = the shipped single linear layer
+        # emb_dim 192 = TitaNet-L's print size (the distillation target and the voice-print format), not a free size.
+        # hidden > 0: a two-layer projection (research/FIXALL.md step 4); 0 = the shipped single linear layer.
+        # hidden 0 vs 512 measured on the 0.6B only (plans/sweeps/speaker_0p6b_2026-10-02.md); on the 115M only 512
+        # was trained: placeholder: never swept on the 115M
         self.emb = (nn.Sequential(nn.Linear(2 * d_model, hidden), nn.SiLU(), nn.Linear(hidden, emb_dim),
                                   nn.BatchNorm1d(emb_dim)) if hidden else
                     nn.Sequential(nn.Linear(2 * d_model, emb_dim), nn.BatchNorm1d(emb_dim)))
@@ -295,6 +300,9 @@ class LanguageHead(Head):
         self.rnn = int(rnn)
         self.labels = list(labels) if labels else [str(i) for i in range(num_languages)]
         assert len(self.labels) == num_languages, "labels must have num_languages entries"
+        # hidden: measured, plans/sweeps/lid_2026-10-02.md (115M 256 / 512 / 1024, 0.6B 512 / 1024; both shipped heads
+        # use 1024 from assets/lid_*_v2.pt cfg; the default 256 is the pre-sweep value, kept so old configs load).
+        # att_hidden 128, cls_hidden 256: placeholder: never swept
         self.frame = nn.Sequential(nn.LayerNorm(d_model), nn.Linear(d_model, hidden), nn.ReLU(), nn.Dropout(dropout),
                                    nn.Linear(hidden, hidden), nn.ReLU())
         self.att = nn.Sequential(nn.Linear(hidden, att_hidden), nn.Tanh(), nn.Linear(att_hidden, hidden))
@@ -420,6 +428,9 @@ class LanguageHead(Head):
 class FrameHead(Head):
     """Per-encoder-frame classifier. num_classes=1 -> sigmoid/BCE (VAD, EOU)."""
 
+    # hidden (shipped 64: vad / eou / speech on the 115M, speech / turn_vad on the 0.6B): measured only for the 115M
+    # speech head (plans/sweeps/speech_115m_2026-10-01.md, speech_115m_2026-10-03.md); every other use is a
+    # placeholder: never swept
     def __init__(self, d_model: int, key: str = "vad", num_classes: int = 1, hidden: int = 0,
                  pos_weight: float = 1.0):
         super().__init__()
@@ -453,7 +464,7 @@ class FrameGRUHead(Head):
     sequence from a zero state; ``init_stream`` / ``step`` run the same GRU chunk by chunk (equal to ``forward`` on
     the concatenation), so a streaming session keeps one hidden vector per head."""
 
-    def __init__(self, d_model: int, key: str = "vad", hidden: int = 64, pos_weight: float = 1.0):
+    def __init__(self, d_model: int, key: str = "vad", hidden: int = 64, pos_weight: float = 1.0):  # placeholder: never swept
         super().__init__()
         self.key, self.num_classes, self.pos_weight = key, 1, pos_weight
         self.inp = nn.Linear(d_model, hidden)
@@ -496,6 +507,7 @@ class CodecTokenHead(Head):
 
     key = "codes"
 
+    # not shipped; hidden / n_layers / n_heads: placeholder: never swept
     def __init__(self, d_model: int, num_codebooks: int, codebook_size: int, upsample: int = 1,
                  hidden: int = 512, n_layers: int = 2, n_heads: int = 4):
         super().__init__()

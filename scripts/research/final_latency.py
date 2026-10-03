@@ -6,11 +6,14 @@ used for any training or selection of the words path).
   run --system S    S: ours_115m_1120 / ours_0p6b_1120 (served single-mode engine on MPS, fed in 20 ms blocks; at
                     each labelled turn end the block is cut at the end sample and the clock covers the processing of
                     that last piece + the slow pass's flush (``LookaheadStream.flush_view``, a partial chunk up to the
-                    turn end) + the token decode of the turn), or parakeet_tdt (CPU 2 threads), whisper_large /
-                    whisper_turbo (transformers fp16 MPS, greedy), whisper_small (faster-whisper int8 CPU 2 threads):
-                    the whole turn's audio is handed over at the turn end (an end-of-utterance STT, as in Pipecat /
-                    LiveKit) and the clock runs to the returned text. Warm-up calls first (not timed), batch 1.
-  report            -> runs/final_compare.json "final_latency" (p50 / p95 + 95 % bootstrap CI over turns, by length)
+                    turn end) + the token decode of the turn), or parakeet_tdt (CPU 2 threads) / parakeet_tdt_mps,
+                    whisper_large / whisper_turbo (transformers fp16 MPS, greedy), whisper_small_b5 (faster-whisper
+                    int8 CPU 2 threads, its transcribe() defaults: beam 5) / whisper_small (the same, beam 1) /
+                    whisper_small_mps (transformers fp16 MPS, beam 5; CTranslate2 has no MPS): the whole turn's audio
+                    is handed over at the turn end (an end-of-utterance STT, as in Pipecat / LiveKit) and the clock
+                    runs to the returned text. Warm-up calls first (not timed), batch 1.
+  report            -> runs/final_compare.json "final_latency" (p50 / p95 + 95 % bootstrap CI over turns, by length;
+                    WER of the timed turn texts against the user-channel reference, Whisper normalizer, clip bootstrap)
 
     PYTHONPATH=. scripts/dev/gate.sh .venv/bin/python scripts/research/final_latency.py run --system S
 """
@@ -34,17 +37,23 @@ WORK = Path(os.environ.get("FINALLAT_W", SSD / "scratch" / "finallat"))
 E2E = SSD / "scratch" / "e2e_tsvad"
 OUT = ROOT / "runs" / "final_compare.json"
 SR = 16000
+# the files the published rows were timed with (the 0.6B v0.3 build: tensors identical to v0.4 minus its turn heads)
 AFM = {"ours_115m_1120": (ROOT / "runs" / "stage1_served_v4.afm", "115m"),
        "ours_0p6b_1120": (SSD / "scratch" / "core_0p6b" / "served_0p6b_v0.3.afm", "0.6b")}
-OFFLINE = {"parakeet_tdt": ("tdt_v3", "cpu"), "whisper_large": ("whisper_large_v3", "mps"),
-           "whisper_turbo": ("whisper_turbo", "mps"), "whisper_small": ("whisper_small", "cpu")}
+OFFLINE = {"parakeet_tdt": ("tdt_v3", "cpu"), "parakeet_tdt_mps": ("tdt_v3", "mps"),
+           "whisper_large": ("whisper_large_v3", "mps"), "whisper_turbo": ("whisper_turbo", "mps"),
+           "whisper_small_b5": ("whisper_small_b5", "cpu"), "whisper_small": ("whisper_small", "cpu"),
+           "whisper_small_mps": ("whisper_small_hf_b5", "mps")}
 DEVICE = {"ours_115m_1120": "mps", "ours_0p6b_1120": "mps", **{k: v[1] for k, v in OFFLINE.items()}}
 LABEL = {"ours_115m_1120": "audioforge 115M, --final-chunk-ms 1120 (served engine, MPS)",
          "ours_0p6b_1120": "audioforge 0.6B, --final-chunk-ms 1120 (served engine, MPS)",
          "parakeet_tdt": "NVIDIA Parakeet-TDT 0.6B v3, offline (audioforge.nemo_import, CPU 2 threads)",
+         "parakeet_tdt_mps": "NVIDIA Parakeet-TDT 0.6B v3, offline (audioforge.nemo_import, fp32 MPS)",
          "whisper_large": "Whisper large-v3 (transformers fp16 MPS, greedy)",
          "whisper_turbo": "Whisper large-v3-turbo (transformers fp16 MPS, greedy)",
-         "whisper_small": "Whisper small (faster-whisper int8, CPU 2 threads; LiveKit's default)"}
+         "whisper_small_b5": "Whisper small (faster-whisper int8, CPU 2 threads, beam 5 = its transcribe() defaults)",
+         "whisper_small": "Whisper small (faster-whisper int8, CPU 2 threads, beam 1)",
+         "whisper_small_mps": "Whisper small (transformers fp16 MPS, beam 5)"}
 
 
 def log(*a):
@@ -161,13 +170,36 @@ def boot_ci(v, q, n=1000, seed=0):
     return [round(float(np.percentile(b, 2.5)), 1), round(float(np.percentile(b, 97.5)), 1)]
 
 
+def timed_wer(rows) -> dict:
+    """WER of the timed turn texts: per clip the turn texts in order against the clip's user-channel reference
+    (clips.json text_user), Whisper English normalizer, corpus level, 1000-resample clip bootstrap."""
+    import final_compare as FC
+    import hybrid_asr as H
+    fn = H._normalizers()[0]["whisper_norm"]
+    ref = {c["name"]: c["text_user"] for c in json.loads((E2E / "clips.json").read_text())
+           if c["set"] == "turnbench" and c.get("text_user")}
+    by = {}
+    for r in sorted(rows, key=lambda r: (r["clip"], r["turn"])):
+        by.setdefault(r["clip"], []).append(r["text"])
+    clips = sorted(by)
+    assert set(clips) == set(ref), "every clip of the user channel must be timed"
+    e = np.array([H.edits_words(fn(ref[c]), fn(" ".join(by[c]))) for c in clips], np.float64)
+    _, dr = FC._boot_rate(e, clips)
+    return {"wer_pct": round(100 * e[:, 0].sum() / e[:, 1].sum(), 2),
+            "ci95": [round(100 * float(np.percentile(dr, q)), 2) for q in (2.5, 97.5)],
+            "errors": int(e[:, 0].sum()), "ref_words": int(e[:, 1].sum()), "n_clips": len(clips)}
+
+
 def stage_report(a):
     res = json.loads(OUT.read_text())
     o = {"what": "final transcript ready after the user stops talking: ms from the end of each labelled user turn "
                  "(clips.json user_turns) to that turn's final text, user channel of the 16 TurnBench clips of the "
                  "live set (the 'user' half of the 32 live sessions), batch 1, one stream, warm models",
          "method": __doc__.split("\n\n")[1].strip(),
-         "bootstrap": "1000 resamples over turns, 95 % percentile interval", "systems": {}}
+         "bootstrap": "1000 resamples over turns, 95 % percentile interval (latency); over clips (WER)",
+         "wer_timed_texts": "WER of the turn texts each system returned in this timing run (the text at the timed "
+                            "point), concatenated per clip against clips.json text_user, Whisper normalizer",
+         "systems": {}}
     for k in LABEL:
         p = WORK / f"{k}.jsonl"
         if not p.exists():
@@ -184,6 +216,7 @@ def stage_report(a):
         if "flush_ms" in rows[0]:
             fl = np.array([r["flush_ms"] for r in rows])
             e["flush_only"] = {"p50": round(float(np.percentile(fl, 50)), 1), "p95": round(float(np.percentile(fl, 95)), 1)}
+        e["wer_timed_texts"] = timed_wer(rows)
         o["systems"][k] = e
         L_all = L
     o["turn_length_s"] = {"n": int(len(L_all)), "p50": round(float(np.percentile(L_all, 50)), 2),

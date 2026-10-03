@@ -1,0 +1,606 @@
+{
+ "head": "speech_115m",
+ "date": "2026-10-03",
+ "args": {
+  "head": "speech",
+  "core": "115m",
+  "sizes": "16,32,64,128,256",
+  "grid": [],
+  "budget": 120.0,
+  "evals": 6,
+  "tol": 0.01,
+  "seed": 0,
+  "blocks": "",
+  "train_frames": 500000,
+  "eval_windows": 60,
+  "device": "mps",
+  "tag": "",
+  "out_root": "/Users/maxm/nvidia-audio-models"
+ },
+ "data": "cached frozen-encoder features /Volumes/ExternalSSD/nvidia-audio-models/scratch/fixall/feats/115m (FIXALL step 1), blocks [2, 3, 4, 5, 6] (1-based), train 460651 frames sampled with seed 0; eval scopes ami_ho 49949, icsi_ho 27610, oto_va 29789, otoq_va 29789, room_ho 12120 frames; loaded in 21 s",
+ "rows": [
+  {
+   "size": {
+    "hidden": 16
+   },
+   "params": 8230,
+   "steps": 10746,
+   "best": {
+    "t": 40.0,
+    "step": 3496,
+    "train_loss": 0.13423,
+    "eval_loss": 0.11755,
+    "per_scope": {
+     "ami_ho": 0.1599,
+     "icsi_ho": 0.17048,
+     "oto_va": 0.09409,
+     "otoq_va": 0.12571,
+     "room_ho": 0.03759
+    },
+    "sel_auc": 0.9899,
+    "room_p95": 0.1272
+   },
+   "hist": [
+    {
+     "t": 20.0,
+     "step": 1657,
+     "train_loss": 0.15637,
+     "eval_loss": 0.1194,
+     "per_scope": {
+      "ami_ho": 0.16063,
+      "icsi_ho": 0.17103,
+      "oto_va": 0.0962,
+      "otoq_va": 0.12808,
+      "room_ho": 0.04107
+     },
+     "sel_auc": 0.9895,
+     "room_p95": 0.1216
+    },
+    {
+     "t": 40.0,
+     "step": 3496,
+     "train_loss": 0.13423,
+     "eval_loss": 0.11755,
+     "per_scope": {
+      "ami_ho": 0.1599,
+      "icsi_ho": 0.17048,
+      "oto_va": 0.09409,
+      "otoq_va": 0.12571,
+      "room_ho": 0.03759
+     },
+     "sel_auc": 0.9899,
+     "room_p95": 0.1272
+    },
+    {
+     "t": 60.0,
+     "step": 5342,
+     "train_loss": 0.14507,
+     "eval_loss": 0.11798,
+     "per_scope": {
+      "ami_ho": 0.16288,
+      "icsi_ho": 0.17067,
+      "oto_va": 0.09433,
+      "otoq_va": 0.1279,
+      "room_ho": 0.03414
+     },
+     "sel_auc": 0.9902,
+     "room_p95": 0.085
+    },
+    {
+     "t": 80.0,
+     "step": 7157,
+     "train_loss": 0.09871,
+     "eval_loss": 0.11867,
+     "per_scope": {
+      "ami_ho": 0.16267,
+      "icsi_ho": 0.16913,
+      "oto_va": 0.09577,
+      "otoq_va": 0.13055,
+      "room_ho": 0.03524
+     },
+     "sel_auc": 0.9899,
+     "room_p95": 0.0993
+    },
+    {
+     "t": 100.0,
+     "step": 8918,
+     "train_loss": 0.11769,
+     "eval_loss": 0.11867,
+     "per_scope": {
+      "ami_ho": 0.16447,
+      "icsi_ho": 0.17123,
+      "oto_va": 0.09544,
+      "otoq_va": 0.12753,
+      "room_ho": 0.03468
+     },
+     "sel_auc": 0.9898,
+     "room_p95": 0.0918
+    },
+    {
+     "t": 120.0,
+     "step": 10746,
+     "train_loss": 0.12439,
+     "eval_loss": 0.11857,
+     "per_scope": {
+      "ami_ho": 0.16495,
+      "icsi_ho": 0.17137,
+      "oto_va": 0.09522,
+      "otoq_va": 0.12797,
+      "room_ho": 0.03331
+     },
+     "sel_auc": 0.9899,
+     "room_p95": 0.0899
+    }
+   ]
+  },
+  {
+   "size": {
+    "hidden": 32
+   },
+   "params": 16454,
+   "steps": 10689,
+   "best": {
+    "t": 20.0,
+    "step": 1685,
+    "train_loss": 0.12727,
+    "eval_loss": 0.11771,
+    "per_scope": {
+     "ami_ho": 0.15872,
+     "icsi_ho": 0.17578,
+     "oto_va": 0.09652,
+     "otoq_va": 0.12298,
+     "room_ho": 0.03454
+    },
+    "sel_auc": 0.9898,
+    "room_p95": 0.1072
+   },
+   "hist": [
+    {
+     "t": 20.0,
+     "step": 1685,
+     "train_loss": 0.12727,
+     "eval_loss": 0.11771,
+     "per_scope": {
+      "ami_ho": 0.15872,
+      "icsi_ho": 0.17578,
+      "oto_va": 0.09652,
+      "otoq_va": 0.12298,
+      "room_ho": 0.03454
+     },
+     "sel_auc": 0.9898,
+     "room_p95": 0.1072
+    },
+    {
+     "t": 40.0,
+     "step": 3420,
+     "train_loss": 0.10635,
+     "eval_loss": 0.11942,
+     "per_scope": {
+      "ami_ho": 0.16696,
+      "icsi_ho": 0.17311,
+      "oto_va": 0.094,
+      "otoq_va": 0.12231,
+      "room_ho": 0.04073
+     },
+     "sel_auc": 0.9899,
+     "room_p95": 0.1192
+    },
+    {
+     "t": 60.0,
+     "step": 5259,
+     "train_loss": 0.13303,
+     "eval_loss": 0.12071,
+     "per_scope": {
+      "ami_ho": 0.1708,
+      "icsi_ho": 0.17524,
+      "oto_va": 0.09419,
+      "otoq_va": 0.12376,
+      "room_ho": 0.03955
+     },
+     "sel_auc": 0.99,
+     "room_p95": 0.0994
+    },
+    {
+     "t": 80.0,
+     "step": 7113,
+     "train_loss": 0.10098,
+     "eval_loss": 0.12219,
+     "per_scope": {
+      "ami_ho": 0.17301,
+      "icsi_ho": 0.17612,
+      "oto_va": 0.09627,
+      "otoq_va": 0.12405,
+      "room_ho": 0.04149
+     },
+     "sel_auc": 0.9897,
+     "room_p95": 0.119
+    },
+    {
+     "t": 100.0,
+     "step": 8912,
+     "train_loss": 0.0902,
+     "eval_loss": 0.12301,
+     "per_scope": {
+      "ami_ho": 0.17147,
+      "icsi_ho": 0.17872,
+      "oto_va": 0.09685,
+      "otoq_va": 0.12472,
+      "room_ho": 0.04329
+     },
+     "sel_auc": 0.9896,
+     "room_p95": 0.1234
+    },
+    {
+     "t": 120.0,
+     "step": 10689,
+     "train_loss": 0.10466,
+     "eval_loss": 0.12266,
+     "per_scope": {
+      "ami_ho": 0.17193,
+      "icsi_ho": 0.17893,
+      "oto_va": 0.09638,
+      "otoq_va": 0.12481,
+      "room_ho": 0.04123
+     },
+     "sel_auc": 0.9897,
+     "room_p95": 0.1162
+    }
+   ]
+  },
+  {
+   "size": {
+    "hidden": 64
+   },
+   "params": 32902,
+   "steps": 10315,
+   "best": {
+    "t": 20.0,
+    "step": 1673,
+    "train_loss": 0.09329,
+    "eval_loss": 0.12049,
+    "per_scope": {
+     "ami_ho": 0.1577,
+     "icsi_ho": 0.17565,
+     "oto_va": 0.09788,
+     "otoq_va": 0.12443,
+     "room_ho": 0.04679
+    },
+    "sel_auc": 0.99,
+    "room_p95": 0.1611
+   },
+   "hist": [
+    {
+     "t": 20.0,
+     "step": 1673,
+     "train_loss": 0.09329,
+     "eval_loss": 0.12049,
+     "per_scope": {
+      "ami_ho": 0.1577,
+      "icsi_ho": 0.17565,
+      "oto_va": 0.09788,
+      "otoq_va": 0.12443,
+      "room_ho": 0.04679
+     },
+     "sel_auc": 0.99,
+     "room_p95": 0.1611
+    },
+    {
+     "t": 40.0,
+     "step": 3298,
+     "train_loss": 0.11435,
+     "eval_loss": 0.12893,
+     "per_scope": {
+      "ami_ho": 0.179,
+      "icsi_ho": 0.18378,
+      "oto_va": 0.10299,
+      "otoq_va": 0.13114,
+      "room_ho": 0.04776
+     },
+     "sel_auc": 0.9892,
+     "room_p95": 0.0712
+    },
+    {
+     "t": 60.0,
+     "step": 5028,
+     "train_loss": 0.10939,
+     "eval_loss": 0.13105,
+     "per_scope": {
+      "ami_ho": 0.1895,
+      "icsi_ho": 0.199,
+      "oto_va": 0.10223,
+      "otoq_va": 0.1309,
+      "room_ho": 0.03363
+     },
+     "sel_auc": 0.9891,
+     "room_p95": 0.0702
+    },
+    {
+     "t": 80.0,
+     "step": 6709,
+     "train_loss": 0.09951,
+     "eval_loss": 0.13705,
+     "per_scope": {
+      "ami_ho": 0.19801,
+      "icsi_ho": 0.2062,
+      "oto_va": 0.10648,
+      "otoq_va": 0.13464,
+      "room_ho": 0.03992
+     },
+     "sel_auc": 0.9884,
+     "room_p95": 0.1064
+    },
+    {
+     "t": 100.0,
+     "step": 8451,
+     "train_loss": 0.07106,
+     "eval_loss": 0.13855,
+     "per_scope": {
+      "ami_ho": 0.19956,
+      "icsi_ho": 0.20893,
+      "oto_va": 0.10785,
+      "otoq_va": 0.13871,
+      "room_ho": 0.03767
+     },
+     "sel_auc": 0.9888,
+     "room_p95": 0.0706
+    },
+    {
+     "t": 120.0,
+     "step": 10315,
+     "train_loss": 0.07514,
+     "eval_loss": 0.13874,
+     "per_scope": {
+      "ami_ho": 0.20219,
+      "icsi_ho": 0.21024,
+      "oto_va": 0.10784,
+      "otoq_va": 0.13783,
+      "room_ho": 0.03559
+     },
+     "sel_auc": 0.9887,
+     "room_p95": 0.0668
+    }
+   ]
+  },
+  {
+   "size": {
+    "hidden": 128
+   },
+   "params": 65798,
+   "steps": 10224,
+   "best": {
+    "t": 20.0,
+    "step": 1714,
+    "train_loss": 0.13776,
+    "eval_loss": 0.12114,
+    "per_scope": {
+     "ami_ho": 0.16661,
+     "icsi_ho": 0.17793,
+     "oto_va": 0.0994,
+     "otoq_va": 0.12599,
+     "room_ho": 0.03574
+    },
+    "sel_auc": 0.9896,
+    "room_p95": 0.1103
+   },
+   "hist": [
+    {
+     "t": 20.0,
+     "step": 1714,
+     "train_loss": 0.13776,
+     "eval_loss": 0.12114,
+     "per_scope": {
+      "ami_ho": 0.16661,
+      "icsi_ho": 0.17793,
+      "oto_va": 0.0994,
+      "otoq_va": 0.12599,
+      "room_ho": 0.03574
+     },
+     "sel_auc": 0.9896,
+     "room_p95": 0.1103
+    },
+    {
+     "t": 40.0,
+     "step": 3577,
+     "train_loss": 0.10655,
+     "eval_loss": 0.13726,
+     "per_scope": {
+      "ami_ho": 0.18978,
+      "icsi_ho": 0.20326,
+      "oto_va": 0.11236,
+      "otoq_va": 0.14169,
+      "room_ho": 0.03923
+     },
+     "sel_auc": 0.9891,
+     "room_p95": 0.0574
+    },
+    {
+     "t": 60.0,
+     "step": 5295,
+     "train_loss": 0.08783,
+     "eval_loss": 0.15441,
+     "per_scope": {
+      "ami_ho": 0.23109,
+      "icsi_ho": 0.22785,
+      "oto_va": 0.12182,
+      "otoq_va": 0.15223,
+      "room_ho": 0.03907
+     },
+     "sel_auc": 0.988,
+     "room_p95": 0.0392
+    },
+    {
+     "t": 80.0,
+     "step": 6624,
+     "train_loss": 0.05623,
+     "eval_loss": 0.16179,
+     "per_scope": {
+      "ami_ho": 0.23057,
+      "icsi_ho": 0.24686,
+      "oto_va": 0.12868,
+      "otoq_va": 0.15922,
+      "room_ho": 0.0436
+     },
+     "sel_auc": 0.9878,
+     "room_p95": 0.0374
+    },
+    {
+     "t": 100.0,
+     "step": 8419,
+     "train_loss": 0.04869,
+     "eval_loss": 0.16807,
+     "per_scope": {
+      "ami_ho": 0.23835,
+      "icsi_ho": 0.25501,
+      "oto_va": 0.13167,
+      "otoq_va": 0.1618,
+      "room_ho": 0.05348
+     },
+     "sel_auc": 0.9873,
+     "room_p95": 0.0543
+    },
+    {
+     "t": 120.0,
+     "step": 10224,
+     "train_loss": 0.05272,
+     "eval_loss": 0.16866,
+     "per_scope": {
+      "ami_ho": 0.24129,
+      "icsi_ho": 0.25593,
+      "oto_va": 0.13186,
+      "otoq_va": 0.16278,
+      "room_ho": 0.05146
+     },
+     "sel_auc": 0.9871,
+     "room_p95": 0.0516
+    }
+   ]
+  },
+  {
+   "size": {
+    "hidden": 256
+   },
+   "params": 131590,
+   "steps": 10179,
+   "best": {
+    "t": 20.0,
+    "step": 1719,
+    "train_loss": 0.08345,
+    "eval_loss": 0.1326,
+    "per_scope": {
+     "ami_ho": 0.19924,
+     "icsi_ho": 0.19443,
+     "oto_va": 0.10781,
+     "otoq_va": 0.1297,
+     "room_ho": 0.03183
+    },
+    "sel_auc": 0.9891,
+    "room_p95": 0.0769
+   },
+   "hist": [
+    {
+     "t": 20.0,
+     "step": 1719,
+     "train_loss": 0.08345,
+     "eval_loss": 0.1326,
+     "per_scope": {
+      "ami_ho": 0.19924,
+      "icsi_ho": 0.19443,
+      "oto_va": 0.10781,
+      "otoq_va": 0.1297,
+      "room_ho": 0.03183
+     },
+     "sel_auc": 0.9891,
+     "room_p95": 0.0769
+    },
+    {
+     "t": 40.0,
+     "step": 3089,
+     "train_loss": 0.07095,
+     "eval_loss": 0.14825,
+     "per_scope": {
+      "ami_ho": 0.19868,
+      "icsi_ho": 0.22457,
+      "oto_va": 0.11879,
+      "otoq_va": 0.15114,
+      "room_ho": 0.04805
+     },
+     "sel_auc": 0.9877,
+     "room_p95": 0.0843
+    },
+    {
+     "t": 60.0,
+     "step": 4819,
+     "train_loss": 0.07337,
+     "eval_loss": 0.1814,
+     "per_scope": {
+      "ami_ho": 0.26713,
+      "icsi_ho": 0.28363,
+      "oto_va": 0.14196,
+      "otoq_va": 0.17453,
+      "room_ho": 0.03974
+     },
+     "sel_auc": 0.9872,
+     "room_p95": 0.0185
+    },
+    {
+     "t": 80.0,
+     "step": 6563,
+     "train_loss": 0.04624,
+     "eval_loss": 0.20126,
+     "per_scope": {
+      "ami_ho": 0.28136,
+      "icsi_ho": 0.31255,
+      "oto_va": 0.15612,
+      "otoq_va": 0.19343,
+      "room_ho": 0.06286
+     },
+     "sel_auc": 0.9854,
+     "room_p95": 0.042
+    },
+    {
+     "t": 100.0,
+     "step": 8362,
+     "train_loss": 0.04183,
+     "eval_loss": 0.21022,
+     "per_scope": {
+      "ami_ho": 0.29505,
+      "icsi_ho": 0.33025,
+      "oto_va": 0.16108,
+      "otoq_va": 0.19982,
+      "room_ho": 0.06492
+     },
+     "sel_auc": 0.9855,
+     "room_p95": 0.021
+    },
+    {
+     "t": 120.0,
+     "step": 10179,
+     "train_loss": 0.02919,
+     "eval_loss": 0.21184,
+     "per_scope": {
+      "ami_ho": 0.29729,
+      "icsi_ho": 0.33394,
+      "oto_va": 0.16178,
+      "otoq_va": 0.20067,
+      "room_ho": 0.06554
+     },
+     "sel_auc": 0.9853,
+     "room_p95": 0.0203
+    }
+   ]
+  }
+ ],
+ "knee": {
+  "pick": {
+   "hidden": 16
+  },
+  "params": 8230,
+  "l_min": 0.11755,
+  "tol": 0.01,
+  "edge": "smallest"
+ },
+ "shipped": {
+  "hidden": 64,
+  "depth": 1
+ }
+}

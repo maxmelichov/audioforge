@@ -2,6 +2,16 @@
 
 Status legend: [x] done, [ ] open, [?] needs a decision from the maintainer.
 
+The checks below run as `chore` tasks from the root (`chore list`); long ones run in the background and log to
+`runs/logs/<task>_*.log` (`chore log <task>` prints the tail):
+
+```bash
+chore lint            # ruff + config-doc check
+chore test            # full suite through the gate
+chore rules           # root entries, PEP 723 headers, chorefile, commit trailers, files over 700 lines
+chore build-public    # git archive HEAD into a clean dir minus assets/lid_*.pt, token scan, pytest in the snapshot
+```
+
 ## 1. Licence
 
 - [?] **Choose the code licence.** `LICENSE` currently holds Apache-2.0 and `pyproject.toml` says
@@ -34,7 +44,8 @@ Status legend: [x] done, [ ] open, [?] needs a decision from the maintainer.
   author addresses (171 commits under one, 1 under another). Decide which may be public; if either may not, rewrite
   the history (`git filter-repo --mailmap`) before the first push.
 - [ ] Untracked files are not scanned by `git grep`. Before the first push run the same greps with `grep -rn` over
-  the working tree minus `data/ .venv/ models/`, or push from a clean clone.
+  the working tree minus `data/ .venv/ models/`, or push from a clean clone: `chore build-public` builds that clean
+  tree from `git archive HEAD` and runs the token scan on it (file names only, never the matched text).
 - [ ] `research/archive/raw/` holds Hugging Face API dumps (model cards and metadata, public data). Check nothing personal was
   captured in `research/archive/raw/all.json` (author handles are public HF usernames).
 
@@ -81,6 +92,8 @@ Status legend: [x] done, [ ] open, [?] needs a decision from the maintainer.
 - [ ] **Upstream PRs**: `docs/UPSTREAM_PRS.md` holds ready-to-paste PRs for Pipecat and LiveKit Agents on the user's
   forks; **no PR has been opened**. Order: publish `audioforge-client` to PyPI, `uv lock` in both forks, then open
   the PRs. Decide before the repository goes public whether they are opened now or later.
+- [ ] Before tagging: `chore lint`, `chore test`, `chore rules` and `chore build-public` all end with exit 0
+  (read the tails with `chore log <task>`).
 - [x] Full test suite run once through the gate on 2026-09-28: 718 passed, 5 skipped, 7 failed, the 7 all in the
   untracked `tests/test_bulletproof.py` (recorded in CHANGELOG.md). Re-run after the other workstreams commit.
 - [ ] Tag `v0.1.0`, create the GitHub release with `assets/served_heads_v0.2.pt` (ships), `assets/served_heads_v0.1.pt`

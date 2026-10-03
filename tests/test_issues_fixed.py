@@ -11,7 +11,16 @@ import torch
 
 from audioforge.metrics import pct, pct_dict
 
-torch.set_num_threads(1)
+
+@pytest.fixture(autouse=True, scope="module")
+def _threads_1():
+    """1 torch thread for this module only (restored after it, not at import time for the session)."""
+    old = torch.get_num_threads()
+    torch.set_num_threads(1)
+    yield
+    torch.set_num_threads(old)
+
+
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "scripts"))
 sys.path.insert(0, str(ROOT / "examples"))

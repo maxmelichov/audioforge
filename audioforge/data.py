@@ -12,12 +12,14 @@ verified end to end on a laptop in minutes.
 """
 from __future__ import annotations
 
+import hashlib
 import json
 import logging
 import math
 import random
 import warnings
 import wave
+from collections.abc import Sequence
 from pathlib import Path
 
 import numpy as np
@@ -246,30 +248,169 @@ def synthetic_dataset(kind: str, n: int, seed: int = 0, lang: ToneLanguage | Non
     return out
 
 
+def _read_jsonl(path) -> list[dict]:
+    return [json.loads(line) for line in Path(path).read_text().splitlines() if line.strip()]
+
+
+def _decode_row(m: dict, sample_rate: int, max_spks: int, any_prompt: bool) -> dict:
+    """One manifest line -> one example: audio decoded now (on the fly), prompt / RTTM targets derived, and the
+    ``labels_file`` npz sidecar written by write_manifest merged back in (frame labels, embeddings)."""
+    seg = {"offset": m.get("offset") or 0.0, "duration": m.get("duration")} if "offset" in m else {}
+    ex = dict(m, audio=load_wav(m["audio_filepath"], sample_rate, **seg))
+    if any_prompt:
+        ex["prompt"] = canary_prompt(m.get("source_lang", "en"), m.get("target_lang"), m.get("task", "asr"))
+    if "rttm_filepath" in m:
+        n = ToneLanguage.n_frames(len(ex["audio"]))
+        full = rttm_to_frames(m["rttm_filepath"], n, uniq_id=m.get("uniq_id") or Path(m["audio_filepath"]).stem,
+                              offset=seg.get("offset", 0.0))
+        ex["spk_targets"] = _limit_spks(full, max_spks, m["rttm_filepath"])
+        ex["spk_targets_full"] = full
+    if "labels_file" in m:
+        with np.load(m["labels_file"], allow_pickle=False) as z:
+            ex.update({k: z[k] for k in z.files})
+        del ex["labels_file"]
+    return ex
+
+
 def read_manifest(path: str, sample_rate: int = 16000, max_spks: int = 4) -> list[dict]:
-    """NeMo JSONL manifest -> examples.
+    """NeMo JSONL manifest -> examples (all decoded now; the trainer uses the lazy ManifestData instead).
 
     ``offset``/``duration`` select a segment (duration alone is treated as informational and the whole file is
     read). If any line has ``task``/``target_lang`` every line gets a Canary prompt (plain ASR lines get the
     default en/asr one). RTTM targets: ``spk_targets`` is cropped/padded to ``max_spks`` arrival-ordered slots
     for training; ``spk_targets_full`` keeps every speaker for evaluation.
     """
-    lines = [json.loads(line) for line in Path(path).read_text().splitlines() if line.strip()]
-    any_prompt = any("task" in m or "target_lang" in m for m in lines)
+    return list(ManifestData(path, sample_rate, max_spks))
+
+
+class ManifestData(Sequence):
+    """The trainer's one data format: a JSONL manifest read lazily. Each line is
+    ``{"audio_filepath", "duration", "text"?, <any label>?, "labels_file"?: <npz of array labels>}``; audio is
+    decoded on access, so training starts immediately. Items equal read_manifest's. ``durations`` (seconds, from
+    the manifest, no decoding) feed the duration-bucketing sampler (epoch_batches)."""
+
+    def __init__(self, path=None, sample_rate: int = 16000, max_spks: int = 4, rows: list[dict] | None = None):
+        self.rows = _read_jsonl(path) if rows is None else rows
+        self.sample_rate, self.max_spks = sample_rate, max_spks
+        self.any_prompt = any("task" in m or "target_lang" in m for m in self.rows)
+
+    def __len__(self):
+        return len(self.rows)
+
+    def __getitem__(self, i):
+        if isinstance(i, slice):
+            return [self[j] for j in range(*i.indices(len(self)))]
+        return _decode_row(self.rows[i], self.sample_rate, self.max_spks, self.any_prompt)
+
+    @property
+    def durations(self) -> list[float]:
+        return [float(m.get("duration") or 0.0) for m in self.rows]
+
+
+def row_key(m: dict) -> str:
+    """Identity of a manifest row's audio (file + segment): the unit a split must never share between sides."""
+    return f"{m['audio_filepath']}@{float(m.get('offset') or 0.0):.3f}+{m.get('duration')}"
+
+
+def seeded_split(rows: list[dict], val_fraction: float, seed: int = 0) -> tuple[list[dict], list[dict]]:
+    """Deterministic train / val split of one manifest: a row goes to val iff sha1(seed:file) falls under
+    ``val_fraction``. Keyed by audio file (not segment), so segments of one recording never straddle the split."""
+    def u(m):
+        return int(hashlib.sha1(f"{seed}:{m['audio_filepath']}".encode()).hexdigest()[:12], 16) / 16 ** 12
+    return [m for m in rows if u(m) >= val_fraction], [m for m in rows if u(m) < val_fraction]
+
+
+def check_disjoint(train_rows: list[dict], val_rows: list[dict], what: str = "manifest") -> int:
+    """Warn (count) val rows whose audio segment is also a train row: an eval leak."""
+    seen = {row_key(m) for m in train_rows}
+    leak = sum(row_key(m) in seen for m in val_rows)
+    if leak:
+        log.warning(f"[data] {what}: {leak} of {len(val_rows)} val rows are also train rows (eval leak)")
+    return leak
+
+
+def _jsonable(v):
+    if isinstance(v, np.generic):
+        return v.item()
+    if isinstance(v, np.ndarray):
+        return v.tolist()
+    if isinstance(v, (list, tuple)):
+        return [_jsonable(x) for x in v]
+    if isinstance(v, dict):
+        return {str(k): _jsonable(x) for k, x in v.items()}
+    return v
+
+
+def write_manifest(rows, out_dir, split: str, sample_rate: int = 16000) -> Path:
+    """Adapter: any in-memory examples (a dataset source's rows) -> ``<out_dir>/<split>.jsonl`` in the trainer's
+    manifest format. Audio is written as float32 WAV (lossless, so ManifestData gives back the same arrays);
+    numeric array labels go to one npz per row (``labels_file``); text and scalars stay inline."""
+    import soundfile as sf
+    out_dir = Path(out_dir).resolve()
+    (out_dir / "audio").mkdir(parents=True, exist_ok=True)
+    (out_dir / "labels").mkdir(exist_ok=True)
+    lines = []
+    for i in range(len(rows)):
+        ex = {k: v.cpu().numpy() if torch.is_tensor(v) else v for k, v in rows[i].items()}
+        wav = out_dir / "audio" / f"{split}_{i:07d}.wav"
+        audio = np.asarray(ex["audio"], np.float32)
+        sf.write(str(wav), audio, sample_rate, subtype="FLOAT")
+        m = {"audio_filepath": str(wav), "duration": round(len(audio) / sample_rate, 4)}
+        arrays = {k: v for k, v in ex.items() if k != "audio" and isinstance(v, np.ndarray) and v.dtype.kind in "biuf"}
+        for k, v in ex.items():
+            if k in ("audio", "audio_filepath", "duration") or k in arrays:
+                continue
+            m["source_" + k if k in ("offset", "rttm_filepath", "labels_file") else k] = _jsonable(v)
+        if arrays:
+            npz = out_dir / "labels" / f"{split}_{i:07d}.npz"
+            np.savez(npz, **arrays)
+            m["labels_file"] = str(npz)
+        lines.append(json.dumps(m))
+    path = out_dir / f"{split}.jsonl"
+    path.write_text("\n".join(lines) + "\n")
+    return path
+
+
+# --------------------------------------------------------------------------- sampler
+def epoch_batches(n: int, bs: int, rng: random.Random, source_ids=None, batching: str = "source",
+                  durations=None, bucket: int = 0, names=None) -> list[list[int]]:
+    """Index batches for one epoch (full batches only), drawn from ``rng`` (the caller's seeded sampler RNG, so the
+    order is a function of seed + epoch). ``source_ids`` with batching "source" gives single-source batches
+    (sources smaller than bs contribute none). ``bucket`` k > 0 with ``durations``: each shuffled window of k*bs
+    items is sorted by duration before slicing, then the batches are shuffled (less padding, same epoch)."""
+    def cut(idx):
+        if bucket and durations is not None:
+            w = bs * int(bucket)
+            idx = [j for s in range(0, len(idx), w) for j in sorted(idx[s: s + w], key=lambda j: durations[j])]
+            out = [idx[i: i + bs] for i in range(0, len(idx) - bs + 1, bs)]
+            rng.shuffle(out)
+            return out
+        return [idx[i: i + bs] for i in range(0, len(idx) - bs + 1, bs)]
+
+    if source_ids is None or batching != "source":
+        idx = list(range(n))
+        rng.shuffle(idx)
+        return cut(idx)
+    groups: dict[int, list[int]] = {}
+    for i, s in enumerate(source_ids):
+        groups.setdefault(s, []).append(i)
     out = []
-    for m in lines:
-        seg = {"offset": m.get("offset") or 0.0, "duration": m.get("duration")} if "offset" in m else {}
-        ex = dict(m, audio=load_wav(m["audio_filepath"], sample_rate, **seg))
-        if any_prompt:
-            ex["prompt"] = canary_prompt(m.get("source_lang", "en"), m.get("target_lang"), m.get("task", "asr"))
-        if "rttm_filepath" in m:
-            n = ToneLanguage.n_frames(len(ex["audio"]))
-            full = rttm_to_frames(m["rttm_filepath"], n, uniq_id=m.get("uniq_id") or Path(m["audio_filepath"]).stem,
-                                  offset=seg.get("offset", 0.0))
-            ex["spk_targets"] = _limit_spks(full, max_spks, m["rttm_filepath"])
-            ex["spk_targets_full"] = full
-        out.append(ex)
+    for s, g in sorted(groups.items()):
+        if len(g) < bs:
+            log.debug(f"[data] source {names[s] if names else s!r} has {len(g)} < batch_size items: never batched")
+        rng.shuffle(g)
+        out += cut(g)
+    if not out:
+        raise ValueError(f"no data source has >= trainer.batch_size={bs} items")
+    rng.shuffle(out)
     return out
+
+
+def shard_batches(batches: list, rank: int, world: int) -> list:
+    """This process's share of an epoch under DDP: every world-th batch, equal count on every rank."""
+    if world <= 1:
+        return batches
+    return batches[rank::world][: len(batches) // world]
 
 
 # --------------------------------------------------------------------------- batching

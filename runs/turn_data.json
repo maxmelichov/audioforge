@@ -2875,7 +2875,10 @@
    "never_new": 96,
    "train_shipped": 379,
    "heldout_old": 16,
-   "eval": 32
+   "eval": 48,
+   "train_shipped_turn": 197,
+   "heldout_old_turn": 15,
+   "heldout_old_vad": 2
   },
   "smart_turn": {
    "train": 3463,
@@ -2893,7 +2896,15 @@
   "train_new & heldout_old": 0,
   "heldout_new & heldout_old": 0,
   "train_shipped & eval": 0,
-  "never_new & eval (allowed: both evaluation-only)": 16
+  "heldout_old & eval": 0,
+  "train_shipped_turn & heldout_old_turn": 0,
+  "train_new & heldout_old_turn": 0,
+  "never_new & eval (allowed: both evaluation-only)": 16,
+  "train_shipped & heldout_old (allowed: turn-training meeting used only for speech-head selection)": 1,
+  "train_shipped & heldout_old ids": [
+   "ami:TS3011b"
+  ],
+  "eval_turnbench_sessions": 16
  },
  "pick": {
   "hs12": {

@@ -1162,13 +1162,20 @@ def stage_splits(a):
             old_train.add(f"{'oto' if c['src'] == 'oto' else c['src']}:{g[1]}")
     old_train |= rec("ami", [m for m in sl["train"] if m not in C.VAD_HOLD])  # VAD / turn training meetings
     old_train |= rec("icsi", I.SPLITS["train"])
-    old_held = {f"{s_}:{m}" for s_, m in vg if s_ in ("oto", "ami", "icsi")} | rec("ami", C.VAD_HOLD)
-    ev_calls = set()
-    for x in E.sessions():
-        if x["set"] in ("oto", "turnbench"):
-            ev_calls.add(x["key"])
+    # held-out, two kinds (leakage audit 001 item 11b): the turn_v4 / v5 validation groups select turn heads and
+    # presets; C.VAD_HOLD (TS3011b, ES2015c) selects the VAD / speech heads. The turn heads trained on TS3011b clips
+    # (it is not a turn validation group), which is harmless only for VAD / speech-head selection: it is checked below.
+    held_turn = {f"{s_}:{m}" for s_, m in vg if s_ in ("oto", "ami", "icsi")}
+    held_vad = rec("ami", C.VAD_HOLD)
+    old_held = held_turn | held_vad
+    turn_train = set()  # the turn_v4 / v5 training conversations / meetings (what the shipped turn heads saw)
+    for c in tv4:
+        g = (c["src"], c.get("meeting", c["id"]))
+        if c["src"] in ("oto", "ami", "icsi") and g not in vg:
+            turn_train.add(f"{c['src']}:{g[1]}")
+    ev_calls = {f"turnbench:{x['key']}" for x in E.sessions() if x["set"] == "turnbench"}  # TurnBench dev (eval only)
     oto_eval = V4.eval_oto_ids()
-    evals = rec("oto", oto_eval) | rec("ami", sl["eval"])  # + TurnBench dev conversations (a corpus of its own)
+    evals = rec("oto", oto_eval) | rec("ami", sl["eval"]) | ev_calls
     meta = json.loads(ST.build_cache(verbose=False).read_text())
     sp_ = ST.split_indices(meta)
     st_test, st_train = set(sp_["eval"]), set(sp_["train"])
@@ -1177,11 +1184,14 @@ def stage_splits(a):
         "heldout_new": rec("ami", man("dev")) | rec("oto", man("odev")) | rec("apptek", man("atdev")),
         "never_new": rec("ami", man("test")) | rec("oto", man("otest")) | rec("apptek", man("attest")),
         "train_shipped": old_train, "heldout_old": old_held, "eval": evals,
+        "train_shipped_turn": turn_train, "heldout_old_turn": held_turn, "heldout_old_vad": held_vad,
     }
     pairs = [("train_new", "heldout_new"), ("train_new", "never_new"), ("heldout_new", "never_new"),
              ("train_new", "eval"), ("heldout_new", "eval"), ("heldout_new", "train_shipped"),
              ("never_new", "train_shipped"), ("never_new", "heldout_old"), ("train_new", "heldout_old"),
-             ("heldout_new", "heldout_old"), ("train_shipped", "eval")]
+             ("heldout_new", "heldout_old"), ("train_shipped", "eval"),
+             ("heldout_old", "eval"), ("train_shipped_turn", "heldout_old_turn"),  # audit 001 item 11 gaps (a), (b)
+             ("train_new", "heldout_old_turn")]
     res = {"sizes": {k: len(v) for k, v in sets.items()}, "smart_turn": {"train": len(st_train), "test": len(st_test),
                                                                         "overlap": len(st_train & st_test)}}
     for x, y in pairs:
@@ -1191,6 +1201,14 @@ def stage_splits(a):
             res[f"{x} & {y} ids"] = inter[:10]
     # never_new & eval: the AMI test meetings are evaluation audio in both (allowed: neither is trained / selected on)
     res["never_new & eval (allowed: both evaluation-only)"] = len(sets["never_new"] & sets["eval"])
+    # train_shipped & heldout_old: TS3011b (audit 001 item 11b). Allowed only because it is a VAD / speech-head
+    # selection meeting (heldout_old_vad) that the turn heads trained on; no turn head or preset is selected on it
+    # (train_shipped_turn & heldout_old_turn above must be empty).
+    x = sorted(sets["train_shipped"] & sets["heldout_old"])
+    res["train_shipped & heldout_old (allowed: turn-training meeting used only for speech-head selection)"] = len(x)
+    res["train_shipped & heldout_old ids"] = x
+    assert set(x) <= held_vad, x
+    res["eval_turnbench_sessions"] = len(ev_calls)
     (TD / "splits.json").write_text(json.dumps({k: sorted(v) for k, v in sets.items()}, indent=0))
     for k, v in res.items():
         log(k, v)

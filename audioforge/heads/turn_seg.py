@@ -23,7 +23,7 @@ import torch.nn as nn
 
 
 class AttnPool(nn.Module):
-    def __init__(self, d: int, h: int = 128):
+    def __init__(self, d: int, h: int = 128):  # placeholder: never swept (h)
         super().__init__()
         self.w = nn.Sequential(nn.Linear(d, h), nn.Tanh(), nn.Linear(h, 1))
 
@@ -40,6 +40,10 @@ def _enc(d, heads, layers, ff, dropout):
 class SegTurn(nn.Module):
     key = "turn_seg"  # a batch field no training set carries: the Trainer skips this head (it is trained offline)
 
+    # n_layers 2: measured on the 115M (0 / 2 / 4, plans/sweeps/turn_seg_115m_2026-09-30.md); the 0.6B's turn_seg and
+    # turn_seg_a copy it: placeholder: never swept there. d 256, heads 4, ff 1024, d_text 128, text_layers 2 and
+    # the classifier MLP widths (256, 64): placeholder: never swept. d_in, vocab, win, max_tok are fixed by the
+    # encoder, the tokenizer and the window, not sizes to sweep
     def __init__(self, d_in: int = 512, n_extra: int = 3, d: int = 256, n_layers: int = 2, heads: int = 4,
                  ff: int = 1024, win: int = 100, use_text: bool = True, vocab: int = 1024, d_text: int = 128,
                  text_layers: int = 2, max_tok: int = 48, dropout: float = 0.1, block: int = 17, n_pros: int = 0):

@@ -104,6 +104,8 @@ class Joint(nn.Module):
 
 
 class RNNTHead(Head):
+    # The shipped RNNT / CTC / prompt sizes come from the imported NVIDIA checkpoint's config (pred / joint 640 on both
+    # cores) and are fixed by its weights; the defaults here (320) are for from-scratch configs: placeholder: never swept
     def __init__(self, d_model: int, vocab_size: int, pred_hidden: int = 320, pred_layers: int = 1,
                  joint_hidden: int = 320, durations: list[int] | None = None, max_symbols: int = 10,
                  sigma: float = 0.0, fused_batch_size: int = 0, key: str = "text", prompt: dict | None = None):
@@ -330,7 +332,7 @@ class AEDHead(Head):
     """
 
     def __init__(self, d_model: int, vocab_size: int, bos_id: int, eos_id: int, pad_id: int,
-                 d_dec: int = 256, n_layers: int = 4, n_heads: int = 4, max_len: int = 512,
+                 d_dec: int = 256, n_layers: int = 4, n_heads: int = 4, max_len: int = 512,  # placeholder: never swept
                  dropout: float = 0.1, key: str = "text"):
         super().__init__()
         self.bos, self.eos, self.pad, self.key, self.max_len = bos_id, eos_id, pad_id, key, max_len

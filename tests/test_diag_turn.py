@@ -200,12 +200,20 @@ def test_decoded_text_training_path():
     assert head.align_counts.get("decoded", 0) == 2
 
 
-def test_recipe_smoke_diagnostics_reported(tmp_path):
+@pytest.mark.parametrize("decoded_prob", [0.0, 1.0])
+def test_recipe_smoke_diagnostics_reported(tmp_path, decoded_prob):
+    """3 recipe steps report the turn diagnostics. Seed-independent (the trainer may seed Python's random): with
+    decoded_prob 0 every step aligns the reference text (turn_align_greedy_frac), with 1 every step trains on the
+    ASR's own decode (turn_decoded_frac); a 0.5 draw over 3 steps picked one path only, depending on the seed."""
     ov = ["trainer.max_steps=3", "trainer.batch_size=4", "trainer.device=cpu", "data.synthetic.n_train=8",
           "data.synthetic.n_val=4", "encoder.n_layers=2", "encoder.d_model=64", "encoder.subsampling_channels=16",
           "heads.turn.mode=kernel", "heads.turn.condition_on_speaker=true", "heads.turn.use_text=true",
-          "heads.turn.text_delay=2", "heads.turn.text_noise=0.1", "heads.turn.decoded_prob=0.5",
+          "heads.turn.text_delay=2", "heads.turn.text_noise=0.1", f"heads.turn.decoded_prob={decoded_prob}",
           "heads.diar.prefix_prob=0.5"]
     _, metrics = run_recipe(str(RECIPE), ov, out=str(tmp_path / "m.afm"))
     assert "eot_turn_diar_act_miss" in metrics and 0.0 <= metrics["eot_turn_diar_act_miss"] <= 1.0
-    assert "turn_align_greedy_frac" in metrics
+    if decoded_prob == 0.0:
+        assert "turn_align_greedy_frac" in metrics and 0.0 <= metrics["turn_align_greedy_frac"] <= 1.0
+        assert "turn_decoded_frac" not in metrics
+    else:
+        assert metrics.get("turn_decoded_frac") == 1.0 and "turn_align_greedy_frac" not in metrics

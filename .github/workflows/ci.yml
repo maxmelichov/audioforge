@@ -53,7 +53,7 @@ jobs:
         env:
           OMP_NUM_THREADS: "2"
           TOKENIZERS_PARALLELISM: "false"
-        run: python -m pytest -q $(grep -v "^#" tests/fast_ci.txt) --durations=15
+        run: python -m pytest -q -m "not real" $(grep -v "^#" tests/fast_ci.txt) --durations=15
         shell: bash
 
   client:

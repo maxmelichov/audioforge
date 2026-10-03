@@ -41,6 +41,7 @@ def _decisions(fe, enroll):
             if m["type"] in ("turn_end", "final", "voiceprint")]
 
 
+@pytest.mark.real
 @pytest.mark.parametrize("device", GPUS)
 def test_gpu_engine_matches_cpu_on_the_bundled_clip(device):
     cpu, gpu = _load("cpu"), _load(device)

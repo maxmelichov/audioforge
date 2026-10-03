@@ -26,8 +26,8 @@ Two models run side by side on one 80 ms frame clock:
   (`AOSCConfig.preset` / `streaming_diar.SORTFORMER_PRESETS`; FIFO 188, update 144, cache 188, encoder left
   context 188 frames in both):
   - `low_latency_032` (default since 2026-09-26): card "ultra low latency", chunk 3 + right context 1 = 0.32 s.
-    research/archive/EOT_BENCH_V2.md section 7 (n = 974 AMI dev turns, leak-free cross-fit): the same miss rates as the
-    1.04 s setting (e.g. causal hybrid 63.7 vs 61.9 %, head 65.8 vs 66.5 %, timeout 70.1 vs 74.8 %; CIs overlap)
+    research/archive/EOT_BENCH_V2.md section 7 (a selection experiment on n = 974 AMI dev turns, leak-free cross-fit,
+    not a test result): the same miss rates as the 1.04 s setting for the hybrid, head and timeout rules (CIs overlap)
     with 0.5-0.8 s lower P50 wherever the systems fire (nominal emission delay 240 vs 840 ms), at DER 28.3 vs 26.3.
   - `low_latency`: card "low latency", chunk 6 + right context 7 = 1.04 s, as scored in research/archive/STAGE1.md
     (n=200) and research/archive/SORTFORMER_IMPORT.md.

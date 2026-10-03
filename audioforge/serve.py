@@ -302,7 +302,7 @@ class Engine:
                  turn_policy: str = "timeout", turn_hint_p: float | None = TURN_HINT_P,
                  turn_preset: str = TURN_PRESET_DEFAULT, energy_gate: bool = True,
                  energy_quiet_db: float | None = ENERGY_GATE["quiet_db"], turn_model: str = "head",
-                 smartturn_onnx: str | None = None, smartturn_trigger: str = "vad"):
+                 smartturn_onnx: str | None = None, smartturn_trigger: str = "vad", voice_gender: str | None = None):
         self.threads = threads
         # --energy-gate / --energy-quiet-db: vad_head's energy-aware gate (policies.EnergyGate, constants.ENERGY_GATE)
         if energy_quiet_db is not None and not 0.0 < float(energy_quiet_db) <= 40.0:
@@ -366,6 +366,11 @@ class Engine:
             if lid == "head" and lid_max_ms is None:  # the shipped head and its pre-registered rule (fix pass)
                 self.lid_max_ms = HEAD_MAX_MS
             self.lid_name = attach_head(self.asr, resolve_head(lid))
+        self.gender_name = None  # --voice-gender (optional, off by default; audioforge.voice_gender)
+        if voice_gender:
+            from .voice_gender import attach_head as attach_gender
+            from .voice_gender import resolve_head as resolve_gender
+            self.gender_name = attach_gender(self.asr, resolve_gender(voice_gender, self.asr.encoder.d_model))
         self.fast = fast
         if fast:  # CPU fast path for the conformer conv modules of both encoders (same outputs)
             fast_conv(self.asr)
@@ -756,7 +761,11 @@ class Session:
         elif e.lid_name:
             from .lid import LIDStream
             lid = LIDStream(e.asr, e.lid_name, threshold=e.lid_threshold, min_ms=e.lid_min_ms, max_ms=e.lid_max_ms)
-        self.asr = ASRStream(e.asr, e.vad_name, e.turn_name, e.turn_input, lid=lid, vad_gate=e.asr_vad_gate,
+        gender = None
+        if e.gender_name:
+            from .voice_gender import VoiceGenderStream
+            gender = VoiceGenderStream(e.asr, e.gender_name)
+        self.asr = ASRStream(e.asr, e.vad_name, e.turn_name, e.turn_input, lid=lid, gender=gender, vad_gate=e.asr_vad_gate,
                              vad_hangover_frames=e.asr_vad_hangover, att_context_size=e.asr_att, beam=e.asr_beam)
         if e.diar_off:  # --diar-off: the TS-VAD track stands in for the diarizer's columns (no Sortformer pass)
             from .tsvad_stream import TSVADColumns
@@ -1257,6 +1266,8 @@ class Session:
             text = tok.decode(bt)
         speaker, extra = self._attribute(self.seg_frame0, f, speaker)
         fin = {"type": "final", "t": round(t_dec, 3), "text": text, "speaker": speaker, **extra}
+        if self.asr.gender is not None:  # --voice-gender: the segment's posterior (None without pooled speech)
+            fin["voice_gender"] = self.asr.gender.segment(self.seg_frame0, f)
         out.append(fin)
         if self.e.dual:  # --final-chunk-ms: the fast text now as final_fast, the slow pass's final right after it
             fin["type"] = "final_fast"
@@ -1769,6 +1780,8 @@ class Session:
             if self.e.debug and self.e.dual:
                 m.update(final_flush_n=len(self.flush_ms), final_flush_miss=self.flush_miss,
                          final_flush_ms_p50=_pct(self.flush_ms, 50), final_flush_ms_p95=_pct(self.flush_ms, 95))
+        if self.asr.gender is not None:
+            m["voice_gender"] = self.asr.gender.session()
         if self.asr.lid is not None:
             m["lang"] = self.asr.lid.current
             if self.e.debug:

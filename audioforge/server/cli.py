@@ -193,14 +193,15 @@ FLAGS: tuple[Flag, ...] = (
          {"choices": list(TURN_PRESETS), "default": TURN_PRESET_DEFAULT, "metavar": "PRESET"},
          doc="`vad_head`'s constants as one named trade-off (a client's `config.turn_preset` wins for its session). "
          "`balanced` = VAD < 0.4 for >= 160 ms AND p >= 0.99, OR 640 ms, others path 960,640. `fast` (turn head v5, "
-         "served heads v0.3) = the v5 segment classifier asked after 80 ms of VAD < 0.6 and at every further quiet "
-         "frame ends the turn at P(complete) > 0.7, OR 640 ms of VAD < 0.4, others path 960,640: on two-party calls "
-         "547 vs 956 ms p50 at 24.8 vs 20.2 % false interruptions and 5.5 vs 7.3 % missed (AMI 1247 vs 1326 ms, "
-         "11.5 vs 10.5 % FI, 34.0 vs 33.5 % missed). `steady` = the fast rule before v5 (VAD < 0.6 for >= 480 ms AND "
+         "served heads v0.3 and v0.4) = the v5 segment classifier asked after 80 ms of VAD < 0.6 and at every further "
+         "quiet frame ends the turn at P(complete) > 0.7, OR 640 ms of VAD < 0.4, others path 960,640: on two-party "
+         "calls (not a test split) 547 vs 955 ms p50 at 24.8 vs 20.2 % false interruptions and 5.5 vs 7.3 % missed "
+         "(AMI test 1246 vs 1527 ms, 20.5 vs 15.5 % false interruptions, 37.5 vs 36.0 % missed; "
+         "research/FINAL_COMPARE.md). `steady` = the fast rule before v5 (VAD < 0.6 for >= 480 ms AND "
          "p >= 0.99, OR 720 ms, others path 640,640): 886 ms p50 but the best p95 (1434 ms) and misses (3.7 %). "
          "`assistant` = v5 asked after 240 ms of energy-or-VAD quiet, P(complete) > 0.9, OR 2960 ms of VAD silence: "
-         "for speech directed at the agent (smart-turn's 399 test clips: 92 % accuracy at 291 ms p50), not for human "
-         "conversation. `--vad-wait-ms` / `--others-wait-ms` override the preset's values (research/TURN_V5.md, "
+         "for speech directed at the agent, not for human conversation (test rows: research/FINAL_COMPARE.md "
+         "\"Turn taking\"). `--vad-wait-ms` / `--others-wait-ms` override the preset's values (research/TURN_V5.md, "
          "research/EOT_LATENCY.md \"Turn presets\")", doc_default="`balanced`", section=S4),
     Flag(("--others-wait-ms",), "turns", "vad_head: user's TS-VAD silence + P(other) hold of the others path, e.g. 960,640",
          {"metavar": "USER_SIL,HOLD"}, advanced=True,
@@ -311,6 +312,13 @@ FLAGS: tuple[Flag, ...] = (
          doc_default="3000 with `--lid head`, else off (0 = off)", section=S9),
     Flag(("--lid-langs",), "lid", "--lid ambernet: comma-separated language codes to choose from",
          {"metavar": "CODES"}, advanced=True, doc_default="the 17 languages of research/archive/LID.md", section=S9),
+    Flag(("--voice-gender",), "lid", "optional perceived voice-gender head: head or a head file",
+         {"metavar": "head|PATH"}, advanced=True,
+         doc="optional perceived voice-gender probabilities (female / male voice) from a small head on the speaker "
+         "head's encoder tap: `head` (the core's shipped file, `voice_gender_115m.pt` / `voice_gender_0p6b.pt`) or a "
+         "head file; adds `final.voice_gender` (that segment's speech) and `stats.voice_gender` (the session's). A "
+         "perceived vocal characteristic, not a person's gender identity; it can be wrong for any individual",
+         doc_default="off", section=S9),
     # --- diarizer tuning
     Flag(("--diar-config",), "diarizer", "Sortformer setting: 0.32 s (low_latency_032) or 1.04 s",
          {"choices": DIAR_CONFIGS, "default": DEFAULT_DIAR_CONFIG}, advanced=True, section=S71),
@@ -498,6 +506,8 @@ def _startup_checks(a) -> None:
             missing.append(("--lid head", f"{HEAD_FILE} (models directory or runs/)"))
     elif a.lid and a.lid != "ambernet" and not Path(a.lid).exists():
         missing.append(("--lid", a.lid))
+    if a.voice_gender and a.voice_gender != "head" and not Path(a.voice_gender).exists():
+        missing.append(("--voice-gender", a.voice_gender))
     if a.final_asr and a.final_asr.endswith(".nemo") and not Path(a.final_asr).exists():
         missing.append(("--final-asr", a.final_asr))
     if missing:
@@ -524,6 +534,7 @@ def load_engine(a):
                        silero_timeout_ms=a.silero_timeout_ms, preload_silero=a.silero is not None,
                        lid=a.lid, lid_threshold=a.lid_threshold, lid_min_ms=a.lid_min_ms,
                        lid_langs=a.lid_langs.split(",") if a.lid_langs else None, lid_max_ms=a.lid_max_ms,
+                       voice_gender=a.voice_gender,
                        final_asr=a.final_asr,
                        final_asr_worker=a.final_asr_worker, final_asr_threads=a.final_asr_threads,
                        final_asr_device=a.final_asr_device, asr_lookahead=a.asr_lookahead, asr_chunk_ms=a.asr_chunk_ms,

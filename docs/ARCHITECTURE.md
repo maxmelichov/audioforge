@@ -19,7 +19,11 @@ The server's design notes, such as the frame clock and the exact policy rules, a
                            block 4, 33 K          distilled from         same encoder, told who    conditioned on a
                                                   TitaNet-L              is speaking               voice print (flags)
 
- also on the same encoder:  LID head (blocks 8-12, 0.92 M, distilled from AmberNet)   "which language?"
+ also on the same encoder:  speech detector (learned mix of blocks 2-6, 33 K)          "is anyone speaking?" (the client's
+                            per-frame speech probability; the block-4 VAD head above feeds the turn rules)
+                            end-of-turn classifier v5 (block 8 + VAD / TS-VAD + words, 2.5 M)   `fast` / `assistant`
+                            LID head v2 (blocks 8-12, 2.37 M, distilled from AmberNet, optional)   "which language?"
+                            voice-gender head (block 4, 22 K, optional, off by default)   perceived female / male voice
 
  room mode only (--mode room):
               NVIDIA Nemotron-3-Diarization (or Streaming Sortformer v2)   "who is in the room": 4-8 activity columns
@@ -38,9 +42,10 @@ transcript. The rest of this page notes where the two differ.
   cache-aware, run at attention context [70, 1], which gives 160 ms chunks and 80 ms lookahead. It is imported without
   NeMo (`audioforge/nemo_import.py`) and **never fine-tuned**: every fine-tuning attempt raised LibriSpeech WER (2.05 to
   4.31 % in 500 steps), so everything this project learned lives in the heads.
-- **The heads** read the encoder's frames at no extra encoder cost. The VAD head reads block 4
-  (`stage1_served_v2.afm`, research/VAD_SINGLE.md). The measured 2026-09-27 checkpoint used a learned mix of all 17
-  blocks. The speaker head reads block 4 too, where speaker information lives; the top blocks are speaker-blind. The turn head
+- **The heads** read the encoder's frames at no extra encoder cost. The shipped build is `stage1_served_v4.afm`
+  (heads v0.4). The VAD head that gates the turn rules reads block 4 (research/VAD_SINGLE.md); the `speech` detector
+  head added in v0.4 reads a learned mix of blocks 2-6 and gives the client's speech probability (research/FIXALL.md).
+  The `--core 0.6b` build (`served_0p6b_v0.4.afm`) has the same heads on its own blocks (speaker and TS-VAD on block 5). The speaker head reads block 4 too, where speaker information lives; the top blocks are speaker-blind. The turn head
   runs on a second, speaker-conditioned pass of the same encoder, fed the primary speaker's diarizer column. The
   TS-VAD head replaces that column with the enrolled user's activity (single-model mode; `--turn-input tsvad`).
 - **The diarizer** (room mode only) is NVIDIA's, because our own general diarization head is not good enough (0.394

@@ -1,4 +1,5 @@
 
+import pytest
 import torch
 
 from audioforge import catalog
@@ -7,6 +8,17 @@ from audioforge.heads.audio import sort_by_arrival
 from audioforge.metrics import eer, frame_der, wer
 from audioforge.speech_llm import SpeechLLM, TinyCausalLM
 from audioforge.tokenizer import CharTokenizer, SentencePieceTokenizer
+
+
+@pytest.fixture(autouse=True)
+def _seeded():
+    """Fixed torch / numpy / random seeds per test: random inputs do not depend on which tests ran before."""
+    import random
+
+    import numpy as np
+    random.seed(0)
+    np.random.seed(0)
+    torch.manual_seed(0)
 
 
 def test_fsq_roundtrip_and_codebook():

@@ -298,6 +298,7 @@ Sent right after every cutting `turn_end` (same `t`), and once at end of stream.
 | `speaker` | int or null | default (`--diar-labels column`): the primary column at the decision (the timeout's firing column, else the current primary), 0-3 (0-7 with 8 columns). With `--diar-labels registry`: a stable per-session speaker id (0, 1, 2, ... in order of first appearance, keyed by voice, so the same person keeps the id across column permutations and re-entries; may exceed the column count); `null` when the turn had too little speech to identify ([CONFIGURATION.md §7.4](CONFIGURATION.md#74-multi-speaker-rooms---diar-labels---shed-diar-timeout_any)) | always |
 | `speaker_conf` | number in [0, 1] or null | `registry`: cosine of the turn's voice to the assigned speaker (a new speaker: how far the closest known one was below the join threshold, 1 for the first); `null` when `speaker` fell back to the column's last id or is `null` | only with `--diar-labels registry` or `--shed-diar hold`; then on every `stream` final together with `diar_shed` |
 | `diar_shed` | bool | true when the diarizer did not run on part of this turn (load shedding): the speaker came from held columns / the voice registry, not from a live diarizer frame | with `speaker_conf` |
+| `voice_gender` | object or null | `{"female": p, "male": p, "speech_ms": n}`: perceived voice-gender probabilities pooled over this segment's speech (VAD-gated frames) and how much speech that was; `null` if the segment had no speech. A perceived vocal characteristic estimated from audio, not the speaker's gender identity, and it can be wrong for any individual ([MODELS.md](MODELS.md), research/VOICE_GENDER.md) | only with `--voice-gender` (off by default); on the `stream` final (or `final_fast`) |
 | `source` | string | `stream` for the streaming model's final; `lookahead` for the `--asr-lookahead` pass; `slow` for the `--final-chunk-ms` pass; `tdt_v3` (or the `.nemo` file's stem when `--final-asr` is a path) for the offline pass | only when `--final-asr`, `--asr-lookahead` or `--final-chunk-ms` is on; then on every final |
 | `pass` | string | `slow`: the text is the slow pass's; `fast`: the slow pass was dropped (load shedding level 2 or an error) and the text is the fast pass's | `--final-chunk-ms` finals only |
 | `start` | number or null | start of the transcribed span, s. tdt_v3: turn onset (first frame with VAD > 0.5 after the previous cut) minus 0.3 s, never before the previous span's end. lookahead: the lookahead segment's first frame | finals whose `source` is not `stream` |
@@ -372,6 +373,7 @@ The last message of a session, after the end-of-stream `final` (and after every 
 | `final_latency_ms` | object | per source: `{"p50", "p95", "max", "n"}` of that source's `latency_ms` values | with `final_asr` |
 | `final_asr_rss_mb` | number or null | peak RSS of the offline final-ASR worker process, MB; `null` in `--final-asr-worker thread` mode or with only `--asr-lookahead` | with `final_asr` |
 | `lang` | string or null | the last announced language, `null` if none | `--lid` |
+| `voice_gender` | object or null | as `final.voice_gender`, pooled over all of the session's speech | `--voice-gender` |
 | `degraded` | object | counters by code of every degradation or repair in this session (for example `{"overloaded": 1, "shed_diar_frames": 120}`) | only when the session degraded |
 | `turn_model` | object | `{"model": "smartturn", "calls", "complete", "ms_p50", "ms_p95"}`: the session's smart-turn calls, how many said complete, and their compute (ms) | `--turn-model smartturn` |
 | `turn_hints` | object | `{"sent", "confirmed", "cancelled", "open", "lead_ms_p50"}`: the session's `turn_end_hint`s and how they resolved (`open`: 1 if one was outstanding at the end; `lead_ms_p50`: median `turn_end.t - hint t` of the confirmed ones, `null` if none) | with turn hints on (the default) and a turn head |
@@ -444,7 +446,8 @@ adapter (`AudioforgeSTTService(turn_hints=True)` + `AudioforgeEagerTurnStopStrat
 
 Measured (scripts/research/turn_hint.py -> runs/turn_hint.json: the server's hint tracker and `vad_head` replayed on
 the stored per-frame dumps of research/EOT_LATENCY.md, decision clock, compute excluded; calls = 109 TurnBench +
-one-to-one user turns, AMI = 200 dev turns; `turn_end` unchanged: 20.2 % / 10.5 % false interruptions, 7.3 % /
+one-to-one user turns, AMI = 200 dev turns: a dev-split selection experiment for the default H, not a test result
+(test rows: research/FINAL_COMPARE.md "Turn taking"); `turn_end` unchanged: 20.2 % / 10.5 % false interruptions, 7.3 % /
 33.5 % missed). Hint latency = the confirmed hint of each hinted end minus the reference end; precision = hints
 inside a reference turn window that came at or after its end (the user did not resume in that turn); recall = ends
 whose answering `turn_end` carried such a hint; response = when the reply could start if the LLM + TTS need `prep`

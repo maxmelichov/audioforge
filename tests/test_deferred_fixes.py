@@ -11,7 +11,16 @@ from audioforge.model import SpeechModel, StreamingSession
 from audioforge.modules.fastconformer import FastConformerEncoder, StreamState
 from audioforge.tokenizer import CharTokenizer
 
-torch.set_num_threads(1)
+
+@pytest.fixture(autouse=True, scope="module")
+def _threads_1():
+    """1 torch thread for this module only (restored after it, not at import time for the session)."""
+    old = torch.get_num_threads()
+    torch.set_num_threads(1)
+    yield
+    torch.set_num_threads(old)
+
+
 ROOT = Path(__file__).resolve().parents[1]
 
 

@@ -146,7 +146,7 @@ function build(W, H) {
   const Lz = sq ? 26 : 30, Mz = sq ? 22 : 24;
   const P = sq ? { tz: 32, bx: 250, bw: 460, bt: 376, bh: 290, pad: 18, sw: 14, wav: [64, 80], ex: 764, rn: 96, th: 150, ts: [420, 200], tsy: 782, ly: 710, sm: [64, 124], lpx: 690, vy: 824 }
                : { tz: 44, bx: 480, bw: 760, bt: 388, bh: 300, pad: 26, sw: 26, wav: [110, 120], ex: 1290, rn: 170, th: 170, ts: [525, 220], tsy: 782, ly: 0, sm: [110, 160], lpx: 1000, vy: 900 };
-  l1("One frozen NVIDIA speech model, six small heads on top", M, M + 4, P.tz);
+  l1("One frozen NVIDIA speech model, small heads on top", M, M + 4, P.tz);
   const sub = el("sub abs", "Pick the model: FastConformer Hybrid Streaming 115M (17 blocks) or Nemotron Speech Streaming 0.6B (24 blocks). Same heads on both.", M, 0); sub.style.fontSize = (sq ? 24 : 26) + "px"; place(sub, M, M + 2 + (sq ? 44 : 58));
   // the two runs as a sequence, one line of tiny grey boxes
   const seq = sq ? ["every 160 ms", "① run model", "voice track", "② run again, conditioned", "turn decision"]
@@ -170,7 +170,7 @@ function build(W, H) {
   // all 17 layers -> VAD head, directly above -> Speech?
   // the VAD head reads layer 4 (block index 3): one stem up from slab 4, sharing the layer-4 tap with "Is it you?"
   const s4t = A.cx[3], vtop = A.R.t - (sq ? 48 : 56) - 16 - 48;
-  const vw = sq ? 200 : 250, vb = box("ours", "Speech detector", "VAD · blocks 2–6 / 8–16", s4t - vw / 2, 0, vw, 56, Mz); place(vb, s4t - vw / 2, vtop, 0, 1);
+  const vw = sq ? 200 : 250, vb = box("ours", "Speech detector", "blocks 2–6 / 8–16", s4t - vw / 2, 0, vw, 56, Mz); place(vb, s4t - vw / 2, vtop, 0, 1);
   const br = { mx: s4t, tip: A.R.t };
   wire([[s4t, A.R.t - 2], [s4t, R(vb).b + 6]], R1); circ(1, s4t, (A.R.t + R(vb).b) / 2, S1);
   // inside the block: the tap leaves the top of slab 4 (light line); the block title moves right, clear of it
@@ -182,7 +182,7 @@ function build(W, H) {
   // language head (verified: assets/lid_distill.pt from_layers [7..11] = layers 8-12, 0.92 M; pass 1, same chunk outputs,
   // server/streams.py self.lid.feed(enc, hid, ...)): a short bracket over slabs 8-12
   const b8 = A.cx[7], b12 = A.cx[11], lm = (b8 + b12) / 2, lb = brace(b8, b12, A.R.t - 8, true, S1);
-  const lw = sq ? 220 : 290, lbx = box("ours", "Language detector", sq ? "blocks 8–12 / 16–20" : "blocks 8–12 / 16–20", lm - lw / 2, 0, lw, 60, Mz);
+  const lw = sq ? 240 : 330, lbx = box("ours", "Language detector", sq ? "LID v2 · blocks 8–12 / 16–20" : "LID v2 · blocks 8–12 / 16–20", lm - lw / 2, 0, lw, 60, Mz);
   place(lbx, Math.max(vr.r + 16, lm - lw / 2), vr.b, 0, 1);   // level with the VAD head
   const lr = R(lbx); wire([[lm, lb.tip], [lm, lr.b + 6]], R1); circ(1, lm, (lb.tip + lr.b) / 2 + 2, S1);
   // layer 17 (right edge, top) -> RNNT -> streaming words
@@ -234,7 +234,7 @@ function build(W, H) {
   const tby = gyy + gh + (sq ? 40 : 52); place(te, Math.min(cr[0] - 60, W - M - te.offsetWidth), tby);
   wire([[cr[0], cr[1] + 8], [cr[0], tby - 6]], R2);
   // optional: tiny grey dashed branch, no container
-  const f = el("foot abs", "blocks shown as 115M / 0.6B · the voice-aware second run exists on the 115M; the 0.6B decides from the first run · heads: speech detector, speaker head (voice print), speaker tracker, turn detector, end-of-turn classifier, language detector", M, 0, W - 2 * M); f.style.top = (H - M - f.offsetHeight - 2) + "px";
+  const f = el("foot abs", "heads (115M / 0.6B): speech 33K / 66K, VAD 33K, speaker 0.5M, tracker 0.26M, turn 0.32M (115M), end-of-turn 2.5M · optional: LID 2.4M / 2.9M, voice gender 22K", M, 0, W - 2 * M); f.style.top = (H - M - f.offsetHeight - 2) + "px";
   const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg"); svg.setAttribute("class", "wires"); svg.setAttribute("width", W); svg.setAttribute("height", H);
   svg.innerHTML = wires.join(""); st.prepend(svg);
   if (new URLSearchParams(location.search).get("notext")) notext();
@@ -242,34 +242,19 @@ function build(W, H) {
 // removal test: hide every explanatory annotation (level 2) and the footer (level 3); level-1 labels stay
 function notext() { const s = document.createElement("style"); s.textContent = "#stage .l2, #stage .foot, #stage .box .a { color: transparent !important; } /* transparent !important */"; document.head.appendChild(s); }
 
+// FOCUS: which diagram parts each page keeps lit. No numbers live here: the published compare_*.png read numbers_final.json
+// through VS below (the old first-pass FOCUS rows were removed after the 2026-10-03 fairness audit).
 const FOCUS = {
   asr: { title: "Words", sub: "The frozen NVIDIA model and its decoder transcribe. Nothing changed here: pick the size you can afford.",
     keep: e => /Audio|Decoder|Streaming words|every 160 ms|^first$/.test(e.textContent.trim()) || e.classList.contains("wave"), core: true, rows: [], foot: "" },
   vad: { title: "Speech detector", sub: "A 33K head on blocks 2-6 (66K on blocks 8-16 of the 0.6B) says speech or not every 80 ms. It replaces Silero.",
-    keep: e => /Speech detector|Speech\?/.test(e.textContent.trim()) || (/every 80 ms/.test(e.textContent.trim()) && parseFloat(e.style.top) < 400), core: false,
-    rows: [["AMI meetings, F1", "higher is better", [["FastConformer 115M","0.951","us2"],["Nemotron 0.6B","0.951","us"],["NVIDIA MarbleNet v2","0.937","base"],["Silero v5","0.915","base"]]],
-           ["AMI meetings, ROC-AUC", "higher is better", [["FastConformer 115M","0.972","us2"],["Nemotron 0.6B","0.972","us"],["MarbleNet v2","0.959","base"],["Silero v5","0.956","base"]]],
-           ["Reaction to speech onset", "median", [["both cores","80 ms","us"]]]],
-    foot: "64 × 20 s AMI windows, threshold 0.5 for every system. Same frames, same labels." },
+    keep: e => /Speech detector|Speech\?/.test(e.textContent.trim()) || (/every 80 ms/.test(e.textContent.trim()) && parseFloat(e.style.top) < 400), core: false, rows: [], foot: "" },
   spk: { title: "Speaker head and speaker tracker", sub: "A 5 s sample becomes a voice print; the tracker marks every 80 ms whether the voice is yours.",
-    keep: e => /Is it you|5 s sample|voice print|sample run once|block 4 \/ 5|Your voice track/.test(e.textContent.trim()), core: false,
-    rows: [["Your words only, meetings (ICSI), target-speaker WER %", "lower is better", [["Nemotron 0.6B","31.7","us"],["FastConformer 115M","37.1","us2"],["Nemotron-3 diarization + print","65","base"],["no speaker filter","101","base"]]],
-           ["Your words only, mixed two-party calls, WER %", "lower is better", [["FastConformer 115M","40","us2"],["no speaker filter","63","base"]]],
-           ["Speaker match error (EER), AMI", "lower is better", [["Nemotron 0.6B","13.6 %","us"],["FastConformer 115M","19.8 %","us2"]]],
-           ["Tracking F1, AMI / ICSI", "higher is better", [["Nemotron 0.6B","0.760 / 0.894","us"],["FastConformer 115M","0.743 / 0.882","us2"]]]],
-    foot: "No diarizer in the loop. Nemotron-3 diarization row: NVIDIA's diarizer bound to the same voice print, same ICSI audio." },
+    keep: e => /Is it you|5 s sample|voice print|sample run once|block 4 \/ 5|Your voice track/.test(e.textContent.trim()), core: false, rows: [], foot: "" },
   turn: { title: "Turn detector and end-of-turn classifier", sub: "Has the user finished? Asked at every quiet frame, answered from the model’s features plus the words.",
-    keep: e => /Turn detector|Turn over|Turn end|quiet ≥|second run|then · into layers|turn decision|run it again/.test(e.textContent.trim()), core: false,
-    rows: [["Speech to an agent: accuracy", "399 smart-turn test clips", [["FastConformer 115M","92.2 %","us2"],["Nemotron 0.6B","fix in progress","us"],["Pipecat smart-turn v3.2","69.7 %","base"],["LiveKit turn detector","72.7 %","base"]]],
-           ["Speech to an agent: answer latency", "median, after you stop", [["FastConformer 115M","292 ms","us2"],["Pipecat smart-turn v3.2","211 ms","base"],["LiveKit turn detector","547 ms","base"]]],
-           ["Speech to an agent: cut off mid-sentence", "% of unfinished sentences", [["FastConformer 115M","5.4 %","us2"],["Pipecat smart-turn v3.2","40.2 %","base"],["LiveKit turn detector","44.6 %","base"]]],
-           ["Two-party calls, fast preset: latency / false interruptions / missed", "109 turn ends", [["FastConformer 115M","547 ms / 24.8 % / 5.5 %","us2"],["LiveKit turn detector","567 ms / 26.6 % / 22.9 %","base"]]]],
-    foot: "Same clips and calls for every system. Pipecat 1.12 and LiveKit Agents 1.8 defaults, replayed without waiting for their speech-to-text." },
-  lid: { title: "Language detector", sub: "A 0.92M head on blocks 8–12 (16–20 on the 0.6B) names the language. Distilled from NVIDIA AmberNet.",
-    keep: e => /Language detector/.test(e.textContent.trim()), core: false,
-    rows: [["FLEURS, 17 languages: accuracy", "2 s of audio / whole clip", [["FastConformer 115M","91.0 % / 97.8 %","us2"],["Nemotron 0.6B (same data as 115M control)","87.4 % / 95.3 %","us"]]],
-           ["Industry baseline on the same clips", "", [["not measured","–","base"]]]],
-    foot: "Optional head. The 0.6B row and its 115M control were trained on the smaller FLEURS split; the shipped 115M head saw 47k more rows." },
+    keep: e => /Turn detector|Turn over|Turn end|quiet ≥|second run|then · into layers|turn decision|run it again/.test(e.textContent.trim()), core: false, rows: [], foot: "" },
+  lid: { title: "Language detector", sub: "A 2.4M head on blocks 8–12 (2.9M on 16–20 of the 0.6B) names the language. Distilled from NVIDIA AmberNet.",
+    keep: e => /Language detector/.test(e.textContent.trim()), core: false, rows: [], foot: "" },
 };
 function buildFocus(W, H, key) {
   const F = FOCUS[key], outer = document.getElementById("outer"), sc = document.getElementById("score");
@@ -305,35 +290,41 @@ const TODAY = [["mic", "Microphone", ""], ["vad", "Silero / TEN VAD", "speech or
   ["lid", "Whisper / AmberNet", "which language"], ["llm", "LLM + TTS", ""]];
 // bars: kind us = Nemotron 0.6B (dark orange), us2 = FastConformer 115M (light orange), base = best in use (grey), na = not measured
 const NV = k => { const e = (window.NF || {})[k]; if (!e) { if (k.startsWith("final/finallat/")) return null; throw new Error("numbers_final has no " + k); } return typeof e.value === "number" ? e.value : null; };
-const B = (label, key, kind) => ({ label, v: key == null ? null : NV(key), kind, key });
+const B = (label, key, kind) => ({ label, v: key == null ? null : NV(key), kind, key, nf: key == null ? null : (window.NF || {})[key] });
+// the printed value is numbers_final.json's own "shown" string whenever its decimals match the chart (same rounding as the README)
+const SHOWN = (b, dec) => b.nf && b.nf.shown != null && (dec == null || b.nf.dec === dec) ? b.nf.shown : (dec != null ? b.v.toFixed(dec) : String(b.v));
 const F = "final/";
 const VS = {
-  asr: { title: "Words", hot: "asr", what: "Today: a separate model that waits for you to stop. Here: one model streaming as you talk, final written by a 1.12 s pass.",
-    charts: [{ name: "Live two-party calls", unit: "wrong words per 100 · lower is better", lower: true, dec: 1, bars: [B("ours 0.6B", F+"dualrate/wer/live/0p6b/1120", "us"), B("ours 115M", F+"dualrate/wer/live/115m/1120", "us2"), B("Parakeet", F+"wer/live/parakeet_tdt", "base"), B("Whisper large", F+"wer/live/whisper_large", "base")] },
-             { name: "Meetings, AMI test", unit: "wrong words per 100 · lower is better", lower: true, dec: 1, bars: [B("ours 0.6B", F+"dualrate/wer/ami/0p6b/1120", "us"), B("ours 115M", F+"dualrate/wer/ami/115m/1120", "us2"), B("Parakeet", F+"wer/ami/parakeet_tdt", "base"), B("Whisper large", F+"wer/ami/whisper_large", "base")] },
-             { name: "Meetings, ICSI test", unit: "wrong words per 100 · lower is better", lower: true, dec: 1, bars: [B("ours 0.6B", F+"dualrate/wer/icsi/0p6b/1120", "us"), B("ours 115M", F+"dualrate/wer/icsi/115m/1120", "us2"), B("Parakeet", F+"wer/icsi/parakeet_tdt", "base"), B("Whisper large", F+"wer/icsi/whisper_large", "base")] },
-             { name: "Final text ready after you stop", unit: "median ms · lower is better", lower: true, dec: 0, bars: [B("ours 0.6B", "final/finallat/p50/ours_0p6b_1120", "us"), B("ours 115M", "final/finallat/p50/ours_115m_1120", "us2"), B("Parakeet", "final/finallat/p50/parakeet_tdt", "base"), B("Whisper turbo", "final/finallat/p50/whisper_turbo", "base")] }] },
-  vad: { title: "Speech detector", hot: "vad", what: "Today: Silero or TEN VAD, a separate model. Here: a small head on the same model’s features. A decision every 80 ms, reacts to speech in 80 ms. Live-capable detectors only.",
-    charts: [{ name: "Meetings, AMI test", unit: "F1 at threshold 0.5 · higher is better", lower: false, domain: [0.8, 1.0, 0.1], dec: 3, bars: [B("ours 0.6B", F+"vad/ami/f1/ours_0p6b", "us"), B("ours 115M", F+"vad/ami/f1/ours_115m", "us2"), B("MarbleNet v2", F+"vad/ami/f1/marblenet", "base"), B("TEN VAD", F+"vad/ami/f1/ten_vad", "base"), B("Silero v5", F+"vad/ami/f1/silero", "base")] },
-             { name: "Speech missed, AMI test", unit: "per 100 speech frames, same false alarms · lower is better", lower: true, dec: 1, bars: [B("ours 0.6B", F+"vad/ami/miss/ours_0p6b", "us"), B("ours 115M", F+"vad/ami/miss/ours_115m", "us2"), B("MarbleNet v2", F+"vad/ami/miss/marblenet", "base"), B("TEN VAD", F+"vad/ami/miss/ten_vad", "base"), B("Silero v5", F+"vad/ami/miss/silero", "base")] },
-             { name: "Meetings, ICSI test", unit: "F1 at threshold 0.5 · higher is better", lower: false, domain: [0.8, 1.0, 0.1], dec: 3, bars: [B("ours 0.6B", F+"vad/icsi/f1/ours_0p6b", "us"), B("ours 115M", F+"vad/icsi/f1/ours_115m", "us2"), B("MarbleNet v2", F+"vad/icsi/f1/marblenet", "base"), B("TEN VAD", F+"vad/icsi/f1/ten_vad", "base"), B("Silero v5", F+"vad/icsi/f1/silero", "base")] }] },
-  spk: { title: "Speaker tracker", hot: "spk", what: "Today: a diarizer plus a voice-print model. Here: a 5 s sample and a 0.26M head on block 4. No diarizer.",
-    charts: [{ name: "Your words only, ICSI test", unit: "wrong words per 100 of yours · same 5 s voice print for all", lower: true, dec: 1, bars: [B("ours 0.6B", F+"twer/icsi/ours_0p6b", "us"), B("ours 115M", F+"twer/icsi/ours_115m", "us2"), B("pyannote", F+"twer/icsi/pyannote31", "base"), B("Nemotron-3", F+"twer/icsi/nemotron3_0p6bwords", "base"), B("none", F+"twer/icsi/nofilter", "base"), B("perfect filter", F+"twer/icsi/oracle_0p6bwords", "ref")] },
-             { name: "Your words only, AMI test", unit: "wrong words per 100 of yours · lower is better", lower: true, dec: 1, bars: [B("ours 0.6B", F+"twer/ami/ours_0p6b", "us"), B("ours 115M", F+"twer/ami/ours_115m", "us2"), B("pyannote 3.1", F+"twer/ami/pyannote31", "base"), B("Nemotron-3", F+"twer/ami/nemotron3_0p6bwords", "base"), B("perfect filter", F+"twer/ami/oracle_0p6bwords", "ref")] },
-             { name: "Tracking F1, ICSI test", unit: "is it you, every 80 ms · higher is better", lower: false, domain: [0.5, 1.0, 0.25], dec: 3, bars: [B("ours 0.6B", F+"trackf1/icsi/ours_0p6b", "us"), B("ours 115M", F+"trackf1/icsi/ours_115m", "us2"), B("pyannote 3.1", F+"trackf1/icsi/pyannote31", "base"), B("Nemotron-3", F+"trackf1/icsi/nemotron3", "base")] }] },
-  turn: { title: "Turn detection", hot: "turn", what: "Today: smart-turn or LiveKit’s detector, a separate model on top of Silero. Here: a classifier on the same model’s features plus the words.",
-    charts: [{ name: "Right about “you’re done”", unit: "per 100 clips, speech to an agent · higher is better", lower: false, domain: [0, 100, 50], dec: 1, bars: [B("ours 0.6B", F+"asst/acc/ours_0p6b", "us"), B("ours 115M", F+"asst/acc/ours_115m", "us2"), B("LiveKit detector", F+"asst/acc/livekit", "base"), B("Pipecat smart-turn", F+"asst/acc/pipecat", "base"), B("Parakeet EOU", F+"asst/acc/parakeet_eou", "base")] },
-             { name: "Answers after you stop", unit: "median, ms · lower is better", lower: true, bars: [B("ours 0.6B", F+"asst/p50/ours_0p6b", "us"), B("ours 115M", F+"asst/p50/ours_115m", "us2"), B("LiveKit detector", F+"asst/p50/livekit", "base"), B("Pipecat smart-turn", F+"asst/p50/pipecat", "base"), B("Parakeet EOU", F+"asst/p50/parakeet_eou", "base")] },
-             { name: "Cuts you off mid-sentence", unit: "per 100 unfinished sentences · lower is better", lower: true, dec: 1, bars: [B("ours 0.6B", F+"asst/ff/ours_0p6b", "us"), B("ours 115M", F+"asst/ff/ours_115m", "us2"), B("LiveKit detector", F+"asst/ff/livekit", "base"), B("Pipecat smart-turn", F+"asst/ff/pipecat", "base"), B("Parakeet EOU", F+"asst/ff/parakeet_eou", "base")] }] },
+  asr: { title: "Words", hot: "asr", what: "Today: a separate model that waits for you to stop. Here: one model streaming as you talk. WER: ours on the default 160 ms pass, as in the README table.",
+    charts: [{ name: "LibriSpeech test-clean", unit: "WER % · lower is better", lower: true, dec: 1, bars: [B("ours 0.6B", F+"wer/libri/ours_0p6b", "us"), B("ours 115M", F+"wer/libri/ours_115m", "us2"), B("Parakeet", F+"wer/libri/parakeet_tdt", "base"), B("Whisper large", F+"wer/libri/whisper_large", "base")] },
+             { name: "LibriSpeech test-other", unit: "WER % · lower is better", lower: true, dec: 1, bars: [B("ours 0.6B", F+"wer/libri_other/ours_0p6b", "us"), B("ours 115M", F+"wer/libri_other/ours_115m", "us2"), B("Parakeet", F+"wer/libri_other/parakeet_tdt", "base"), B("Whisper large", F+"wer/libri_other/whisper_large", "base")] },
+             { name: "AMI test meetings", unit: "WER % · lower is better", lower: true, dec: 1, bars: [B("ours 0.6B", F+"wer/ami/ours_0p6b", "us"), B("ours 115M", F+"wer/ami/ours_115m", "us2"), B("Parakeet", F+"wer/ami/parakeet_tdt", "base"), B("Whisper large", F+"wer/ami/whisper_large", "base")] },
+             { name: "ICSI test meetings", unit: "WER % · lower is better", lower: true, dec: 1, bars: [B("ours 0.6B", F+"wer/icsi/ours_0p6b", "us"), B("ours 115M", F+"wer/icsi/ours_115m", "us2"), B("Parakeet", F+"wer/icsi/parakeet_tdt", "base"), B("Whisper large", F+"wer/icsi/whisper_large", "base")] },
+             { name: "Live calls, user channel", unit: "WER % · lower is better", lower: true, dec: 1, bars: [B("ours 0.6B", F+"wer/live_user/ours_0p6b", "us"), B("ours 115M", F+"wer/live_user/ours_115m", "us2"), B("Parakeet", F+"wer/live_user/parakeet_tdt", "base"), B("Whisper large", F+"wer/live_user/whisper_large", "base")] }],
+    side: { name: "Final text after you stop", unit: "median ms · lower is better", note: "all on Mac GPU (MPS)<br>ours: the 1.12 s final", lower: true, dec: 0, bars: [B("ours 0.6B", "final/finallat/p50/ours_0p6b_1120", "us"), B("ours 115M", "final/finallat/p50/ours_115m_1120", "us2"), B("Parakeet", "final/finallat/p50/parakeet_tdt_mps", "base"), B("Whisper turbo", "final/finallat/p50/whisper_turbo", "base")] } },
+  vad: { title: "Speech detector", hot: "vad", what: "Today: Silero or TEN VAD, a separate model. Here: a small head on the same features, every 80 ms. ICSI: ours retrained without its test speakers.",
+    charts: [{ name: "AMI test, F1", unit: "at threshold 0.5 · higher is better", lower: false, domain: [0.8, 1.0, 0.1], dec: 3, bars: [B("ours 0.6B", F+"vad/ami/f1/ours_0p6b", "us"), B("ours 115M", F+"vad/ami/f1/ours_115m", "us2"), B("MarbleNet v2", F+"vad/ami/f1/marblenet", "base"), B("TEN VAD", F+"vad/ami/f1/ten_vad", "base"), B("Silero v5", F+"vad/ami/f1/silero", "base")] },
+             { name: "AMI test, ROC-AUC", unit: "threshold-free · higher is better", lower: false, domain: [0.9, 1.0, 0.05], dec: 3, bars: [B("ours 0.6B", F+"vad/ami/auc/ours_0p6b", "us"), B("ours 115M", F+"vad/ami/auc/ours_115m", "us2"), B("MarbleNet v2", F+"vad/ami/auc/marblenet", "base"), B("TEN VAD", F+"vad/ami/auc/ten_vad", "base"), B("Silero v5", F+"vad/ami/auc/silero", "base")] },
+             { name: "ICSI test, F1", unit: "at threshold 0.5 · higher is better", lower: false, domain: [0.8, 1.0, 0.1], dec: 3, bars: [B("ours 0.6B", F+"vad/icsi/f1/ours_0p6b", "us"), B("ours 115M", F+"vad/icsi/f1/ours_115m", "us2"), B("MarbleNet v2", F+"vad/icsi/f1/marblenet", "base"), B("TEN VAD", F+"vad/icsi/f1/ten_vad", "base"), B("Silero v5", F+"vad/icsi/f1/silero", "base")] },
+             { name: "ICSI test, ROC-AUC", unit: "threshold-free · higher is better", lower: false, domain: [0.9, 1.0, 0.05], dec: 3, bars: [B("ours 0.6B", F+"vad/icsi/auc/ours_0p6b", "us"), B("ours 115M", F+"vad/icsi/auc/ours_115m", "us2"), B("MarbleNet v2", F+"vad/icsi/auc/marblenet", "base"), B("TEN VAD", F+"vad/icsi/auc/ten_vad", "base"), B("Silero v5", F+"vad/icsi/auc/silero", "base")] }] },
+  spk: { title: "Speaker tracker", hot: "spk", what: "Today: a diarizer plus a voice-print model. Here: a 5 s sample and a 0.26M head on block 4. No diarizer. AMI test meetings, the same 5 s voice print for every system.",
+    charts: [{ name: "Your words only, AMI test", unit: "WER % of your words · diarizers on the 0.6B’s words", lower: true, dec: 1, bars: [B("ours 0.6B", F+"twer/ami/ours_0p6b", "us"), B("ours 115M", F+"twer/ami/ours_115m", "us2"), B("Nemotron-3", F+"twer/ami/nemotron3_0p6bwords", "base"), B("pyannote 3.1", F+"twer/ami/pyannote31", "base"), B("perfect filter", F+"twer/ami/oracle_0p6bwords", "ref")] },
+             { name: "Tracking F1, AMI test", unit: "is it you, every 80 ms · higher is better", note: "dashed: Nemotron-3 with the label-picked column", lower: false, domain: [0.5, 1.0, 0.25], dec: 3, bars: [B("ours 0.6B", F+"trackf1/ami/ours_0p6b", "us"), B("ours 115M", F+"trackf1/ami/ours_115m", "us2"), B("Nemotron-3", F+"trackf1/ami/nemotron3", "base"), B("pyannote 3.1", F+"trackf1/ami/pyannote31", "base"), B("upper bound", F+"trackf1/ami/nemotron3_oracle", "ref")] },
+             { name: "Voice match error (EER), AMI test", unit: "within a meeting · lower is better", lower: true, dec: 1, bars: [B("ours 0.6B", F+"eer/ami/ours_0p6b", "us"), B("ours 115M", F+"eer/ami/ours_115m", "us2"), B("TitaNet-L", F+"eer/ami/titanet", "base"), B("WeSpeaker", F+"eer/ami/wespeaker", "base")] }] },
+  turn: { title: "Turn detection", hot: "turn", what: "Today: smart-turn or LiveKit’s detector on top of Silero. Here: a classifier on the same features plus the words. Ours 115M: held-out pick, not the default.",
+    charts: [{ name: "Right about “you’re done”", unit: "per 100 clips · 2.5 s cut-off window · higher is better", lower: false, domain: [0, 100, 50], dec: 1, bars: [B("ours 0.6B", F+"asst/acc/ours_0p6b", "us"), B("ours 115M", F+"asst/acc/ours_115m_heldout", "us2"), B("LiveKit detector", F+"asst/acc/livekit", "base"), B("Pipecat smart-turn", F+"asst/acc/pipecat", "base"), B("Parakeet EOU", F+"asst/acc/parakeet_eou", "base")] },
+             { name: "Answers after you stop", unit: "median ms incl. compute · ours MPS, smart-turn / LiveKit CPU", lower: true, bars: [B("ours 0.6B", F+"asst/p50/ours_0p6b", "us"), B("ours 115M", F+"asst/p50/ours_115m_heldout", "us2"), B("LiveKit detector", F+"asst/p50/livekit", "base"), B("Pipecat smart-turn", F+"asst/p50/pipecat", "base"), B("Parakeet EOU", F+"asst/p50/parakeet_eou", "base")] },
+             { name: "Cuts you off mid-sentence", unit: "per 100 unfinished · within 2.5 s · lower is better", lower: true, dec: 1, bars: [B("ours 0.6B", F+"asst/ff/ours_0p6b", "us"), B("ours 115M", F+"asst/ff/ours_115m_heldout", "us2"), B("LiveKit detector", F+"asst/ff/livekit", "base"), B("Pipecat smart-turn", F+"asst/ff/pipecat", "base"), B("Parakeet EOU", F+"asst/ff/parakeet_eou", "base")] }] },
   lid: { title: "Language detector", hot: "lid", what: "Today: Whisper’s language detection or AmberNet. Here: a 2.4M (115M) / 2.9M (0.6B) head on the same features. Optional.",
-    charts: [{ name: "Right language from 2 s", unit: "per 100 clips, FLEURS 17 languages · higher is better", lower: false, domain: [0, 100, 50], dec: 1, bars: [B("ours 115M", F+"lid/2s/ours_115m", "us2"), B("ours 0.6B", F+"lid/2s/ours_0p6b", "us"), B("Whisper turbo", F+"lid/2s/whisper_turbo", "base"), B("AmberNet", F+"lid/2s/ambernet", "base"), B("Whisper small", F+"lid/2s/whisper_small", "base")] },
+    charts: [{ name: "Right language from 2 s", unit: "per 100 clips, FLEURS 17 languages · higher is better", lower: false, domain: [0, 100, 50], dec: 1, bars: [B("ours 115M", F+"lid/2s/ours_115m", "us2"), B("ours 0.6B", F+"lid/2s/ours_0p6b", "us"), B("Whisper large-v3", F+"lid/2s/whisper_large", "base"), B("AmberNet", F+"lid/2s/ambernet", "base"), B("Whisper small", F+"lid/2s/whisper_small", "base")] },
              { name: "Right language, whole clip", unit: "per 100 clips · higher is better", lower: false, domain: [0, 100, 50], dec: 1, bars: [B("ours 115M", F+"lid/full/ours_115m", "us2"), B("ours 0.6B", F+"lid/full/ours_0p6b", "us"), B("Whisper large-v3", F+"lid/full/whisper_large", "base"), B("AmberNet", F+"lid/full/ambernet", "base"), B("Whisper small", F+"lid/full/whisper_small", "base")] }] },
 };
 function barchart(x, y, w, h, spec, sc) {
   const c = document.createElement("div"); c.className = "bc"; Object.assign(c.style, { left: x + "px", top: y + "px", width: w + "px", height: h + "px" }); sc.appendChild(c);
   const P = 22, mk = (cls, html, px, py) => { const e = document.createElement("div"); e.className = cls; e.innerHTML = html; e.style.left = px + "px"; e.style.top = py + "px"; c.appendChild(e); return e; };
   const hn = mk("ph", spec.name, P, 16), hu = mk("pu", spec.unit, P, 16 + hn.offsetHeight + 2);
-  const top = 16 + hn.offsetHeight + hu.offsetHeight + 14, pb = h - 58, A = pb - top;
+  const hv = spec.note ? mk("pu", spec.note, P, 16 + hn.offsetHeight + hu.offsetHeight + 2) : null;
+  const top = 16 + hn.offsetHeight + hu.offsetHeight + (hv ? hv.offsetHeight + 2 : 0) + 14, pb = h - 58, A = pb - top;
   const vals = spec.bars.filter(b => b.v != null).map(b => b.v), mx = Math.max(...vals);
   let lo = 0, hi, step; if (spec.domain) [lo, hi, step] = spec.domain; else { for (const st_ of [0.5, 1, 2, 5, 10, 20, 25, 50, 100, 200, 250, 500, 1000]) { hi = Math.ceil(mx * 1.02 / st_) * st_; if (hi / st_ <= 2) { step = hi / 2; break; } } }
   const STK = 56, ph = Math.min(A - 6, (A - STK) / ((mx - lo) / (hi - lo)));
@@ -356,17 +347,20 @@ function barchart(x, y, w, h, spec, sc) {
     const bh = ph * (b.v - lo) / (hi - lo);
     if (b.kind === "ref") svg += `<rect x="${cx - bw / 2}" y="${pb - bh}" width="${bw}" height="${bh}" rx="3" fill="#FFFFFF" stroke="#6B7280" stroke-width="1.8" stroke-dasharray="6 4"/>`;
     else svg += `<rect x="${cx - bw / 2}" y="${pb - bh}" width="${bw}" height="${bh}" rx="3" fill="${col}"/>`;
-    const vl = mk("val" + (b.kind === "us" || b.kind === "us2" ? " us" : ""), spec.dec != null ? b.v.toFixed(spec.dec) : String(b.v), 0, 0); vl.style.left = (cx - vl.offsetWidth / 2) + "px"; vl.style.top = (pb - bh - 4 - vl.offsetHeight) + "px";
+    const vl = mk("val" + (b.kind === "us" || b.kind === "us2" ? " us" : ""), SHOWN(b, spec.dec), 0, 0); vl.style.left = (cx - vl.offsetWidth / 2) + "px"; vl.style.top = (pb - bh - 4 - vl.offsetHeight) + "px";
     if ((b.kind === "us" || b.kind === "us2") && best != null) { const rel = spec.lower ? 100 * (1 - b.v / best) : 100 * (b.v / best - 1), better = rel > 0.5, tie = Math.abs(rel) <= 0.5 || Math.abs(b.v - best) < (spec.dec >= 2 ? 0.0015 : spec.dec === 1 ? 0.05 : 0.5);
       const diff = b.v - best, ad = Math.abs(diff), dd = spec.dec != null && spec.dec >= 2 ? ad.toFixed(3) : spec.dec === 1 ? ad.toFixed(1) : String(Math.round(ad));
-      const d = mk("dl", tie ? "same" : `${diff > 0 ? "+" : "−"}${dd}`, 0, 0);
+      const d = mk("dl", tie ? "same" : `${diff > 0 ? "+" : "−"}${dd}`, 0, 0); if (slot < 90) d.style.fontSize = "17px";
       d.style.color = tie ? "#4B5563" : better ? "#0A5C2B" : "#9B1C1C"; d.style.left = (cx - d.offsetWidth / 2) + "px"; d.style.top = (pb - bh - 4 - vl.offsetHeight - 4 - d.offsetHeight) + "px"; }
   });
   // no text overlap: shrink the x labels until no two label boxes (and no label and value) intersect
-  const boxes = () => [...c.querySelectorAll(".xl, .val, .dl, .nm")].map(e => { const r = e.getBoundingClientRect(); return { e, l: r.left, t: r.top, r: r.right, b: r.bottom }; });
-  const hit = () => { const B_ = boxes(); for (let i = 0; i < B_.length; i++) for (let j = i + 1; j < B_.length; j++) { const a = B_[i], b_ = B_[j]; if (Math.min(a.r, b_.r) - Math.max(a.l, b_.l) > 1 && Math.min(a.b, b_.b) - Math.max(a.t, b_.t) > 1) return true; } return false; };
-  for (let fs = 19; fs >= 13 && hit(); fs--) xls.forEach(e => e.style.fontSize = fs + "px");
-  window.OVERLAPS = (window.OVERLAPS || 0) + (hit() ? 1 : 0);
+  const ink = e => { const g = document.createRange(); g.selectNodeContents(e); const a = g.getBoundingClientRect();   // the text itself
+    return { l: a.left, t: a.top, r: a.right, b: a.bottom }; };
+  const boxes = () => [...c.querySelectorAll(".xl, .val, .dl, .nm")].map(e => ({ e, ...ink(e) }));
+  const spill = () => xls.some(e => { const a = ink(e), b = c.getBoundingClientRect(); return a.l < b.left || a.r > b.right || a.b > b.bottom; });
+  const hit = () => { const B_ = boxes(); for (let i = 0; i < B_.length; i++) for (let j = i + 1; j < B_.length; j++) { const a = B_[i], b_ = B_[j]; const g = a.e.classList.contains("xl") && b_.e.classList.contains("xl") ? 8 : 4; if (Math.min(a.r, b_.r) - Math.max(a.l, b_.l) > 1 - g && Math.min(a.b, b_.b) - Math.max(a.t, b_.t) > 1) return true; } return false; };
+  for (let fs = 19; fs >= 13 && (hit() || spill()); fs--) xls.forEach(e => e.style.fontSize = fs + "px");
+  window.OVERLAPS = (window.OVERLAPS || 0) + (hit() || spill() ? 1 : 0);
   const sv = document.createElementNS("http://www.w3.org/2000/svg", "svg"); sv.setAttribute("width", w); sv.setAttribute("height", h); Object.assign(sv.style, { position: "absolute", left: 0, top: 0 }); sv.innerHTML = svg; c.prepend(sv);
 }
 function buildVs(W, H, key) {
@@ -384,7 +378,7 @@ function buildVs(W, H, key) {
     if (e.classList.contains("blk")) { if (!F.core) e.classList.add("dimcore"); continue; }
     if (!F.keep(e)) e.classList.add("dim");
   }
-  const M = 64, s = 0.52, left = 520;
+  const M = 64, s = V.side ? 0.47 : 0.52, left = 520;
   st.style.transform = `scale(${s})`; st.style.position = "absolute"; st.style.left = (left + 60) + "px"; st.style.top = (M + 118 + 44 - 185 * s) + "px";
   // page title
   const h = document.createElement("div"); h.className = "col-h"; h.style.fontSize = "40px"; h.textContent = "audioforge · " + V.title; Object.assign(h.style, { left: M + "px", top: M + "px" }); sc.appendChild(h);
@@ -405,6 +399,9 @@ function buildVs(W, H, key) {
   // the bar charts along the bottom
   const ch = 330, tt = H - M - ch, n = V.charts.length, cwid = (W - 2 * M - 24 * (n - 1)) / n;
   V.charts.forEach((spec, i) => barchart(M + i * (cwid + 24), tt, cwid, ch, spec, sc));
+  // an extra chart in the free top-right corner (words page: final-text latency, its own device / mode note)
+  if (V.side) { const sw_ = 360, sy = y0 + 4; barchart(W - M - sw_, sy, sw_, tt - 24 - sy, V.side, sc);
+}
   const lg = document.createElement("div"); lg.className = "col-s"; lg.innerHTML = `<span class="sw" style="background:${css("--ours")}"></span><b>ours 0.6B</b>&nbsp;&nbsp;&nbsp;<span class="sw" style="background:#F4A66B"></span><b>ours 115M</b>&nbsp;&nbsp;&nbsp;<span class="sw" style="background:#C8CDD4"></span>best in use today&nbsp;&nbsp;&nbsp;<span class="sw" style="background:#fff;border:1.5px dashed #6B7280"></span>reference&nbsp;&nbsp;&nbsp;green / red = gap to the best grey bar`;
   Object.assign(lg.style, { right: M + "px", top: (M + 14) + "px", fontSize: "20px" }); lg.style.left = "auto"; sc.appendChild(lg);
   Object.assign(sc.style, { left: 0, top: 0, width: W + "px", height: H + "px" });

@@ -182,6 +182,17 @@ COMPONENTS: dict[str, Component] = {c.key: c for c in [
               "Apache-2.0 (audioforge heads; trained on AmberNet outputs, NGC Terms of Use)",
               "https://ngc.nvidia.com/legal/terms", "--core 0.6b: language ID", "lid_0p6b_v2.pt", 12, "keep",
               url=f"{RELEASE_URL}/lid_0p6b_v2.pt"),
+    # optional perceived voice-gender heads (research/VOICE_GENDER.md; off by default, never in a default install)
+    Component("voice_gender", "audioforge perceived voice-gender head (optional)", "voice_gender_115m.pt", 91813,
+              "e1e1b82416bfeb3a83f0fcceebe3af87ab5309e67f64cb01a758bf32e0cc1f54",
+              "Apache-2.0 (audioforge heads; trained on FLEURS and LibriSpeech, CC BY 4.0)",
+              "https://www.apache.org/licenses/LICENSE-2.0", "optional: perceived voice-gender probabilities (serve --voice-gender head)",
+              "voice_gender_115m.pt", 1, "keep", url=f"{RELEASE_URL}/voice_gender_115m.pt"),
+    Component("voice_gender_0p6b", "audioforge perceived voice-gender head for the 0.6B core (optional)", "voice_gender_0p6b.pt", 87333,
+              "7a38cf6bdef36c33eb03f319a0e719de80fa4423f75935a876923713220868fe",
+              "Apache-2.0 (audioforge heads; trained on FLEURS and LibriSpeech, CC BY 4.0)",
+              "https://www.apache.org/licenses/LICENSE-2.0", "--core 0.6b, optional: perceived voice-gender probabilities (serve --voice-gender head)",
+              "voice_gender_0p6b.pt", 1, "keep", url=f"{RELEASE_URL}/voice_gender_0p6b.pt"),
     Component("silero", "Silero VAD v5 (v5.1.2 ONNX)", "silero_vad.onnx", 2327524,
               "2623a2953f6ff3d2c1e61740c6cdb7168133479b267dfef114a4a3cc5bdd788f", "MIT",
               "https://github.com/snakers4/silero-vad/blob/master/LICENSE",
@@ -189,7 +200,7 @@ COMPONENTS: dict[str, Component] = {c.key: c for c in [
               url="https://github.com/snakers4/silero-vad/raw/v5.1.2/src/silero_vad/data/silero_vad.onnx"),
 ]}
 DIARIZERS = {"sortformer": "sortformer", "nemotron3": "nemotron3"}
-OPTIONAL = ("tdt_v3", "titanet", "ambernet", "lid", "silero")
+OPTIONAL = ("tdt_v3", "titanet", "ambernet", "lid", "silero", "voice_gender", "voice_gender_0p6b")
 # what single-model mode (the default) needs; + "lid" for language ID when available. No Silero: single mode's turn rule
 # (vad_head, research/EOT_LATENCY.md) reads the model's own heads; --with silero for hybrid_silero / hybrid_dyn
 SINGLE = ("asr", "tsvad")
@@ -222,7 +233,8 @@ def find_model(key: str, directory: str | Path | None = None) -> Path | None:
               "tsvad_0p6b": ROOT / "assets" / c.output, "lid_0p6b": ROOT / "assets" / c.output,
               "sortformer": ROOT / "runs" / c.output,
               "nemotron3": ROOT / "runs" / c.output, "silero": DATA_ROOT / "silero" / c.output,
-              "tsvad": ROOT / "assets" / c.output, "lid": ROOT / "assets" / c.output}
+              "tsvad": ROOT / "assets" / c.output, "lid": ROOT / "assets" / c.output,
+              "voice_gender": ROOT / "assets" / c.output, "voice_gender_0p6b": ROOT / "assets" / c.output}
     cands.append(legacy.get(key, DATA_ROOT / "nemo" / c.filename))
     return next((p for p in cands if p.exists()), None)
 
@@ -467,7 +479,7 @@ def main(argv=None):
                          "Nemotron-3-Diarization (OpenMDW-1.1, the room-mode default), sortformer = Streaming Sortformer "
                          "v2 (CC-BY-4.0). Default: none (single-model mode needs no diarizer)")
     ap.add_argument("--with", dest="extra", nargs="*", default=[], choices=list(OPTIONAL) + ["all"],
-                    help="optional models: tdt_v3 (2.5 GB), titanet, ambernet, silero, or all")
+                    help="optional models: tdt_v3 (2.5 GB), titanet, ambernet, silero, voice_gender, voice_gender_0p6b, or all")
     ap.add_argument("--only", nargs="*", choices=list(COMPONENTS), help="exactly these components")
     ap.add_argument("--from-local", nargs="*", default=[], metavar="DIR",
                     help="directories holding already-downloaded files (sha256-checked, used in place)")

@@ -1,0 +1,51 @@
+== [NF]/[IMG] numbers_final.json and the image keys
+== [TAB] README.md tables
+== [TAB] research/FINAL_COMPARE.md headline tables
+== [TXT] prose claims
+== [STALE] public docs
+NOTE     README.md:6 references demo/images/architecture_v10.png (mtime newer than compare_*.png)
+STALE    docs/CONFIGURATION.md:361 first-pass/dev-era numbers ['1326', '956']: | default (`--turn-model head`, energy gate) | 1240 / 1628 ms | 100 % | 43.9 % | 956 ms / 20.2 % / 7.3 % | 1326 ms / 10.5 % / 33.5 % |
+STALE    docs/CONFIGURATION.md:382 first-pass/dev-era numbers ['74.8']: | `timeout` | eot-bench v2, AMI dev n = 974, 6 s horizon, causal binding: **74.8 % [72.0, 77.5]** (floor-open 46.1 %) on 1.04 s Sortformer tracks; 70.
+STALE    docs/CONFIGURATION.md:448 first-pass/dev-era numbers ['74.8']: | causal_dominant (the analogue of `dominant`) | 61.9 % [58.7, 65.0] | ref | 79.1 % | ref | 74.8 % |
+STALE    docs/CONFIGURATION.md:450 first-pass/dev-era numbers ['87.6']: | after_prev_end_titanet (`after_agent`) | 51.6 % [48.5, 54.7] | −10.3 [−13.5, −6.9] | 87.6 % | +8.5 [+6.2, +10.9] | 53.7 % |
+STALE    docs/CONFIGURATION.md:480 first-pass/dev-era numbers ['74.8']: | turn-end miss, 6 s, causal: hybrid / head / timeout | 63.7 / 65.8 / 70.1 % | 61.9 / 66.5 / 74.8 % | eot-bench v2, AMI dev n = 974 (dev-split selecti
+STALE    docs/PROTOCOL.md:463 first-pass/dev-era numbers ['62.1']: | 0.9 | AMI | 856 / 3376 | 75.8 % | 62.1 % | 39.1 % | 0.25 | 1596 / 4028 -> 1516 / 4004 | 1896 / 4328 -> 1816 / 4200 |
+NOTE     demo/images/EXPLAINER.md:1 references architecture_v10.png (mtime newer than compare_*.png)
+NOTE     demo/images/EXPLAINER.md:9 references architecture_v10.png (mtime newer than compare_*.png)
+NOTE     demo/images/EXPLAINER.md:38 references architecture_v10.png (mtime newer than compare_*.png)
+NOTE     demo/images/EXPLAINER.md:41 references architecture_v10.png (mtime newer than compare_*.png)
+STALE    research/README.md:88 first-pass/dev-era numbers ['9.5']: | [TURN_ERRORS.md](archive/TURN_ERRORS.md) | why turn head v3 works on oracle activity and fails on the Sortformer track | cleaning only the speaker-k
+STALE    CHANGELOG.md:45 first-pass/dev-era numbers ['22.5']: 379 → 351 ms p50. It interrupts AMI test meetings more (4.0 → 22.5 %). +0.4 ms per chunk (MPS).
+STALE    CHANGELOG.md:55 first-pass/dev-era numbers ['87.6']: FLEURS `trainx`. FLEURS-17 test at 2 s / full clip: 115M 90.9 / 97.8 → 92.4 / 98.2 %, 0.6B 87.6 / 95.5 → 92.7 / 98.6 %.
+STALE    CHANGELOG.md:75 first-pass/dev-era numbers ['0.898', '0.906', '0.935', '0.951']: - ICSI dev F1 0.898 → 0.947 (115M) and 0.906 → 0.951 (0.6B), above TEN VAD's 0.935. AMI dev F1 0.951 → 0.951 / 0.950
+STALE    CHANGELOG.md:84 old head version: ### Changed (2026-10-01): 0.6B core heads v0.2, end of turn diagnosed (research/CORE_0P6B_TURN.md)
+STALE    CHANGELOG.md:88 first-pass/dev-era numbers ['11.9']: channels. With the 115M's VAD, fast calls missed 11.9 → 7.3 %.
+STALE    CHANGELOG.md:95 first-pass/dev-era numbers ['11.9', '487']: - fast calls 530 / 33.9 / 11.9 → 487 ms / 26.6 % / 11.0 %;
+STALE    CHANGELOG.md:96 first-pass/dev-era numbers ['725']: - balanced calls 920 / 20.2 / 11.0 → 725 ms / 19.3 % / 10.1 %;
+STALE    CHANGELOG.md:123 first-pass/dev-era numbers ['11.2', '24.4']: - meeting WER halved (AMI 24.4 → 11.2 %);
+STALE    CHANGELOG.md:124 first-pass/dev-era numbers ['13.7', '22.5']: - live-call WER 22.5 → 13.7 %;
+STALE    CHANGELOG.md:125 first-pass/dev-era numbers ['13.6']: - AMI within-meeting speaker EER 17.4 → 13.6 % (same recipe);
+STALE    CHANGELOG.md:137 references demo/images/results_v10.png (mtime older than compare_*.png)
+STALE    CHANGELOG.md:142 references demo/images/architecture_v9.png (mtime older than compare_*.png)
+STALE    CHANGELOG.md:145 old head version: ### Added (2026-09-30): turn head v5, served heads v0.3, `--turn-preset fast` (v5) / `steady` / `assistant`
+STALE    CHANGELOG.md:158 first-pass/dev-era numbers ['956']: - Two-party calls: 547 ms p50 (balanced 956), 24.8 % FI, 5.5 % missed. AMI: 1247 ms, 11.5 % / 34.0 %.
+STALE    CHANGELOG.md:165 first-pass/dev-era numbers ['292', '92.2']: - Smart-turn's 399 test clips: 92.2 % accuracy, 292 ms p50, 5.4 % false fires. Served: 93.0 % / 317 ms.
+STALE    CHANGELOG.md:169 old head version: - **Served heads v0.3** (`assets/served_heads_v0.3.pt`, 29.4 MB, `hub.HEADS["0.3"]`, `HEADS_VERSION` 0.3) builds
+STALE    CHANGELOG.md:183 first-pass/dev-era numbers ['1326', '956']: - Two-party calls, AMI and the bundled clip (six deliveries) are unchanged: 956 ms / 20.2 % / 7.3 % and 1326 ms /
+STALE    CHANGELOG.md:206 first-pass/dev-era numbers ['956']: - EOT p50 886 vs 956 ms (only ~70 ms faster);
+STALE    CHANGELOG.md:211 first-pass/dev-era numbers ['1326']: AMI, `fast` vs `balanced`: 1086 vs 1326 ms, 16.0 vs 10.5 % FI, 30.5 vs 33.5 % missed. Neither preset cuts the
+STALE    CHANGELOG.md:257 first-pass/dev-era numbers ['1326', '956']: of silence). Calls: EOT p50 956 ms, 20 % false interruptions, 7 % missed; AMI: 1326 ms, 11 %, 34 %
+STALE    CHANGELOG.md:263 first-pass/dev-era numbers ['24.4']: one. Target-speaker WER on mixed calls 44.6 → 40.2 %, user channel 24.4 → 18.1 % (research/TSWER.md).
+STALE    CHANGELOG.md:275 first-pass/dev-era numbers ['956']: - Two-party calls: EOT p50 / p95 956 / 1919 vs 916 / 2020 ms, false interruptions 20.2 vs 22.9 %, missed 7.3 vs
+STALE    CHANGELOG.md:277 first-pass/dev-era numbers ['1326']: - AMI: 1326 / 3758 vs 1327 / 4162 ms, false interruptions 10.5 vs 10.0 %, missed 33.5 vs 34.0 %.
+STALE    CHANGELOG.md:332 first-pass/dev-era numbers ['0.951']: and TS-VAD heads' tap): AMI VAD F1 0.951 vs 0.949, no downstream regression (research/VAD_SINGLE.md,
+STALE    CHANGELOG.md:475 first-pass/dev-era numbers ['24.4']: (24.4 % WER, fixed by a per-turn Parakeet-TDT v3 pass: 9.7 %), speaker verification, diarization and language ID.
+STALE    CHANGELOG.md:485 first-pass/dev-era numbers ['17.1', '19.8']: crop-level speaker head 19.8 -> 17.1-17.4 % EER; transcript LID 100 % / 91.7 %.
+== [PROV]
+NOTE     [PROV] final_compare.json afm: 115m=stage1_served_v4.afm, 0p6b=served_0p6b_v0.4.afm; turn.ours_0p6b afm=served_0p6b_v0.4.afm; params core_115m from stage1_served_v4.afm, core_0p6b from served_0p6b_v0.4.afm (doc rows say heads v0.4 / v0.4)
+NOTE     [PROV] real-time streams 115m mps: final_compare 5 vs dual_rate F160 4 (same engine, two runs)
+NOTE     [PROV] dual-rate turn-end delivery p95 cost 115m cpu: +19.5 ms (README says +9-27 ms, +93 ms for the 0.6B on CPU)
+NOTE     [PROV] dual-rate turn-end delivery p95 cost 115m mps: +8.8 ms (README says +9-27 ms, +93 ms for the 0.6B on CPU)
+NOTE     [PROV] dual-rate turn-end delivery p95 cost 0p6b cpu: +92.8 ms (README says +9-27 ms, +93 ms for the 0.6B on CPU)
+NOTE     [PROV] dual-rate turn-end delivery p95 cost 0p6b mps: +26.7 ms (README says +9-27 ms, +93 ms for the 0.6B on CPU)
+== summary {'OK': 1294, 'MISMATCH': 0, 'NOSRC': 0, 'STALE': 33, 'NOTE': 11}

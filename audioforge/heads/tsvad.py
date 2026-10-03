@@ -31,6 +31,9 @@ from .asr import Head
 class TSVADHead(Head):
     key = "tsvad_targets"  # (B,T,2) float labels [target, other]; batch["tsvad_enroll"] (B,E), batch["tsvad_has"] (B,)
 
+    # emb_dim 192 = the speaker head's print size. hidden 128: measured on the 115M against 192
+    # (plans/sweeps/tsvad_115m_2026-09-28.md); on the 0.6B (assets/tsvad_0p6b.pt) placeholder: never swept.
+    # prenet_dim 64: placeholder: never swept
     def __init__(self, d_model: int, emb_dim: int = 192, hidden: int = 128, prenet: bool = True, prenet_dim: int = 64,
                  dropout: float = 0.1, pos_weight: float = 1.0):
         super().__init__()

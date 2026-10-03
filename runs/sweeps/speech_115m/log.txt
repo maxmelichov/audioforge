@@ -1,0 +1,54 @@
+02:41:52 sweep speech_115m: 5 candidates x 120 s on mps: [{'hidden': 16}, {'hidden': 32}, {'hidden': 64}, {'hidden': 128}, {'hidden': 256}]
+02:41:55 train ami1200: 349 windows, 87599 frames
+02:41:58 train ami1200_sa1: 349 windows, 87599 frames
+02:42:01 train icsi600: 249 windows, 62499 frames
+02:42:03 train icsi600_sa1: 249 windows, 62499 frames
+02:42:06 train oto_tr: 152 windows, 75265 frames
+02:42:07 train otoq_tr: 101 windows, 48830 frames
+02:42:08 train room_tr: 360 windows, 36360 frames
+02:42:10 eval ami_ho: 199 windows, 49949 frames
+02:42:11 eval icsi_ho: 110 windows, 27610 frames
+02:42:12 eval oto_va: 60 windows, 29789 frames
+02:42:13 eval otoq_va: 60 windows, 29789 frames
+02:42:13 eval room_ho: 120 windows, 12120 frames
+02:42:13 candidate {'hidden': 16}
+02:42:34   {'hidden': 16} t 20/120 s step 1657: train 0.1564 eval 0.11940 sel_auc 0.9895
+02:42:55   {'hidden': 16} t 40/120 s step 3496: train 0.1342 eval 0.11755 sel_auc 0.9899
+02:43:15   {'hidden': 16} t 60/120 s step 5342: train 0.1451 eval 0.11798 sel_auc 0.9902
+02:43:35   {'hidden': 16} t 80/120 s step 7157: train 0.0987 eval 0.11867 sel_auc 0.9899
+02:43:56   {'hidden': 16} t 100/120 s step 8918: train 0.1177 eval 0.11867 sel_auc 0.9898
+02:44:16   {'hidden': 16} t 120/120 s step 10746: train 0.1244 eval 0.11857 sel_auc 0.9899
+02:44:16 candidate {'hidden': 32}
+02:44:36   {'hidden': 32} t 20/120 s step 1685: train 0.1273 eval 0.11771 sel_auc 0.9898
+02:44:57   {'hidden': 32} t 40/120 s step 3420: train 0.1063 eval 0.11942 sel_auc 0.9899
+02:45:17   {'hidden': 32} t 60/120 s step 5259: train 0.1330 eval 0.12071 sel_auc 0.9900
+02:45:37   {'hidden': 32} t 80/120 s step 7113: train 0.1010 eval 0.12219 sel_auc 0.9897
+02:45:58   {'hidden': 32} t 100/120 s step 8912: train 0.0902 eval 0.12301 sel_auc 0.9896
+02:46:18   {'hidden': 32} t 120/120 s step 10689: train 0.1047 eval 0.12266 sel_auc 0.9897
+02:46:18 candidate {'hidden': 64}
+02:46:38   {'hidden': 64} t 20/120 s step 1673: train 0.0933 eval 0.12049 sel_auc 0.9900
+02:46:59   {'hidden': 64} t 40/120 s step 3298: train 0.1144 eval 0.12893 sel_auc 0.9892
+02:47:19   {'hidden': 64} t 60/120 s step 5028: train 0.1094 eval 0.13105 sel_auc 0.9891
+02:47:39   {'hidden': 64} t 80/120 s step 6709: train 0.0995 eval 0.13705 sel_auc 0.9884
+02:47:59   {'hidden': 64} t 100/120 s step 8451: train 0.0711 eval 0.13855 sel_auc 0.9888
+02:48:20   {'hidden': 64} t 120/120 s step 10315: train 0.0751 eval 0.13874 sel_auc 0.9887
+02:48:20 candidate {'hidden': 128}
+02:48:40   {'hidden': 128} t 20/120 s step 1714: train 0.1378 eval 0.12114 sel_auc 0.9896
+02:49:00   {'hidden': 128} t 40/120 s step 3577: train 0.1066 eval 0.13726 sel_auc 0.9891
+02:49:21   {'hidden': 128} t 60/120 s step 5295: train 0.0878 eval 0.15441 sel_auc 0.9880
+02:49:41   {'hidden': 128} t 80/120 s step 6624: train 0.0562 eval 0.16179 sel_auc 0.9878
+02:50:02   {'hidden': 128} t 100/120 s step 8419: train 0.0487 eval 0.16807 sel_auc 0.9873
+02:50:22   {'hidden': 128} t 120/120 s step 10224: train 0.0527 eval 0.16866 sel_auc 0.9871
+02:50:22 candidate {'hidden': 256}
+02:50:43   {'hidden': 256} t 20/120 s step 1719: train 0.0835 eval 0.13260 sel_auc 0.9891
+02:51:03   {'hidden': 256} t 40/120 s step 3089: train 0.0710 eval 0.14825 sel_auc 0.9877
+02:51:23   {'hidden': 256} t 60/120 s step 4819: train 0.0734 eval 0.18140 sel_auc 0.9872
+02:51:43   {'hidden': 256} t 80/120 s step 6563: train 0.0462 eval 0.20126 sel_auc 0.9854
+02:52:04   {'hidden': 256} t 100/120 s step 8362: train 0.0418 eval 0.21022 sel_auc 0.9855
+02:52:24   {'hidden': 256} t 120/120 s step 10179: train 0.0292 eval 0.21184 sel_auc 0.9853
+02:52:24 {'hidden': 16} params 8,230 steps 10746 best eval 0.11755
+02:52:24 {'hidden': 32} params 16,454 steps 10689 best eval 0.11771
+02:52:24 {'hidden': 64} params 32,902 steps 10315 best eval 0.12049
+02:52:24 {'hidden': 128} params 65,798 steps 10224 best eval 0.12114
+02:52:24 {'hidden': 256} params 131,590 steps 10179 best eval 0.13260
+02:52:24 knee {'hidden': 16} (8,230 params) -> /Users/maxm/nvidia-audio-models/plans/sweeps/speech_115m_2026-10-03.md, /Users/maxm/nvidia-audio-models/runs/sweeps/speech_115m_2026-10-03.json

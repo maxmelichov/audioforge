@@ -251,3 +251,64 @@ def test_single_streams_the_bundled_clip_end_to_end(tmp_path, monkeypatch, how):
     assert lang and lang[0]["language"] == "en"
     st = msgs[-1]
     assert st["enrolled"] is True and st["lang"] == "en" and "final_asr" not in st
+
+
+# --------------------------------------------------------------------------- the public snapshot (no assets/lid_*.pt)
+def _hide_lid(monkeypatch):
+    """The public snapshot ships no assets/lid_*.pt (licence, docs/MODELS.md): hide every LID head file from the
+    launcher (models dir, assets/, runs/)."""
+    real = launch.find_head
+    monkeypatch.setattr(launch, "find_head", lambda name, d=None: None if name.startswith("lid_") else real(name, d))
+
+
+@pytest.mark.parametrize("core,lid_file", [("115m", "lid_115m_v2.pt"), ("0.6b", "lid_0p6b_v2.pt")])
+def test_snapshot_without_lid_heads_turns_lid_off_with_a_notice(tmp_path, monkeypatch, capsys, core, lid_file):
+    from audioforge import hub
+    _hide_lid(monkeypatch)
+    for name in (hub.SERVED, hub.SERVED_0P6B, launch.TSVAD_FILE, "tsvad_0p6b.pt"):
+        (tmp_path / name).write_bytes(b"x")
+    argv = launch.resolve_models(["--device", "mps"], str(tmp_path), mode="single", core=core)
+    assert not any(a == "--lid" or a.startswith("--lid=") for a in argv)
+    err = capsys.readouterr().err
+    assert f"{lid_file} not found, language ID is off" in err and "audioforge-download --only lid" in err
+    assert cli.parse_args(argv).lid is None
+
+
+def test_snapshot_without_lid_head_still_streams(tmp_path, monkeypatch, capsys):
+    """The launcher path of the snapshot end to end on tiny models: no --lid, an engine with LID off, and the clip
+    streams with finals / frames but no language event."""
+    import soundfile as sf
+
+    from audioforge.serve import Session, SessionConfig, validate
+    d = _tiny_models_dir(tmp_path)
+    (d / "lid_115m_v2.pt").unlink()
+    _hide_lid(monkeypatch)
+    monkeypatch.setenv("AUDIOFORGE_HOME", str(d))
+    argv = launch.resolve_models(["--threads", "1"], str(d), mode="single")
+    assert "language ID is off" in capsys.readouterr().err
+    a = cli.parse_args(argv)
+    cli._startup_checks(a)
+    eng = cli.load_engine(a)
+    assert eng.lid_name is None and eng.lid_model is None and eng.tsvad is not None
+    pcm, sr = sf.read(str(CLIP), dtype="float32")
+    s = Session(eng, SessionConfig(turn_policy="timeout"))
+    msgs = []
+    for i in range(0, len(pcm), 320):
+        msgs += s.process(pcm[i:i + 320])
+    msgs += s.finish()
+    for m in msgs:
+        validate(m)
+    types = {m["type"] for m in msgs}
+    assert "final" in types and "language" not in types and "error" not in types
+
+
+def test_snapshot_api_load_without_lid_head_turns_lid_off(tmp_path, monkeypatch):
+    import audioforge
+    import audioforge.paths as paths
+    d = _tiny_models_dir(tmp_path)
+    (d / "lid_115m_v2.pt").unlink()
+    monkeypatch.setenv("AUDIOFORGE_HOME", str(d))
+    monkeypatch.setattr(paths, "ROOT", tmp_path)  # no assets/ or runs/ LID head either
+    _hide_lid(monkeypatch)
+    fe = audioforge.load(warmup=False, threads=1)
+    assert fe.engine.lid_name is None

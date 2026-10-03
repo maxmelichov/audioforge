@@ -376,6 +376,8 @@ class TurnStreamState:
 class TurnHead(Head):
     key = "spk_act"  # the batch field it needs (conditioning input and the source of its labels)
 
+    # Sizes (shipped on both cores: hidden 96, n_layers 1, history 8, k_tokens 4, text_dim 64):
+    # placeholder: never swept
     def __init__(self, d_model: int, mode: str = "concat", hidden: int = 96, n_layers: int = 1,
                  history: int = 8, pos_weight: float = 2.0, dropout: float = 0.1, use_text: bool = False,
                  text_head: str | None = None, k_tokens: int = 4, text_dim: int = 64, align: str = "greedy",

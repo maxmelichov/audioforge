@@ -13,6 +13,18 @@ from audioforge.datasets import smartturn as st
 from audioforge.heads.completeness import CompletenessHead, auc
 from audioforge.model import SpeechModel
 
+
+@pytest.fixture(autouse=True)
+def _seeded():
+    """Fixed torch / numpy / random seeds per test: random inputs do not depend on which tests ran before."""
+    import random
+
+    import numpy as np
+    random.seed(0)
+    np.random.seed(0)
+    torch.manual_seed(0)
+
+
 ROOT = Path(__file__).parent.parent
 
 

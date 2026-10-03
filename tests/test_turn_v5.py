@@ -31,7 +31,14 @@ ROOT = Path(__file__).parent.parent
 RECIPE = ROOT / "research" / "recipes" / "stage1_turn_v5_headonly.yaml"
 NOISE = {"p": 1.0, "swap_max": 12, "drop": 1.0, "drop_max": 8, "at_turn_end": 0.6}
 
-torch.set_num_threads(1)
+
+@pytest.fixture(autouse=True, scope="module")
+def _threads_1():
+    """1 torch thread for this module only (restored after it, not at import time for the session)."""
+    old = torch.get_num_threads()
+    torch.set_num_threads(1)
+    yield
+    torch.set_num_threads(old)
 
 
 @pytest.fixture(scope="module")

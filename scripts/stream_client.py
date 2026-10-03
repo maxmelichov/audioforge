@@ -1,3 +1,10 @@
+# /// script
+# requires-python = ">=3.10"
+# dependencies = ["audioforge[serve]"]
+#
+# [tool.uv.sources]
+# audioforge = { path = "..", editable = true }
+# ///
 """Real-time WebSocket client for audioforge.serve: stream a WAV/FLAC (any rate -> 16 kHz) in 20 ms frames.
 
     PYTHONPATH=. .venv/bin/python scripts/stream_client.py audio.wav [--url ws://127.0.0.1:8765] [--speed 1]

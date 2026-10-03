@@ -567,7 +567,7 @@ def n_frames(d_ms: int) -> int:
     return PRE_FR + d_ms // 80 - 1
 
 
-def make_head(din, hid=32, n_cls=3):
+def make_head(din, hid=32, n_cls=3):  # hid 32: placeholder: never swept (research probe, not served)
     import torch
     import torch.nn as nn
 

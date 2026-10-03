@@ -487,9 +487,11 @@ def test_score_classifies_decisions():
 
 
 # ------------------------------------------------------------------------------------------ real models (RUN_REAL=1)
+@pytest.mark.real
 @pytest.mark.skipif(os.environ.get("RUN_REAL") != "1", reason="real models + AMI audio; set RUN_REAL=1")
 def test_real_demo_on_one_ami_window(tmp_path):
-    """Serve the real models (or use AUDIOFORGE_URL), prepare one AMI dev window and run the demo in real time."""
+    """Serve the shipped stack (audioforge-serve: --mode single on the 115M v0.4; or use AUDIOFORGE_URL), prepare one
+    AMI dev window and run the demo in real time."""
     demo = _demo()
     names = demo.prepare(1, tmp_path)
     url, proc = os.environ.get("AUDIOFORGE_URL"), None
@@ -499,8 +501,8 @@ def test_real_demo_on_one_ami_window(tmp_path):
             s.bind(("127.0.0.1", 0))
             port = s.getsockname()[1]
         log = open(tmp_path / "server.log", "w")
-        proc = subprocess.Popen([sys.executable, "-m", "audioforge.serve", "--asr", "runs/stage1_heads_pretrained.afm",
-                                 "--diar", "runs/nemo_sortformer_v2.afm", "--port", str(port), "--threads", "2"],
+        proc = subprocess.Popen([sys.executable, "-c", "import sys; from audioforge.launch import serve_main; "
+                                 "serve_main(sys.argv[1:])", "--mode", "single", "--port", str(port), "--threads", "2"],
                                 cwd=ROOT, env={**os.environ, "PYTHONPATH": str(ROOT)}, stdout=log,
                                 stderr=subprocess.STDOUT)
         url = f"ws://127.0.0.1:{port}"
