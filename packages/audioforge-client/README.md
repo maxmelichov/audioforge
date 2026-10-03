@@ -18,6 +18,21 @@ voice-agent framework plugin needs:
 - `audioforge_client.testing.FakeAudioforgeServer`: a deterministic, energy-scripted stand-in for the server
   that speaks the same protocol, for unit tests of clients and plugins.
 
+## Install
+
+Straight from GitHub (not published to PyPI); it builds from this subdirectory and pulls only `websockets`:
+
+```bash
+pip install "audioforge-client @ git+https://github.com/maxmelichov/audioforge#subdirectory=packages/audioforge-client"
+# pin a release or commit: ...audioforge@<tag-or-sha>#subdirectory=packages/audioforge-client
+# from a clone: pip install ./packages/audioforge-client
+```
+
+In a `pyproject.toml`: `"audioforge-client @ git+https://github.com/maxmelichov/audioforge#subdirectory=packages/audioforge-client"`
+(with uv: `uv add "git+https://github.com/maxmelichov/audioforge#subdirectory=packages/audioforge-client"`).
+
+## Example
+
 ```python
 import asyncio
 from audioforge_client import AudioforgeSession, Final, TurnEnd

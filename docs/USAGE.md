@@ -204,5 +204,12 @@ as keyword arguments with underscores (`enroll="explicit"`, `final_chunk_ms=1120
 
 Open a WebSocket, send an optional `{"type": "config"}`, then 16 kHz int16 mono PCM as binary messages, then
 `{"type": "end"}`. The server sends `ready`, `frame` (every 80 ms), `partial`, `turn_end`, `final`, `stats`.
-Everything: [`PROTOCOL.md`](PROTOCOL.md). A torch-free Python client is in
-[`packages/audioforge-client`](../packages/audioforge-client); the reference client is `scripts/stream_client.py`.
+Everything: [`PROTOCOL.md`](PROTOCOL.md). A torch-free Python client (only `websockets`) is in
+[`packages/audioforge-client`](../packages/audioforge-client); it is not on PyPI, install it straight from GitHub:
+
+```bash
+pip install "audioforge-client @ git+https://github.com/maxmelichov/audioforge#subdirectory=packages/audioforge-client"
+# or from a clone: pip install ./packages/audioforge-client
+```
+
+The reference client is `scripts/stream_client.py`.

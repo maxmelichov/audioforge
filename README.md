@@ -64,7 +64,9 @@ for ev in s.feed(pcm) + s.end():                            # the same messages 
   `AudioforgeTurnAnalyzer` from `audioforge.integrations.pipecat`.
 - LiveKit Agents: `pip install -e ".[livekit]"`, then `AudioforgeFrontend` from `audioforge.integrations.livekit`
   (`fe.stt()`, `fe.vad()`, `fe.turn_detector()`).
-- Anything else: the WebSocket protocol, [`docs/PROTOCOL.md`](docs/PROTOCOL.md).
+- Anything else: the WebSocket protocol, [`docs/PROTOCOL.md`](docs/PROTOCOL.md). A torch-free Python client
+  (only `websockets`) installs straight from GitHub:
+  `pip install "audioforge-client @ git+https://github.com/maxmelichov/audioforge#subdirectory=packages/audioforge-client"`.
 
 Wiring examples, the larger 0.6B model, turn presets and voice prints: [`docs/USAGE.md`](docs/USAGE.md).
 
