@@ -71,7 +71,7 @@ chore build-public    # git archive HEAD into a clean dir minus assets/lid_*.pt,
   hashes against `audioforge/hub.py` `COMPONENTS` after uploading. `lid_distill.pt` was trained on AmberNet's
   outputs (NGC Terms of Use): confirm redistribution is allowed (research/archive/LID.md) before attaching it.
 - [ ] Docs say "stored 5 s of clean speech, 10 s for meetings; live grabs are not enough" wherever the default mode
-  is introduced: README (voice sample, quickstart), docs/CONFIGURATION.md §1 / §13, docs/PROTOCOL.md §4.5,
+  is introduced: docs/USAGE.md (the user's voice print), docs/CONFIGURATION.md §1 / §13, docs/PROTOCOL.md §4.5,
   docs/ARCHITECTURE.md. The quickstart output in the README was captured with the default mode on 2026-09-29.
 
 ## 4. Code and docs

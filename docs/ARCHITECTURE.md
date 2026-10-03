@@ -31,6 +31,19 @@ The server's design notes, such as the frame clock and the exact policy rules, a
               TitaNet-L (voice enrollment), AmberNet (language ID) (optional)
 ```
 
+**The heads at a glance** (block numbers for the 115M; the 0.6B's in brackets):
+
+| head | reads | size | job |
+|---|---|---|---|
+| speech detector | a learned mix of blocks 2-6 [8-16] | 33K [66K] | is anyone speaking? (the client's speech probability, every 80 ms) |
+| VAD (turn rules) | block 4 | 33K | the quiet gate the turn rules, TS-VAD and LID read |
+| speaker | block 4 [5] | 0.5M | a 192-number voice print |
+| TS-VAD | block 4 [5] + the stored print | 0.26M | is it the user or someone else? |
+| turn | a second, speaker-conditioned pass (GRU; 115M only) | 0.32M | is the user's turn over? (`balanced`, `steady`) |
+| turn classifier v5 | block 8 [12] of the first pass + VAD / TS-VAD + the words so far, at each quiet frame | 2.5M [2.6M for `assistant`] | is the user's turn over? (`fast`, `assistant`) |
+| LID v2 (optional) | blocks 8-12 [16-20] | 2.4M [2.9M] | which language? |
+| voice gender (optional, off by default) | block 4 [5] | 22K [21K] | perceived female / male voice probabilities, not gender identity ([research/VOICE_GENDER.md](../research/VOICE_GENDER.md)) |
+
 **Two modes.** In **single-model mode**, the default since 2026-09-29 (docs/CONFIGURATION.md §13), only the model
 above runs. The user's stored voice print (192 numbers from the speaker head; ≥ 5 s of clean speech, 10 s for
 meetings) conditions the TS-VAD head. Its track [P(user), P(someone else), 0, 0] is `frame.speakers` and is what the

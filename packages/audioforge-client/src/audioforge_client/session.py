@@ -1,6 +1,6 @@
 """One WebSocket session to an audioforge server, as an asyncio object.
 
-    async with AudioforgeSession("ws://127.0.0.1:8765", turn_policy="timeout") as s:
+    async with AudioforgeSession("ws://127.0.0.1:8765") as s:   # turn_policy: the server default
         print(s.ready)                          # the server's ready message
         await s.send_audio(pcm16_bytes)         # any chunk size, int16 mono at s.sample_rate
         ...
@@ -22,7 +22,7 @@ import json
 import time
 from collections.abc import AsyncIterator
 from types import TracebackType
-from typing import Any
+from typing import Any, Literal
 
 from . import protocol as P
 from .protocol import Event, Ready, ServerError, Stats
@@ -46,10 +46,11 @@ class AudioforgeSession:
         self,
         url: str = P.DEFAULT_URL,
         *,
-        turn_policy: str = "timeout",
-        timeout_ms: int = 1000,
+        turn_policy: str | None = None,
+        timeout_ms: int | None = 1000,
         eot_threshold: float | None = None,
         sample_rate: int = P.DEFAULT_SAMPLE_RATE,
+        turn_preset: str | None = None,
         connect_timeout: float = 10.0,
         max_size: int = 2**22,
     ) -> None:
@@ -59,6 +60,7 @@ class AudioforgeSession:
             timeout_ms=timeout_ms,
             eot_threshold=eot_threshold,
             sample_rate=sample_rate,
+            turn_preset=turn_preset,
         )
         self.sample_rate = int(sample_rate)
         self.connect_timeout = float(connect_timeout)
@@ -168,11 +170,13 @@ class AudioforgeSession:
             return None
         return self._sent_perf[i]
 
-    async def _send_control(self, kind: str) -> bool:
+    async def _send_control(
+        self, kind: Literal["agent_end", "enroll"], embedding: list[float] | None = None
+    ) -> bool:
         if not self.is_open:
             return False
         try:
-            await self._ws.send(json.dumps({"type": kind}))
+            await self._ws.send(json.dumps(P.control_message(kind, embedding)))
         except Exception as e:
             self._fail(e)
             return False
@@ -183,9 +187,10 @@ class AudioforgeSession:
         """The agent's TTS finished: arm ``--enroll after_agent | after_agent_arm`` at this audio position."""
         return await self._send_control("agent_end")
 
-    async def enroll(self) -> bool:
-        """``--enroll explicit``: enroll the primary speaker on the next utterance."""
-        return await self._send_control("enroll")
+    async def enroll(self, embedding: list[float] | None = None) -> bool:
+        """``--enroll explicit``: enroll the primary speaker on the next utterance. With ``embedding`` (a stored
+        192-number voice print; single-model mode) the print is used at once, under every ``--enroll`` mode."""
+        return await self._send_control("enroll", embedding)
 
     async def end(self, wait: float | None = 10.0) -> Stats | None:
         """Send ``{"type": "end"}`` and wait up to ``wait`` seconds for the server's ``stats``.

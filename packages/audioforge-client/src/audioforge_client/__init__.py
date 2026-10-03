@@ -1,8 +1,8 @@
 """audioforge-client: WebSocket client and message framing for the audioforge streaming speech server.
 
-The server (``audioforge/serve.py`` in https://github.com/maxmelichov/audioforge) runs a streaming
-ASR with VAD and turn heads plus a streaming speaker diarizer on one 80 ms clock and emits ``frame`` /
-``partial`` / ``turn_end`` / ``final`` events over a WebSocket. This package has no model code and no torch
+The server (``audioforge-serve``, https://github.com/maxmelichov/audioforge) runs a streaming ASR
+with speech, turn and speaker heads on one 80 ms clock and emits ``frame`` / ``partial`` / ``turn_end_hint`` /
+``turn_end`` / ``final`` events over a WebSocket (docs/PROTOCOL.md). This package has no model code and no torch
 dependency: it is what a voice-agent framework plugin (Pipecat, LiveKit Agents, ...) needs to talk to it.
 """
 
@@ -13,11 +13,13 @@ from .protocol import (
     DEFAULT_URL,
     ENROLL_MODES,
     FINAL_SOURCES,
+    FINAL_TEXTS,
     FRAME_MS,
     HYBRID_POLICIES,
     NUM_SPEAKERS,
     POLICIES,
     POLICY_EOT_THRESHOLD,
+    TURN_PRESETS,
     Enrolled,
     Event,
     Final,
@@ -28,10 +30,14 @@ from .protocol import (
     ServerError,
     Stats,
     TurnEnd,
+    TurnHint,
+    TurnHintCancel,
     Unknown,
+    Voiceprint,
     config_message,
     control_message,
     cut_policy,
+    final_source_of,
     parse_dict,
     parse_message,
     pcm16_duration_s,
@@ -39,7 +45,7 @@ from .protocol import (
 )
 from .session import AudioforgeClosedError, AudioforgeConnectionError, AudioforgeSession
 
-__version__ = "0.1.0"
+__version__ = "0.2.0"
 
 __all__ = [
     "AGENT_END_MODES",
@@ -48,11 +54,13 @@ __all__ = [
     "DEFAULT_URL",
     "ENROLL_MODES",
     "FINAL_SOURCES",
+    "FINAL_TEXTS",
     "FRAME_MS",
     "HYBRID_POLICIES",
     "NUM_SPEAKERS",
     "POLICIES",
     "POLICY_EOT_THRESHOLD",
+    "TURN_PRESETS",
     "AudioforgeClosedError",
     "AudioforgeConnectionError",
     "AudioforgeSession",
@@ -66,11 +74,15 @@ __all__ = [
     "ServerError",
     "Stats",
     "TurnEnd",
+    "TurnHint",
+    "TurnHintCancel",
     "Unknown",
+    "Voiceprint",
     "__version__",
     "config_message",
     "control_message",
     "cut_policy",
+    "final_source_of",
     "parse_dict",
     "parse_message",
     "pcm16_duration_s",

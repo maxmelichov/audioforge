@@ -198,13 +198,16 @@ def tb(sys_, preset, ds):
     return f"fc:turn > {sys_}" + (f" > {preset}" if preset else "") + f" > {ds}"
 
 
+RES = ("README.md", "docs/RESULTS.md")  # the README results moved to docs/RESULTS.md (docs split, 2026-10-03)
+
+
 def spec_for(file, hdr):
     """return fn(row_label) -> list of per-column path lists (None = skip column), or None if table not audited."""
     h = " | ".join(hdr)
-    if file == "README.md" and h.startswith("system | LibriSpeech test-clean"):
+    if file in RES and h.startswith("system | LibriSpeech test-clean"):
         return lambda r: (lambda s: [[W("ls_clean", s)], [W("ls_other", s)], [W("ami_eval", s)], [W("icsi_eval", s)],
                                      [W("live", s, "user_channel")]])(ASR[r])
-    if file == "README.md" and h.startswith('system | right about "done"'):
+    if file in RES and h.startswith('system | right about "done"'):
         def f(r):
             if r.startswith("ours 115M, held-out pick"):
                 b = "fc:turn_clean > test > 115m > assistant > clean_servable > smartturn_test_w2.5"
@@ -212,14 +215,14 @@ def spec_for(file, hdr):
             b = tb(*TURN[r], "asst")
             return [[b + "_windows > 2.5 > accuracy_pct"], [b + " > p50"], [b + "_windows > 2.5 > false_fire_pct"]]
         return f
-    if file == "README.md" and h.startswith("system | device | p50 | WER of the timed texts"):
+    if file in RES and h.startswith("system | device | p50 | WER of the timed texts"):
         K = {"ours 115M": "ours_115m_1120", "ours 0.6B": "ours_0p6b_1120", "Parakeet-TDT 0.6B v3 (offline)": "parakeet_tdt_mps",
              "Whisper large-v3-turbo": "whisper_turbo", "Whisper small, beam 5": "whisper_small_b5"}
         def f(r):
             b = f"fc:final_latency > systems > {K[r]}"
             return [None, [b + " > p50"], [b + " > wer_timed_texts > wer_pct"]]
         return f
-    if file == "README.md" and h.startswith(" | 115M (default)"):
+    if file in RES and h.startswith(" | 115M (default)"):
         return "STALE_CORE"
     if h.startswith("system | LibriSpeech test-clean (300)"):
         return lambda r: None if r not in ASR else (lambda s: [WCI("ls_clean", s), WCI("ls_other", s), WCI("ami_eval", s),
@@ -408,7 +411,7 @@ def stale_core_table(file, hl, rows):
 
 
 # ---------------------------------------------------------------- [TXT] prose claims: "text with {number}" -> path
-TXT = [("README.md", s, p) for s, p in [  # README prose after the fix-wave rewrite (2026-10-03)
+TXT = [("docs/RESULTS.md", s, p) for s, p in [  # README prose after the fix-wave rewrite, moved to docs/RESULTS.md (2026-10-03)
     ("ours 115M {1527} ms", "fc:turn > ours_115m > balanced > ami > eot_total_ms_p50"),
     ("1527 ms / {15.5} % interruptions", "fc:turn > ours_115m > balanced > ami > false_interruption_pct"),
     ("interruptions / {36.0} % missed", "fc:turn > ours_115m > balanced > ami > missed_pct"),
@@ -491,6 +494,7 @@ TXT = [("README.md", s, p) for s, p in [  # README prose after the fix-wave rewr
     ("1.9 % against 3.8-{5.0} %", "fc:speaker_eer > ami_eval > core_115m > eer_within_meeting_pct"),
     ("fast final texts have {14.2} % WER", "fc:final_latency > systems > ours_115m_1120 > wer_timed_texts > wer_pct"),
     ("about {4.7}× sooner", None),
+]] + [("docs/USAGE.md", s, p) for s, p in [  # the README dual-rate paragraph, moved to docs/USAGE.md
     ("the slow `final` follows {9}-48 ms later", "dr:live > 115m_mps_F1120 > slow_final > flush_wall_ms > p50"),
     ("follows 9-{48} ms later", "dr:live > 0p6b_mps_F1120 > slow_final > flush_wall_ms > p95"),
     ("(~{105} ms for the 0.6B on CPU", "dr:live > 0p6b_cpu_F1120 > slow_final > flush_wall_ms > p50"),
@@ -504,6 +508,31 @@ TXT = [("README.md", s, p) for s, p in [  # README prose after the fix-wave rewr
     ("115M on the GPU 4 → {3}", "dr:cost > 115m|F1120 > realtime_streams_mps"),
     ("0.6B on the GPU {3} → 1", "dr:cost > 0p6b|F160 > realtime_streams_mps"),
     ("0.6B on the GPU 3 → {1}", "dr:cost > 0p6b|F1120 > realtime_streams_mps"),
+]] + [("README.md", s, p) for s, p in [  # the short README results table (docs split, 2026-10-03)
+    ("(AMI test, WER) | **{7.9} %**", W("ami_eval", "core_0p6b")),
+    ("WER) | **7.9 %** | Parakeet-TDT v3 {8.3} %", W("ami_eval", "tdt_v3")),
+    ("Parakeet-TDT v3 8.3 %, Whisper large-v3 {10.7} %", W("ami_eval", "whisper_large_v3")),
+    ("(Mac GPU, median) | **{49} ms**", "fc:final_latency > systems > ours_0p6b_1120 > p50"),
+    ("| Parakeet-TDT v3 {232} ms", "fc:final_latency > systems > parakeet_tdt_mps > p50"),
+    ("Whisper large-v3-turbo {282} ms", "fc:final_latency > systems > whisper_turbo > p50"),
+    ("cuts the user off | **{97.7} % / 0.9 %**", tb("ours_0p6b", "assistant", "asst_windows") + " > 2.5 > accuracy_pct"),
+    ("cuts the user off | **97.7 % / {0.9} %**", tb("ours_0p6b", "assistant", "asst_windows") + " > 2.5 > false_fire_pct"),
+    ("| LiveKit {85.2} % / 22.3 %", tb("livekit_en_turn_detector_silero", None, "asst_windows") + " > 2.5 > accuracy_pct"),
+    ("| LiveKit 85.2 % / {22.3} %", tb("livekit_en_turn_detector_silero", None, "asst_windows") + " > 2.5 > false_fire_pct"),
+    ("Pipecat {75.9} % / 29.0 %", tb("pipecat_smartturn_v3.2_silero", None, "asst_windows") + " > 2.5 > accuracy_pct"),
+    ("Pipecat 75.9 % / {29.0} %", tb("pipecat_smartturn_v3.2_silero", None, "asst_windows") + " > 2.5 > false_fire_pct"),
+    ("knows the user's voice) | **{33.5} %**", "fc:turn > ours_0p6b > balanced > ami > missed_pct"),
+    ("| Pipecat {53.0} %, LiveKit", "fc:turn > pipecat_smartturn_v3.2_silero > ami > missed_pct"),
+    ("Pipecat 53.0 %, LiveKit {72.0} %", "fc:turn > livekit_en_turn_detector_silero > ami > missed_pct"),
+    ("(AMI test, F1) | **{0.959}**", "fc:vad > ami_eval > core_115m > f1_at_0.5"),
+    ("| MarbleNet v2 {0.941}, Silero", "fc:vad > ami_eval > marblenet_v2 > f1_at_0.5"),
+    ("MarbleNet v2 0.941, Silero v5 {0.901}", "fc:vad > ami_eval > silero_v5 > f1_at_0.5"),
+    ("the 0.6B scores {0.957})", "fc:vad > ami_eval > core_0p6b > f1_at_0.5"),
+    ("(AMI test) | **{47.1} %**", "fc:speaker_test > ami_eval > twer > ours_0p6b > twer"),
+    ("| Nemotron-3 diarizer {64.4} %", "fc:speaker_test > ami_eval > twer > nemotron3_best_0p6b > twer"),
+    ("pyannote 3.1 {77.8} % |", "fc:speaker_test > ami_eval > twer > pyannote31_best_0p6b > twer"),
+    ("assistant sooner ({211} ms against 351 ms)", "fc:turn > pipecat_smartturn_v3.2_silero > asst > p50"),
+    ("(211 ms against {351} ms)", "fc:turn > ours_0p6b > assistant > asst > p50"),
 ]] + [("research/FINAL_COMPARE.md", s, p) for s, p in [
     ("streaming: a word shows up about {0.3} s", "fc:stt_latency > 0p6b > p50_ms @x0.001"),
     ("p50 {274} ms [250, 291], p95 571 ms", "fc:stt_latency > 115m > p50_ms"),
@@ -546,7 +575,7 @@ FIRST_PASS = {  # FINAL_COMPARE "What changed" first-pass (dev) column + README 
     "10.4", "20.6", "9.5", "12.4", "13.6", "26.2", "10.4", "12.8", "0.951", "0.937", "0.898", "0.906", "0.935", "1326",
     "1180", "1177", "63.2", "62.1", "71.6", "85.3", "31.7", "37.1", "60.0", "74.8", "19.8", "12.0", "11.9", "91.0", "87.6",
     "87.4", "27.7", "43.7", "92.2", "292", "24.4", "27.3", "11.2", "14.4", "22.5", "13.7", "17.1", "956", "725", "487"}
-PUBLIC = ["README.md", "docs/ARCHITECTURE.md", "docs/CONFIGURATION.md", "docs/MODELS.md", "docs/PROTOCOL.md",
+PUBLIC = ["README.md", "docs/README.md", "docs/USAGE.md", "docs/TRAINING.md", "docs/RESULTS.md", "docs/ARCHITECTURE.md", "docs/CONFIGURATION.md", "docs/MODELS.md", "docs/PROTOCOL.md",
           "docs/SERVER_INTERNALS.md", "docs/RELEASE_CHECKLIST.md", "docs/REPO_LAYOUT.md", "demo/README.md",
           "demo/images/EXPLAINER.md", "research/README.md", "research/METRICS.md", "CHANGELOG.md",
           "packages/audioforge-client/README.md", "examples/audio/README.md"]
@@ -598,14 +627,14 @@ def check_prov():
         for dev in ("cpu", "mps"):
             try:
                 x = L[f"{c}_{dev}_F1120"]["turn_end_delivery_ms"]["p95"] - L[f"{c}_{dev}_F160"]["turn_end_delivery_ms"]["p95"]
-                out("NOTE", f"[PROV] dual-rate turn-end delivery p95 cost {c} {dev}: +{x:.1f} ms (README says +9-27 ms, +93 ms for the 0.6B on CPU)")
+                out("NOTE", f"[PROV] dual-rate turn-end delivery p95 cost {c} {dev}: +{x:.1f} ms (docs/USAGE.md says +9-27 ms, +93 ms for the 0.6B on CPU)")
             except KeyError:
                 pass
 
 
 if __name__ == "__main__":
     print("== [NF]/[IMG] numbers_final.json and the image keys"); check_nf()
-    print("== [TAB] README.md tables"); check_tables("README.md")
+    print("== [TAB] README.md / docs/RESULTS.md tables"); check_tables("README.md"); check_tables("docs/RESULTS.md")
     print("== [TAB] research/FINAL_COMPARE.md headline tables")
     t = (ROOT / "research/FINAL_COMPARE.md").read_text().splitlines()
     end = next(i for i, l in enumerate(t, 1) if l.startswith("## What changed"))

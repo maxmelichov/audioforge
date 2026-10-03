@@ -12,16 +12,23 @@ It speaks the protocol of :mod:`audioforge_client.protocol` and reacts to the au
   column 0 active on speech, ``primary`` 0 once anyone spoke, ``eot`` rising with the silence (0.99 from the
   third silent frame on) so the head policy fires there;
 * a new word ``w<n>`` every ``frames_per_word`` speech frames, sent as ``partial`` (text since the last final);
-* the configured turn policy: ``timeout`` / ``timeout_quiet`` fire when the primary has been silent for
+* the configured turn policy (``default_policy`` when the config names none; ``vad_head`` like the
+  single-model server): ``timeout`` / ``timeout_quiet`` fire when the primary has been silent for
   ``timeout_ms`` (the config's, or the constructor's default), ``head`` when ``eot`` crosses the threshold,
-  ``both`` sends both, ``hybrid*`` send one event tagged with the policy at the earlier of the two; a
-  ``final`` follows every turn_end of the cutting policy and the ``end`` message; ``lag_frames`` delays the
-  timeout decisions like the diarizer would;
+  ``both`` sends both, ``hybrid*`` and ``vad_head`` send one event tagged with the policy at the earlier of
+  the two (``vad_head`` adds ``path``: ``head`` or ``fallback``); a ``final`` follows every turn_end of the
+  cutting policy and the ``end`` message; ``lag_frames`` delays the timeout decisions like the diarizer would;
+* ``hints``: a ``turn_end_hint`` (text = the segment so far) on the first silent frame with ``eot`` >= 0.8,
+  withdrawn by ``turn_end_hint_cancel`` on the next speech frame or confirmed by the next ``turn_end``, which
+  then carries ``hinted_at`` (every ``turn_end`` has the key while hints are on);
 * server options: ``final_asr`` (each final gets ``source: "stream"`` and an offline twin with
-  ``source: "tdt_v3"``, upper-cased text, start / end / latency_ms), ``enroll`` (``agent_end`` / ``enroll``
-  messages are logged and answered with ``enrolled`` on the next speech frame), ``language`` (a ``language``
-  message after ``lid_frames`` speech frames), ``batch_frames`` (frames arrive as ``frames`` batches),
-  ``drop_after_s`` (the socket is closed abruptly after that much audio, code 1011).
+  ``source: "tdt_v3"``, upper-cased text, start / end / latency_ms), ``final_chunk_ms`` (the streaming final is
+  sent as ``final_fast``, then a ``final`` with ``source: "slow"``, ``pass: "slow"`` and title-cased text),
+  ``voice_gender`` (streaming finals carry ``voice_gender``), ``enroll`` (``agent_end`` / ``enroll`` messages are
+  logged and answered with ``enrolled`` on the next speech frame; an ``enroll`` with an ``embedding`` is
+  answered with a ``voiceprint`` at once, under every mode), ``language`` (a ``language`` message after
+  ``lid_frames`` speech frames), ``batch_frames`` (frames arrive as ``frames`` batches), ``drop_after_s`` (the
+  socket is closed abruptly after that much audio, code 1011).
 
 Everything the client sent is logged (``configs``, ``controls`` as ``(connection, kind, samples before it)``,
 ``audio_bytes``, ``ends``), so tests can assert on ordering.
@@ -102,6 +109,10 @@ class FakeAudioforgeServer:
         lid_frames: int = 12,
         batch_frames: bool = False,
         drop_after_s: float | None = None,
+        default_policy: str = "vad_head",
+        hints: bool = False,
+        final_chunk_ms: int | None = None,
+        voice_gender: bool = False,
         host: str = "127.0.0.1",
     ) -> None:
         self.default_timeout_ms = int(timeout_ms)
@@ -116,6 +127,10 @@ class FakeAudioforgeServer:
         self.lid_frames = lid_frames
         self.batch_frames = batch_frames
         self.drop_after_s = drop_after_s
+        self.default_policy = default_policy
+        self.hints = hints
+        self.final_chunk_ms = final_chunk_ms
+        self.voice_gender = voice_gender
         self.host = host
         self.port: int | None = None
         self.url = ""
@@ -125,6 +140,7 @@ class FakeAudioforgeServer:
         self.controls: list[tuple[int, str, int]] = []
         self.audio_bytes: list[int] = []
         self.ends = 0
+        self.embeddings: list[list[float]] = []
         self.sent: list[list[dict[str, Any]]] = []  # per connection, every message sent
         self._server: Any = None
 
@@ -154,7 +170,7 @@ class FakeAudioforgeServer:
             await ws.send(json.dumps(m))
 
         cfg: dict[str, Any] = {
-            "turn_policy": "timeout",
+            "turn_policy": self.default_policy,
             "timeout_ms": self.default_timeout_ms,
             "eot_threshold": None,
             "sample_rate": SR,
@@ -178,6 +194,7 @@ class FakeAudioforgeServer:
             lang_sent=False,
             dropped=False,
             seg_start_t=0.0,
+            hint=None,
         )
         ready: dict[str, Any] = {
             "type": "ready",
@@ -189,8 +206,13 @@ class FakeAudioforgeServer:
         }
         if self.enroll:
             ready.update(enroll=self.enroll, enrolled=False, primary_column=None)
-        if self.final_asr:
-            ready["final_asr"] = "tdt_v3"
+        extra_sources = (["slow"] if self.final_chunk_ms else []) + (
+            ["tdt_v3"] if self.final_asr else []
+        )
+        if extra_sources:
+            ready["final_asr"] = ",".join(extra_sources)
+        if self.final_chunk_ms:
+            ready["final_chunk_ms"] = self.final_chunk_ms
         await send(ready)
 
         def policy() -> str:
@@ -216,32 +238,57 @@ class FakeAudioforgeServer:
                 "text": text,
                 "speaker": 0 if st["spoke_ever"] else None,
             }
-            if self.final_asr:
+            if self.voice_gender:
+                fin["voice_gender"] = (
+                    {"female": 0.2, "male": 0.8, "speech_ms": st["seg_speech"] * FRAME_MS}
+                    if st["seg_speech"]
+                    else None
+                )
+            span = {"start": st["seg_start_t"], "end": t}
+            if self.final_chunk_ms:
+                await send({**fin, "type": "final_fast"})
+                slow = {k: v for k, v in fin.items() if k != "voice_gender"}
+                slow.update(source="slow", text=text.title(), latency_ms=2.0, **span)
+                slow["pass"] = "slow"
+                await send(slow)
+            elif self.final_asr:
                 fin["source"] = "stream"
-                off = {
-                    **fin,
-                    "source": "tdt_v3",
-                    "text": text.upper(),
-                    "start": st["seg_start_t"],
-                    "end": t,
-                    "latency_ms": 1.0,
-                }
-                if offline_now or self.offline_delay_frames <= 0:
-                    await send(fin)
-                    await send(off)
-                else:
-                    await send(fin)
-                    st["offline"].append((st["v"] + self.offline_delay_frames, off))
+                await send(fin)
             else:
                 await send(fin)
+            if self.final_asr:
+                off = {
+                    "type": "final",
+                    "t": t,
+                    "text": text.upper(),
+                    "speaker": fin["speaker"],
+                    "source": "tdt_v3",
+                    "latency_ms": 1.0,
+                    **span,
+                }
+                if offline_now or self.offline_delay_frames <= 0:
+                    await send(off)
+                else:
+                    st["offline"].append((st["v"] + self.offline_delay_frames, off))
             st["seg_words"] = 0
             st["seg_speech"] = 0
 
         async def emit_due(final: bool = False) -> None:
             due = [p for p in st["pending"] if p[0] <= st["v"] or final]
             st["pending"] = [p for p in st["pending"] if p not in due]
-            for _, t, pol, sil, p in due:
-                await send({"type": "turn_end", "t": t, "policy": pol, "p": p, "silence_ms": sil})
+            for _, t, pol, sil, p, path in due:
+                te: dict[str, Any] = {
+                    "type": "turn_end",
+                    "t": t,
+                    "policy": pol,
+                    "p": p,
+                    "silence_ms": sil,
+                }
+                if self.hints:
+                    te["hinted_at"], st["hint"] = st["hint"], None
+                if pol == "vad_head":
+                    te["path"] = path
+                await send(te)
                 if pol == cut():
                     await emit_final(t, offline_now=final)
             due_off = [o for o in st["offline"] if o[0] <= st["v"] or final]
@@ -255,11 +302,11 @@ class FakeAudioforgeServer:
                 if "hybrid" in st["fired"]:
                     return  # one event per turn
                 st["fired"].add("hybrid")
-                st["pending"].append((st["v"] + delay, t, pol, sil_ms, p))
+                vh_path = "fallback" if path == "timeout" else "head"
+                st["pending"].append((st["v"] + delay, t, pol, sil_ms, p, vh_path))
             else:
-                st["pending"].append(
-                    (st["v"] + delay, t, "timeout" if path == "timeout" else "head", sil_ms, p)
-                )
+                tag = "timeout" if path == "timeout" else "head"
+                st["pending"].append((st["v"] + delay, t, tag, sil_ms, p, None))
 
         st["spoke_ever"] = False
         async for msg in ws:
@@ -278,7 +325,20 @@ class FakeAudioforgeServer:
                         cfg["turn_policy"] = "timeout"
                 elif kind in ("agent_end", "enroll"):
                     self.controls.append((idx, kind, self.audio_bytes[idx] // 2))
-                    if self.enroll:
+                    emb = d.get("embedding")
+                    if kind == "enroll" and isinstance(emb, list):
+                        self.embeddings.append([float(x) for x in emb])
+                        t_now = round(self.audio_bytes[idx] / 2 / SR, 3)
+                        await send(
+                            {
+                                "type": "voiceprint",
+                                "t": t_now,
+                                "seconds": 0.0,
+                                "source": "explicit",
+                                "embedding": [float(x) for x in emb],
+                            }
+                        )
+                    elif self.enroll:
                         st["armed"] = True
                 elif kind == "end":
                     self.ends += 1
@@ -292,9 +352,9 @@ class FakeAudioforgeServer:
                             enrolled=st["enrolled"],
                             primary_column=0 if st["enrolled"] else None,
                         )
-                    if self.final_asr:
+                    if extra_sources:
                         stats.update(
-                            final_asr="tdt_v3",
+                            final_asr=",".join(extra_sources),
                             final_latency_ms={"p50": 1.0, "p95": 1.0, "max": 1.0, "n": 1},
                             final_asr_rss_mb=1.0,
                         )
@@ -323,6 +383,9 @@ class FakeAudioforgeServer:
                 st["v"] += 1
                 t = round(st["v"] * FRAME_MS / 1000, 3)
                 speech = _rms(fr) > self.threshold
+                if speech and st["hint"] is not None:
+                    st["hint"] = None
+                    others.append({"type": "turn_end_hint_cancel", "t": t})
                 if speech:
                     if st["seg_speech"] == 0:
                         st["seg_start_t"] = round(t - FRAME_MS / 1000, 3)
@@ -383,6 +446,24 @@ class FakeAudioforgeServer:
                     st["head_armed"] = False
                     fire(t, "head", sil_ms, eot, 0)
                 st["prev_eot"] = eot
+                if (
+                    self.hints
+                    and not speech
+                    and st["seg_speech"]
+                    and st["hint"] is None
+                    and not st["fired"]
+                    and 0.8 <= eot < 0.999
+                ):
+                    st["hint"] = t
+                    others.append(
+                        {
+                            "type": "turn_end_hint",
+                            "t": t,
+                            "p": eot,
+                            "kind": "hint",
+                            "text": seg_text(),
+                        }
+                    )
             if self.batch_frames and frames:
                 await send(
                     {

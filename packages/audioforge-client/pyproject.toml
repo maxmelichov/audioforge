@@ -4,8 +4,8 @@ build-backend = "hatchling.build"
 
 [project]
 name = "audioforge-client"
-version = "0.1.0"
-description = "WebSocket client and message framing for the audioforge streaming speech server (ASR + VAD + speaker activity + end-of-turn events)"
+version = "0.2.0"
+description = "WebSocket client and message framing for the audioforge streaming speech server (ASR, speech detection, end-of-turn hints and decisions, voice print)"
 readme = "README.md"
 license = "Apache-2.0"
 license-files = ["LICENSE"]
@@ -32,7 +32,7 @@ test = ["pytest>=8", "pytest-asyncio>=0.24"]
 
 [project.urls]
 Source = "https://github.com/maxmelichov/audioforge"
-Server = "https://github.com/maxmelichov/audioforge/blob/main/audioforge/serve.py"
+Protocol = "https://github.com/maxmelichov/audioforge/blob/main/docs/PROTOCOL.md"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/audioforge_client"]

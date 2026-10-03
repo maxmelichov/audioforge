@@ -8,15 +8,15 @@ Rules for what goes where and how work is done: [`../AGENTS.md`](../AGENTS.md) (
 | `audioforge/` | the Python package: model and heads, streaming server (`serve.py`, `server/`), Python API (`api.py`), Pipecat / LiveKit adapters (`integrations/`), model download (`hub.py`), training |
 | `tests/` | pytest suite; `tests/fast_ci.txt` is the CPU subset CI runs |
 | `examples/` | runnable demos (Pipecat, LiveKit, plain client) and the bundled `audio/` clips |
-| `docs/` | user and operator docs: architecture, configuration (generated), protocol, models, server internals, release checklist |
+| `docs/` | user and operator docs, indexed in `docs/README.md`: the guides (usage, training, results) and the reference pages (configuration (generated), protocol, models, architecture, server internals, release checklist) |
 | `assets/` | the small shipped head checkpoints (`*.pt`) that single-model mode attaches to the NVIDIA encoder |
 | `packages/audioforge-client/` | the standalone WebSocket client package (own `pyproject.toml` and tests) |
 | `integrations/` | old import names of the adapters (now in `audioforge/integrations/`) and `turnbench_scorer/`, the vendored MIT TurnBench scorer |
-| `scripts/` | `stream_client.py` (reference client), `sweep_capacity.py` (head sizing sweeps); `dev/` tooling (`gate.sh` job gate, `logged.sh` background runs with a log under `runs/logs/`, `build_public.sh` public snapshot, `render_compare.py` README comparison images, config-doc generator); `research/` the drivers behind every number (indexed in its README); `archive/` retired one-off drivers. Scripts carry a PEP 723 header: `uv run scripts/<x>.py` |
+| `scripts/` | `stream_client.py` (reference client), `sweep_capacity.py` (head sizing sweeps); `dev/` tooling (`gate.sh` job gate, `logged.sh` background runs with a log under `runs/logs/`, `build_public.sh` public snapshot, `render_compare.py` the comparison images in docs/RESULTS.md, config-doc generator); `research/` the drivers behind every number (indexed in its README); `archive/` retired one-off drivers. Scripts carry a PEP 723 header: `uv run scripts/<x>.py` |
 | `plans/` | every plan, survey, sweep table and scratch note, one directory per topic: `plans/<name>/<name>_001.py` validation scripts (standalone `uv` scripts) with a `.md` of what they checked and printed |
 | `research/` | lab notes. Current reports at the top (`METRICS.md` = the numbers to quote, `FINAL_REPORT.md`, `SINGLE_MODEL.md`, ...); `recipes/` training configs; `archive/` superseded notes and raw Hugging Face pulls; `README.md` indexes all of it |
 | `runs/` | committed result JSONs that the notes, docs and images cite (checkpoints `*.afm` / `*.pt` are git-ignored); `archive/` results no current doc reads |
-| `demo/` | launch images (`images/`, current `*_v8*` / `*_v9*` plus the `redesign/` pipeline); `archive/` earlier video pipelines and image versions |
+| `demo/` | launch images (`images/`: `architecture_v10.png` in the README, `compare_*.png` in docs/RESULTS.md, the `redesign/` pipeline, explained in `images/EXPLAINER.md`); `archive/` earlier video pipelines and image versions |
 
 Top-level files (the root holds nothing else; plans and scratch go under `plans/`): `README.md`, `CHANGELOG.md`,
 `CONTRIBUTING.md`, `AGENTS.md` (agent and workflow rules; `CLAUDE.md` is a symlink to it), `LICENSE` (Apache-2.0),

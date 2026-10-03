@@ -243,3 +243,10 @@ How compare_*.png get their numbers: `arch_vs.html` `VS` config → `numbers_fin
 6. Put `FINAL_115M_AFM` / `FINAL_0P6B_AFM` / `FINAL_LID_HEAD` into the Reproduce block (or change the defaults);
    rewrite EXPLAINER.md for compare_*.png; sweep the docs listed under 11.
 
+
+## Docs split (2026-10-03)
+
+The README's results tables and prose moved verbatim to `docs/RESULTS.md`, its dual-rate paragraph to
+`docs/USAGE.md`; the claim map follows them (`RES`, the `TXT` file names) and checks the new short README table
+(24 claims). Output after the move: OK 1318, MISMATCH 0, NOSRC 0, STALE 33 (the same pre-existing lines in
+CONFIGURATION.md, PROTOCOL.md, research/README.md and CHANGELOG.md).
